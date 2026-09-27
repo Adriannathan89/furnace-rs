@@ -1,6 +1,6 @@
 # MADS Testing API Design
 
-**Status:** Approved conversational design; written contract awaiting review
+**Status:** Revised function-level macro contract awaiting review
 
 **Target:** `mads-testing` in the Rust 1.94, edition 2024 workspace
 
@@ -24,9 +24,9 @@ database, while unrelated providers and routes do not run.
 - Add `mads-testing` as a workspace crate. The existing untracked, empty
   `crates/mads-testing` directory is user work and is the intended crate
   location; implementation must inspect it before editing.
-- Add `#[mads::test]` for inline Rust modules. It provides the supported
-  module-free fixture entry point inside the annotated module and compiles
-  that module only for tests.
+- Add `#[mads::test]` for one asynchronous, zero-argument test function. It
+  registers that function for `cargo test`, provides its fixture entry point
+  inside the function, and compiles it only for tests.
 - Support registered controllers, services, and repositories as subjects.
 - Select dependencies by concrete type, recursively, using existing MADS
   provider metadata and construction rules. A supplied value satisfies its
@@ -50,8 +50,8 @@ database, while unrelated providers and routes do not run.
 
 This version does not include real SQLite, migrations, database transaction
 helpers, fixture factories, snapshots, property testing, or helpers beyond
-the database, focused construction, and HTTP boundary agreed here. File-backed
-`#[mads::test] mod tests;` is not supported.
+the database, focused construction, and HTTP boundary agreed here. Applying
+`#[mads::test]` to a module or a synchronous function is not supported.
 
 ## Approaches considered
 
@@ -68,19 +68,21 @@ the database, focused construction, and HTTP boundary agreed here. File-backed
 
 ## Public API contract
 
-`#[mads::test]` is a module attribute re-exported by `mads`. It accepts an
-inline module, applies `#[cfg(test)]`, and generates a module-local
-`test_fixture()` function. That
-function is the supported entry to the module-free fixture API. It must be
-available to test functions in that module and unavailable through the
-supported API in an unannotated module. Expansion rejects an external module
-or a non-module item with a compile-time diagnostic. The macro does not
-replace `#[tokio::test]` or execute the test body.
+`#[mads::test]` is a function attribute re-exported by `mads`. It accepts an
+asynchronous, zero-argument, nongeneric function, applies `#[cfg(test)]` and
+Tokio's test attribute, and makes a local `test_fixture()` function available
+inside that one test body. `cargo test` discovers and runs the annotated
+function without a separate `#[tokio::test]`. The macro preserves the test
+body and its return type subject to Tokio's test-function rules. Expansion
+rejects synchronous functions, function arguments, generics, attribute
+arguments, and non-function items with a compile-time diagnostic. The macro
+uses a Tokio test-attribute path supplied by `mads-testing`, so a consumer
+does not need a direct Tokio dependency solely for this attribute.
 
 The fixture API has these operations and type relationships:
 
 ```rust
-// Generated inside each #[mads::test] inline module:
+// Generated inside each #[mads::test] async function:
 fn test_fixture() -> mads_testing::TestFixtureBuilder;
 
 impl TestFixtureBuilder {
@@ -151,28 +153,24 @@ when parsing fails. The response stays available for chained assertions.
 ### Typical controller test
 
 ```rust
+use mads_testing::sea_orm::{DbBackend, MockDatabase};
+
 #[mads::test]
-mod tests {
-    use super::*;
-    use mads_testing::sea_orm::{DbBackend, MockDatabase};
+async fn get_user() {
+    let mock = MockDatabase::new(DbBackend::Sqlite)
+        .append_query_results([[user_model()]]);
 
-    #[tokio::test]
-    async fn get_user() {
-        let mock = MockDatabase::new(DbBackend::Sqlite)
-            .append_query_results([[user_model()]]);
-
-        test_fixture()
-            .mock_database(mock)
-            .controller::<UserController>()
-            .run(|app| async move {
-                app.get("/users/1")
-                    .send().await.unwrap()
-                    .assert_status(StatusCode::OK)
-                    .assert_json(json!({ "id": 1 }));
-            })
-            .await
-            .unwrap();
-    }
+    test_fixture()
+        .mock_database(mock)
+        .controller::<UserController>()
+        .run(|app| async move {
+            app.get("/users/1")
+                .send().await.unwrap()
+                .assert_status(StatusCode::OK)
+                .assert_json(json!({ "id": 1 }));
+        })
+        .await
+        .unwrap();
 }
 ```
 
@@ -183,15 +181,18 @@ queue SeaORM query and execution results through SeaORM's native
 ### Typical service test
 
 ```rust
-test_fixture()
-    .mock_database(MockDatabase::new(DbBackend::Sqlite))
-    .subject::<UserService>()
-    .run(|context| async move {
-        let service = context.resolve::<UserService>().unwrap();
-        // Call and assert the service behavior here.
-    })
-    .await
-    .unwrap();
+#[mads::test]
+async fn service_uses_repository() {
+    test_fixture()
+        .mock_database(MockDatabase::new(DbBackend::Sqlite))
+        .subject::<UserService>()
+        .run(|context| async move {
+            let service = context.resolve::<UserService>().unwrap();
+            // Call and assert the service behavior here.
+        })
+        .await
+        .unwrap();
+}
 ```
 
 The service example assumes `UserService` and its registered dependency chain
@@ -240,8 +241,9 @@ This guarantee covers normal completion and Rust unwinding panics while the
 cannot execute asynchronous cleanup. The fixture does not expose an API that
 requires users to remember a separate shutdown call.
 
-The macro gate applies to the supported public fixture entry point. Rust
-procedural-macro expansion requires callable implementation internals; those
+The macro gate applies to the supported public fixture entry point in one
+annotated function. Rust procedural-macro expansion requires callable
+implementation internals; those
 are hidden from documentation and are outside the supported contract. This is
 a compile-time usage guard for normal consumers, not a security boundary
 against deliberate invocation of hidden internals.
@@ -267,8 +269,10 @@ Implementation must demonstrate:
    native type.
 8. Lifecycle start and shutdown run once in order after a successful body
    and after an assertion panic. Startup failure uses core rollback.
-9. An unannotated module cannot use the supported `test_fixture()` entry
-   point; the macro rejects external modules and non-module items.
+9. `cargo test` discovers and runs each annotated async function. An
+   unannotated function cannot use the supported `test_fixture()` entry
+   point; the macro rejects synchronous functions, arguments, generics, and
+   non-function items.
 10. Existing rooted and complete-catalog tests keep their behavior.
 
 Add focused tests in the owning crates, a consumer example that compiles
