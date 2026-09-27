@@ -1,6 +1,6 @@
 # MADS Testing API Design
 
-**Status:** Revised function-level macro contract awaiting review
+**Status:** Approved function-level macro contract
 
 **Target:** `mads-testing` in the Rust 1.94, edition 2024 workspace
 
