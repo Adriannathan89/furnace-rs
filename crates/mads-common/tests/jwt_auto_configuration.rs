@@ -9,7 +9,7 @@ use mads_core::{
     AutoConfigurationStatus, Config, ConfigBuilder, MADS003, Mads, MapSource, ProviderOrigin,
 };
 
-#[mads_core::service]
+#[mads_core::burner]
 struct TokenIssuer {
     jwt: JwtService,
 }

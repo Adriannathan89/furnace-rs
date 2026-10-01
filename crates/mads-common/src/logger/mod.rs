@@ -12,20 +12,29 @@ pub use logger_service::{LogLevel, Logger, LoggerService};
 /// ```
 /// use mads_common::LoggerModule;
 ///
-/// #[mads_common::core::module(imports = [LoggerModule])]
+/// use mads_common::core::{Furnace, FurnaceRegistration};
+/// #[mads_common::core::furnace]
 /// struct AppModule;
+/// impl Furnace for AppModule {
+///     fn register(self) -> FurnaceRegistration<Self> { self.import(LoggerModule) }
+/// }
 /// ```
 ///
-/// To override the logger, do not import `LoggerModule`. Instead, declare an
-/// application-owned `#[mads_core::module(global)]` that provides exactly one
-/// public [`Logger`] constructed with [`Logger::new`]. Registering both
-/// providers creates an ambiguous duplicate and is rejected by the dependency
-/// graph.
-#[crate::core::module(global)]
+/// To override the logger, supply a value constructed with [`Logger::new`] to
+/// the application builder. Keep [`Logger`] explicitly registered in one
+/// reachable furnace and export it to its consumers. A supplied value takes
+/// precedence over the linked default factory without changing ownership.
+#[crate::core::furnace]
 pub struct LoggerModule;
 
 /// Provides the default console-backed [`Logger`].
-#[crate::core::provider]
+#[crate::core::element]
 pub fn logger() -> Logger {
     Logger::default()
+}
+
+impl crate::core::Furnace for LoggerModule {
+    fn register(self) -> crate::core::FurnaceRegistration<Self> {
+        self.provide::<Logger>().export::<Logger>().global()
+    }
 }

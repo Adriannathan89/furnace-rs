@@ -78,15 +78,23 @@ impl sea_orm::ActiveModelBehavior for ActiveModel {}
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {}
 
-#[mads_core::module(imports = [DatabaseModule])]
+#[mads_core::furnace]
 pub struct Root;
+
+impl mads_core::Furnace for Root {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        self.provide::<ItemRepository>()
+            .import(DatabaseModule)
+            .export::<ItemRepository>()
+    }
+}
 
 #[derive(Clone)]
 pub struct ItemRepository {
     database: DatabaseConnection,
 }
 
-#[mads_core::provider]
+#[mads_core::element]
 pub fn item_repository(database: DatabaseConnection) -> ItemRepository {
     ItemRepository { database }
 }

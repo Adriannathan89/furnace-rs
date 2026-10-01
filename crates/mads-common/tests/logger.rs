@@ -90,20 +90,33 @@ fn logger_includes_context_details_in_fatal_messages() {
 mod consumer {
     use mads_common::Logger;
 
-    #[mads_core::service]
+    #[mads_core::burner]
     pub struct LoggingService {
         _logger: Logger,
     }
 
-    #[mads_core::module]
+    #[mads_core::furnace]
     pub struct ConsumerModule;
+
+    impl mads_core::Furnace for ConsumerModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.provide::<LoggingService>().export::<LoggingService>()
+        }
+    }
 }
 
 mod default_logger_application {
     use mads_common::LoggerModule;
 
-    #[mads_core::module(imports = [LoggerModule, super::consumer::ConsumerModule])]
+    #[mads_core::furnace]
     pub struct ApplicationModule;
+
+    impl mads_core::Furnace for ApplicationModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.import(LoggerModule)
+                .import(super::consumer::ConsumerModule)
+        }
+    }
 }
 
 #[tokio::test]
@@ -131,18 +144,30 @@ mod custom_logger {
         fn log(&self, _level: LogLevel, _message: &str) {}
     }
 
-    #[mads_core::module(global)]
+    #[mads_core::furnace]
     pub struct CustomLoggerModule;
 
-    #[mads_core::provider]
+    impl mads_core::Furnace for CustomLoggerModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.provide::<Logger>().export::<Logger>().global()
+        }
+    }
+
     pub fn custom_logger() -> Logger {
         Logger::new(TestLogger)
     }
 }
 
 mod custom_logger_application {
-    #[mads_core::module(imports = [super::custom_logger::CustomLoggerModule, super::consumer::ConsumerModule])]
+    #[mads_core::furnace]
     pub struct CustomLoggerApplicationModule;
+
+    impl mads_core::Furnace for CustomLoggerApplicationModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.import(super::custom_logger::CustomLoggerModule)
+                .import(super::consumer::ConsumerModule)
+        }
+    }
 }
 
 #[tokio::test]
@@ -151,6 +176,7 @@ async fn application_can_manually_provide_a_custom_global_logger() {
     builder
         .root::<custom_logger_application::CustomLoggerApplicationModule>()
         .unwrap();
+    builder.provide(custom_logger::custom_logger()).unwrap();
     let application = builder.build().await.unwrap();
 
     assert!(

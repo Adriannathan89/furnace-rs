@@ -5,7 +5,7 @@
 
 use mads_common::{
     ClaimsPrincipal, MADS121,
-    core::{AutoConfigurationReport, AutoConfigurationStatus, Config, Mads, Module, Result},
+    core::{AutoConfigurationReport, AutoConfigurationStatus, Config, Furnace, Mads, Result},
 };
 
 #[derive(serde::Deserialize)]
@@ -37,8 +37,14 @@ mod public_http {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct PublicHttpModule;
+
+    impl mads_common::core::Furnace for PublicHttpModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<PublicController>()
+        }
+    }
 }
 
 mod guarded_http {
@@ -60,26 +66,42 @@ mod guarded_http {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct GuardedHttpModule;
+
+    impl mads_common::core::Furnace for GuardedHttpModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<GuardedController>()
+        }
+    }
 }
 
 mod roots {
     pub(super) mod public {
-        #[mads_common::core::module(imports = [super::super::public_http::PublicHttpModule])]
+        #[mads_common::core::furnace]
         pub struct PublicRoot;
+
+        impl mads_common::core::Furnace for PublicRoot {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.import(super::super::public_http::PublicHttpModule)
+            }
+        }
     }
 
     pub(super) mod guarded {
-        #[mads_common::core::module(imports = [
-            super::super::public_http::PublicHttpModule,
-            super::super::guarded_http::GuardedHttpModule,
-        ])]
+        #[mads_common::core::furnace]
         pub struct GuardedRoot;
+
+        impl mads_common::core::Furnace for GuardedRoot {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.import(super::super::public_http::PublicHttpModule)
+                    .import(super::super::guarded_http::GuardedHttpModule)
+            }
+        }
     }
 }
 
-async fn build_root<M: Module>(config: Config) -> Result<Mads> {
+async fn build_root<M: Furnace>(config: Config) -> Result<Mads> {
     let mut builder = Mads::builder_with_config(config);
     builder.root::<M>()?;
     builder.build().await

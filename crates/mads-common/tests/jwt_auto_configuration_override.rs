@@ -5,7 +5,7 @@
 use mads_common::{JwtService, PassportConfig};
 use mads_core::{AutoConfigurationStatus, Config, ConfigBuilder, Mads, MapSource, ProviderOrigin};
 
-#[mads_core::service]
+#[mads_core::burner]
 struct OverrideConsumer {
     jwt: JwtService,
 }
