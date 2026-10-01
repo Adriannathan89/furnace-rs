@@ -1,7 +1,7 @@
 # Hello World
 
-This is the smallest MADS 0.9 HTTP application: a route trait, its controller,
-an application module, and the conventional `Mads::burn` entry point.
+This is the smallest FURNACE 0.9 HTTP application: a route trait, its controller,
+an application module, and the conventional `Furnace::burn` entry point.
 
 Requires Rust 1.94 or newer. From this directory:
 
@@ -16,9 +16,9 @@ curl http://127.0.0.1:3000/
 # Hello, world!
 ```
 
-`mads.toml` sets the listener address. The `#[routes]` trait declares the HTTP
-contract; `#[controller]` implements it; `#[furnace]` makes the controller
-reachable from the application root. `Mads::burn` loads local configuration and
+`furnace.toml` sets the listener address. The `#[routes]` trait declares the HTTP
+contract; `#[controller]` implements it; `#[cauldron]` makes the controller
+reachable from the application root. `Furnace::burn` loads local configuration and
 starts the server.
 
 Continue with [posts-crud](../posts-crud/) for persistence or

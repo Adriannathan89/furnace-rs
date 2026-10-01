@@ -1,5 +1,0 @@
-error: `#[mads::test]` does not support generic parameters or where clauses
- --> tests/ui-test-attribute/generics.rs:2:17
-  |
-2 | async fn generic<T>() {}
-  |                 ^

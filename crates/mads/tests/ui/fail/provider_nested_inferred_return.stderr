@@ -1,5 +1,0 @@
-error: `#[mads::element]` requires an explicit concrete return type
- --> tests/ui/fail/provider_nested_inferred_return.rs:4:34
-  |
-4 | fn value() -> mads::core::Result<_> {
-  |                                  ^

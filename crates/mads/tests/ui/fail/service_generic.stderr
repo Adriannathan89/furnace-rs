@@ -1,5 +1,0 @@
-error: `#[mads::burner]` supports only non-generic named-field or unit structs, such as `#[mads::burner] struct Managed { dependency: Dependency }` or `#[mads::burner] struct Managed;`
- --> tests/ui/fail/service_generic.rs:4:22
-  |
-4 | struct GenericService<T> {
-  |                      ^

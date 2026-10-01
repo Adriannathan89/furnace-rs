@@ -1,0 +1,5 @@
+error: `#[furnace_rs::burner]` supports only non-generic named-field or unit structs, such as `#[furnace_rs::burner] struct Managed { dependency: Dependency }` or `#[furnace_rs::burner] struct Managed;`
+ --> tests/ui/fail/service_tuple.rs:4:20
+  |
+4 | struct TupleService(String);
+  |                    ^^^^^^^^

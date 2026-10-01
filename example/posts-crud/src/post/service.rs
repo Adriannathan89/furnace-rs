@@ -1,7 +1,7 @@
 use sea_orm::DbErr;
 
 use super::{model::Post, repository::PostRepository};
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
 #[burner]
 pub struct PostService {

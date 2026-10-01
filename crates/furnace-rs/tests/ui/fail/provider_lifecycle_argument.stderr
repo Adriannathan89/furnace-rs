@@ -1,0 +1,5 @@
+error: `#[furnace_rs::element]` supports only `#[furnace_rs::element]` and `#[furnace_rs::element(lifecycle)]`
+ --> tests/ui/fail/provider_lifecycle_argument.rs:1:23
+  |
+1 | #[furnace_rs::element(other)]
+  |                       ^^^^^

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build unchanged MADS examples against this checkout without editing their locks."""
+"""Build unchanged FURNACE examples against this checkout without editing their locks."""
 
 from __future__ import annotations
 
@@ -27,11 +27,11 @@ def main() -> None:
     parser.add_argument("--example", action="append", choices=EXAMPLES)
     parser.add_argument("--offline", action="store_true", help="use cached Cargo dependencies only")
     args = parser.parse_args()
-    target = ROOT / "benchmark" / "targets" / "mads" / "target"
-    locks = ROOT / "benchmark" / "targets" / "mads" / "locks"
+    target = ROOT / "benchmark" / "targets" / "furnace-rs" / "target"
+    locks = ROOT / "benchmark" / "targets" / "furnace-rs" / "locks"
     locks.mkdir(parents=True, exist_ok=True)
     examples = args.example or EXAMPLES
-    with tempfile.TemporaryDirectory(prefix="mads-bench-build-") as directory:
+    with tempfile.TemporaryDirectory(prefix="furnace-rs-bench-build-") as directory:
         for name in examples:
             lockfile = locks / f"{name}.lock"
             staged = stage_example(
@@ -40,11 +40,11 @@ def main() -> None:
             )
             command = [
                 "cargo",
-                "--config", f'patch.crates-io.mads.path="{ROOT / "crates" / "mads"}"',
+                "--config", f'patch.crates-io.furnace-rs.path="{ROOT / "crates" / "furnace-rs"}"',
             ]
             if name == "posts-crud":
                 command.extend([
-                    "--config", f'patch.crates-io.mads-persistence.path="{ROOT / "crates" / "mads-persistence"}"',
+                    "--config", f'patch.crates-io.furnace-rs-persistence.path="{ROOT / "crates" / "furnace-rs-persistence"}"',
                 ])
             command.extend([
                 "build", "--release", "--manifest-path", str(staged / "Cargo.toml"),

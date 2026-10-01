@@ -1,24 +1,24 @@
-# MADS.rs
+# furnace-rs
 
-[![Latest release](https://img.shields.io/github/v/release/Adriannathan89/mads?display_name=tag&sort=semver)](https://github.com/Adriannathan89/mads/releases/latest)
-[![CI](https://github.com/Adriannathan89/mads/actions/workflows/ci.yml/badge.svg)](https://github.com/Adriannathan89/mads/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/Adriannathan89/furnace-rs?display_name=tag&sort=semver)](https://github.com/Adriannathan89/furnace-rs/releases/latest)
+[![CI](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml)
 
-MADS.rs 0.9.2 is a Rust application framework with a framework-neutral
+furnace-rs 0.9.2 is a Rust application framework with a framework-neutral
 core, a scoped Axum HTTP runtime, source-aware typed configuration, safe REST
 errors, request validation, and opt-in native SeaORM persistence. A root
 module selects one application; startup validates its scoped graph and routes
 before it starts lifecycle hooks, checks a database, or binds a socket.
 
-## What is MADS.rs?
+## What is furnace-rs?
 
-MADS stands for **Modular Architecture Design System**. The name began as a
+FURNACE stands for **Modular Architecture Design System**. The name began as a
 deliberate, playful misspelling of “mad,” reflecting the feeling developers can
 have when low-level application architecture becomes repetitive and difficult
 to wire together.
 
 The philosophy is to take that frustration out of Rust application
-development. MADS keeps architecture explicit, typed, and inspectable while
-automating the repetitive work around modules, dependency wiring, lifecycle,
+development. FURNACE keeps architecture explicit, typed, and inspectable while
+automating the repetitive work around cauldrons, dependency wiring, lifecycle,
 configuration, routing, and infrastructure. Developers can then spend more
 time on domain logic and business systems instead of rebuilding the same
 low-level application structure for every project.
@@ -28,32 +28,32 @@ low-level application structure for every project.
 Create a minimal HTTP application, then start its development server:
 
 ```bash
-mads new my-app
+furnace new my-app
 cd my-app
-mads dev
+furnace dev
 ```
 
-`mads new` creates exactly `Cargo.toml`, `mads.toml`, `src/main.rs`, and
+`furnace new` creates exactly `Cargo.toml`, `furnace.toml`, `src/main.rs`, and
 `src/app/{mod,routes,controller,service}.rs`. The generated application has
-only the `http` and `runtime-tokio` MADS features—no database, JWT, cookie,
+only the `http` and `runtime-tokio` FURNACE features—no database, JWT, cookie,
 migration, or authentication setup—and answers `GET /` with `Hello World!`.
-The application package starts at `0.1.0`; its MADS dependency is pinned to the
+The application package starts at `0.1.0`; its FURNACE dependency is pinned to the
 installed CLI version. See [the CLI reference](docs/CLI.md) for its atomic,
 offline generator contract, naming rules, exact JSON output, and non-goals.
 
 From an existing project, inspect or run a selected application:
 
 ```bash
-mads doctor
-mads routes
-mads run
+furnace doctor
+furnace routes
+furnace run
 ```
 
 See the [authoritative CLI reference](docs/CLI.md) for target selectors,
 forwarded application arguments, diagnostics, watcher behavior, inspection
 limits.
 
-For runnable MADS 0.9 walkthroughs, see the [three example projects](example/):
+For runnable FURNACE 0.9 walkthroughs, see the [three example projects](example/):
 Hello World, PostgreSQL posts CRUD, and a JWT-protected route with validation
 and logging.
 For repeatable HTTP load and failure checks, see the [benchmark suite](benchmark/).
@@ -61,7 +61,7 @@ For repeatable HTTP load and failure checks, see the [benchmark suite](benchmark
 ## Standard application
 
 ```rust,no_run
-use mads::prelude::*;
+use furnace-rs::prelude::*;
 
 #[routes]
 trait HelloRoutes {
@@ -74,62 +74,62 @@ impl HelloRoutes for HelloController {
     async fn hello(&self) -> &'static str { "Hello, world!" }
 }
 
-#[furnace]
-struct AppModule;
-impl Furnace for AppModule {
-    fn register(self) -> FurnaceRegistration<Self> {
+#[cauldron]
+struct AppCauldron;
+impl Cauldron for AppCauldron {
+    fn register(self) -> CauldronRegistration<Self> {
         self.controller::<HelloController>()
     }
 }
 
-#[mads::main]
+#[furnace-rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::burn::<AppModule>().await
+    Furnace::burn::<AppCauldron>().await
 }
 ```
 
-`Mads::burn` starts the root furnace and its imports. Register dependencies with
+`Furnace::burn` starts the root cauldron and its imports. Register dependencies with
 `.provide::<T>()`, controllers with `.controller::<T>()`, and imported furnaces
-with `.import(OtherModule)`. Cross-furnace injection requires `.export::<T>()`;
+with `.import(OtherCauldron)`. Cross-cauldron injection requires `.export::<T>()`;
 `.global()` exposes only those exports throughout the reachable application.
 Rust namespaces and `pub` visibility do not determine DI membership.
 
-See the [breaking-change migration guide](docs/importance/furnace-registration-migration.md)
-for the `furnace`, `burner`, `storage`, and `element` vocabulary and factory registration.
+See the [breaking-change migration guide](docs/importance/cauldron-registration-migration.md)
+for the `cauldron`, `burner`, `storage`, and `element` vocabulary and factory registration.
 
 ## Workspace crates
 
-MADS is split into small crates with a deliberate dependency direction. Most
-applications depend only on the public `mads` facade; the implementation details
+FURNACE is split into small crates with a deliberate dependency direction. Most
+applications depend only on the public `furnace-rs` facade; the implementation details
 are documented beside the crate that owns them.
 
 ~~~text
 application
-└── mads
-    ├── mads-core
-    │   └── mads-core-macros
-    ├── mads-common (optional)
-    │   ├── mads-core
-    │   └── mads-common-macros
-    └── mads-extra (optional)
-        └── mads-core
+└── furnace-rs
+    ├── furnace-rs-core
+    │   └── furnace-rs-core-macros
+    ├── furnace-rs-common (optional)
+    │   ├── furnace-rs-core
+    │   └── furnace-rs-common-macros
+    └── furnace-rs-extra (optional)
+        └── furnace-rs-core
 
-mads-cli
-├── mads
-└── mads-common (http-only private inspection contract)
+furnace-rs-cli
+├── furnace-rs
+└── furnace-rs-common (http-only private inspection contract)
 ~~~
 
 | Crate | Responsibility | Contributor guide |
 | --- | --- | --- |
-| `mads` | Public facade, prelude, and feature composition for application authors. | [crates/mads/README.md](crates/mads/README.md) |
-| `mads-core` | Framework-neutral configuration, graph, providers, lifecycle, diagnostics, and module scope. | [crates/mads-core/README.md](crates/mads-core/README.md) |
-| `mads-core-macros` | Procedural macros that generate core metadata and constructors. | [crates/mads-core-macros/README.md](crates/mads-core-macros/README.md) |
-| `mads-common` | Optional HTTP, validation, CORS, JWT, cookie, and Passport integrations. | [crates/mads-common/README.md](crates/mads-common/README.md) |
-| `mads-persistence` | Explicit native SeaORM PostgreSQL connector and lifecycle integration. | [crates/mads-persistence/README.md](crates/mads-persistence/README.md) |
-| `mads-common-macros` | Procedural macros for routes, controllers, validation, and Passport. | [crates/mads-common-macros/README.md](crates/mads-common-macros/README.md) |
-| `mads-cli` | Cargo-native execution, inspection, development loop, and scaffolding. | [crates/mads-cli/README.md](crates/mads-cli/README.md) |
-| `mads-testing` | Focused service and in-process controller fixtures with SeaORM SQLite mocks. | [crates/mads-testing/README.md](crates/mads-testing/README.md) |
-| `mads-extra` | Reserved boundary for future optional integrations. | [crates/mads-extra/README.md](crates/mads-extra/README.md) |
+| `furnace-rs` | Public facade, prelude, and feature composition for application authors. | [crates/furnace-rs/README.md](crates/furnace-rs/README.md) |
+| `furnace-rs-core` | Framework-neutral configuration, graph, providers, lifecycle, diagnostics, and module scope. | [crates/furnace-rs-core/README.md](crates/furnace-rs-core/README.md) |
+| `furnace-rs-core-macros` | Procedural macros that generate core metadata and constructors. | [crates/furnace-rs-core-macros/README.md](crates/furnace-rs-core-macros/README.md) |
+| `furnace-rs-common` | Optional HTTP, validation, CORS, JWT, cookie, and Passport integrations. | [crates/furnace-rs-common/README.md](crates/furnace-rs-common/README.md) |
+| `furnace-rs-persistence` | Explicit native SeaORM PostgreSQL connector and lifecycle integration. | [crates/furnace-rs-persistence/README.md](crates/furnace-rs-persistence/README.md) |
+| `furnace-rs-common-macros` | Procedural macros for routes, controllers, validation, and Passport. | [crates/furnace-rs-common-macros/README.md](crates/furnace-rs-common-macros/README.md) |
+| `furnace-rs-cli` | Cargo-native execution, inspection, development loop, and scaffolding. | [crates/furnace-rs-cli/README.md](crates/furnace-rs-cli/README.md) |
+| `furnace-rs-testing` | Focused service and in-process controller fixtures with SeaORM SQLite mocks. | [crates/furnace-rs-testing/README.md](crates/furnace-rs-testing/README.md) |
+| `furnace-rs-extra` | Reserved boundary for future optional integrations. | [crates/furnace-rs-extra/README.md](crates/furnace-rs-extra/README.md) |
 
 The approach is type-driven and metadata-driven: macros emit static
 descriptors, core analyzes a selected module graph before construction, and
@@ -141,34 +141,34 @@ guides for dependencies, source layout, and change ownership.
 
 ~~~toml
 [dependencies]
-mads = "0.9.2"
+furnace-rs = "0.9.2"
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
 ~~~
 
-MADS.rs supports Rust 1.94 and uses Rust edition 2024. The default facade
+furnace-rs supports Rust 1.94 and uses Rust edition 2024. The default facade
 enables HTTP and logging with the Tokio runtime. For feature combinations, see the
-[facade README](crates/mads/README.md).
+[facade README](crates/furnace-rs/README.md).
 
 ## Conventional configuration and HTTP
 
-Only `Mads::burn` loads conventional configuration. It reads the process
+Only `Furnace::burn` loads conventional configuration. It reads the process
 current working directory in this order:
 
 1. optional `.env`, used only for interpolation;
-2. optional `mads.toml` as ordinary configuration;
-3. final scalar `MADS_*` environment overrides.
+2. optional `furnace.toml` as ordinary configuration;
+3. final scalar `FURNACE_*` environment overrides.
 
 Process variables win during `${NAME}` interpolation, dotenv loading never
-mutates the process environment, `MADS_SERVER__HOST` maps to `server.host`, and
-`MADS_SERVER__PORT` maps to `server.port`. Both files may be absent; a present
-unreadable or malformed file is a bootstrap failure. MADS does not search
+mutates the process environment, `FURNACE_SERVER__HOST` maps to `server.host`, and
+`FURNACE_SERVER__PORT` maps to `server.port`. Both files may be absent; a present
+unreadable or malformed file is a bootstrap failure. FURNACE does not search
 parent directories or `CARGO_MANIFEST_DIR`.
 
 ```toml
-# mads.toml
+# furnace.toml
 [server]
 host = "127.0.0.1" # default
 port = 3000        # default
@@ -208,7 +208,7 @@ Use `#[derive(serde::Deserialize, Input)]` with `ValidatedJson<T>`,
 `body`, `query`, or `path` source, and invoke a handler only on valid input.
 
 ```rust,no_run
-use mads::prelude::*;
+use furnace-rs::prelude::*;
 
 #[derive(serde::Deserialize, Input)]
 struct CreateUser {
@@ -237,7 +237,7 @@ manually for complete control. Validators run in source order; nested values
 follow declaration, index, and lexical map-key order.
 
 Email follows the practical default Zod syntax policy on the unmodified
-string; MADS does not trim, normalize, perform DNS checks, or claim full-RFC
+string; FURNACE does not trim, normalize, perform DNS checks, or claim full-RFC
 mailbox validation. Numeric bounds are inclusive, while `positive` and
 `negative` are strict.
 
@@ -279,7 +279,7 @@ Validation returns status 422 with the fixed safe envelope:
 ```
 
 Serde conversion remains authoritative and can report its first conversion
-issue; after successful deserialization MADS aggregates independent validation
+issue; after successful deserialization FURNACE aggregates independent validation
 issues. Rejected values never appear in built-in issues. Validated JSON keeps
 415 unsupported-media-type and 413 body-limit semantics in the standard error
 envelope.
@@ -294,7 +294,7 @@ The `http` feature exports the seven standard errors: `BadRequest` (400),
 `ValidationError` (422), and `InternalError` (500). They use one
 `{ "error": { "code", "message" } }` envelope; validation alone adds ordered
 issues. Internal errors always render `internal server error` and retain their
-source only for server-side error chaining. MADS-owned Passport and cookie
+source only for server-side error chaining. FURNACE-owned Passport and cookie
 failures use this envelope; Passport authentication rejection retains
 `WWW-Authenticate: Bearer`. Native Axum responses remain native.
 
@@ -308,7 +308,7 @@ failures use this envelope; Passport authentication rejection retains
 | `ValidationError` | 422 | `validation_error` | fixed `input validation failed` |
 | `InternalError` | 500 | `internal` | fixed `internal server error` |
 
-MADS fixes its own Passport messages to `authentication was rejected` or
+FURNACE fixes its own Passport messages to `authentication was rejected` or
 `access was denied`, malformed cookies to `cookie request is malformed`,
 unsupported validated JSON content types to
 `content type must be application/json`, payload overflow to
@@ -327,7 +327,7 @@ new loader or global type discovery. Derive a named configuration struct and
 request it explicitly through `Config::parse`:
 
 ```rust,no_run
-use mads::prelude::*;
+use furnace-rs::prelude::*;
 
 #[derive(Configuration)]
 #[config(prefix = "app")]
@@ -340,7 +340,7 @@ struct AppConfig {
 }
 
 #[element]
-fn app_config(config: Config) -> mads::core::Result<AppConfig> {
+fn app_config(config: Config) -> furnace-rs::core::Result<AppConfig> {
     Ok(config.parse()?)
 }
 ```
@@ -363,7 +363,7 @@ remain outside the existing flattened `Config` shape.
 The provider makes parsing a startup requirement only when the selected graph
 uses it: failure occurs before lifecycle startup and listener binding. The
 conventional source order is unchanged: optional `.env` for interpolation,
-optional `mads.toml`, then final scalar `MADS_*` overrides. Only an entire
+optional `furnace.toml`, then final scalar `FURNACE_*` overrides. Only an entire
 `${NAME}` scalar/array element is interpolated; process variables win over
 dotenv, and dotenv is not a configuration source. `Secret<T>` exposes a value
 only through `.expose()` or `.into_exposed()`; ordinary `Display` and `Debug`
@@ -372,13 +372,13 @@ always print `[REDACTED]`.
 ## Low-level builder
 
 Use the builder when configuration, hooks, binding, or router
-composition must be explicit. It never loads `.env`, `mads.toml`, or `MADS_*`
+composition must be explicit. It never loads `.env`, `furnace.toml`, or `FURNACE_*`
 on its own. The explicit address overrides `[server]` binding and may use port
 zero; merge native Axum routes before passing the raw router to `serve_router`.
 
 ```rust,ignore
-let mut builder = Mads::builder_with_config(config);
-builder.root::<AppModule>()?;
+let mut builder = Furnace::builder_with_config(config);
+builder.root::<AppCauldron>()?;
 // builder.lifecycle_hook(MyHook);
 let application = builder.build().await?;
 let router = build_router(&application)?.merge(native_router);
@@ -386,30 +386,30 @@ serve_router(application, router, "127.0.0.1:0").await?;
 ```
 
 For direct in-process router use, call `configure_router(&application, router)`
-after the merge. A builder without `root::<AppModule>()` intentionally retains
+after the merge. A builder without `root::<AppCauldron>()` intentionally retains
 the complete-catalog compatibility behavior.
 
 ## Native database provisioning
 
-Database support is not a `mads` or `mads-common` feature. Add the connector
+Database support is not a `furnace-rs` or `furnace-rs-common` feature. Add the connector
 explicitly and import its global module in your application root:
 
 ```toml
-mads-persistence = { version = "0.9.2", features = ["sea-orm-postgres"] }
+furnace-rs-persistence = { version = "0.9.2", features = ["sea-orm-postgres"] }
 ```
 
 ```rust,ignore
-use mads_persistence::sea_orm::{DatabaseConnection, DatabaseModule};
+use furnace_rs_persistence::sea_orm::{DatabaseConnection, DatabaseCauldron};
 
-#[mads::furnace]
-struct AppModule;
-impl mads::Furnace for AppModule {
-    fn register(self) -> mads::FurnaceRegistration<Self> {
-        self.import(DatabaseModule).provide::<UserRepository>()
+#[furnace-rs::cauldron]
+struct AppCauldron;
+impl furnace-rs::Cauldron for AppCauldron {
+    fn register(self) -> furnace-rs::CauldronRegistration<Self> {
+        self.import(DatabaseCauldron).provide::<UserRepository>()
     }
 }
 
-#[mads::element]
+#[furnace-rs::element]
 fn repository(database: DatabaseConnection) -> UserRepository {
     UserRepository::new(database)
 }
@@ -419,8 +419,8 @@ For an explicit connection, `DatabaseFactory::provide` returns the native
 `DatabaseConnection` on success or a typed `PersistenceError` on failure:
 
 ```rust,ignore
-use mads_persistence::{DatabaseFactory, PersistenceResult};
-use mads_persistence::sea_orm::{DatabaseConnection, SeaOrmPostgres};
+use furnace_rs_persistence::{DatabaseFactory, PersistenceResult};
+use furnace_rs_persistence::sea_orm::{DatabaseConnection, SeaOrmPostgres};
 
 async fn connect(url: String) -> PersistenceResult<DatabaseConnection> {
     DatabaseFactory.provide(SeaOrmPostgres::new(url)).await
@@ -429,8 +429,8 @@ async fn connect(url: String) -> PersistenceResult<DatabaseConnection> {
 
 The imported module checks the connection before serving and closes it on
 graceful shutdown. SeaORM owns entities, queries, transactions, and migrations;
-MADS does not run or generate migrations. See the
-[persistence guide](docs/mads-persistence.md).
+FURNACE does not run or generate migrations. See the
+[persistence guide](docs/furnace-rs-persistence.md).
 
 `serve(application, "127.0.0.1:3000")` remains the explicit generated-router
 escape hatch. Its address overrides automatic server binding; use
@@ -439,7 +439,7 @@ routes.
 
 ## Passport configuration and JWT profiles
 
-`Mads::burn` supplies the standard conventional source order; the low-level
+`Furnace::burn` supplies the standard conventional source order; the low-level
 builder stays explicit. Dotenv sources provide interpolation values, and
 ordinary sources merge from first to last; a later scalar or string array
 replaces an earlier value at the same key completely. Process variables override
@@ -448,12 +448,12 @@ arrays such as `algorithms` and `audiences` belong in TOML or a programmatic
 `ConfigDocument`/`MapSource`.
 
 ```toml
-# mads.toml
+# furnace.toml
 [passport]
 secret = "${JWT_SECRET}"
 algorithms = ["HS256"]
 issuer = "https://auth.example.com"
-audiences = ["mads-api"]
+audiences = ["furnace-rs-api"]
 ```
 
 Simple `secret` mode permits one HMAC algorithm: HS256 by default, or one of
@@ -476,7 +476,7 @@ algorithm = "RS256"
 public_key_file = "keys/previous-public.pem"
 ```
 
-MADS supports HS256/384/512, RS256/384/512, and ES256/384. The configured
+FURNACE supports HS256/384/512, RS256/384/512, and ES256/384. The configured
 allowlist—not an untrusted token header—selects eligible algorithms, and every
 named key is bound to one algorithm. Relative paths from TOML resolve beside
 that TOML file; paths from environment or programmatic sources resolve from the
@@ -484,7 +484,7 @@ process working directory.
 
 ```rust,ignore
 use std::time::Duration;
-use mads::prelude::*;
+use furnace-rs::prelude::*;
 
 let access = jwt.sign(
     UserClaims { user_id: 7 },
@@ -598,36 +598,36 @@ Ok((jar.add(cookie), Json(response)))
 ```
 
 For native Axum routes, apply a typed `PassportGuard<P>` Tower layer. This is a
-runtime escape hatch, not static MADS guard metadata, so it cannot activate JWT
+runtime escape hatch, not static FURNACE guard metadata, so it cannot activate JWT
 auto-configuration. Before `PassportGuard::build()`, a managed provider must
 directly require `JwtService`, or the builder must explicitly provide a
-concrete `JwtService`; otherwise construction fails with `MADS131`.
+concrete `JwtService`; otherwise construction fails with `FURNACE131`.
 
 See the complete [Passport/JWT example](docs/examples/passport_jwt.md) and the
 [v0.5.5 security and release notes](docs/importance/version_0.5.5/passport-jwt-and-cookies.md).
 
 ## A typed HTTP route
 
-`#[mads::routes]` records immutable metadata and emits a typed registration
-adapter. `#[mads::controller]` resolves the managed controller once while the
+`#[furnace-rs::routes]` records immutable metadata and emits a typed registration
+adapter. `#[furnace-rs::controller]` resolves the managed controller once while the
 router is built; handlers do not receive manual `State<AppState>` or perform
 per-request provider resolution.
 
 ```rust,no_run
-use mads::prelude::*;
+use furnace-rs::prelude::*;
 
 #[derive(Clone, serde::Serialize)]
 struct User {
     id: u64,
 }
 
-#[mads::routes(prefix = "/readme-users")]
+#[furnace-rs::routes(prefix = "/readme-users")]
 trait UserRoutes {
-    #[mads::get("/:id")]
+    #[furnace-rs::get("/:id")]
     async fn get_user(&self, id: Path<u64>) -> HttpResult<Json<User>>;
 }
 
-#[mads::controller(routes = [UserRoutes])]
+#[furnace-rs::controller(routes = [UserRoutes])]
 struct UserController;
 
 impl UserRoutes for UserController {
@@ -636,15 +636,15 @@ impl UserRoutes for UserController {
     }
 }
 
-#[furnace]
-struct AppModule;
-impl Furnace for AppModule {
-    fn register(self) -> FurnaceRegistration<Self> { self.controller::<UserController>() }
+#[cauldron]
+struct AppCauldron;
+impl Cauldron for AppCauldron {
+    fn register(self) -> CauldronRegistration<Self> { self.controller::<UserController>() }
 }
 
-#[mads::main]
+#[furnace-rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::burn::<AppModule>().await
+    Furnace::burn::<AppCauldron>().await
 }
 ```
 
@@ -653,12 +653,12 @@ async fn main() -> Result<(), HttpRuntimeError> {
 The prelude exports `Path<T>`, `Query<T>`, `Json<T>`, `Header<T>`, `Request`,
 `HttpResult<T>`, `Created<T>`, `NoContent`, `build_router`, `configure_router`,
 `serve`, and `serve_router`.
-`mads::common::axum` remains the native Axum escape hatch for extractors,
+`furnace-rs::common::axum` remains the native Axum escape hatch for extractors,
 responses, routers, middleware, and Tower composition.
 
-MADS route metadata uses `/:parameter`; the validated adapter translates it to
+FURNACE route metadata uses `/:parameter`; the validated adapter translates it to
 Axum 0.8 syntax only while registering the route. Invalid metadata and
-conflicts fail with `MADS030` before router construction. GET also handles
+conflicts fail with `FURNACE030` before router construction. GET also handles
 HEAD, OPTIONS is not synthesized, static routes win over parameter routes, and
 trailing slashes remain strict. `build_router(&application)` returns the raw
 generated router; merge native routes before `configure_router` or
@@ -668,19 +668,19 @@ listener.
 
 ## Benchmarks
 
-The current benchmark suite covers native Axum/MADS throughput and
+The current benchmark suite covers native Axum/FURNACE throughput and
 process-start-to-ready comparisons with Axum, Go/Gin, and NestJS/Fastify.
 
 | Application | Startup P50 | Startup P95 |
 | --- | ---: | ---: |
 | Native Axum | 21 ms | 30 ms |
 | Go/Gin | 22 ms | 29 ms |
-| MADS | 22 ms | 30 ms |
+| FURNACE | 22 ms | 30 ms |
 | NestJS/Fastify | 428 ms | 443 ms |
 
 The startup comparison uses 1,000 release-build starts per application and an
 equivalent PostgreSQL readiness check. In the exploratory throughput suite,
-every native Axum/MADS saturation range overlaps, while both sustain the fixed
+every native Axum/FURNACE saturation range overlaps, while both sustain the fixed
 1,000 requests/second target with closely grouped latency.
 
 See [BENCHMARK.md](BENCHMARK.md) for the complete results, methodology,
@@ -690,7 +690,7 @@ limitations, resource measurements, and interpretation guidance.
 
 Version 0.9.0 includes rooted module scope, conventional startup, CORS,
 native router composition, typed input validation, the seven REST errors,
-explicit typed configuration and redacted secrets, focused MADS macro
+explicit typed configuration and redacted secrets, focused FURNACE macro
 diagnostics, Cargo-native run/dev, compiled route/graph/doctor inspection,
 version-1 finite-command JSON, opt-in native SeaORM persistence, and the
 offline atomic minimal-project generator. It preserves the low-level builder,
@@ -721,32 +721,32 @@ cargo +1.94.0 test --locked --workspace --all-features
 ```
 
 CI also provisions PostgreSQL 16 and runs the ignored database suites plus the
-85% line-coverage gate. To run those locally, set `MADS_TEST_DATABASE_URL` to a
+85% line-coverage gate. To run those locally, set `FURNACE_TEST_DATABASE_URL` to a
 PostgreSQL 16 database and use the commands in the [v0.5 requirements](docs/importance/version_0.5/auto-configuration.md).
 
 ## License
 
-MADS.rs is licensed under either the [Apache License 2.0](LICENSE-APACHE) or
+furnace-rs is licensed under either the [Apache License 2.0](LICENSE-APACHE) or
 the [MIT License](LICENSE-MIT), at your option.
 
 ## Focused tests
 
-Add `mads-testing = "=0.9.2"` under `[dev-dependencies]`. Annotate an async,
-zero-argument test function with `#[mads::test]`; Cargo runs it without a separate
+Add `furnace-rs-testing = "=0.9.2"` under `[dev-dependencies]`. Annotate an async,
+zero-argument test function with `#[furnace-rs::test]`; Cargo runs it without a separate
 Tokio dependency. The local `test_fixture()` builds one registered subject's
 dependency chain without module setup.
 
 ```rust
-#[mads::test]
+#[furnace-rs::test]
 async fn controller_returns_ok() {
     test_fixture()
-        .mock_database(mads_testing::sea_orm::MockDatabase::new(
-            mads_testing::sea_orm::DbBackend::Sqlite,
+        .mock_database(furnace_rs_testing::sea_orm::MockDatabase::new(
+            furnace_rs_testing::sea_orm::DbBackend::Sqlite,
         ))
         .controller::<UserController>()
         .run(|client| async move {
             client.get("/users").send().await.unwrap()
-                .assert_status(mads_testing::http_types::StatusCode::OK);
+                .assert_status(furnace_rs_testing::http_types::StatusCode::OK);
         })
         .await
         .unwrap();
@@ -757,5 +757,5 @@ Use `.subject::<UserService>()` and `context.resolve::<UserService>()` for direc
 service tests. Database dependencies require an explicit SQLite SeaORM
 `MockDatabase`; it queues scripted results and never opens a production
 connection. `run` awaits lifecycle shutdown on completion and unwinding assertion
-panics. See the [testing guide](crates/mads-testing/README.md) for complete service
+panics. See the [testing guide](crates/furnace-rs-testing/README.md) for complete service
 and controller examples, supplies, and response assertions.

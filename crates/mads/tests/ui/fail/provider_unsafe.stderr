@@ -1,5 +1,0 @@
-error: `#[mads::element]` does not support unsafe functions
- --> tests/ui/fail/provider_unsafe.rs:4:1
-  |
-4 | unsafe fn value() -> String {
-  | ^^^^^^

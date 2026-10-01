@@ -29,8 +29,8 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Check persistence feature boundaries
         run: |
-          cargo check -p mads-persistence --no-default-features
-          cargo check -p mads-persistence --no-default-features --features sea-orm-postgres
+          cargo check -p furnace-rs-persistence --no-default-features
+          cargo check -p furnace-rs-persistence --no-default-features --features sea-orm-postgres
       - name: Test
         run: cargo test --locked --workspace --all-features
       - name: Test documentation
@@ -55,13 +55,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Test CLI parser, JSON, paths, scaffold, and processes
         run: |
-          cargo test -p mads-cli --lib command::tests -- --test-threads=1
-          cargo test -p mads-cli --test json_cli -- --test-threads=1
-          cargo test -p mads-cli --test json_cli model_serializes_nullable_diagnostics_and_normalized_locations -- --test-threads=1
-          cargo test -p mads-cli --test scaffold_cli -- --test-threads=1
-          cargo test -p mads-cli --lib scaffold::publish::tests::destination_race_preserves_the_competing_directory_and_cleans_staging -- --test-threads=1
-          cargo test -p mads-cli --test inspection_cli a_binary_without_standard_run_is_killed_and_diagnosed -- --test-threads=1
-          cargo test -p mads-cli --test dev_cli real_dev_loop -- --test-threads=1
+          cargo test -p furnace-rs-cli --lib command::tests -- --test-threads=1
+          cargo test -p furnace-rs-cli --test json_cli -- --test-threads=1
+          cargo test -p furnace-rs-cli --test json_cli model_serializes_nullable_diagnostics_and_normalized_locations -- --test-threads=1
+          cargo test -p furnace-rs-cli --test scaffold_cli -- --test-threads=1
+          cargo test -p furnace-rs-cli --lib scaffold::publish::tests::destination_race_preserves_the_competing_directory_and_cleans_staging -- --test-threads=1
+          cargo test -p furnace-rs-cli --test inspection_cli a_binary_without_standard_run_is_killed_and_diagnosed -- --test-threads=1
+          cargo test -p furnace-rs-cli --test dev_cli real_dev_loop -- --test-threads=1
 
   jwt-platform:
     name: JWT platform (${{ matrix.os }})
@@ -77,9 +77,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Check JWT-only feature
-        run: cargo check -p mads-common --no-default-features --features jwt --locked
+        run: cargo check -p furnace-rs-common --no-default-features --features jwt --locked
       - name: Test JWT algorithms and key rotation
-        run: cargo test -p mads-common --no-default-features --features jwt --test jwt_algorithms --test jwt_keyring --test jwt_rotation --test jwt_service --locked
+        run: cargo test -p furnace-rs-common --no-default-features --features jwt --test jwt_algorithms --test jwt_keyring --test jwt_rotation --test jwt_service --locked
       - name: Test consumer with both crypto backends enabled
         run: cargo run --manifest-path tests/jwt-dual-backend/Cargo.toml
 
@@ -103,7 +103,7 @@ jobs:
       - name: Resolve and test minimum SeaORM version
         run: |
           cargo update -p sea-orm --precise 2.0.0
-          cargo test -p mads-persistence --features sea-orm-postgres
+          cargo test -p furnace-rs-persistence --features sea-orm-postgres
 
   postgres:
     name: PostgreSQL integration
@@ -123,12 +123,12 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      MADS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/mads_test
+      FURNACE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/mads_test
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --locked -p mads-persistence --features sea-orm-postgres --test postgres -- --ignored --test-threads=1
+      - run: cargo test --locked -p furnace-rs-persistence --features sea-orm-postgres --test postgres -- --ignored --test-threads=1
 
   coverage:
     name: Coverage
@@ -148,7 +148,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      MADS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/mads_test
+      FURNACE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/mads_test
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

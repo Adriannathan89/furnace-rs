@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
 use super::{
     repository::DemoUserRepository,
@@ -17,7 +17,7 @@ struct DemoConfig {
 
 // Provider: binds each trait to the implementation used by this application.
 #[element]
-pub fn user_repository(config: Config) -> mads::core::Result<Arc<dyn UserRepository>> {
+pub fn user_repository(config: Config) -> furnace_rs::core::Result<Arc<dyn UserRepository>> {
     let settings: DemoConfig = config.parse()?;
     Ok(Arc::new(DemoUserRepository::new(
         settings.username,

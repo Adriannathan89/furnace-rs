@@ -3,13 +3,13 @@ mod model;
 mod repository;
 mod service;
 
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
-#[furnace]
-pub struct PostModule;
+#[cauldron]
+pub struct PostCauldron;
 
-impl mads::core::Furnace for PostModule {
-    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+impl furnace_rs::core::Cauldron for PostCauldron {
+    fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
         self.provide::<service::PostService>()
             .provide::<repository::PostRepository>()
             .controller::<controller::PostController>()

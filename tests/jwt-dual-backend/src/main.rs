@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use mads_common::core::{ConfigBuilder, MapSource};
-use mads_common::{JwtService, JwtSignOptions, JwtValidation};
+use furnace_rs_common::core::{ConfigBuilder, MapSource};
+use furnace_rs_common::{JwtService, JwtSignOptions, JwtValidation};
 
 fn main() {
     let config = ConfigBuilder::new()

@@ -1,5 +1,0 @@
-error: `#[mads::furnace]` supports only non-generic unit structs with no arguments; declare imports and global status in `Furnace::register`
- --> tests/ui/fail/module_unknown_argument.rs:3:11
-  |
-3 | #[furnace(imports = [])]
-  |           ^^^^^^^^^^^^

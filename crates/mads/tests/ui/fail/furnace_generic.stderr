@@ -1,5 +1,0 @@
-error: `#[mads::furnace]` supports only non-generic unit structs with no arguments; declare imports and global status in `Furnace::register`
- --> tests/ui/fail/furnace_generic.rs:2:17
-  |
-2 | struct AppModule<T>;
-  |                 ^^^

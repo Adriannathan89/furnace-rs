@@ -1,0 +1,7 @@
+[package]
+name = "brand-renamed-consumer"
+version = "0.0.0"
+edition = "2024"
+[dependencies]
+framework = { package = "furnace-rs", path = "../../..", default-features = false }
+[workspace]

@@ -1,5 +1,0 @@
-error: `#[mads::test]` does not support function arguments
- --> tests/ui-test-attribute/arguments.rs:2:20
-  |
-2 | async fn arguments(value: u32) {}
-  |                    ^^^^^

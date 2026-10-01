@@ -1,0 +1,5 @@
+error: route prefix must not end with `/`; use `/` only for the root route
+ --> tests/ui/fail/routes_ambiguous_path.rs:1:31
+  |
+1 | #[furnace_rs::routes(prefix = "/users/")]
+  |                               ^^^^^^^^^

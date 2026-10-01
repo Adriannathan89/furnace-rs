@@ -1,0 +1,240 @@
+//! Development commands for running and inspecting furnace-rs applications.
+//!
+//! The `furnace` executable exposes the development command surface and
+//! preserves application arguments supplied after `--`. CLI syntax failures
+//! exit with 2; configuration, build, and operational failures exit with 1.
+
+#![deny(missing_docs)]
+#![forbid(unsafe_code)]
+
+#[allow(dead_code)]
+mod cargo;
+mod command;
+mod dev;
+#[allow(dead_code)]
+mod dev_state;
+#[allow(dead_code)]
+mod diagnostic;
+mod inspection;
+/// Versioned finite-command output records and serializers.
+pub mod output;
+mod process;
+#[allow(dead_code)]
+mod project;
+mod render;
+/// Project-name validation and bundled minimal-project templates.
+pub mod scaffold;
+#[allow(dead_code)]
+mod watch;
+
+use std::{ffi::OsString, io, path::PathBuf, process::ExitCode};
+
+use command::{Command, InspectionCommand, NewCommand, OutputFormat, ParseError, ParseFailure};
+use dev::run_dev;
+use diagnostic::{CliError, FURNACE201, FURNACE202};
+use inspection::{inspect_application, inspect_application_silently};
+use project::CargoProject;
+use scaffold::{GENERATED_FILES, publish_project, render_project};
+
+/// Runs the furnace-rs CLI using the process arguments.
+pub fn run() -> ExitCode {
+    furnace::core::runtime::block_on(run_with(
+        std::env::args_os().skip(1).collect(),
+        std::env::current_dir(),
+    ))
+}
+
+async fn run_with(arguments: Vec<OsString>, current_dir: io::Result<PathBuf>) -> ExitCode {
+    let invocation = match command::parse(&arguments) {
+        Ok(invocation) => invocation,
+        Err(error) => {
+            let format = error.format.unwrap_or_default();
+            if let Err(output_error) = render_parse_error(&error) {
+                if format == OutputFormat::Human {
+                    let _ = output::write_human(String::new(), format!("{output_error}\n"));
+                }
+                return ExitCode::from(1);
+            }
+            return ExitCode::from(2);
+        }
+    };
+
+    let format = invocation.format;
+    match run_command(invocation.command, format, current_dir).await {
+        Ok(exit_code) => exit_code,
+        Err(error) => {
+            if format == OutputFormat::Human {
+                let _ = output::write_human(String::new(), format!("{error}\n"));
+            }
+            ExitCode::from(1)
+        }
+    }
+}
+
+async fn run_command(
+    command: Command,
+    format: OutputFormat,
+    current_dir: io::Result<PathBuf>,
+) -> Result<ExitCode, CliError> {
+    match command {
+        Command::Help => {
+            output::write_human(format!("{}\n", help()), String::new())?;
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Version => {
+            output::write_human(
+                format!("furnace {}\n", env!("CARGO_PKG_VERSION")),
+                String::new(),
+            )?;
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Run(command) => {
+            let root = current_dir.map_err(current_directory_error)?;
+            let project = CargoProject::load(root)?;
+            let target = project.resolve_application(&command.target)?;
+            let built = cargo::build_application(&target).await?;
+            let status = process::run_application(&built, &command.arguments).await?;
+
+            match status.code() {
+                Some(code @ 0..=255) => Ok(ExitCode::from(code as u8)),
+                _ => Err(CliError::new(
+                    FURNACE202,
+                    "Application process failed",
+                    "the selected application terminated without an ordinary exit code",
+                )),
+            }
+        }
+        Command::Dev(command) => {
+            let root = current_dir.map_err(current_directory_error)?;
+            run_dev(command, &root).await
+        }
+        Command::New(command) => run_new_command(command, format, current_dir),
+        Command::Inspect(command) => run_inspection_command(command, format, current_dir).await,
+    }
+}
+
+fn run_new_command(
+    command: NewCommand,
+    format: OutputFormat,
+    current_dir: io::Result<PathBuf>,
+) -> Result<ExitCode, CliError> {
+    let project_name = command.name.to_string();
+    let result = (|| {
+        let invocation_directory = current_dir.map_err(|error| {
+            CliError::scaffolding("could not determine the invocation directory", error)
+        })?;
+        let rendered = render_project(&command.name).map_err(template_error)?;
+        publish_project(&invocation_directory, &command.name, &rendered).map_err(CliError::from)?;
+
+        Ok::<_, CliError>(output::model::NewData::new(
+            &project_name,
+            &project_name,
+            GENERATED_FILES
+                .iter()
+                .map(|path| (*path).to_owned())
+                .collect(),
+        ))
+    })();
+
+    let outcome = match result {
+        Ok(data) => output::Outcome::new(
+            output::model::Envelope::success("new", output::model::CommandData::New(data)),
+            output::HumanOutput::streams(
+                format!("Created project: {project_name}\n\ncd {project_name}\nfurnace dev\n"),
+                String::new(),
+            ),
+        ),
+        Err(error) => {
+            let diagnostic = output::model::CliDiagnostic::from_error(&error, None);
+            let outcome = output::Outcome::new(
+                output::model::Envelope::failure(Some("new".to_owned()), None, vec![diagnostic]),
+                output::HumanOutput::stderr(format!("{error}\n")),
+            );
+            output::write(format, &outcome)?;
+            return Ok(ExitCode::from(1));
+        }
+    };
+    output::write(format, &outcome)?;
+    Ok(ExitCode::SUCCESS)
+}
+
+fn template_error(error: scaffold::TemplateError) -> CliError {
+    CliError::new(error.code(), error.title(), error.to_string())
+}
+
+async fn run_inspection_command(
+    command: InspectionCommand,
+    format: OutputFormat,
+    current_dir: io::Result<PathBuf>,
+) -> Result<ExitCode, CliError> {
+    let kind = command.kind;
+    let result = async {
+        let root = current_dir.map_err(current_directory_error)?;
+        let project = CargoProject::load(root)?;
+        let target = project.resolve_application(&command.target)?;
+        let built = cargo::build_application(&target).await?;
+        let package_root = built.target().package().package_root().to_path_buf();
+        let report = match format {
+            OutputFormat::Human => inspect_application(&built, kind).await?,
+            OutputFormat::Json => inspect_application_silently(&built, kind).await?,
+        };
+        Ok::<_, CliError>((report, package_root))
+    }
+    .await;
+
+    match result {
+        Ok((report, package_root)) => {
+            let exit_code = if report.failed {
+                ExitCode::from(1)
+            } else {
+                ExitCode::SUCCESS
+            };
+            let outcome = inspection::inspection_outcome(&report, &package_root);
+            output::write(format, &outcome)?;
+            Ok(exit_code)
+        }
+        Err(error) => {
+            let outcome = inspection::inspection_failure_outcome(kind, &error);
+            output::write(format, &outcome)?;
+            Ok(ExitCode::from(1))
+        }
+    }
+}
+
+fn current_directory_error(error: io::Error) -> CliError {
+    CliError::new(
+        FURNACE201,
+        "Cargo project could not be loaded",
+        "could not determine the invocation directory",
+    )
+    .with_source(error)
+}
+
+fn render_parse_error(failure: &ParseFailure) -> Result<(), CliError> {
+    let diagnostic = parse_diagnostic(&failure.error);
+    let command = failure.command.map(output::command_name).map(str::to_owned);
+    let human_stderr = if matches!(&failure.error, ParseError::InvalidProjectName(_)) {
+        format!("{diagnostic}\n")
+    } else {
+        format!("error: {}\n{}\n", failure.error, help())
+    };
+    let outcome = output::Outcome::syntax_failure(
+        command,
+        output::model::CliDiagnostic::from_error(&diagnostic, None),
+        human_stderr,
+    );
+    output::write(failure.format.unwrap_or_default(), &outcome)
+}
+
+fn parse_diagnostic(error: &ParseError) -> CliError {
+    match error {
+        ParseError::InvalidProjectName(error) => {
+            CliError::new(error.code(), error.title(), error.to_string())
+        }
+        _ => CliError::syntax(error),
+    }
+}
+
+const fn help() -> &'static str {
+    "Usage: furnace <command> [options]\n\nCommands:\n  run       Build and run a FURNACE application\n  dev       Watch, rebuild, and restart a FURNACE application\n  new       Create a minimal FURNACE application\n  routes    Inspect application routes\n  graph     Inspect the application graph\n  doctor    Diagnose application configuration and metadata\n\nApplication selection:\n  -p, --package <package>\n      --bin <binary>"
+}

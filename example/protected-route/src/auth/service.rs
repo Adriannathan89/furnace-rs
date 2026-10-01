@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
 use super::{
     model::{User, UserClaims, UserPrincipal},

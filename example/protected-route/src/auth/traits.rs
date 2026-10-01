@@ -1,4 +1,4 @@
-use mads::prelude::JwtResult;
+use furnace_rs::prelude::JwtResult;
 
 use super::model::User;
 

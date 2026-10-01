@@ -1,5 +1,5 @@
-use mads::prelude::*;
-use mads_persistence::sea_orm::DatabaseConnection;
+use furnace_rs::prelude::*;
+use furnace_rs_persistence::sea_orm::DatabaseConnection;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, QueryOrder};
 
 use super::model::{Post, entity};

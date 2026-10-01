@@ -53,9 +53,9 @@ class BenchmarkMathTests(unittest.TestCase):
     def test_connect_timeout_case_rejects_failure_without_accepted_connection(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            binary = root / "example/posts-crud/target/debug/mads-example-posts-crud"
+            binary = root / "example/posts-crud/target/debug/furnace-rs-example-posts-crud"
             binary.parent.mkdir(parents=True)
-            binary.write_text("#!/usr/bin/env python3\nimport sys\nprint('MADS140 kind: Connection')\nsys.exit(1)\n")
+            binary.write_text("#!/usr/bin/env python3\nimport sys\nprint('FURNACE140 kind: Connection')\nsys.exit(1)\n")
             binary.chmod(0o755)
             with patch.object(run, "ROOT", root):
                 result = run.database_connect_timeout_case("debug")
@@ -107,10 +107,10 @@ class BenchmarkMathTests(unittest.TestCase):
                 target.shutdown()
                 worker.join(timeout=1)
 
-    @unittest.skipUnless(os.environ.get("MADS_TEST_BENCH_DATABASE_URL"), "requires isolated PostgreSQL")
+    @unittest.skipUnless(os.environ.get("FURNACE_TEST_BENCH_DATABASE_URL"), "requires isolated PostgreSQL")
     def test_postgres_table_lock_is_visible_and_released(self):
         self.assertTrue(hasattr(run, "PostgresTableLock"))
-        url = os.environ["MADS_TEST_BENCH_DATABASE_URL"]
+        url = os.environ["FURNACE_TEST_BENCH_DATABASE_URL"]
 
         def lock_count():
             result = subprocess.run(
@@ -126,26 +126,26 @@ class BenchmarkMathTests(unittest.TestCase):
         self.assertEqual(lock_count(), 0)
 
     @unittest.skipUnless(
-        os.environ.get("MADS_TEST_BENCH_DATABASE_URL") and os.environ.get("MADS_TEST_BENCH_APP_ROOT"),
+        os.environ.get("FURNACE_TEST_BENCH_DATABASE_URL") and os.environ.get("FURNACE_TEST_BENCH_APP_ROOT"),
         "requires isolated PostgreSQL and a built posts example",
     )
     def test_http_survives_query_timeout_and_recovers(self):
         self.assertTrue(hasattr(run, "database_query_timeout_recovery_case"))
-        with patch.object(run, "ROOT", Path(os.environ["MADS_TEST_BENCH_APP_ROOT"])):
+        with patch.object(run, "ROOT", Path(os.environ["FURNACE_TEST_BENCH_APP_ROOT"])):
             result = run.database_query_timeout_recovery_case(
-                "debug", os.environ["MADS_TEST_BENCH_DATABASE_URL"]
+                "debug", os.environ["FURNACE_TEST_BENCH_DATABASE_URL"]
             )
         self.assertTrue(result["passed"], result)
 
     @unittest.skipUnless(
-        os.environ.get("MADS_TEST_BENCH_DATABASE_URL") and os.environ.get("MADS_TEST_BENCH_APP_ROOT"),
+        os.environ.get("FURNACE_TEST_BENCH_DATABASE_URL") and os.environ.get("FURNACE_TEST_BENCH_APP_ROOT"),
         "requires isolated PostgreSQL and a built posts example",
     )
     def test_http_survives_tcp_stall_and_recovers(self):
         self.assertTrue(hasattr(run, "database_tcp_stall_recovery_case"))
-        with patch.object(run, "ROOT", Path(os.environ["MADS_TEST_BENCH_APP_ROOT"])):
+        with patch.object(run, "ROOT", Path(os.environ["FURNACE_TEST_BENCH_APP_ROOT"])):
             result = run.database_tcp_stall_recovery_case(
-                "debug", os.environ["MADS_TEST_BENCH_DATABASE_URL"]
+                "debug", os.environ["FURNACE_TEST_BENCH_DATABASE_URL"]
             )
         self.assertTrue(result["passed"], result)
 

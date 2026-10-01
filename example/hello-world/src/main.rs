@@ -1,4 +1,4 @@
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
 #[routes]
 trait HelloRoutes {
@@ -15,16 +15,16 @@ impl HelloRoutes for HelloController {
     }
 }
 
-#[furnace]
-struct AppModule;
+#[cauldron]
+struct AppCauldron;
 
-impl mads::core::Furnace for AppModule {
-    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+impl furnace_rs::core::Cauldron for AppCauldron {
+    fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
         self.controller::<HelloController>()
     }
 }
 
-#[mads::main]
+#[furnace_rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::burn::<AppModule>().await
+    Furnace::burn::<AppCauldron>().await
 }

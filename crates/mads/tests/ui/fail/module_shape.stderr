@@ -1,8 +1,0 @@
-error: `#[mads::furnace]` supports only non-generic unit structs with no arguments; declare imports and global status in `Furnace::register`
- --> tests/ui/fail/module_shape.rs:4:22
-  |
-4 |   struct InvalidModule {
-  |  ______________________^
-5 | |     enabled: bool,
-6 | | }
-  | |_^

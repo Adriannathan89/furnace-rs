@@ -1,0 +1,190 @@
+//! Integration tests for invalid controller route declarations.
+
+use std::any::TypeId;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use furnace_rs::common::__private::RouterBuildContext;
+use furnace_rs::common::{
+    ControllerRouteDescriptor, HttpMethod, RouteCatalog, RouteContractDescriptor, RouteDescriptor,
+    build_router,
+};
+use furnace_rs::core::{Furnace, Result, SourceLocation};
+
+static REGISTRATIONS: AtomicUsize = AtomicUsize::new(0);
+
+struct FirstManualController;
+struct SecondManualController;
+struct CountedManualController;
+
+fn first_manual_type_id() -> TypeId {
+    TypeId::of::<FirstManualController>()
+}
+
+fn second_manual_type_id() -> TypeId {
+    TypeId::of::<SecondManualController>()
+}
+
+fn counted_manual_type_id() -> TypeId {
+    TypeId::of::<CountedManualController>()
+}
+
+fn no_op_registrar(
+    router: furnace_rs::common::axum::Router,
+    _: &RouterBuildContext<'_>,
+    _: &mut furnace_rs::common::__private::ValidatedRouteIter<'_>,
+) -> Result<furnace_rs::common::axum::Router> {
+    Ok(router)
+}
+
+fn counted_registrar(
+    router: furnace_rs::common::axum::Router,
+    _: &RouterBuildContext<'_>,
+    _: &mut furnace_rs::common::__private::ValidatedRouteIter<'_>,
+) -> Result<furnace_rs::common::axum::Router> {
+    REGISTRATIONS.fetch_add(1, Ordering::SeqCst);
+    Ok(router)
+}
+
+const FIRST_MANUAL_ROUTE: RouteDescriptor = RouteDescriptor::new(
+    HttpMethod::Get,
+    "/users",
+    "/:id",
+    "/users/:id",
+    "by_id",
+    SourceLocation::new("tests/first_controller.rs", 12, 3),
+);
+const SECOND_MANUAL_ROUTE: RouteDescriptor = RouteDescriptor::new(
+    HttpMethod::Get,
+    "/users",
+    "/:user_id",
+    "/users/:user_id",
+    "by_user_id",
+    SourceLocation::new("tests/second_controller.rs", 21, 7),
+);
+const COUNTED_MANUAL_ROUTE: RouteDescriptor = RouteDescriptor::new(
+    HttpMethod::Get,
+    "",
+    "/counted",
+    "/counted",
+    "counted",
+    SourceLocation::new("tests/counted_controller.rs", 3, 1),
+);
+const FIRST_MANUAL_CONTRACTS: &[RouteContractDescriptor] = &[RouteContractDescriptor::new(
+    "FirstRoutes",
+    &[FIRST_MANUAL_ROUTE],
+)];
+const SECOND_MANUAL_CONTRACTS: &[RouteContractDescriptor] = &[RouteContractDescriptor::new(
+    "SecondRoutes",
+    &[SECOND_MANUAL_ROUTE],
+)];
+const COUNTED_MANUAL_CONTRACTS: &[RouteContractDescriptor] = &[RouteContractDescriptor::new(
+    "CountedRoutes",
+    &[COUNTED_MANUAL_ROUTE],
+)];
+
+furnace_rs::core::__private::inventory::submit! {
+    ControllerRouteDescriptor::with_registrar(
+        "aaa::CountedManualController",
+        counted_manual_type_id,
+        COUNTED_MANUAL_CONTRACTS,
+        counted_registrar,
+    )
+}
+
+#[allow(dead_code)]
+#[furnace_rs::routes]
+trait DuplicateReadRoutes {
+    #[furnace_rs::get("/duplicate")]
+    async fn first(&self);
+}
+
+#[allow(dead_code)]
+#[furnace_rs::routes]
+trait DuplicateAdminRoutes {
+    #[furnace_rs::get("/duplicate")]
+    async fn second(&self);
+}
+
+#[furnace_rs::controller(routes = [DuplicateReadRoutes, DuplicateAdminRoutes])]
+struct DuplicateRouteController;
+
+impl DuplicateReadRoutes for DuplicateRouteController {
+    async fn first(&self) {}
+}
+
+impl DuplicateAdminRoutes for DuplicateRouteController {
+    async fn second(&self) {}
+}
+
+#[tokio::test]
+async fn router_validation_rejects_conflicts_before_any_registration() {
+    REGISTRATIONS.store(0, Ordering::SeqCst);
+    let application = Furnace::builder().build().await.unwrap();
+    let error = build_router(&application).expect_err("conflicting routes must fail bootstrap");
+
+    assert_eq!(error.code(), furnace_rs::core::FURNACE030);
+    assert!(error.to_string().contains("GET /duplicate"));
+    assert_eq!(REGISTRATIONS.load(Ordering::SeqCst), 0);
+}
+
+#[allow(dead_code)]
+#[furnace_rs::routes(prefix = "/users")]
+trait UserIdParameterRoutes {
+    #[furnace_rs::get("/:id")]
+    async fn by_id(&self);
+}
+
+#[allow(dead_code)]
+#[furnace_rs::routes(prefix = "/users")]
+trait UserNameParameterRoutes {
+    #[furnace_rs::get("/:user_id")]
+    async fn by_user_id(&self);
+}
+
+#[furnace_rs::controller(routes = [UserIdParameterRoutes, UserNameParameterRoutes])]
+struct EquivalentParameterRouteController;
+
+impl UserIdParameterRoutes for EquivalentParameterRouteController {
+    async fn by_id(&self) {}
+}
+
+impl UserNameParameterRoutes for EquivalentParameterRouteController {
+    async fn by_user_id(&self) {}
+}
+
+#[tokio::test]
+async fn controller_construction_remains_independent_of_http_validation() {
+    let mut builder = Furnace::builder();
+    builder
+        .construct::<EquivalentParameterRouteController>()
+        .await
+        .expect("metadata-only controller construction must succeed");
+
+    let error = RouteCatalog::validate().unwrap_err();
+    assert_eq!(error.code(), furnace_rs::core::FURNACE030);
+    assert!(error.to_string().contains("GET /duplicate"));
+}
+
+#[test]
+fn cross_controller_dynamic_conflicts_report_both_declarations() {
+    let first = ControllerRouteDescriptor::with_registrar(
+        "test::FirstManualController",
+        first_manual_type_id,
+        FIRST_MANUAL_CONTRACTS,
+        no_op_registrar,
+    );
+    let second = ControllerRouteDescriptor::with_registrar(
+        "test::SecondManualController",
+        second_manual_type_id,
+        SECOND_MANUAL_CONTRACTS,
+        no_op_registrar,
+    );
+
+    let error = furnace_rs::common::__private::validate_descriptors(&[&first, &second])
+        .expect_err("equivalent dynamic routes across controllers must conflict");
+
+    assert_eq!(error.code(), furnace_rs::core::FURNACE030);
+    let rendered = error.to_string();
+    assert!(rendered.contains("tests/first_controller.rs:12:3"));
+    assert!(rendered.contains("tests/second_controller.rs:21:7"));
+}

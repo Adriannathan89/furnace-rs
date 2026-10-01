@@ -1,5 +1,0 @@
-error: `#[mads::element]` supports only `#[mads::element]` and `#[mads::element(lifecycle)]`
- --> tests/ui/fail/provider_lifecycle_argument.rs:1:17
-  |
-1 | #[mads::element(other)]
-  |                 ^^^^^

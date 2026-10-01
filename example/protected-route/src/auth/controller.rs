@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
 use super::{
     model::{LoginInput, ProfileResponse, TokenResponse, UserPrincipal},

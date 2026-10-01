@@ -1,4 +1,4 @@
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
 use super::{
     model::{Post, PostInput},

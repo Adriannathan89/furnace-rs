@@ -1,0 +1,5 @@
+error: `#[furnace_rs::element(lifecycle)]` has two accepted async forms: `async fn ... -> LifecycleResource<T>` or `async fn ... -> furnace_rs_core::Result<LifecycleResource<T>>`
+ --> tests/ui/fail/provider_lifecycle_result.rs:5:1
+  |
+5 | async fn resource() -> std::result::Result<furnace_rs::core::LifecycleResource<Resource>, CustomError> {
+  | ^^^^^
