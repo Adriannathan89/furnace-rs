@@ -139,3 +139,38 @@ async fn rejects_ambiguous_selected_controller_metadata() {
     assert_eq!(error.code(), MADS030);
     assert!(error.to_string().contains("ambiguous"));
 }
+
+#[cfg(feature = "jwt")]
+mod unrelated_strategy {
+    #[derive(serde::Deserialize)]
+    pub struct Claims;
+    pub struct Strategy;
+    #[mads_common::passport_strategy(name = "unmanaged-unrelated")]
+    impl mads_common::PassportStrategy for Strategy {
+        type Claims = Claims;
+        type Principal = super::unused_guard::UnusedPrincipal;
+        const TOKEN_KIND: mads_common::JwtTokenKind = mads_common::JwtTokenKind::Access;
+        async fn validate(
+            &self,
+            _: &mads_common::PassportContext<'_>,
+            _: &mads_common::JwtClaims<Self::Claims>,
+        ) -> mads_common::PassportResult<Self::Principal> {
+            Ok(super::unused_guard::UnusedPrincipal)
+        }
+    }
+}
+
+#[cfg(feature = "jwt")]
+#[tokio::test]
+async fn selected_guard_still_requires_its_strategy() {
+    let error = error_for::<unused_guard::GuardedController>().await;
+    assert_eq!(error.code(), mads_common::MADS130);
+    assert!(error.to_string().contains("missing"));
+}
+
+#[cfg(feature = "jwt")]
+#[test]
+fn ordinary_rootless_preflight_still_rejects_invalid_catalog() {
+    let error = mads_common::PassportStrategyCatalog::preflight(&[]).unwrap_err();
+    assert_eq!(error.code(), mads_common::MADS130);
+}
