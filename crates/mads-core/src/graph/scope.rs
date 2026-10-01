@@ -86,15 +86,15 @@ pub(crate) fn select_scoped_providers(
                 if ambient {
                     continue;
                 }
-                if let Some(target_owner) = graph.owner_of(target) {
-                    if !graph.can_access(owner.type_id(), target) {
-                        diagnostics.push(Diagnostic::new(MADS009, "inaccessible furnace provider",
+                if let Some(target_owner) = graph.owner_of(target)
+                    && !graph.can_access(owner.type_id(), target)
+                {
+                    diagnostics.push(Diagnostic::new(MADS009, "inaccessible furnace provider",
                             format!("requester `{}` cannot access `{}` owned by `{}`; use an explicit export and direct import or a reachable global export",
                                 owner.type_name(), dependency.type_name(), target_owner.type_name()))
                             .with_subject(dependency.type_name()).with_location(descriptor.location())
                             .with_suggestion(format!("dependency path: {} -> {}", descriptor.type_name(), dependency.type_name())));
-                        covered_missing.push(target);
-                    }
+                    covered_missing.push(target);
                 }
             }
         }
