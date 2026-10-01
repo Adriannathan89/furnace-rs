@@ -28,6 +28,11 @@ impl EventLog {
     }
 }
 
+#[mads_core::element]
+fn event_log() -> EventLog {
+    EventLog::new()
+}
+
 struct RecordingHook {
     log: EventLog,
     name: &'static str,
@@ -62,18 +67,21 @@ impl LifecycleHook for RecordingHook {
 mod automatic {
     use super::*;
 
-    #[mads_core::module]
+    #[mads_core::furnace]
     pub struct AutomaticRoot;
+
+    impl mads_core::Furnace for AutomaticRoot {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.provide::<EventLog>()
+                .provide::<ManagedResource>()
+                .export::<ManagedResource>()
+        }
+    }
 
     #[derive(Clone)]
     pub struct ManagedResource;
 
-    #[mads_core::provider]
-    fn event_log() -> EventLog {
-        EventLog::new()
-    }
-
-    #[mads_core::provider(lifecycle)]
+    #[mads_core::element(lifecycle)]
     pub async fn managed_resource(log: EventLog) -> LifecycleResource<ManagedResource> {
         LifecycleResource::new(ManagedResource).with_infrastructure_hook(
             "test.resource",
@@ -88,8 +96,18 @@ mod automatic {
 mod failure {
     use super::*;
 
-    #[mads_core::module]
+    #[mads_core::furnace]
     pub struct FailureRoot;
+
+    impl mads_core::Furnace for FailureRoot {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.provide::<EventLog>()
+                .provide::<DroppedResource>()
+                .provide::<usize>()
+                .export::<DroppedResource>()
+                .export::<usize>()
+        }
+    }
 
     #[derive(Clone)]
     pub struct DroppedResource(Arc<DropToken>);
@@ -102,12 +120,7 @@ mod failure {
         }
     }
 
-    #[mads_core::provider]
-    fn event_log() -> EventLog {
-        EventLog::new()
-    }
-
-    #[mads_core::provider(lifecycle)]
+    #[mads_core::element(lifecycle)]
     pub async fn dropped_resource(log: EventLog) -> LifecycleResource<DroppedResource> {
         LifecycleResource::new(DroppedResource(Arc::new(DropToken))).with_infrastructure_hook(
             "test.failure",
@@ -118,7 +131,7 @@ mod failure {
         )
     }
 
-    #[mads_core::provider]
+    #[mads_core::element]
     pub fn later_failure(resource: DroppedResource) -> mads_core::Result<usize> {
         let _ = Arc::strong_count(&resource.0);
         Err(Error::new(Diagnostic::new(
@@ -130,8 +143,14 @@ mod failure {
 }
 
 mod empty {
-    #[mads_core::module]
+    #[mads_core::furnace]
     pub struct EmptyRoot;
+
+    impl mads_core::Furnace for EmptyRoot {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.provide::<super::OrdinaryValue>()
+        }
+    }
 }
 
 struct OrdinaryValue;

@@ -9,12 +9,12 @@ struct GraphRepository {
     _database: GraphDatabase,
 }
 
-#[mads_core::provider]
+#[mads_core::element]
 fn graph_database() -> GraphDatabase {
     GraphDatabase
 }
 
-#[mads_core::provider]
+#[mads_core::element]
 fn graph_repository(database: GraphDatabase) -> GraphRepository {
     GraphRepository {
         _database: database,

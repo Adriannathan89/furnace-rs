@@ -5,13 +5,19 @@ use std::any::TypeId;
 use mads_core::{MADS002, MADS003, MADS005, MADS008, Mads, ProviderVisibility, SourceLocation};
 
 mod owned {
-    #[mads_core::module]
+    #[mads_core::furnace]
     pub struct PrivateModule;
+
+    impl mads_core::Furnace for PrivateModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.provide::<Seed>().provide::<Repository>()
+        }
+    }
 
     #[derive(Clone)]
     pub struct Seed(pub u32);
 
-    #[mads_core::provider]
+    #[mads_core::element]
     fn seed() -> Seed {
         Seed(7)
     }
@@ -19,7 +25,7 @@ mod owned {
     #[derive(Clone)]
     pub struct Repository(pub u32);
 
-    #[mads_core::provider]
+    #[mads_core::element]
     fn repository(seed: Seed) -> Repository {
         Repository(seed.0)
     }
@@ -28,13 +34,19 @@ mod owned {
 mod consumer {
     use super::owned::Repository;
 
-    #[mads_core::module]
+    #[mads_core::furnace]
     pub struct ConsumerModule;
+
+    impl mads_core::Furnace for ConsumerModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.provide::<Service>()
+        }
+    }
 
     #[derive(Clone)]
     pub struct Service(pub u32);
 
-    #[mads_core::provider]
+    #[mads_core::element]
     fn service(repository: Repository) -> Service {
         Service(repository.0 + 1)
     }
@@ -42,19 +54,19 @@ mod consumer {
 
 struct Unrelated;
 
-#[mads_core::provider]
+#[mads_core::element]
 fn unrelated() -> Unrelated {
     panic!("a focused build must not construct an unrelated provider")
 }
 
 struct Ambiguous;
 
-#[mads_core::provider]
+#[mads_core::element]
 fn ambiguous_first() -> Ambiguous {
     Ambiguous
 }
 
-#[mads_core::provider]
+#[mads_core::element]
 fn ambiguous_second() -> Ambiguous {
     Ambiguous
 }
@@ -67,12 +79,12 @@ struct CycleA;
 #[derive(Clone)]
 struct CycleB;
 
-#[mads_core::provider]
+#[mads_core::element]
 fn cycle_a(_dependency: CycleB) -> CycleA {
     CycleA
 }
 
-#[mads_core::provider]
+#[mads_core::element]
 fn cycle_b(_dependency: CycleA) -> CycleB {
     CycleB
 }
@@ -289,7 +301,7 @@ async fn focus_does_not_evaluate_unrelated_auto_configuration() {
 
 #[derive(Clone)]
 struct FocusedDefault(u32);
-#[mads_core::service]
+#[mads_core::burner]
 struct DefaultConsumer {
     value: FocusedDefault,
 }

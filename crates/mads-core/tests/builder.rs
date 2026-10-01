@@ -13,26 +13,40 @@ use mads_core::{
 
 mod rooted {
     pub mod app {
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct AppModule;
+
+        impl mads_core::Furnace for AppModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<ReachableService>()
+                    .export::<ReachableService>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct ReachableService;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn reachable_service() -> ReachableService {
             ReachableService
         }
     }
 
     pub mod unreachable {
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct UnreachableModule;
+
+        impl mads_core::Furnace for UnreachableModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<UnreachableService>()
+                    .export::<UnreachableService>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct UnreachableService;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn unreachable_service() -> UnreachableService {
             UnreachableService
         }

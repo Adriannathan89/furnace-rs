@@ -1,14 +1,20 @@
 //! Integration tests for owned framework-neutral graph inspection snapshots.
 
 use mads_core::{
-    GraphInspectionSnapshot, Mads, ProviderOrigin, ProviderState, ProviderVisibility, module,
+    GraphInspectionSnapshot, Mads, ProviderOrigin, ProviderState, ProviderVisibility, furnace,
 };
 
 mod imported {
-    use mads_core::module;
+    use mads_core::furnace;
 
-    #[module]
+    #[furnace]
     pub struct RepositoryModule;
+
+    impl mads_core::Furnace for RepositoryModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            mads_core::FurnaceRegistration::new(self)
+        }
+    }
 }
 
 use imported::RepositoryModule;
@@ -19,20 +25,28 @@ struct UserService {
     _repository: UserRepository,
 }
 
-#[mads_core::provider]
+#[mads_core::element]
 fn user_repository() -> UserRepository {
     UserRepository
 }
 
-#[mads_core::provider]
+#[mads_core::element]
 fn user_service(repository: UserRepository) -> UserService {
     UserService {
         _repository: repository,
     }
 }
 
-#[module(imports = [RepositoryModule])]
+#[furnace]
 struct AppModule;
+
+impl mads_core::Furnace for AppModule {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        self.provide::<UserRepository>()
+            .provide::<UserService>()
+            .import(RepositoryModule)
+    }
+}
 
 #[test]
 fn snapshot_owns_rooted_graph_metadata_after_analysis_is_dropped() {

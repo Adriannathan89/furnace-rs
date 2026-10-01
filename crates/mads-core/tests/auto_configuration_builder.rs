@@ -43,10 +43,17 @@ mod scope_fixture {
     pub mod app {
         use super::ScopedOutput;
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct AppModule;
 
-        #[mads_core::service]
+        impl mads_core::Furnace for AppModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<ReachableConsumer>()
+                    .export::<ReachableConsumer>()
+            }
+        }
+
+        #[mads_core::burner]
         pub struct ReachableConsumer {
             _output: ScopedOutput,
         }
@@ -55,10 +62,17 @@ mod scope_fixture {
     pub mod unreachable {
         use super::ScopedOutput;
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct UnreachableModule;
 
-        #[mads_core::service]
+        impl mads_core::Furnace for UnreachableModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<UnreachableConsumer>()
+                    .export::<UnreachableConsumer>()
+            }
+        }
+
+        #[mads_core::burner]
         pub struct UnreachableConsumer {
             _output: ScopedOutput,
         }

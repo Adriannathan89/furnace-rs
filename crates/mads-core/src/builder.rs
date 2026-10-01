@@ -8,12 +8,12 @@ use crate::auto_configuration::{
 };
 use crate::{
     ApplicationContext, ApplicationGraph, AutoConfigurationReport, Catalog, Config,
-    ConstructionContext, ConstructionPlan, ConstructionStep, Diagnostic, Error, GraphAnalysis,
-    LifecycleHook, LifecycleManager, LifecycleState, MADS006, MADS008, Module, ModuleGraph,
+    ConstructionContext, ConstructionPlan, ConstructionStep, Diagnostic, Error, Furnace,
+    GraphAnalysis, LifecycleHook, LifecycleManager, LifecycleState, MADS006, MADS008, ModuleGraph,
     ProviderContribution, ProviderDescriptor, ProviderRegistry, Result,
     graph::{
         SatisfiedProvider, analyze_catalog, analyze_descriptors, build_module_graph,
-        select_focused_providers, select_scoped_providers, validate_module_catalog,
+        select_focused_providers, select_scoped_providers,
     },
 };
 
@@ -51,7 +51,7 @@ impl MadsBuilder {
 
     /// Selects the root module for scoped analysis and construction.
     #[allow(clippy::result_large_err)]
-    pub fn root<M: Module>(&mut self) -> Result<&mut Self> {
+    pub fn root<M: Furnace>(&mut self) -> Result<&mut Self> {
         if let Some((_, name)) = self.focus {
             return Err(root_already_selected_error(
                 name,
@@ -358,9 +358,6 @@ impl MadsBuilder {
         &self,
         providers: &[&'static crate::ProviderDescriptor],
     ) -> BuilderAnalysis {
-        let module_diagnostics = validate_module_catalog(&Catalog::modules())
-            .err()
-            .map_or_else(Vec::new, |error| error.diagnostics().to_vec());
         let auto_configuration = auto_configuration::analyze_parts(
             &auto_configuration::descriptors(),
             providers,
@@ -373,7 +370,6 @@ impl MadsBuilder {
         satisfied.extend(auto_configuration.virtual_satisfied);
 
         let mut public = analyze_catalog(&satisfied, &auto_configuration.covered_missing);
-        public.prepend_diagnostics(module_diagnostics);
         public.auto_configurations = auto_configuration.reports;
         public.append_diagnostics(auto_configuration.diagnostics);
 
@@ -391,7 +387,7 @@ struct ModuleRoot {
 }
 
 impl ModuleRoot {
-    fn of<M: Module>() -> Self {
+    fn of<M: Furnace>() -> Self {
         Self {
             type_id: TypeId::of::<M>(),
             type_name: std::any::type_name::<M>(),

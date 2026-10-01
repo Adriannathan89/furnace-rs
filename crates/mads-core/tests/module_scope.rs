@@ -5,8 +5,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use mads_core::{
-    Config, ConstructionContext, ErasedProvider, GraphAnalysis, MADS001, MADS002, MADS009, Mads,
-    Module, ProviderDescriptor, ProviderFuture, ProviderKind, ProviderRegistry, ProviderVisibility,
+    Config, ConstructionContext, ErasedProvider, Furnace, GraphAnalysis, MADS001, MADS002, MADS009,
+    Mads, ProviderDescriptor, ProviderFuture, ProviderKind, ProviderRegistry, ProviderVisibility,
     SourceLocation,
 };
 
@@ -14,8 +14,18 @@ mod selected_scope {
     pub mod app {
         use super::unowned::RequiredUnownedUseCase;
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct AppModule;
+
+        impl mads_core::Furnace for AppModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<RequiredUnownedUseCase>()
+                    .provide::<ReachableController>()
+                    .provide::<UnusedButOwnedService>()
+                    .export::<ReachableController>()
+                    .export::<UnusedButOwnedService>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct ReachableController;
@@ -26,12 +36,12 @@ mod selected_scope {
         pub mod providers {
             use super::{ReachableController, RequiredUnownedUseCase, UnusedButOwnedService};
 
-            #[mads_core::provider]
+            #[mads_core::element]
             pub fn reachable_controller(_use_case: RequiredUnownedUseCase) -> ReachableController {
                 ReachableController
             }
 
-            #[mads_core::provider]
+            #[mads_core::element]
             pub fn unused_but_owned_service() -> UnusedButOwnedService {
                 UnusedButOwnedService
             }
@@ -42,20 +52,27 @@ mod selected_scope {
         #[derive(Clone)]
         pub struct RequiredUnownedUseCase;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn required_unowned_use_case() -> RequiredUnownedUseCase {
             RequiredUnownedUseCase
         }
     }
 
     pub mod unreachable {
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct UnreachableModule;
+
+        impl mads_core::Furnace for UnreachableModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<UnreachableService>()
+                    .export::<UnreachableService>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct UnreachableService;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn unreachable_service() -> UnreachableService {
             UnreachableService
         }
@@ -64,13 +81,19 @@ mod selected_scope {
 
 mod direct_public {
     pub mod target {
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct TargetModule;
+
+        impl mads_core::Furnace for TargetModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<PublicProvider>().export::<PublicProvider>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct PublicProvider;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn public_provider() -> PublicProvider {
             PublicProvider
         }
@@ -79,13 +102,21 @@ mod direct_public {
     pub mod root {
         use super::target::{PublicProvider, TargetModule};
 
-        #[mads_core::module(imports = [TargetModule])]
+        #[mads_core::furnace]
         pub struct DirectRoot;
+
+        impl mads_core::Furnace for DirectRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<DirectConsumer>()
+                    .import(TargetModule)
+                    .export::<DirectConsumer>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct DirectConsumer;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn direct_consumer(_provider: PublicProvider) -> DirectConsumer {
             DirectConsumer
         }
@@ -94,13 +125,21 @@ mod direct_public {
 
 mod global_public {
     pub mod database {
-        #[mads_core::module(global)]
+        #[mads_core::furnace]
         pub struct DatabaseModule;
+
+        impl mads_core::Furnace for DatabaseModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<DatabasePool>()
+                    .export::<DatabasePool>()
+                    .global()
+            }
+        }
 
         #[derive(Clone)]
         pub struct DatabasePool;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn database_pool() -> DatabasePool {
             DatabasePool
         }
@@ -109,13 +148,19 @@ mod global_public {
     pub mod user {
         use super::database::DatabasePool;
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct UserModule;
+
+        impl mads_core::Furnace for UserModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<UserService>().export::<UserService>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct UserService;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn user_service(_pool: DatabasePool) -> UserService {
             UserService
         }
@@ -124,20 +169,32 @@ mod global_public {
     pub mod app {
         use super::{database::DatabaseModule, user::UserModule};
 
-        #[mads_core::module(imports = [DatabaseModule, UserModule])]
+        #[mads_core::furnace]
         pub struct GlobalRoot;
+
+        impl mads_core::Furnace for GlobalRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(DatabaseModule).import(UserModule)
+            }
+        }
     }
 }
 
 mod missing_import {
     pub mod target {
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct TargetModule;
+
+        impl mads_core::Furnace for TargetModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<PublicProvider>().export::<PublicProvider>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct PublicProvider;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn public_provider() -> PublicProvider {
             PublicProvider
         }
@@ -146,13 +203,20 @@ mod missing_import {
     pub mod root {
         use super::target::PublicProvider;
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct MissingImportRoot;
+
+        impl mads_core::Furnace for MissingImportRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<MissingImportConsumer>()
+                    .export::<MissingImportConsumer>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct MissingImportConsumer;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn missing_import_consumer(_provider: PublicProvider) -> MissingImportConsumer {
             MissingImportConsumer
         }
@@ -161,13 +225,19 @@ mod missing_import {
 
 mod transitive_only {
     pub mod third {
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct ThirdModule;
+
+        impl mads_core::Furnace for ThirdModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<ThirdProvider>().export::<ThirdProvider>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct ThirdProvider;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn third_provider() -> ThirdProvider {
             ThirdProvider
         }
@@ -176,20 +246,34 @@ mod transitive_only {
     pub mod middle {
         use super::third::ThirdModule;
 
-        #[mads_core::module(imports = [ThirdModule])]
+        #[mads_core::furnace]
         pub struct MiddleModule;
+
+        impl mads_core::Furnace for MiddleModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(ThirdModule)
+            }
+        }
     }
 
     pub mod root {
         use super::{middle::MiddleModule, third::ThirdProvider};
 
-        #[mads_core::module(imports = [MiddleModule])]
+        #[mads_core::furnace]
         pub struct TransitiveRoot;
+
+        impl mads_core::Furnace for TransitiveRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<TransitiveConsumer>()
+                    .import(MiddleModule)
+                    .export::<TransitiveConsumer>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct TransitiveConsumer;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn transitive_consumer(_provider: ThirdProvider) -> TransitiveConsumer {
             TransitiveConsumer
         }
@@ -198,13 +282,19 @@ mod transitive_only {
 
 mod restricted_crossing {
     pub mod target {
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct RestrictedTargetModule;
+
+        impl mads_core::Furnace for RestrictedTargetModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<RestrictedProvider>()
+            }
+        }
 
         #[derive(Clone)]
         pub(crate) struct RestrictedProvider;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub(crate) fn restricted_provider() -> RestrictedProvider {
             RestrictedProvider
         }
@@ -213,13 +303,21 @@ mod restricted_crossing {
     pub mod root {
         use super::target::{RestrictedProvider, RestrictedTargetModule};
 
-        #[mads_core::module(imports = [RestrictedTargetModule])]
+        #[mads_core::furnace]
         pub struct RestrictedRoot;
+
+        impl mads_core::Furnace for RestrictedRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<RestrictedConsumer>()
+                    .import(RestrictedTargetModule)
+                    .export::<RestrictedConsumer>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct RestrictedConsumer;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn restricted_consumer(_provider: RestrictedProvider) -> RestrictedConsumer {
             RestrictedConsumer
         }
@@ -228,13 +326,19 @@ mod restricted_crossing {
 
 mod unowned_bridge {
     pub mod target {
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct BridgeTargetModule;
+
+        impl mads_core::Furnace for BridgeTargetModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<OwnedTarget>().export::<OwnedTarget>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct OwnedTarget;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn owned_target() -> OwnedTarget {
             OwnedTarget
         }
@@ -246,7 +350,7 @@ mod unowned_bridge {
         #[derive(Clone)]
         pub struct UnownedBridge;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn unowned_bridge(_target: OwnedTarget) -> UnownedBridge {
             UnownedBridge
         }
@@ -255,13 +359,19 @@ mod unowned_bridge {
     pub mod root {
         use super::bridge::UnownedBridge;
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct BridgeRoot;
+
+        impl mads_core::Furnace for BridgeRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<BridgeConsumer>().export::<BridgeConsumer>()
+            }
+        }
 
         #[derive(Clone)]
         pub struct BridgeConsumer;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn bridge_consumer(_bridge: UnownedBridge) -> BridgeConsumer {
             BridgeConsumer
         }
@@ -276,12 +386,18 @@ mod diamond {
     pub mod shared {
         use super::{CONSTRUCTIONS, Ordering};
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct SharedModule;
+
+        impl mads_core::Furnace for SharedModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<SharedProvider>().export::<SharedProvider>()
+            }
+        }
 
         pub struct SharedProvider;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn shared_provider() -> SharedProvider {
             CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
             SharedProvider
@@ -291,22 +407,40 @@ mod diamond {
     pub mod left {
         use super::shared::SharedModule;
 
-        #[mads_core::module(imports = [SharedModule])]
+        #[mads_core::furnace]
         pub struct LeftModule;
+
+        impl mads_core::Furnace for LeftModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(SharedModule)
+            }
+        }
     }
 
     pub mod right {
         use super::shared::SharedModule;
 
-        #[mads_core::module(imports = [SharedModule])]
+        #[mads_core::furnace]
         pub struct RightModule;
+
+        impl mads_core::Furnace for RightModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(SharedModule)
+            }
+        }
     }
 
     pub mod root {
         use super::{left::LeftModule, right::RightModule};
 
-        #[mads_core::module(imports = [LeftModule, RightModule])]
+        #[mads_core::furnace]
         pub struct DiamondRoot;
+
+        impl mads_core::Furnace for DiamondRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(LeftModule).import(RightModule)
+            }
+        }
     }
 }
 
@@ -316,8 +450,14 @@ mod duplicate_reachable {
         ProviderVisibility, SourceLocation, TypeId,
     };
 
-    #[mads_core::module]
+    #[mads_core::furnace]
     pub struct DuplicateRoot;
+
+    impl mads_core::Furnace for DuplicateRoot {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.provide::<DuplicateProvider>()
+        }
+    }
 
     pub struct DuplicateProvider;
 
@@ -363,12 +503,20 @@ mod ambiguous_dependency {
     pub mod app {
         use super::SharedDependency;
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct AmbiguousDependencyRoot;
+
+        impl mads_core::Furnace for AmbiguousDependencyRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<SharedDependency>()
+                    .provide::<Consumer>()
+                    .export::<Consumer>()
+            }
+        }
 
         pub struct Consumer;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn consumer(_dependency: SharedDependency) -> Consumer {
             Consumer
         }
@@ -377,12 +525,12 @@ mod ambiguous_dependency {
     pub mod constructors {
         use super::SharedDependency;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn first_shared_dependency() -> SharedDependency {
             SharedDependency
         }
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn second_shared_dependency() -> SharedDependency {
             SharedDependency
         }
@@ -396,10 +544,17 @@ mod mixed_dependency_scope {
     pub mod allowed {
         use super::SharedDependency;
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct AllowedModule;
 
-        #[mads_core::provider]
+        impl mads_core::Furnace for AllowedModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<SharedDependency>()
+                    .export::<SharedDependency>()
+            }
+        }
+
+        #[mads_core::element]
         pub fn allowed_dependency() -> SharedDependency {
             SharedDependency
         }
@@ -408,10 +563,17 @@ mod mixed_dependency_scope {
     pub mod foreign {
         use super::SharedDependency;
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct ForeignModule;
 
-        #[mads_core::provider]
+        impl mads_core::Furnace for ForeignModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<SharedDependency>()
+                    .export::<SharedDependency>()
+            }
+        }
+
+        #[mads_core::element]
         pub fn foreign_dependency() -> SharedDependency {
             SharedDependency
         }
@@ -420,19 +582,27 @@ mod mixed_dependency_scope {
     pub mod app {
         use super::{SharedDependency, allowed::AllowedModule};
 
-        #[mads_core::module(imports = [AllowedModule])]
+        #[mads_core::furnace]
         pub struct MixedDependencyRoot;
+
+        impl mads_core::Furnace for MixedDependencyRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<Consumer>()
+                    .import(AllowedModule)
+                    .export::<Consumer>()
+            }
+        }
 
         pub struct Consumer;
 
-        #[mads_core::provider]
+        #[mads_core::element]
         pub fn consumer(_dependency: SharedDependency) -> Consumer {
             Consumer
         }
     }
 }
 
-fn rooted_analysis<M: Module>() -> GraphAnalysis {
+fn rooted_analysis<M: Furnace>() -> GraphAnalysis {
     let mut builder = Mads::builder();
     builder
         .root::<M>()
@@ -441,7 +611,7 @@ fn rooted_analysis<M: Module>() -> GraphAnalysis {
 }
 
 #[test]
-fn rooted_scope_includes_owned_roots_and_required_unowned_closure_only() {
+fn rooted_scope_includes_only_explicit_members_and_reachable_furnaces() {
     use selected_scope::{
         app::{AppModule, ReachableController, UnusedButOwnedService},
         unowned::RequiredUnownedUseCase,
@@ -475,7 +645,7 @@ fn rooted_scope_reports_duplicate_reachable_provider_declarations() {
 }
 
 #[test]
-fn rooted_scope_reports_ambiguous_unowned_dependency_constructors() {
+fn rooted_scope_reports_ambiguous_registered_output_constructors() {
     let analysis = rooted_analysis::<ambiguous_dependency::app::AmbiguousDependencyRoot>();
 
     assert_eq!(analysis.diagnostics()[0].code(), MADS002);
@@ -502,16 +672,10 @@ fn externally_satisfied_dependency_skips_ambiguous_static_constructors() {
 }
 
 #[test]
-fn accessible_dependency_ignores_a_constructor_outside_the_rooted_scope() {
+fn registering_output_with_multiple_catalog_factories_is_ambiguous() {
     let analysis = rooted_analysis::<mixed_dependency_scope::app::MixedDependencyRoot>();
-
-    assert!(analysis.is_valid(), "{:?}", analysis.diagnostics());
-    assert!(
-        analysis
-            .graph()
-            .provider::<mixed_dependency_scope::SharedDependency>()
-            .is_some()
-    );
+    assert_eq!(analysis.diagnostics()[0].code(), MADS002);
+    assert!(analysis.construction_plan().is_none());
 }
 
 #[test]
@@ -532,14 +696,9 @@ fn global_module_exposes_public_providers_without_a_direct_import() {
 }
 
 #[test]
-fn missing_direct_import_reports_module_boundary_diagnostic() {
+fn unreachable_provider_does_not_satisfy_a_dependency() {
     let analysis = rooted_analysis::<missing_import::root::MissingImportRoot>();
-    assert_eq!(analysis.diagnostics()[0].code(), MADS009);
-    assert!(
-        analysis.diagnostics()[0]
-            .to_string()
-            .contains("direct import")
-    );
+    assert_eq!(analysis.diagnostics()[0].code(), mads_core::MADS003);
     assert!(analysis.construction_plan().is_none());
 }
 
@@ -561,19 +720,14 @@ fn restricted_provider_cannot_cross_a_module_boundary() {
     assert!(
         analysis.diagnostics()[0]
             .to_string()
-            .contains("unrestricted `pub`")
+            .contains("explicit export")
     );
 }
 
 #[test]
-fn unowned_bridge_carries_the_requesting_module_context() {
+fn linked_unregistered_bridge_is_not_implicitly_selected() {
     let analysis = rooted_analysis::<unowned_bridge::root::BridgeRoot>();
-    assert_eq!(analysis.diagnostics()[0].code(), MADS009);
-    assert!(
-        analysis.diagnostics()[0]
-            .to_string()
-            .contains("direct import")
-    );
+    assert_eq!(analysis.diagnostics()[0].code(), mads_core::MADS003);
 }
 
 #[tokio::test]
