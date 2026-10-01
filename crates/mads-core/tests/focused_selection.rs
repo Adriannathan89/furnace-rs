@@ -1,6 +1,4 @@
 //! Contract tests for a module-free, single-subject provider build.
-//!
-//! This file is intentionally red until Task 1 adds the focused builder API.
 
 use std::any::TypeId;
 
