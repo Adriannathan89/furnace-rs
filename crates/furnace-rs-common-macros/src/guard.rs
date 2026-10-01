@@ -671,6 +671,9 @@ fn claims_principal_claims(principal: &Type) -> Option<Type> {
 
 /// Emits a focused error for `#[guard]` that was not consumed by `#[routes]`.
 pub(crate) fn outside_contract(arguments: TokenStream, item: TokenStream) -> TokenStream {
+    if let Ok(policy) = syn::parse2::<syn::ItemStruct>(item.clone()) {
+        return expand_policy(arguments, policy).unwrap_or_else(Error::into_compile_error);
+    }
     let span = if arguments.is_empty() {
         Span::call_site()
     } else {
@@ -682,6 +685,75 @@ pub(crate) fn outside_contract(arguments: TokenStream, item: TokenStream) -> Tok
     )
     .into_compile_error();
     quote!(#item #error)
+}
+
+fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result<TokenStream> {
+    if !cfg!(feature = "passport") {
+        return Err(Error::new(
+            arguments.span(),
+            "guard policies require the HTTP and JWT features",
+        ));
+    }
+    if !policy.generics.params.is_empty() || policy.generics.where_clause.is_some() {
+        return Err(Error::new(
+            policy.generics.span(),
+            "guard policies must be non-generic unit structs",
+        ));
+    }
+    if !matches!(policy.fields, syn::Fields::Unit) {
+        return Err(Error::new(
+            policy.fields.span(),
+            "guard policies must be non-generic unit structs",
+        ));
+    }
+    for attribute in &policy.attrs {
+        if attribute.path().segments.last().is_some_and(|segment| {
+            matches!(
+                segment.ident.to_string().as_str(),
+                "burner" | "storage" | "element" | "controller" | "cauldron"
+            )
+        }) {
+            return Err(Error::new(
+                attribute.span(),
+                "guard policies cannot also be managed dependencies or controllers",
+            ));
+        }
+    }
+    let spec: GuardSpec = syn::parse2(arguments)?;
+    if spec.skip {
+        return Err(Error::new(
+            spec.span,
+            "static guard policies do not support `skip`",
+        ));
+    }
+    let effective = merge(None, Some(&spec), spec.span)?.expect("a complete static policy");
+    let common = crate::path::common_path()?;
+    let ident = &policy.ident;
+    let conditional_attributes: Vec<_> = policy
+        .attrs
+        .iter()
+        .filter(|attribute| attribute.path().is_ident("cfg"))
+        .cloned()
+        .collect();
+    let (descriptor, metadata) = effective.static_tokens(
+        &common,
+        ident,
+        &Ident::new("seal", ident.span()),
+        &conditional_attributes,
+    );
+    let principal = &effective.principal;
+    Ok(quote! {
+        #policy
+        #metadata
+        #(#conditional_attributes)*
+        impl #common::GuardPolicy for #ident {
+            fn descriptor() -> &'static #common::GuardDescriptor {
+                fn __furnace_assert_principal<P: #common::PassportPrincipal>() {}
+                __furnace_assert_principal::<#principal>();
+                &#descriptor
+            }
+        }
+    })
 }
 
 #[cfg(test)]

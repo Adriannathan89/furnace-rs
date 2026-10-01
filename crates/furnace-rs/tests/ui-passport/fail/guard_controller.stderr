@@ -1,5 +1,5 @@
-error: `#[guard]` must appear below `#[routes]` on that trait or below one route verb on a method
- --> tests/ui-passport/fail/guard_controller.rs:1:29
+error: guard policies cannot also be managed dependencies or controllers
+ --> tests/ui-passport/fail/guard_controller.rs:2:1
   |
-1 | #[furnace_rs::common::guard(strategy = "jwt", principal = UserPrincipal)]
-  |                             ^^^^^^^^
+2 | #[furnace_rs::controller(routes = [MissingRoutes])]
+  | ^

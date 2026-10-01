@@ -149,6 +149,13 @@ pub struct GuardDescriptor {
     builtin_adapter: Option<BuiltinGuardAdapter>,
 }
 
+/// Provides immutable policy metadata without creating a guard value.
+#[doc(hidden)]
+pub trait GuardPolicy: Send + Sync + 'static {
+    /// Returns this policy's generated static descriptor.
+    fn descriptor() -> &'static GuardDescriptor;
+}
+
 impl GuardDescriptor {
     /// Creates static effective guard metadata.
     ///

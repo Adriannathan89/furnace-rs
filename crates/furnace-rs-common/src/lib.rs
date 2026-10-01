@@ -25,6 +25,8 @@ mod route;
 #[cfg(feature = "http")]
 mod router;
 #[cfg(feature = "http")]
+mod seal;
+#[cfg(feature = "http")]
 mod server;
 #[cfg(feature = "http")]
 mod server_config;
@@ -59,6 +61,18 @@ pub mod jwt;
 /// Typed Passport principals, request context, and normalized failures.
 #[cfg(all(feature = "http", feature = "jwt"))]
 pub mod passport;
+
+/// Static policy metadata implemented by the guard declaration macro.
+#[cfg(all(feature = "http", feature = "jwt"))]
+#[doc(hidden)]
+pub use passport::GuardPolicy;
+/// Erased static policy declarations used by startup analysis.
+#[cfg(all(feature = "http", feature = "jwt"))]
+#[doc(hidden)]
+pub use seal::SealEntry;
+/// Static controller protection declarations.
+#[cfg(feature = "http")]
+pub use seal::{SealDefinition, SealRegistration, Sealable};
 
 /// Re-exports Axum for native runtime integration.
 #[cfg(feature = "http")]

@@ -194,6 +194,14 @@ pub use furnace_rs_core::{
     Cauldron, CauldronRegistration, Furnace, FurnaceBuilder, burner, cauldron, element, storage,
 };
 
+/// Static guard policy metadata used by generated controller registration.
+#[cfg(all(feature = "http", feature = "jwt"))]
+#[doc(hidden)]
+pub use furnace_rs_common::{GuardPolicy, SealEntry};
+/// Re-exports static controller protection declarations.
+#[cfg(feature = "http")]
+pub use furnace_rs_common::{SealDefinition, SealRegistration, Sealable};
+
 /// Re-exports explicit typed configuration, structured failures, and secret values.
 pub use furnace_rs_core::{
     Configuration, ConfigurationErrors, ConfigurationIssue, ConfigurationResult, Secret,
@@ -315,6 +323,9 @@ pub use furnace_rs_extra as extra;
 
 /// Collects application-facing furnace-rs imports.
 pub mod prelude {
+    /// Static controller protection declarations.
+    #[cfg(feature = "http")]
+    pub use furnace_rs_common::{SealRegistration, Sealable};
     /// Re-exports explicit cauldron registration and dependency declarations.
     pub use furnace_rs_core::{Cauldron, CauldronRegistration, burner, cauldron, element, storage};
 

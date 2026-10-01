@@ -9,6 +9,7 @@ fn attributes_expand_for_supported_dependency_paths() {
     let target_dir = manifest_dir.join("../../target/macro-consumers");
 
     for consumer in [
+        "http_only_seals",
         "brand_default",
         "brand_alias",
         "brand_renamed",

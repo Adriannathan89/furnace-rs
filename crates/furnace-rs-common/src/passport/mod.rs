@@ -119,9 +119,10 @@ pub use context::PassportContext;
 pub use context::PassportCookies;
 pub use error::{PassportError, PassportErrorKind, PassportRejection, PassportResult};
 pub use guard::{
-    BuiltinGuardAdapter, GuardCatalog, GuardDescriptor, GuardPredicate, GuardPredicateAdapter,
-    NativePassportGuardService, PassportGuard, PassportGuardBuilder, PassportGuardLayer,
-    PassportGuardService, PassportGuardState, PolicyClause, PolicyMode, TokenSource,
+    BuiltinGuardAdapter, GuardCatalog, GuardDescriptor, GuardPolicy, GuardPredicate,
+    GuardPredicateAdapter, NativePassportGuardService, PassportGuard, PassportGuardBuilder,
+    PassportGuardLayer, PassportGuardService, PassportGuardState, PolicyClause, PolicyMode,
+    TokenSource,
 };
 pub use principal::{Authenticated, ClaimsPrincipal, PassportPrincipal, VerifiedToken};
 pub use strategy::{
