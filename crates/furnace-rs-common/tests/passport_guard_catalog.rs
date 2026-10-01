@@ -27,34 +27,43 @@ fn owns_profile(principal: &UserPrincipal) -> bool {
     principal.user_id == 7
 }
 
-#[furnace_rs_common::routes(prefix = "/users")]
-#[furnace_rs_common::guard(
-    strategy = "jwt",
-    principal = UserPrincipal,
-    source = bearer,
-    roles(any = ["user", "admin"]),
-    permissions(all = ["profile:base"]),
-)]
-#[allow(dead_code)]
-trait UserRoutes {
-    #[furnace_rs_common::get("/profile")]
-    #[furnace_rs_common::guard(
-        permissions(all = ["profile:read"]),
-        predicate = owns_profile,
-    )]
-    async fn profile(&self);
+#[furnace_rs_common::controller]
+struct UserRoutesController;
 
-    #[furnace_rs_common::post("/login")]
-    #[furnace_rs_common::guard(skip)]
-    async fn login(&self);
+#[furnace_rs_common::guard(permissions (all = ["profile:read"]), predicate = owns_profile, principal = UserPrincipal, roles (any = ["user" , "admin"]), source = bearer, strategy = "jwt")]
+struct UserRoutesControllerGuard;
+
+impl ::furnace_rs_common::Sealable for UserRoutesController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<UserRoutesControllerGuard>()
+    }
 }
 
-struct UserController;
+#[furnace_rs_common::controller]
+impl UserRoutesController {
+    #[furnace_rs_common::get("/users/profile")]
 
-impl UserRoutes for UserController {
-    async fn profile(&self) {}
+    async fn profile(&self) {
+        unreachable!("metadata-only endpoint")
+    }
+}
 
-    async fn login(&self) {}
+#[furnace_rs_common::controller]
+struct UserRoutesController1;
+
+impl ::furnace_rs_common::Sealable for UserRoutesController1 {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl UserRoutesController1 {
+    #[furnace_rs_common::post("/users/login")]
+
+    async fn login(&self) {
+        unreachable!("metadata-only endpoint")
+    }
 }
 
 const MISSING_PRINCIPAL: GuardDescriptor = GuardDescriptor::new(
@@ -72,13 +81,8 @@ const MISSING_PRINCIPAL: GuardDescriptor = GuardDescriptor::new(
 );
 
 #[test]
-fn method_guard_merges_the_effective_policy_and_skip_omits_metadata() {
-    let guards = GuardCatalog::guards();
-    let profile = guards
-        .into_iter()
-        .find(|guard| guard.route_trait() == "UserRoutes" && guard.handler() == "profile")
-        .expect("the inherited profile guard should be registered");
-
+fn static_policy_records_all_rules_and_public_controller_has_no_seal() {
+    let profile = <UserRoutesControllerGuard as furnace_rs_common::GuardPolicy>::descriptor();
     assert_eq!(profile.strategy(), "jwt");
     assert_eq!(
         profile.principal_type_id(),
@@ -98,18 +102,15 @@ fn method_guard_merges_the_effective_policy_and_skip_omits_metadata() {
     assert_eq!(permissions.mode(), PolicyMode::All);
     assert_eq!(permissions.values(), ["profile:read"]);
     assert_eq!(profile.predicates().len(), 1);
-    assert!(GuardCatalog::validate().is_ok());
-
-    let route = <UserController as UserRoutes>::__FURNACE_ROUTE_METADATA[0];
-    assert!(std::ptr::eq(
-        route.guard().expect("the route should retain its guard"),
-        profile,
-    ));
-
+    assert!(GuardCatalog::validate_descriptors(&[profile]).is_ok());
+    use furnace_rs_common::Sealable;
+    let definition = UserRoutesController::seals().into_definition();
+    assert!(std::ptr::eq(definition.entries()[0].descriptor(), profile));
     assert!(
-        GuardCatalog::guards()
-            .into_iter()
-            .all(|guard| !(guard.route_trait() == "UserRoutes" && guard.handler() == "login"))
+        UserRoutesController1::seals()
+            .into_definition()
+            .entries()
+            .is_empty()
     );
 }
 

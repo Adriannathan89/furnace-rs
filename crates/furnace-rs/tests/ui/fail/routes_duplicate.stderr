@@ -1,5 +1,0 @@
-error: duplicate HTTP verb and path in this route contract
- --> tests/ui/fail/routes_duplicate.rs:6:5
-  |
-6 |     #[furnace_rs::get("/:id")]
-  |     ^

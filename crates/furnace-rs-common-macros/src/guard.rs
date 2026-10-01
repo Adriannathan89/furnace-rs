@@ -9,15 +9,6 @@ use syn::{
     spanned::Spanned,
 };
 
-/// The target that owns one guard attribute.
-#[derive(Clone, Copy, Eq, PartialEq)]
-pub(crate) enum GuardTarget {
-    /// A `#[routes]` trait.
-    Trait,
-    /// A route-verb method inside that trait.
-    Method,
-}
-
 /// Guard fields before inheritance is applied.
 #[derive(Clone)]
 pub(crate) struct GuardSpec {
@@ -27,10 +18,7 @@ pub(crate) struct GuardSpec {
     roles: Option<PolicyClauseSpec>,
     permissions: Option<PolicyClauseSpec>,
     predicates: Option<Vec<Path>>,
-    skip: bool,
     span: Span,
-    attribute_span: Span,
-    attribute_index: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -72,10 +60,7 @@ impl Parse for GuardSpec {
             roles: None,
             permissions: None,
             predicates: None,
-            skip: false,
             span,
-            attribute_span: span,
-            attribute_index: None,
         };
 
         while !input.is_empty() {
@@ -134,15 +119,15 @@ impl Parse for GuardSpec {
                     result.predicates = Some(predicates.into_iter().collect());
                 }
                 "skip" => {
-                    if result.skip {
-                        return Err(Error::new(key.span(), "duplicate `skip` guard argument"));
-                    }
-                    result.skip = true;
+                    return Err(Error::new(
+                        key.span(),
+                        "static guard policies do not support `skip`",
+                    ));
                 }
                 _ => {
                     return Err(Error::new(
                         key.span(),
-                        "unknown guard argument; expected strategy, principal, source, roles, permissions, predicate, predicates, or skip",
+                        "unknown guard argument; expected strategy, principal, source, roles, permissions, predicate, or predicates",
                     ));
                 }
             }
@@ -156,34 +141,7 @@ impl Parse for GuardSpec {
             }
         }
 
-        if result.skip && result.has_non_skip_fields() {
-            return Err(Error::new(
-                result.span,
-                "`skip` cannot be combined with other guard arguments",
-            ));
-        }
         Ok(result)
-    }
-}
-
-impl GuardSpec {
-    fn has_non_skip_fields(&self) -> bool {
-        self.strategy.is_some()
-            || self.principal.is_some()
-            || self.source.is_some()
-            || self.roles.is_some()
-            || self.permissions.is_some()
-            || self.predicates.is_some()
-    }
-
-    /// Returns the original position of this attribute on its target.
-    pub(crate) fn attribute_index(&self) -> Option<usize> {
-        self.attribute_index
-    }
-
-    /// Returns the span of the complete guard attribute.
-    pub(crate) fn attribute_span(&self) -> Span {
-        self.attribute_span
     }
 }
 
@@ -334,171 +292,43 @@ pub(crate) fn is_guard_attribute(attribute: &Attribute) -> bool {
         .is_some_and(|segment| segment.ident == "guard")
 }
 
-/// Removes and parses the one guard attribute permitted on a target.
-pub(crate) fn take_guard(
-    attributes: &mut Vec<Attribute>,
-    target: GuardTarget,
-) -> syn::Result<Option<GuardSpec>> {
-    let mut found = Vec::new();
-    let mut retained = Vec::with_capacity(attributes.len());
-    for (index, attribute) in std::mem::take(attributes).into_iter().enumerate() {
-        if is_guard_attribute(&attribute) {
-            found.push((index, attribute));
-        } else {
-            retained.push(attribute);
-        }
-    }
-    *attributes = retained;
-
-    if found.len() > 1 {
-        return Err(Error::new(
-            found[1].1.span(),
-            "a route trait or method may declare only one `#[guard(...)]` attribute",
-        ));
-    }
-    let Some((attribute_index, attribute)) = found.pop() else {
-        return Ok(None);
-    };
-    let mut spec = attribute.parse_args::<GuardSpec>()?;
-    spec.attribute_span = attribute.span();
-    spec.attribute_index = Some(attribute_index);
-    if target == GuardTarget::Trait && spec.skip {
-        return Err(Error::new(
-            attribute.span(),
-            "`skip` is only valid on a route method inheriting a trait guard",
-        ));
-    }
-    Ok(Some(spec))
-}
-
-/// Combines optional trait and route-method guard fields into one policy.
-pub(crate) fn merge(
-    trait_guard: Option<&GuardSpec>,
-    method_guard: Option<&GuardSpec>,
-    method_span: Span,
-) -> syn::Result<Option<EffectiveGuard>> {
-    let Some(method_guard) = method_guard else {
-        return Ok(trait_guard.map(|guard| EffectiveGuard {
-            strategy: guard.strategy.clone().expect("validated below"),
-            principal: guard.principal.clone().expect("validated below"),
-            source: guard.source.clone().unwrap_or(TokenSourceSpec::Bearer),
-            roles: guard.roles.clone(),
-            permissions: guard.permissions.clone(),
-            predicates: guard.predicates.clone().unwrap_or_default(),
-        }));
-    };
-
-    if method_guard.skip {
-        if trait_guard.is_none() {
-            return Err(Error::new(
-                method_span,
-                "`#[guard(skip)]` requires a guard declared on the enclosing `#[routes]` trait",
-            ));
-        }
-        return Ok(None);
-    }
-
-    let strategy = method_guard
-        .strategy
-        .clone()
-        .or_else(|| trait_guard.and_then(|guard| guard.strategy.clone()));
-    let principal = method_guard
-        .principal
-        .clone()
-        .or_else(|| trait_guard.and_then(|guard| guard.principal.clone()));
-    let source = method_guard
-        .source
-        .clone()
-        .or_else(|| trait_guard.and_then(|guard| guard.source.clone()))
-        .unwrap_or(TokenSourceSpec::Bearer);
-    let roles = method_guard
-        .roles
-        .clone()
-        .or_else(|| trait_guard.and_then(|guard| guard.roles.clone()));
-    let permissions = method_guard
-        .permissions
-        .clone()
-        .or_else(|| trait_guard.and_then(|guard| guard.permissions.clone()));
-    let predicates = method_guard
-        .predicates
-        .clone()
-        .or_else(|| trait_guard.and_then(|guard| guard.predicates.clone()))
-        .unwrap_or_default();
-
-    Ok(Some(EffectiveGuard {
-        strategy: strategy.ok_or_else(|| {
-            Error::new(
-                method_span,
-                "a complete guard requires `strategy = \"name\"`",
-            )
+fn complete_policy(spec: &GuardSpec) -> syn::Result<EffectiveGuard> {
+    Ok(EffectiveGuard {
+        strategy: spec.strategy.clone().ok_or_else(|| {
+            Error::new(spec.span, "a complete guard requires `strategy = \"name\"`")
         })?,
-        principal: principal.ok_or_else(|| {
-            Error::new(method_span, "a complete guard requires `principal = Type`")
-        })?,
-        source,
-        roles,
-        permissions,
-        predicates,
-    }))
-}
-
-/// Validates a trait-only guard before method inheritance occurs.
-pub(crate) fn validate_trait_guard(guard: &GuardSpec, span: Span) -> syn::Result<()> {
-    if guard.strategy.is_none() {
-        return Err(Error::new(
-            span,
-            "a route-level guard requires `strategy = \"name\"`",
-        ));
-    }
-    if guard.principal.is_none() {
-        return Err(Error::new(
-            span,
-            "a route-level guard requires `principal = Type`",
-        ));
-    }
-    Ok(())
+        principal: spec
+            .principal
+            .clone()
+            .ok_or_else(|| Error::new(spec.span, "a complete guard requires `principal = Type`"))?,
+        source: spec.source.clone().unwrap_or(TokenSourceSpec::Bearer),
+        roles: spec.roles.clone(),
+        permissions: spec.permissions.clone(),
+        predicates: spec.predicates.clone().unwrap_or_default(),
+    })
 }
 
 impl EffectiveGuard {
-    /// Emits one module-level descriptor, its predicate adapters, and its
-    /// inventory submission. The route metadata references this exact static.
-    pub(crate) fn static_tokens(
-        &self,
-        common: &syn::Path,
-        route_trait: &Ident,
-        handler: &Ident,
-        conditional_attributes: &[Attribute],
-    ) -> (Ident, TokenStream) {
-        self.static_tokens_with_registration(
-            common,
-            route_trait,
-            handler,
-            conditional_attributes,
-            true,
-        )
-    }
-
     fn static_tokens_with_registration(
         &self,
         common: &syn::Path,
-        route_trait: &Ident,
+        policy_name: &Ident,
         handler: &Ident,
         conditional_attributes: &[Attribute],
-        register: bool,
     ) -> (Ident, TokenStream) {
-        let static_ident = format_ident!("__furnace_guard_{}_{}", route_trait, handler);
+        let static_ident = format_ident!("__furnace_guard_{}_{}", policy_name, handler);
         let type_id = format_ident!(
             "__furnace_guard_principal_type_id_{}_{}",
-            route_trait,
+            policy_name,
             handler
         );
         let type_name = format_ident!(
             "__furnace_guard_principal_type_name_{}_{}",
-            route_trait,
+            policy_name,
             handler
         );
         let principal = &self.principal;
-        let trait_name = LitStr::new(&route_trait.to_string(), route_trait.span());
+        let trait_name = LitStr::new(&policy_name.to_string(), policy_name.span());
         let handler_name = LitStr::new(&handler.to_string(), handler.span());
         let strategy = &self.strategy;
         let source = source_tokens(&self.source, common);
@@ -511,7 +341,7 @@ impl EffectiveGuard {
             .map(|(index, predicate)| {
                 let adapter = format_ident!(
                     "__furnace_guard_predicate_{}_{}_{}",
-                    route_trait,
+                    policy_name,
                     handler,
                     index
                 );
@@ -539,7 +369,7 @@ impl EffectiveGuard {
             .map(|(index, predicate)| {
                 let adapter = format_ident!(
                     "__furnace_guard_predicate_{}_{}_{}",
-                    route_trait,
+                    policy_name,
                     handler,
                     index
                 );
@@ -548,17 +378,11 @@ impl EffectiveGuard {
         let (builtin_function, builtin) = builtin_adapter_tokens(
             &self.principal,
             common,
-            route_trait,
+            policy_name,
             handler,
             conditional_attributes,
         );
 
-        let registration = register.then(|| {
-            quote! {
-                #(#conditional_attributes)*
-                #common::core::__private::inventory::submit! { &#static_ident }
-            }
-        });
         let tokens = quote! {
             #(#conditional_attributes)*
             #[doc(hidden)]
@@ -593,10 +417,9 @@ impl EffectiveGuard {
                 #common::core::SourceLocation::new(file!(), line!(), column!()),
                 #builtin,
             )
-            .with_requirement_subject(concat!(stringify!(#route_trait), "::", stringify!(#handler)))
+            .with_requirement_subject(concat!(stringify!(#policy_name), "::", stringify!(#handler)))
             .with_namespace(module_path!());
 
-            #registration
         };
         (static_ident, tokens)
     }
@@ -625,14 +448,14 @@ fn clause_tokens(clause: &Option<PolicyClauseSpec>, common: &syn::Path) -> Token
 fn builtin_adapter_tokens(
     principal: &Type,
     common: &syn::Path,
-    route_trait: &Ident,
+    policy_name: &Ident,
     handler: &Ident,
     conditional_attributes: &[Attribute],
 ) -> (TokenStream, TokenStream) {
     let Some(claims) = claims_principal_claims(principal) else {
         return (TokenStream::new(), quote!(None));
     };
-    let adapter = format_ident!("__furnace_guard_builtin_jwt_{}_{}", route_trait, handler);
+    let adapter = format_ident!("__furnace_guard_builtin_jwt_{}_{}", policy_name, handler);
     (
         quote! {
             #(#conditional_attributes)*
@@ -701,7 +524,7 @@ pub(crate) fn outside_contract(arguments: TokenStream, item: TokenStream) -> Tok
     };
     let error = Error::new(
         span,
-        "`#[guard]` must appear below `#[routes]` on that trait or below one route verb on a method",
+        "`#[guard]` requires a unit policy struct; attach it with the controller seal",
     )
     .into_compile_error();
     quote!(#item #error)
@@ -740,13 +563,7 @@ fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result
         }
     }
     let spec: GuardSpec = syn::parse2(arguments)?;
-    if spec.skip {
-        return Err(Error::new(
-            spec.span,
-            "static guard policies do not support `skip`",
-        ));
-    }
-    let effective = merge(None, Some(&spec), spec.span)?.expect("a complete static policy");
+    let effective = complete_policy(&spec)?;
     let common = crate::path::common_path()?;
     let ident = &policy.ident;
     let conditional_attributes: Vec<_> = policy
@@ -760,7 +577,6 @@ fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result
         ident,
         &Ident::new("seal", ident.span()),
         &conditional_attributes,
-        false,
     );
     let principal = &effective.principal;
     Ok(quote! {

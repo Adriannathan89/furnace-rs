@@ -5,35 +5,43 @@ use axum::{
     http::{Request, StatusCode},
 };
 use furnace_rs_common::core::{Cauldron, CauldronRegistration, Furnace};
-use furnace_rs_common::{build_router, controller, routes};
+use furnace_rs_common::{build_router, controller};
 use tower::ServiceExt;
-mod contract {
-    use super::*;
-    #[routes]
-    pub trait Routes {
-        #[get("/selected")]
-        async fn selected(&self) -> &'static str;
+mod contract {}
+#[controller]
+struct Selected;
+
+impl ::furnace_rs_common::Sealable for Selected {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
     }
 }
-#[controller(routes = [contract::Routes])]
-struct Selected;
-impl contract::Routes for Selected {
+
+#[furnace_rs_common::controller]
+impl Selected {
+    #[get("/selected")]
     async fn selected(&self) -> &'static str {
         "selected"
     }
 }
-#[routes]
-trait StrayRoutes {
-    #[get("/stray")]
-    async fn stray(&self) -> &'static str;
-}
-#[controller(routes = [StrayRoutes])]
+
+#[controller]
 struct Stray;
-impl StrayRoutes for Stray {
+
+impl ::furnace_rs_common::Sealable for Stray {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl Stray {
+    #[get("/stray")]
     async fn stray(&self) -> &'static str {
         "stray"
     }
 }
+
 #[furnace_rs_core::cauldron]
 struct Root;
 impl Cauldron for Root {

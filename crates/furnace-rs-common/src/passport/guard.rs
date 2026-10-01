@@ -5,12 +5,10 @@
 //! uses that same binding to authenticate and authorize requests.
 
 use std::any::TypeId;
-use std::cmp::Ordering;
 use std::fmt;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
-use std::sync::OnceLock;
 use std::task::{Context, Poll};
 
 use axum::{
@@ -103,7 +101,7 @@ impl GuardPredicate {
     /// Creates static predicate metadata.
     ///
     /// `None` is accepted solely so manually supplied metadata can be
-    /// validated fail-closed by [`GuardCatalog::validate`]. Macro-generated
+    /// validated fail-closed by [`GuardCatalog::validate_descriptors`]. Macro-generated
     /// descriptors always provide an adapter.
     #[must_use]
     pub const fn new(name: &'static str, adapter: Option<GuardPredicateAdapter>) -> Self {
@@ -134,7 +132,7 @@ pub type BuiltinGuardAdapter = for<'a> fn(
 
 /// Immutable effective policy for one guarded route method.
 pub struct GuardDescriptor {
-    route_trait: &'static str,
+    policy_name: &'static str,
     handler: &'static str,
     requirement_subject: &'static str,
     namespace: Option<&'static str>,
@@ -160,12 +158,12 @@ impl GuardDescriptor {
     /// Creates static effective guard metadata.
     ///
     /// The optional principal factories permit integrations to build
-    /// descriptors manually. [`GuardCatalog::validate`] rejects omitted or
+    /// descriptors manually. [`GuardCatalog::validate_descriptors`] rejects omitted or
     /// inconsistent factories before startup.
     #[must_use]
     #[allow(clippy::too_many_arguments)]
     pub const fn new(
-        route_trait: &'static str,
+        policy_name: &'static str,
         handler: &'static str,
         strategy: &'static str,
         principal_type_id: Option<fn() -> TypeId>,
@@ -178,7 +176,7 @@ impl GuardDescriptor {
         builtin_adapter: Option<BuiltinGuardAdapter>,
     ) -> Self {
         Self {
-            route_trait,
+            policy_name,
             handler,
             requirement_subject: "manual Passport guard",
             namespace: None,
@@ -221,8 +219,8 @@ impl GuardDescriptor {
 
     /// Returns the route-contract trait name.
     #[must_use]
-    pub const fn route_trait(&self) -> &'static str {
-        self.route_trait
+    pub const fn policy_name(&self) -> &'static str {
+        self.policy_name
     }
 
     /// Returns the guarded route method name.
@@ -295,29 +293,10 @@ impl GuardDescriptor {
     }
 }
 
-furnace_rs_core::__private::inventory::collect!(&'static GuardDescriptor);
-
 /// Read-only inspection and validation of linked Passport route guards.
 pub struct GuardCatalog;
 
 impl GuardCatalog {
-    /// Returns every linked effective guard in deterministic route order.
-    #[must_use]
-    pub fn guards() -> Vec<&'static GuardDescriptor> {
-        guard_cache().clone()
-    }
-
-    /// Validates every linked guard descriptor before strategy resolution.
-    ///
-    /// # Errors
-    ///
-    /// Returns `FURNACE131` when any descriptor has incomplete or malformed
-    /// static policy metadata.
-    #[allow(clippy::result_large_err)]
-    pub fn validate() -> Result<()> {
-        Self::validate_descriptors(&Self::guards())
-    }
-
     /// Validates an explicit static descriptor slice without registering it.
     ///
     /// This permits integration crates to validate manually assembled
@@ -1027,40 +1006,12 @@ fn matches_clause(clause: Option<PolicyClause>, matches: impl FnMut(&str) -> boo
     }
 }
 
-fn guard_cache() -> &'static Vec<&'static GuardDescriptor> {
-    static CACHE: OnceLock<Vec<&'static GuardDescriptor>> = OnceLock::new();
-    CACHE.get_or_init(|| {
-        let mut guards: Vec<_> =
-            furnace_rs_core::__private::inventory::iter::<&'static GuardDescriptor>
-                .into_iter()
-                .copied()
-                .collect();
-        guards.sort_by(guard_order);
-        guards
-    })
-}
-
-fn guard_order(left: &&'static GuardDescriptor, right: &&'static GuardDescriptor) -> Ordering {
-    left.route_trait()
-        .cmp(right.route_trait())
-        .then_with(|| left.handler().cmp(right.handler()))
-        .then_with(|| left.namespace().cmp(&right.namespace()))
-        .then_with(|| location_order(left.location(), right.location()))
-}
-
-fn location_order(left: SourceLocation, right: SourceLocation) -> Ordering {
-    left.file
-        .cmp(right.file)
-        .then_with(|| left.line.cmp(&right.line))
-        .then_with(|| left.column.cmp(&right.column))
-}
-
 fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
     let subject = guard_subject(guard);
-    if guard.route_trait().is_empty() || guard.handler().is_empty() {
+    if guard.policy_name().is_empty() || guard.handler().is_empty() {
         return Err(metadata_error(
             subject,
-            "route trait and handler names must be present",
+            "policy and declaration names must be present",
             guard.location(),
         ));
     }
@@ -1132,7 +1083,7 @@ fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
 }
 
 fn guard_subject(guard: &GuardDescriptor) -> String {
-    format!("{}::{}", guard.route_trait(), guard.handler())
+    format!("{}::{}", guard.policy_name(), guard.handler())
 }
 
 fn valid_strategy_name(value: &str) -> bool {

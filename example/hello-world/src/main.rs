@@ -1,15 +1,16 @@
 use furnace_rs::prelude::*;
 
-#[routes]
-trait HelloRoutes {
-    #[get("/")]
-    async fn hello(&self) -> &'static str;
-}
-
-#[controller(routes = [HelloRoutes])]
+#[controller]
 struct HelloController;
 
-impl HelloRoutes for HelloController {
+impl Sealable for HelloController {
+    fn seals() -> SealRegistration<Self> {
+        SealRegistration::new()
+    }
+}
+#[controller(route = "/")]
+impl HelloController {
+    #[get]
     async fn hello(&self) -> &'static str {
         "Hello, world!"
     }

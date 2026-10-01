@@ -144,10 +144,6 @@ pub use logger::{ConsoleLoggerService, LogLevel, Logger, LoggerCauldron, LoggerS
 #[cfg(feature = "http")]
 pub use furnace_rs_common_macros::controller;
 
-/// Declares and validates a route-contract trait.
-#[cfg(feature = "http")]
-pub use furnace_rs_common_macros::routes;
-
 /// Declares an inheritable Passport policy inside a `#[routes]` contract.
 #[cfg(all(feature = "http", feature = "jwt"))]
 pub use furnace_rs_common_macros::guard;
@@ -183,8 +179,8 @@ pub use furnace_rs_common_macros::put;
 /// Static route and controller metadata types used by the contract catalog.
 #[cfg(feature = "http")]
 pub use route::{
-    ControllerDescriptor, ControllerEndpointDescriptor, ControllerRegistrar,
-    ControllerRouteDescriptor, HttpMethod, RouteCatalog, RouteContractDescriptor, RouteDescriptor,
+    ControllerDescriptor, ControllerEndpointDescriptor, ControllerRegistrar, HttpMethod,
+    RouteCatalog, RouteDescriptor,
 };
 
 /// Implementation details used by generated HTTP route adapters.

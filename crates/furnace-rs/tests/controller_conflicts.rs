@@ -4,9 +4,7 @@ use std::any::TypeId;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use furnace_rs::common::__private::RouterBuildContext;
-use furnace_rs::common::{
-    ControllerRouteDescriptor, HttpMethod, RouteCatalog, RouteContractDescriptor, RouteDescriptor,
-};
+use furnace_rs::common::{ControllerEndpointDescriptor, HttpMethod, RouteCatalog, RouteDescriptor};
 use furnace_rs::core::{Furnace, Result, SourceLocation};
 
 static REGISTRATIONS: AtomicUsize = AtomicUsize::new(0);
@@ -47,16 +45,16 @@ fn counted_registrar(
 const FIRST_MANUAL_ROUTE: RouteDescriptor = RouteDescriptor::new(
     HttpMethod::Get,
     "/users",
-    "/:id",
-    "/users/:id",
+    "/{id}",
+    "/users/{id}",
     "by_id",
     SourceLocation::new("tests/first_controller.rs", 12, 3),
 );
 const SECOND_MANUAL_ROUTE: RouteDescriptor = RouteDescriptor::new(
     HttpMethod::Get,
     "/users",
-    "/:user_id",
-    "/users/:user_id",
+    "/{user_id}",
+    "/users/{user_id}",
     "by_user_id",
     SourceLocation::new("tests/second_controller.rs", 21, 7),
 );
@@ -68,50 +66,35 @@ const COUNTED_MANUAL_ROUTE: RouteDescriptor = RouteDescriptor::new(
     "counted",
     SourceLocation::new("tests/counted_controller.rs", 3, 1),
 );
-const FIRST_MANUAL_CONTRACTS: &[RouteContractDescriptor] = &[RouteContractDescriptor::new(
-    "FirstRoutes",
-    &[FIRST_MANUAL_ROUTE],
-)];
-const SECOND_MANUAL_CONTRACTS: &[RouteContractDescriptor] = &[RouteContractDescriptor::new(
-    "SecondRoutes",
-    &[SECOND_MANUAL_ROUTE],
-)];
-const COUNTED_MANUAL_CONTRACTS: &[RouteContractDescriptor] = &[RouteContractDescriptor::new(
-    "CountedRoutes",
-    &[COUNTED_MANUAL_ROUTE],
-)];
+const FIRST_MANUAL_CONTRACTS: &[RouteDescriptor] = &[FIRST_MANUAL_ROUTE];
+const SECOND_MANUAL_CONTRACTS: &[RouteDescriptor] = &[SECOND_MANUAL_ROUTE];
+const COUNTED_MANUAL_CONTRACTS: &[RouteDescriptor] = &[COUNTED_MANUAL_ROUTE];
 
 furnace_rs::core::__private::inventory::submit! {
-    ControllerRouteDescriptor::with_registrar(
-        "aaa::CountedManualController",
-        counted_manual_type_id,
+    furnace_rs::common::ControllerDescriptor::new("test::CountedManualController", counted_manual_type_id, SourceLocation::new(file!(), line!(), column!()), furnace_rs::common::SealDefinition::default)
+}
+
+furnace_rs::core::__private::inventory::submit! {
+    ControllerEndpointDescriptor::new("aaa::CountedManualController", counted_manual_type_id, SourceLocation::new(file!(), line!(), column!()),
         COUNTED_MANUAL_CONTRACTS,
         counted_registrar,
     )
 }
 
-#[allow(dead_code)]
-#[furnace_rs::routes]
-trait DuplicateReadRoutes {
-    #[furnace_rs::get("/duplicate")]
-    async fn first(&self);
-}
-
-#[allow(dead_code)]
-#[furnace_rs::routes]
-trait DuplicateAdminRoutes {
-    #[furnace_rs::get("/duplicate")]
-    async fn second(&self);
-}
-
-#[furnace_rs::controller(routes = [DuplicateReadRoutes, DuplicateAdminRoutes])]
+#[furnace_rs::controller]
 struct DuplicateRouteController;
 
-impl DuplicateReadRoutes for DuplicateRouteController {
-    async fn first(&self) {}
+impl ::furnace_rs::Sealable for DuplicateRouteController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
 }
 
-impl DuplicateAdminRoutes for DuplicateRouteController {
+#[furnace_rs::controller]
+impl DuplicateRouteController {
+    #[furnace_rs::get("/duplicate")]
+    async fn first(&self) {}
+    #[furnace_rs::get("/duplicate")]
     async fn second(&self) {}
 }
 
@@ -129,28 +112,20 @@ async fn router_validation_rejects_conflicts_before_any_registration() {
     assert_eq!(REGISTRATIONS.load(Ordering::SeqCst), 0);
 }
 
-#[allow(dead_code)]
-#[furnace_rs::routes(prefix = "/users")]
-trait UserIdParameterRoutes {
-    #[furnace_rs::get("/:id")]
-    async fn by_id(&self);
-}
-
-#[allow(dead_code)]
-#[furnace_rs::routes(prefix = "/users")]
-trait UserNameParameterRoutes {
-    #[furnace_rs::get("/:user_id")]
-    async fn by_user_id(&self);
-}
-
-#[furnace_rs::controller(routes = [UserIdParameterRoutes, UserNameParameterRoutes])]
+#[furnace_rs::controller]
 struct EquivalentParameterRouteController;
 
-impl UserIdParameterRoutes for EquivalentParameterRouteController {
-    async fn by_id(&self) {}
+impl ::furnace_rs::Sealable for EquivalentParameterRouteController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
 }
 
-impl UserNameParameterRoutes for EquivalentParameterRouteController {
+#[furnace_rs::controller]
+impl EquivalentParameterRouteController {
+    #[furnace_rs::get("/users/{id}")]
+    async fn by_id(&self) {}
+    #[furnace_rs::get("/users/{user_id}")]
     async fn by_user_id(&self) {}
 }
 
@@ -169,15 +144,17 @@ async fn controller_construction_remains_independent_of_http_validation() {
 
 #[test]
 fn cross_controller_dynamic_conflicts_report_both_declarations() {
-    let first = ControllerRouteDescriptor::with_registrar(
+    let first = ControllerEndpointDescriptor::new(
         "test::FirstManualController",
         first_manual_type_id,
+        SourceLocation::new(file!(), line!(), column!()),
         FIRST_MANUAL_CONTRACTS,
         no_op_registrar,
     );
-    let second = ControllerRouteDescriptor::with_registrar(
+    let second = ControllerEndpointDescriptor::new(
         "test::SecondManualController",
         second_manual_type_id,
+        SourceLocation::new(file!(), line!(), column!()),
         SECOND_MANUAL_CONTRACTS,
         no_op_registrar,
     );

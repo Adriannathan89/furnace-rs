@@ -3,8 +3,8 @@
 #![cfg(all(feature = "http", feature = "jwt"))]
 
 use furnace_rs_common::{
-    ClaimsPrincipal, GuardCatalog, JwtClaims, JwtTokenKind, PassportContext, PassportPrincipal,
-    PassportResult, PassportStrategy, PassportStrategyCatalog,
+    ClaimsPrincipal, JwtClaims, JwtTokenKind, PassportContext, PassportPrincipal, PassportResult,
+    PassportStrategy, PassportStrategyCatalog,
 };
 
 #[derive(serde::Deserialize)]
@@ -39,17 +39,30 @@ impl PassportStrategy for CustomJwtStrategy {
     }
 }
 
-#[furnace_rs_common::routes]
-#[furnace_rs_common::guard(strategy = "jwt", principal = ClaimsPrincipal<UserClaims>)]
-#[allow(dead_code)]
-trait UserRoutes {
+#[furnace_rs_common::controller]
+struct UserRoutesController;
+
+#[furnace_rs_common::guard(principal = ClaimsPrincipal < UserClaims >, strategy = "jwt")]
+struct UserRoutesControllerGuard;
+
+impl ::furnace_rs_common::Sealable for UserRoutesController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<UserRoutesControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl UserRoutesController {
     #[furnace_rs_common::get("/profile")]
-    async fn profile(&self);
+
+    async fn profile(&self) {
+        unreachable!("metadata-only endpoint")
+    }
 }
 
 #[test]
 fn custom_jwt_strategy_overrides_an_eligible_claims_principal_adapter() {
-    let guards = GuardCatalog::guards();
+    let guards = [<UserRoutesControllerGuard as furnace_rs_common::GuardPolicy>::descriptor()];
     let preflight = PassportStrategyCatalog::preflight(&guards).unwrap();
     let binding = preflight.bindings().first().unwrap();
 

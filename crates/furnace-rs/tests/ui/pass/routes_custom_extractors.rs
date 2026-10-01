@@ -21,12 +21,22 @@ where
     }
 }
 
-/// Contract using a custom extractor whose body behavior belongs to Axum/rustc.
-#[routes]
-trait CustomExtractorRoutes {
-    /// Deliberately leaves custom extractor ordering to native handler checking.
+#[furnace_rs::controller]
+struct CustomExtractorRoutesController;
+
+impl ::furnace_rs::Sealable for CustomExtractorRoutesController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+
+#[furnace_rs::controller]
+impl CustomExtractorRoutesController {
     #[post("/")]
-    async fn create(&self, body: Json, id: furnace_rs::common::Path<u64>);
+
+    async fn create(&self, body: Json, id: furnace_rs::common::Path<u64>) {
+        unreachable!("metadata-only endpoint")
+    }
 }
 
 fn main() {}

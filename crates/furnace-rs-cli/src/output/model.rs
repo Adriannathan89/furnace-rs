@@ -114,7 +114,6 @@ impl RoutesData {
 pub struct RouteData {
     method: String,
     path: String,
-    route_trait: String,
     handler: String,
     controller: String,
     location: SourceLocation,
@@ -127,7 +126,6 @@ impl RouteData {
     pub fn new(
         method: impl Into<String>,
         path: impl Into<String>,
-        route_trait: impl Into<String>,
         handler: impl Into<String>,
         controller: impl Into<String>,
         location: SourceLocation,
@@ -136,7 +134,6 @@ impl RouteData {
         Self {
             method: method.into(),
             path: path.into(),
-            route_trait: route_trait.into(),
             handler: handler.into(),
             controller: controller.into(),
             location,

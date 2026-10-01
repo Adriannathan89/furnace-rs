@@ -69,26 +69,25 @@ mod application {
         }
     }
 
-    #[routes(prefix = "/acceptance")]
-    pub(super) trait AcceptanceRoutes {
-        #[post("/accounts")]
-        async fn create(&self, input: ValidatedJson<CreateAccount>) -> &'static str;
-
-        #[get("/missing")]
-        async fn missing(&self) -> HttpResult<&'static str>;
-    }
-
-    #[controller(routes = [AcceptanceRoutes])]
+    #[controller]
     pub(super) struct AcceptanceController {
         service: AcceptanceService,
     }
 
-    impl AcceptanceRoutes for AcceptanceController {
+    impl ::furnace_rs::Sealable for AcceptanceController {
+        fn seals() -> ::furnace_rs::SealRegistration<Self> {
+            ::furnace_rs::SealRegistration::new()
+        }
+    }
+
+    #[furnace_rs::controller]
+    impl AcceptanceController {
+        #[post("/acceptance/accounts")]
         async fn create(&self, _: ValidatedJson<CreateAccount>) -> &'static str {
             self.service.create_account();
             "created"
         }
-
+        #[get("/acceptance/missing")]
         async fn missing(&self) -> HttpResult<&'static str> {
             Err(NotFound::new("acceptance resource was not found").into())
         }

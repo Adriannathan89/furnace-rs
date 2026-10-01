@@ -9,23 +9,21 @@ use crate::diagnostic::FURNACE230;
 
 use super::ProjectName;
 
-/// The seven generated files in their documented output order.
-pub const GENERATED_FILES: [&str; 7] = [
+/// The six generated files in their documented output order.
+pub const GENERATED_FILES: [&str; 6] = [
     "Cargo.toml",
     "furnace.toml",
     "src/main.rs",
     "src/app/mod.rs",
-    "src/app/routes.rs",
     "src/app/controller.rs",
     "src/app/service.rs",
 ];
 
-const TEMPLATES: [&str; 7] = [
+const TEMPLATES: [&str; 6] = [
     include_str!("templates/Cargo.toml.txt"),
     include_str!("templates/furnace.toml.txt"),
     include_str!("templates/main.rs.txt"),
     include_str!("templates/app_mod.rs.txt"),
-    include_str!("templates/routes.rs.txt"),
     include_str!("templates/controller.rs.txt"),
     include_str!("templates/service.rs.txt"),
 ];
@@ -60,7 +58,7 @@ pub struct RenderedProject {
 }
 
 impl RenderedProject {
-    /// Returns the seven rendered files in documented output order.
+    /// Returns the six rendered files in documented output order.
     pub fn files(&self) -> &[RenderedFile] {
         &self.files
     }
@@ -90,7 +88,7 @@ impl fmt::Display for TemplateError {
 
 impl std::error::Error for TemplateError {}
 
-/// Renders the exact seven-file starter without writing to the filesystem.
+/// Renders the exact six-file starter without writing to the filesystem.
 pub fn render_project(name: &ProjectName) -> Result<RenderedProject, TemplateError> {
     GENERATED_FILES
         .iter()

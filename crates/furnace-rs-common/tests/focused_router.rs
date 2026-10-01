@@ -7,37 +7,46 @@ use axum::{
     http::{Request, StatusCode},
 };
 use furnace_rs_common::{
-    ControllerRouteDescriptor, controller,
-    core::{FURNACE030, Furnace},
-    routes,
+    ControllerDescriptor, controller,
+    core::{FURNACE008, FURNACE030, Furnace, SourceLocation},
 };
 use std::any::TypeId;
 use tower::ServiceExt;
 
-#[routes]
-trait SelectedRoutes {
-    #[get("/selected")]
-    async fn selected(&self) -> &'static str;
-}
-#[controller(routes = [SelectedRoutes])]
+#[controller]
 struct Selected;
-impl SelectedRoutes for Selected {
+
+impl ::furnace_rs_common::Sealable for Selected {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl Selected {
+    #[get("/selected")]
     async fn selected(&self) -> &'static str {
         "selected"
     }
 }
-#[routes]
-trait OtherRoutes {
-    #[get("/other")]
-    async fn other(&self) -> &'static str;
-}
-#[controller(routes = [OtherRoutes])]
+
+#[controller]
 struct Other;
-impl OtherRoutes for Other {
+
+impl ::furnace_rs_common::Sealable for Other {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl Other {
+    #[get("/other")]
     async fn other(&self) -> &'static str {
         panic!("unselected route ran")
     }
 }
+
 #[furnace_rs_core::burner]
 struct NoRoutes;
 #[furnace_rs_core::burner]
@@ -51,13 +60,13 @@ fn ambiguous_id() -> TypeId {
     TypeId::of::<Ambiguous>()
 }
 furnace_rs_core::__private::inventory::submit! {
-    ControllerRouteDescriptor::new("Invalid", invalid_id, &[])
+    ControllerDescriptor::new("Invalid", invalid_id, SourceLocation::new(file!(), line!(), column!()), || furnace_rs_common::SealRegistration::<Selected>::new().into_definition())
 }
 furnace_rs_core::__private::inventory::submit! {
-    ControllerRouteDescriptor::new("AmbiguousOne", ambiguous_id, &[])
+    ControllerDescriptor::new("AmbiguousOne", ambiguous_id, SourceLocation::new(file!(), line!(), column!()), || furnace_rs_common::SealRegistration::<Selected>::new().into_definition())
 }
 furnace_rs_core::__private::inventory::submit! {
-    ControllerRouteDescriptor::new("AmbiguousTwo", ambiguous_id, &[])
+    ControllerDescriptor::new("AmbiguousTwo", ambiguous_id, SourceLocation::new(file!(), line!(), column!()), || furnace_rs_common::SealRegistration::<Selected>::new().into_definition())
 }
 
 #[cfg(feature = "jwt")]
@@ -71,15 +80,22 @@ mod unused_guard {
             false
         }
     }
-    #[furnace_rs_common::routes]
-    #[furnace_rs_common::guard(strategy = "missing", principal = UnusedPrincipal)]
-    pub trait Guarded {
-        #[get("/unused-guard")]
-        async fn guarded(&self) -> &'static str;
-    }
-    #[furnace_rs_common::controller(routes = [Guarded])]
+
+    #[furnace_rs_common::controller]
     pub struct GuardedController;
-    impl Guarded for GuardedController {
+
+    #[furnace_rs_common::guard(principal = UnusedPrincipal, strategy = "missing")]
+    struct GuardedControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for GuardedController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<GuardedControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl GuardedController {
+        #[get("/unused-guard")]
         async fn guarded(&self) -> &'static str {
             "unused"
         }
@@ -133,13 +149,17 @@ async fn rejects_absent_controller_metadata() {
 }
 #[tokio::test]
 async fn rejects_invalid_selected_metadata() {
-    assert_eq!(error_for::<Invalid>().await.code(), FURNACE030);
+    assert_eq!(error_for::<Invalid>().await.code(), FURNACE008);
 }
 #[tokio::test]
 async fn rejects_ambiguous_selected_controller_metadata() {
     let error = error_for::<Ambiguous>().await;
-    assert_eq!(error.code(), FURNACE030);
-    assert!(error.to_string().contains("controller type identifier"));
+    assert_eq!(error.code(), FURNACE008);
+    assert!(
+        error
+            .to_string()
+            .contains("inherent endpoint implementation")
+    );
 }
 
 #[cfg(feature = "jwt")]

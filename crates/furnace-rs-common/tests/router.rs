@@ -8,7 +8,7 @@ use axum::routing::get;
 use furnace_rs_common::__private::enable_automatic_cors_for_test;
 use furnace_rs_common::{
     Created, Header, HttpResult, Json, NoContent, Path, Query, build_router, configure_router,
-    controller, headers, routes,
+    controller, headers,
 };
 use furnace_rs_core::{Config, ConfigBuilder, Furnace, FurnaceBuilder, MapSource};
 use serde::{Deserialize, Serialize};
@@ -17,16 +17,19 @@ use tower::ServiceExt;
 const ALLOWED_ORIGIN: &str = "https://app.example.com";
 
 mod cors_routes {
-    #[furnace_rs_common::routes]
-    pub trait CorsRoutes {
-        #[furnace_rs_common::get("/ok")]
-        async fn ok(&self) -> &'static str;
-    }
 
-    #[furnace_rs_common::controller(routes = [CorsRoutes])]
+    #[furnace_rs_common::controller]
     pub struct CorsController;
 
-    impl CorsRoutes for CorsController {
+    impl ::furnace_rs_common::Sealable for CorsController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            ::furnace_rs_common::SealRegistration::new()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl CorsController {
+        #[furnace_rs_common::get("/ok")]
         async fn ok(&self) -> &'static str {
             "ok"
         }
@@ -109,29 +112,23 @@ async fn raw_router_configuration_applies_cors_to_native_only_router() {
     );
 }
 
-#[routes]
-trait AlphaRoutes {
-    #[get("/alpha")]
-    async fn lookup(&self) -> &'static str;
-}
-
-#[routes]
-trait BetaRoutes {
-    #[get("/beta")]
-    async fn lookup(&self) -> &'static str;
-}
-
-#[controller(routes = [AlphaRoutes, BetaRoutes])]
+#[controller]
 struct LookupController;
 
-impl AlphaRoutes for LookupController {
-    async fn lookup(&self) -> &'static str {
-        "alpha"
+impl ::furnace_rs_common::Sealable for LookupController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
     }
 }
 
-impl BetaRoutes for LookupController {
-    async fn lookup(&self) -> &'static str {
+#[furnace_rs_common::controller]
+impl LookupController {
+    #[get("/alpha")]
+    async fn alpha(&self) -> &'static str {
+        "alpha"
+    }
+    #[get("/beta")]
+    async fn beta(&self) -> &'static str {
         "beta"
     }
 }
@@ -192,42 +189,18 @@ struct RequestSummary {
     path: String,
 }
 
-#[routes(prefix = "/users")]
-trait UserRoutes {
-    #[get("/:id")]
-    async fn get_user(
-        &self,
-        id: Path<u64>,
-        agent: Header<headers::UserAgent>,
-    ) -> HttpResult<Json<User>>;
-
-    #[get("/")]
-    async fn list_users(
-        &self,
-        query: Query<ListQuery>,
-        request: axum::extract::Request,
-    ) -> Json<RequestSummary>;
-
-    #[post("/")]
-    async fn create_user(&self, input: Json<CreateUser>) -> Created<Json<User>>;
-
-    #[put("/:id")]
-    async fn replace_user(&self, id: Path<u64>, input: Json<CreateUser>) -> Json<User>;
-
-    #[patch("/:id")]
-    async fn patch_user(&self, id: Path<u64>, input: Json<PatchUser>) -> Json<User>;
-
-    #[delete("/:id")]
-    async fn delete_user(&self, id: Path<u64>) -> NoContent;
-
-    #[get("/special")]
-    async fn special_user(&self) -> Json<User>;
-}
-
-#[controller(routes = [UserRoutes])]
+#[controller]
 struct UserController;
 
-impl UserRoutes for UserController {
+impl ::furnace_rs_common::Sealable for UserController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl UserController {
+    #[get("/users/:id")]
     async fn get_user(
         &self,
         Path(id): Path<u64>,
@@ -238,7 +211,7 @@ impl UserRoutes for UserController {
             name: agent.as_str().to_owned(),
         }))
     }
-
+    #[get("/users")]
     async fn list_users(
         &self,
         Query(query): Query<ListQuery>,
@@ -250,32 +223,32 @@ impl UserRoutes for UserController {
             path: request.uri().path().to_owned(),
         })
     }
-
+    #[post("/users")]
     async fn create_user(&self, Json(input): Json<CreateUser>) -> Created<Json<User>> {
         Created(Json(User {
             id: 1,
             name: input.name,
         }))
     }
-
+    #[put("/users/:id")]
     async fn replace_user(&self, Path(id): Path<u64>, Json(input): Json<CreateUser>) -> Json<User> {
         Json(User {
             id,
             name: input.name,
         })
     }
-
+    #[patch("/users/:id")]
     async fn patch_user(&self, Path(id): Path<u64>, Json(input): Json<PatchUser>) -> Json<User> {
         Json(User {
             id,
             name: input.name,
         })
     }
-
+    #[delete("/users/:id")]
     async fn delete_user(&self, Path(_id): Path<u64>) -> NoContent {
         NoContent
     }
-
+    #[get("/users/special")]
     async fn special_user(&self) -> Json<User> {
         Json(User {
             id: 999,

@@ -28,45 +28,18 @@ struct CreateUser {
 }
 
 /// A controller demonstrating extractor forwarding.
-#[controller(routes = [ExtractorRoutes])]
+#[controller]
 struct ExtractorController;
 
-/// Route contract using the standard and native extractor surfaces.
-#[routes(prefix = "/users")]
-trait ExtractorRoutes {
-    /// Returns a user after forwarding every supported extractor.
-    #[get("/:id")]
-    async fn get_user(
-        &self,
-        id: Path<u64>,
-        query: Query<SearchQuery>,
-        agent: Header<headers::UserAgent>,
-        extension: furnace_rs::common::axum::extract::Extension<String>,
-        request: Request,
-    ) -> Json<User>;
-
-    /// Creates a user after extracting request parts before the JSON body.
-    #[furnace_rs::post("/:id")]
-    async fn create_user(
-        &self,
-        id: Path<u64>,
-        query: Query<SearchQuery>,
-        agent: Header<headers::UserAgent>,
-        request: Json<CreateUser>,
-    ) -> Json<User>;
-
-    /// Creates a validated user after extracting request parts before the JSON body.
-    #[furnace_rs::post("/:id/validated")]
-    async fn create_validated_user(
-        &self,
-        id: Path<u64>,
-        query: Query<SearchQuery>,
-        agent: Header<headers::UserAgent>,
-        request: ValidatedJson<CreateUser>,
-    ) -> Json<User>;
+impl ::furnace_rs::Sealable for ExtractorController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
 }
 
-impl ExtractorRoutes for ExtractorController {
+#[furnace_rs::controller]
+impl ExtractorController {
+    #[get("/users/:id")]
     async fn get_user(
         &self,
         Path(id): Path<u64>,
@@ -80,7 +53,7 @@ impl ExtractorRoutes for ExtractorController {
         let _ = (query.page, agent, extension, request);
         Json(User { id })
     }
-
+    #[furnace_rs::post("/users/:id")]
     async fn create_user(
         &self,
         Path(id): Path<u64>,
@@ -91,7 +64,7 @@ impl ExtractorRoutes for ExtractorController {
         let _ = (query.page, agent, request.name);
         Json(User { id })
     }
-
+    #[furnace_rs::post("/users/:id/validated")]
     async fn create_validated_user(
         &self,
         Path(id): Path<u64>,

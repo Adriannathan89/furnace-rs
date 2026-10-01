@@ -1,5 +1,5 @@
-error: route path parameters must use `[A-Za-z_][A-Za-z0-9_]*`
- --> tests/ui/fail/routes_invalid_parameter.rs:3:23
+error: capture names must use `[A-Za-z_][A-Za-z0-9_]*`
+ --> tests/ui/fail/routes_invalid_parameter.rs:9:23
   |
-3 |     #[furnace_rs::get("/:9id")]
+9 |     #[furnace_rs::get("/:9id")]
   |                       ^^^^^^^

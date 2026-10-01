@@ -1,5 +1,5 @@
-error: `#[controller]` requires at least one route trait
- --> tests/ui/fail/controller_empty_routes.rs:3:36
+error: `#[controller]` struct arguments are unsupported; put `route` on the inherent implementation
+ --> tests/ui/fail/controller_empty_routes.rs:3:26
   |
 3 | #[furnace_rs::controller(routes = [])]
-  |                                    ^
+  |                          ^^^^^^^^^^^

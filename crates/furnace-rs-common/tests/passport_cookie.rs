@@ -16,7 +16,7 @@ use furnace_rs_common::{
     Authenticated, JwtClaims, JwtService, JwtSignOptions, JwtTokenKind, PassportContext,
     PassportError, PassportPrincipal, PassportResult, PassportStrategy, build_router, controller,
     core::{Config, ConfigBuilder, Furnace, MapSource},
-    passport_strategy, routes,
+    passport_strategy,
 };
 use tower::ServiceExt;
 
@@ -79,21 +79,21 @@ impl PassportStrategy for RefreshStrategy {
     }
 }
 
-#[routes(prefix = "/session")]
-#[furnace_rs_common::guard(
-    strategy = "jwt-refresh",
-    principal = RefreshPrincipal,
-    source = cookie("refresh_token"),
-)]
-trait SessionRoutes {
-    #[furnace_rs_common::post("/refresh")]
-    async fn refresh(&self, principal: Authenticated<RefreshPrincipal>) -> String;
-}
-
-#[controller(routes = [SessionRoutes])]
+#[controller]
 struct SessionController;
 
-impl SessionRoutes for SessionController {
+#[furnace_rs_common::guard(principal = RefreshPrincipal, source = cookie ("refresh_token"), strategy = "jwt-refresh")]
+struct SessionControllerGuard;
+
+impl ::furnace_rs_common::Sealable for SessionController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<SessionControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl SessionController {
+    #[furnace_rs_common::post("/session/refresh")]
     async fn refresh(&self, principal: Authenticated<RefreshPrincipal>) -> String {
         HANDLER_CALLS.fetch_add(1, Ordering::SeqCst);
         format!("refreshed:{}", principal.user_id)

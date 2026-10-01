@@ -216,7 +216,7 @@ mod passport {
     use furnace_rs_common::__private::enable_automatic_cors_for_test;
     use furnace_rs_common::{
         JwtClaims, JwtService, JwtSignOptions, JwtTokenKind, PassportContext, PassportPrincipal,
-        PassportResult, PassportStrategy, build_router, controller, passport_strategy, routes,
+        PassportResult, PassportStrategy, build_router, controller, passport_strategy,
     };
 
     static STRATEGY_CALLS: AtomicUsize = AtomicUsize::new(0);
@@ -259,17 +259,21 @@ mod passport {
         }
     }
 
-    #[routes]
-    #[furnace_rs_common::guard(strategy = "cors", principal = Principal)]
-    trait GuardedRoutes {
-        #[furnace_rs_common::get("/guarded")]
-        async fn guarded(&self) -> &'static str;
-    }
-
-    #[controller(routes = [GuardedRoutes])]
+    #[controller]
     struct GuardedController;
 
-    impl GuardedRoutes for GuardedController {
+    #[furnace_rs_common::guard(principal = Principal, strategy = "cors")]
+    struct GuardedControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for GuardedController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<GuardedControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl GuardedController {
+        #[furnace_rs_common::get("/guarded")]
         async fn guarded(&self) -> &'static str {
             HANDLER_CALLS.fetch_add(1, Ordering::SeqCst);
             "guarded"

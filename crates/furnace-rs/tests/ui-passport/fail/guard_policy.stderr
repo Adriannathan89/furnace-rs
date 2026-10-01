@@ -1,7 +1,7 @@
 error: `roles` policy must contain at least one value
   --> tests/ui-passport/fail/guard_policy.rs:15:1
    |
-15 | #[routes]
-   | ^^^^^^^^^
+15 | #[guard(strategy = "jwt", principal = UserPrincipal, roles(any = []))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: this error originates in the attribute macro `routes` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the attribute macro `guard` (in Nightly builds, run with -Z macro-backtrace for more info)

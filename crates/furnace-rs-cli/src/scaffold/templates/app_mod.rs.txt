@@ -1,6 +1,5 @@
 // src/app/mod.rs
 mod controller;
-mod routes;
 mod service;
 
 use furnace::prelude::*;

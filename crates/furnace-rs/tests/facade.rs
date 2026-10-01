@@ -4,7 +4,8 @@ use std::sync::Arc;
 
 use furnace_rs::common::{HttpMethod, Json, Path, RouteCatalog};
 use furnace_rs::core::{
-    Catalog as CoreCatalog, Furnace as CoreMads, ProviderKind, ProviderOrigin, ProviderVisibility,
+    Catalog as CoreCatalog, Furnace as CoreFurnace, ProviderKind, ProviderOrigin,
+    ProviderVisibility,
 };
 
 fn framework_result() -> furnace_rs::core::Result<()> {
@@ -186,17 +187,16 @@ fn prelude_exposes_core_types_and_bare_attributes() {
         #[burner]
         struct PreludeService;
 
-        #[allow(dead_code)]
-        #[routes(prefix = "/prelude")]
-        trait PreludeRoutes {
-            #[get("/")]
-            async fn index(&self);
-        }
-
-        #[controller(routes = [PreludeRoutes])]
+        #[controller]
         struct PreludeController;
-
-        impl PreludeRoutes for PreludeController {
+        impl Sealable for PreludeController {
+            fn seals() -> SealRegistration<Self> {
+                SealRegistration::new()
+            }
+        }
+        #[controller(route = "/prelude")]
+        impl PreludeController {
+            #[get]
             async fn index(&self) {}
         }
 
@@ -255,32 +255,26 @@ struct QueryUsecase;
 #[furnace_rs::burner]
 struct CommandUsecase;
 
-#[furnace_rs::routes(prefix = "/users")]
-trait QueryRoutes {
-    #[furnace_rs::get("/:id")]
-    async fn get_user(&self, id: Path<i64>) -> String;
-}
-
-#[furnace_rs::routes]
-trait CommandRoutes {
-    #[furnace_rs::post("/users")]
-    async fn create_user(&self, id: Json<i64>) -> String;
-}
-
-#[furnace_rs::controller(routes = [QueryRoutes, CommandRoutes])]
+#[furnace_rs::controller]
 struct FacadeController {
     query: QueryUsecase,
     command: CommandUsecase,
 }
 
-impl QueryRoutes for FacadeController {
+impl ::furnace_rs::Sealable for FacadeController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+
+#[furnace_rs::controller(route = "/users")]
+impl FacadeController {
+    #[furnace_rs::get("/:id")]
     async fn get_user(&self, Path(id): Path<i64>) -> String {
         let _query = &self.query;
         id.to_string()
     }
-}
-
-impl CommandRoutes for FacadeController {
+    #[furnace_rs::post]
     async fn create_user(&self, Json(id): Json<i64>) -> String {
         let _command = &self.command;
         id.to_string()
@@ -366,25 +360,26 @@ fn controller_keeps_deterministic_route_metadata() {
     assert_eq!(routes.len(), 2);
     assert_eq!(routes[0].method(), HttpMethod::Get);
     assert_eq!(routes[0].prefix(), "/users");
-    assert_eq!(routes[0].path(), "/:id");
-    assert_eq!(routes[0].full_path(), "/users/:id");
+    assert_eq!(routes[0].path(), "/{id}");
+    assert_eq!(routes[0].full_path(), "/users/{id}");
     assert_eq!(routes[0].handler(), "get_user");
     assert_eq!(routes[1].method(), HttpMethod::Post);
     assert_eq!(routes[1].full_path(), "/users");
     assert!(RouteCatalog::validate_controller::<FacadeController>().is_ok());
 }
 
-#[allow(dead_code)]
-#[furnace_rs::routes(prefix = "/")]
-trait RootRoutes {
-    #[furnace_rs::get("/health")]
-    async fn health(&self);
-}
-
-#[furnace_rs::controller(routes = [RootRoutes])]
+#[furnace_rs::controller]
 struct RootController;
 
-impl RootRoutes for RootController {
+impl ::furnace_rs::Sealable for RootController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+
+#[furnace_rs::controller]
+impl RootController {
+    #[furnace_rs::get("/health")]
     async fn health(&self) {}
 }
 
@@ -409,7 +404,7 @@ fn service_dependencies_follow_source_field_order() {
 
 #[tokio::test]
 async fn cloned_service_handles_share_the_inner_allocation() {
-    let mut builder = CoreMads::builder();
+    let mut builder = CoreFurnace::builder();
     builder
         .provide(Clock)
         .expect("clock insertion should succeed");
@@ -444,7 +439,7 @@ async fn cloned_service_handles_share_the_inner_allocation() {
 
 #[tokio::test]
 async fn controller_constructs_after_multiple_usecases() {
-    let mut builder = CoreMads::builder();
+    let mut builder = CoreFurnace::builder();
     builder
         .provide(Clock)
         .expect("clock insertion should succeed");
@@ -478,7 +473,7 @@ async fn controller_constructs_after_multiple_usecases() {
 
 #[tokio::test]
 async fn grouped_furnace_results_register_their_success_type() {
-    let mut builder = CoreMads::builder();
+    let mut builder = CoreFurnace::builder();
     builder
         .provide(Clock)
         .expect("clock insertion should succeed");

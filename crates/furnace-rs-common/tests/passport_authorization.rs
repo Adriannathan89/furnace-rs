@@ -16,7 +16,7 @@ use furnace_rs_common::{
     JwtClaims, JwtService, JwtSignOptions, JwtTokenKind, PassportContext, PassportPrincipal,
     PassportResult, PassportStrategy, build_router, controller,
     core::{Config, ConfigBuilder, Furnace, MapSource},
-    passport_strategy, routes,
+    passport_strategy,
 };
 use tower::ServiceExt;
 
@@ -84,35 +84,21 @@ fn permits_profile(principal: &PolicyPrincipal) -> bool {
     principal.0.predicate
 }
 
-#[routes(prefix = "/policy")]
-#[furnace_rs_common::guard(
-    strategy = "jwt",
-    principal = PolicyPrincipal,
-    roles(all = ["member", "verified"]),
-    permissions(all = ["profile:read", "profile:write"]),
-    predicate = permits_profile,
-)]
-trait PolicyRoutes {
-    #[furnace_rs_common::get("/all")]
-    async fn all(&self) -> &'static str;
-}
-
-#[routes(prefix = "/policy")]
-#[furnace_rs_common::guard(
-    strategy = "jwt",
-    principal = PolicyPrincipal,
-    roles(any = ["operator", "admin"]),
-    permissions(any = ["dash:read", "dash:write"]),
-)]
-trait AnyPolicyRoutes {
-    #[furnace_rs_common::get("/any")]
-    async fn any(&self) -> &'static str;
-}
-
-#[controller(routes = [PolicyRoutes, AnyPolicyRoutes])]
+#[controller]
 struct PolicyController;
 
-impl PolicyRoutes for PolicyController {
+#[furnace_rs_common::guard(permissions (all = ["profile:read" , "profile:write"]), predicate = permits_profile, principal = PolicyPrincipal, roles (all = ["member" , "verified"]), strategy = "jwt")]
+struct PolicyControllerGuard;
+
+impl ::furnace_rs_common::Sealable for PolicyController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<PolicyControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl PolicyController {
+    #[furnace_rs_common::get("/policy/all")]
     async fn all(&self) -> &'static str {
         record(5);
         HANDLER_CALLS.fetch_add(1, Ordering::SeqCst);
@@ -120,7 +106,21 @@ impl PolicyRoutes for PolicyController {
     }
 }
 
-impl AnyPolicyRoutes for PolicyController {
+#[furnace_rs_common::controller]
+struct PolicyControllerPolicy1;
+
+#[furnace_rs_common::guard(permissions (any = ["dash:read" , "dash:write"]), principal = PolicyPrincipal, roles (any = ["operator" , "admin"]), strategy = "jwt")]
+struct PolicyControllerPolicy1Guard;
+
+impl ::furnace_rs_common::Sealable for PolicyControllerPolicy1 {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<PolicyControllerPolicy1Guard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl PolicyControllerPolicy1 {
+    #[furnace_rs_common::get("/policy/any")]
     async fn any(&self) -> &'static str {
         HANDLER_CALLS.fetch_add(1, Ordering::SeqCst);
         "any"

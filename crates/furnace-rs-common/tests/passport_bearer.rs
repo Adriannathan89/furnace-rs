@@ -19,7 +19,7 @@ use furnace_rs_common::{
     Authenticated, JwtClaims, JwtService, JwtSignOptions, JwtTokenKind, PassportContext,
     PassportPrincipal, PassportResult, PassportStrategy, VerifiedToken, build_router, controller,
     core::{Config, ConfigBuilder, Furnace, MapSource},
-    passport_strategy, routes,
+    passport_strategy,
 };
 use tower::ServiceExt;
 
@@ -92,21 +92,21 @@ impl PassportStrategy for UserStrategy {
     }
 }
 
-#[routes(prefix = "/users")]
-#[furnace_rs_common::guard(strategy = "jwt", principal = UserPrincipal)]
-trait UserRoutes {
-    #[furnace_rs_common::get("/profile")]
-    async fn profile(
-        &self,
-        principal: Authenticated<UserPrincipal>,
-        token: VerifiedToken<UserClaims>,
-    ) -> String;
-}
-
-#[controller(routes = [UserRoutes])]
+#[controller]
 struct UserController;
 
-impl UserRoutes for UserController {
+#[furnace_rs_common::guard(principal = UserPrincipal, strategy = "jwt")]
+struct UserControllerGuard;
+
+impl ::furnace_rs_common::Sealable for UserController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<UserControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl UserController {
+    #[furnace_rs_common::get("/users/profile")]
     async fn profile(
         &self,
         principal: Authenticated<UserPrincipal>,

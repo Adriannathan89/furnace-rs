@@ -1,5 +1,5 @@
-error: route prefix must be non-empty and start with `/`
- --> tests/ui/fail/routes_invalid_path.rs:1:31
+error: endpoint paths must start with `/`
+ --> tests/ui/fail/routes_invalid_path.rs:7:34
   |
-1 | #[furnace_rs::routes(prefix = "users")]
-  |                               ^^^^^^^
+7 | #[furnace_rs::controller(route = "users")]
+  |                                  ^^^^^^^

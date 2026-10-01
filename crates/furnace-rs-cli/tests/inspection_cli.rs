@@ -19,7 +19,7 @@ fn one_standard_app_is_inspected_without_selectors_or_startup_effects() {
         .assert()
         .success()
         .stdout(contains("GET"))
-        .stdout(contains("/users/:id"))
+        .stdout(contains("/users/{id}"))
         .stdout(contains("UserController"));
 
     assert!(!marker.exists(), "inspection constructed a provider");

@@ -9,19 +9,13 @@
 //
 struct NotClone;
 
-#[furnace_rs::routes]
-trait Routes {
-    #[furnace_rs::get("/")]
-    async fn index(&self);
-}
-
-#[furnace_rs::controller(routes = [Routes])]
+#[furnace_rs::controller]
 struct Controller {
     dependency: NotClone,
 }
 
-impl Routes for Controller {
-    async fn index(&self) {}
+impl furnace_rs::Sealable for Controller {
+    fn seals() -> furnace_rs::SealRegistration<Self> { furnace_rs::SealRegistration::new() }
 }
 
 fn main() {}

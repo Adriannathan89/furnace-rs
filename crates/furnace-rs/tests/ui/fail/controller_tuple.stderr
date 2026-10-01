@@ -1,5 +1,5 @@
 error: `#[controller]` supports only named-field or unit structs
- --> tests/ui/fail/controller_tuple.rs:8:18
+ --> tests/ui/fail/controller_tuple.rs:2:18
   |
-8 | struct Controller(usize);
+2 | struct Controller(usize);
   |                  ^^^^^^^

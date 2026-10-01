@@ -1,5 +1,5 @@
-error: route path must not contain control characters
- --> tests/ui/fail/routes_control_character.rs:3:23
+error: endpoint paths must not contain queries, fragments, escapes, control characters, or whitespace
+ --> tests/ui/fail/routes_control_character.rs:9:23
   |
-3 |     #[furnace_rs::get("/health\0check")]
+9 |     #[furnace_rs::get("/health\0check")]
   |                       ^^^^^^^^^^^^^^^^

@@ -32,34 +32,45 @@ impl Cauldron for PrivateShared {
         self.provide::<SharedStorage>()
     }
 }
-#[routes]
-trait FirstRoutes {
-    #[get("/first")]
-    async fn first(&self) -> &'static str;
-}
-#[controller(routes = [FirstRoutes])]
+
+#[controller]
 struct FirstController {
     _storage: SharedStorage,
 }
-impl FirstRoutes for FirstController {
+
+impl ::furnace_rs::Sealable for FirstController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+
+#[furnace_rs::controller]
+impl FirstController {
+    #[get("/first")]
     async fn first(&self) -> &'static str {
         "first"
     }
 }
-#[routes]
-trait SecondRoutes {
-    #[get("/second")]
-    async fn second(&self) -> &'static str;
-}
-#[controller(routes = [SecondRoutes])]
+
+#[controller]
 struct SecondController {
     _storage: SharedStorage,
 }
-impl SecondRoutes for SecondController {
+
+impl ::furnace_rs::Sealable for SecondController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+
+#[furnace_rs::controller]
+impl SecondController {
+    #[get("/second")]
     async fn second(&self) -> &'static str {
         "second"
     }
 }
+
 #[cauldron]
 struct FirstFeature;
 impl Cauldron for FirstFeature {

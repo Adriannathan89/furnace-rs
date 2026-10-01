@@ -10,12 +10,11 @@ use std::{
 use serde_json::{Deserializer, Value, json};
 use tempfile::tempdir;
 
-const GENERATED_FILES: [&str; 7] = [
+const GENERATED_FILES: [&str; 6] = [
     "Cargo.toml",
     "furnace.toml",
     "src/main.rs",
     "src/app/mod.rs",
-    "src/app/routes.rs",
     "src/app/controller.rs",
     "src/app/service.rs",
 ];

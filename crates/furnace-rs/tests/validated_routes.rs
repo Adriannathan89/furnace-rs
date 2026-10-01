@@ -38,32 +38,28 @@ struct PathInput {
     id: i64,
 }
 
-#[routes(prefix = "/validated")]
-trait ValidatedRoutes {
-    #[post("/json")]
-    async fn json(&self, input: ValidatedJson<BodyInput>) -> &'static str;
-
-    #[get("/query")]
-    async fn query(&self, input: ValidatedQuery<QueryInput>) -> &'static str;
-
-    #[get("/path/:id")]
-    async fn path(&self, input: ValidatedPath<PathInput>) -> &'static str;
-}
-
-#[controller(routes = [ValidatedRoutes])]
+#[controller]
 struct ValidatedController;
 
-impl ValidatedRoutes for ValidatedController {
+impl ::furnace_rs::Sealable for ValidatedController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+
+#[furnace_rs::controller]
+impl ValidatedController {
+    #[post("/validated/json")]
     async fn json(&self, _: ValidatedJson<BodyInput>) -> &'static str {
         JSON_HANDLER_CALLS.fetch_add(1, Ordering::SeqCst);
         "json"
     }
-
+    #[get("/validated/query")]
     async fn query(&self, _: ValidatedQuery<QueryInput>) -> &'static str {
         QUERY_HANDLER_CALLS.fetch_add(1, Ordering::SeqCst);
         "query"
     }
-
+    #[get("/validated/path/:id")]
     async fn path(&self, _: ValidatedPath<PathInput>) -> &'static str {
         PATH_HANDLER_CALLS.fetch_add(1, Ordering::SeqCst);
         "path"

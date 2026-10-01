@@ -1,14 +1,22 @@
 // src/app/controller.rs
 use furnace::prelude::*;
 
-use super::{routes::AppRoutes, service::AppService};
+use super::service::AppService;
 
-#[controller(routes = [AppRoutes])]
+#[controller]
 pub struct AppController {
     service: AppService,
 }
 
-impl AppRoutes for AppController {
+impl Sealable for AppController {
+    fn seals() -> SealRegistration<Self> {
+        SealRegistration::new()
+    }
+}
+
+#[controller(route = "/")]
+impl AppController {
+    #[get]
     async fn hello(&self) -> &'static str {
         self.service.hello()
     }

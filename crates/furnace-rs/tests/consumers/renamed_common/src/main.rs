@@ -1,15 +1,17 @@
 //! Verifies controller expansion through a renamed common dependency.
 
-#[web::routes]
-trait Routes {
-    #[web::get("/")]
-    async fn index(&self);
-}
-
-#[web::controller(routes = [Routes])]
+#[web::controller]
 struct Controller;
 
-impl Routes for Controller {
+impl ::web::Sealable for Controller {
+    fn seals() -> ::web::SealRegistration<Self> {
+        ::web::SealRegistration::new()
+    }
+}
+
+#[web::controller]
+impl Controller {
+    #[web::get("/")]
     async fn index(&self) {}
 }
 
@@ -35,8 +37,17 @@ fn passport_principal() {
 fn main() {
     use web::Input;
     #[derive(web::Input)]
-    struct RequestInput { #[validate(email)] email: String }
-    assert!(RequestInput { email: "user@example.com".into() }.validate().is_ok());
+    struct RequestInput {
+        #[validate(email)]
+        email: String,
+    }
+    assert!(
+        RequestInput {
+            email: "user@example.com".into()
+        }
+        .validate()
+        .is_ok()
+    );
     let _ = passport_principal;
     let _ = build_application;
 }

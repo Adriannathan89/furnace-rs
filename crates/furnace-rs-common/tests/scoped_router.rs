@@ -4,30 +4,28 @@
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
+use furnace_rs_common::build_router;
 use furnace_rs_common::core::{FURNACE030, Furnace};
-use furnace_rs_common::{build_router, controller, routes};
 use tower::ServiceExt;
 
 mod users {
-    use super::shared_contracts::SharedRoutes;
-    use super::*;
 
-    #[routes]
-    pub trait UserRoutes {
-        #[get("/users")]
-        async fn users(&self) -> &'static str;
-    }
-
-    #[controller(routes = [UserRoutes, SharedRoutes])]
+    #[furnace_rs_common::controller]
     pub struct UserController;
 
-    impl UserRoutes for UserController {
-        async fn users(&self) -> &'static str {
-            "users"
+    impl ::furnace_rs_common::Sealable for UserController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            ::furnace_rs_common::SealRegistration::new()
         }
     }
 
-    impl SharedRoutes for UserController {
+    #[furnace_rs_common::controller]
+    impl UserController {
+        #[get("/users")]
+        async fn users(&self) -> &'static str {
+            "users"
+        }
+        #[get("/shared")]
         async fn shared(&self) -> &'static str {
             "shared"
         }
@@ -43,29 +41,20 @@ mod users {
     }
 }
 
-mod shared_contracts {
-    use super::*;
-
-    #[routes]
-    pub trait SharedRoutes {
-        #[get("/shared")]
-        async fn shared(&self) -> &'static str;
-    }
-}
-
 mod admin {
-    use super::*;
 
-    #[routes]
-    pub trait AdminRoutes {
-        #[get("/admin")]
-        async fn admin(&self) -> &'static str;
-    }
-
-    #[controller(routes = [AdminRoutes])]
+    #[furnace_rs_common::controller]
     pub struct AdminController;
 
-    impl AdminRoutes for AdminController {
+    impl ::furnace_rs_common::Sealable for AdminController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            ::furnace_rs_common::SealRegistration::new()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl AdminController {
+        #[get("/admin")]
         async fn admin(&self) -> &'static str {
             "admin"
         }
@@ -82,18 +71,19 @@ mod admin {
 }
 
 mod duplicate_one {
-    use super::*;
 
-    #[routes]
-    pub trait DuplicateOneRoutes {
-        #[get("/conflict")]
-        async fn conflict(&self) -> &'static str;
-    }
-
-    #[controller(routes = [DuplicateOneRoutes])]
+    #[furnace_rs_common::controller]
     pub struct DuplicateOneController;
 
-    impl DuplicateOneRoutes for DuplicateOneController {
+    impl ::furnace_rs_common::Sealable for DuplicateOneController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            ::furnace_rs_common::SealRegistration::new()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl DuplicateOneController {
+        #[get("/conflict")]
         async fn conflict(&self) -> &'static str {
             "one"
         }
@@ -110,18 +100,19 @@ mod duplicate_one {
 }
 
 mod duplicate_two {
-    use super::*;
 
-    #[routes]
-    pub trait DuplicateTwoRoutes {
-        #[get("/conflict")]
-        async fn conflict(&self) -> &'static str;
-    }
-
-    #[controller(routes = [DuplicateTwoRoutes])]
+    #[furnace_rs_common::controller]
     pub struct DuplicateTwoController;
 
-    impl DuplicateTwoRoutes for DuplicateTwoController {
+    impl ::furnace_rs_common::Sealable for DuplicateTwoController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            ::furnace_rs_common::SealRegistration::new()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl DuplicateTwoController {
+        #[get("/conflict")]
         async fn conflict(&self) -> &'static str {
             "two"
         }
@@ -138,21 +129,21 @@ mod duplicate_two {
 }
 
 mod nested_controller_scope {
-    use super::*;
 
     pub mod reachable {
-        use super::*;
 
-        #[routes]
-        pub trait ReachableRoutes {
-            #[get("/nested-reachable-controller")]
-            async fn reachable(&self) -> &'static str;
-        }
-
-        #[controller(routes = [ReachableRoutes])]
+        #[furnace_rs_common::controller]
         pub struct ReachableController;
 
-        impl ReachableRoutes for ReachableController {
+        impl ::furnace_rs_common::Sealable for ReachableController {
+            fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+                ::furnace_rs_common::SealRegistration::new()
+            }
+        }
+
+        #[furnace_rs_common::controller]
+        impl ReachableController {
+            #[get("/nested-reachable-controller")]
             async fn reachable(&self) -> &'static str {
                 "reachable"
             }
@@ -169,18 +160,19 @@ mod nested_controller_scope {
     }
 
     pub mod unimported {
-        use super::*;
 
-        #[routes]
-        pub trait UnreachableRoutes {
-            #[get("/nested-unreachable-controller")]
-            async fn unreachable(&self) -> &'static str;
-        }
-
-        #[controller(routes = [UnreachableRoutes])]
+        #[furnace_rs_common::controller]
         pub struct UnreachableController;
 
-        impl UnreachableRoutes for UnreachableController {
+        impl ::furnace_rs_common::Sealable for UnreachableController {
+            fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+                ::furnace_rs_common::SealRegistration::new()
+            }
+        }
+
+        #[furnace_rs_common::controller]
+        impl UnreachableController {
+            #[get("/nested-unreachable-controller")]
             async fn unreachable(&self) -> &'static str {
                 "unreachable"
             }
@@ -207,16 +199,8 @@ mod nested_controller_scope {
 }
 
 mod nested_route_scope {
-    use super::*;
 
     pub mod unimported {
-        use super::*;
-
-        #[routes]
-        pub trait UnreachableContract {
-            #[get("/nested-unreachable-contract")]
-            async fn unreachable(&self) -> &'static str;
-        }
 
         #[furnace_rs_common::core::cauldron]
         pub struct UnreachableContractCauldron;
@@ -229,25 +213,23 @@ mod nested_route_scope {
     }
 
     pub mod reachable {
-        use super::unimported::UnreachableContract;
-        use super::*;
 
-        #[routes]
-        pub trait ReachableRoutes {
-            #[get("/nested-reachable-contract")]
-            async fn reachable(&self) -> &'static str;
-        }
-
-        #[controller(routes = [ReachableRoutes, UnreachableContract])]
+        #[furnace_rs_common::controller]
         pub struct ReachableController;
 
-        impl ReachableRoutes for ReachableController {
-            async fn reachable(&self) -> &'static str {
-                "reachable"
+        impl ::furnace_rs_common::Sealable for ReachableController {
+            fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+                ::furnace_rs_common::SealRegistration::new()
             }
         }
 
-        impl UnreachableContract for ReachableController {
+        #[furnace_rs_common::controller]
+        impl ReachableController {
+            #[get("/nested-reachable-contract")]
+            async fn reachable(&self) -> &'static str {
+                "reachable"
+            }
+            #[get("/nested-unreachable-contract")]
             async fn unreachable(&self) -> &'static str {
                 "unreachable"
             }

@@ -5,68 +5,14 @@
 //! registers dependency and route metadata together with a typed Axum registrar
 //! that runtime bootstrap invokes only after validation.
 
-use std::collections::BTreeSet;
-
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote, quote_spanned};
-use syn::parse::{Parse, ParseStream};
-use syn::punctuated::Punctuated;
 use syn::visit_mut::{self, VisitMut};
 use syn::{
-    Attribute, Error, ExprPath, Fields, Ident, ItemStruct, Path, Token, Type, TypePath, bracketed,
-    spanned::Spanned,
+    Attribute, Error, ExprPath, Fields, Ident, ItemStruct, Path, Type, TypePath, spanned::Spanned,
 };
 
-use crate::path::common_path;
-
-pub(super) struct ControllerArguments {
-    pub(super) routes: Vec<Path>,
-}
-
-impl Parse for ControllerArguments {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        let name: Ident = input.parse()?;
-        if name != "routes" {
-            return Err(Error::new(name.span(), "expected `routes = [RouteTrait]`"));
-        }
-        input.parse::<Token![=]>()?;
-        let content;
-        bracketed!(content in input);
-        let routes = Punctuated::<Path, Token![,]>::parse_terminated(&content)?;
-        if !input.is_empty() {
-            return Err(input.error("`#[controller]` accepts only one `routes` argument"));
-        }
-        if routes.is_empty() {
-            return Err(Error::new(
-                content.span(),
-                "`#[controller]` requires at least one route trait",
-            ));
-        }
-
-        let mut unique = BTreeSet::new();
-        for route in &routes {
-            let identity = route.to_token_stream().to_string();
-            if !unique.insert(identity) {
-                return Err(Error::new(route.span(), "duplicate controller route trait"));
-            }
-        }
-
-        Ok(Self {
-            routes: routes.into_iter().collect(),
-        })
-    }
-}
-
-/// Expands a controller into a managed handle and typed route registrar.
-pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
-    let arguments = syn::parse2::<ControllerArguments>(arguments)?;
-    let item: ItemStruct = syn::parse2(item)?;
-    let common = common_path()?;
-    expand_controller_with_common(arguments, item, &common)
-}
-
 pub(super) fn expand_controller_with_common(
-    arguments: ControllerArguments,
     item: ItemStruct,
     common: &Path,
 ) -> syn::Result<TokenStream> {
@@ -126,7 +72,6 @@ pub(super) fn expand_controller_with_common(
     let cfg_attrs: Vec<_> = attrs.iter().filter(is_cfg).collect();
     let inner_ident = format_ident!("__furnace_controller_inner_{generated_suffix}");
     let constructor_ident = format_ident!("__furnace_construct_controller_{generated_suffix}");
-    let registrar_ident = format_ident!("__furnace_register_controller_{generated_suffix}");
     let is_unit = matches!(fields, Fields::Unit);
 
     let (inner_fields, resolve_fields, dependencies) = match fields {
@@ -179,61 +124,17 @@ pub(super) fn expand_controller_with_common(
     } else {
         quote!(#inner_ident #resolve_fields)
     };
-    let route_assertions = arguments.routes.iter().map(|route| {
-        quote_spanned! {route.span()=>
-            {
-                #[allow(dead_code)]
-                fn __furnace_assert_controller_route() {
-                    const _: () = <#ident as #route>::__FURNACE_ROUTE_CONTRACT;
-                }
-            }
-        }
-    });
-    let route_contracts = arguments.routes.iter().map(|route| {
-        quote! {
-            #common::RouteContractDescriptor::new(
-                stringify!(#route),
-                <#ident as #route>::__FURNACE_ROUTE_METADATA,
-            )
-        }
-    });
-    let route_registrations = arguments.routes.iter().map(|route| {
-        quote! {
-            __furnace_router = <#ident as #route>::__furnace_register(
-                __furnace_router,
-                __furnace_controller.clone(),
-                __furnace_runtime,
-                __furnace_routes,
-            )?;
-        }
-    });
-
-    let direct = arguments.routes.is_empty();
-    let route_metadata = if direct {
-        quote! {
-            #core::__private::inventory::submit! {
-                #common::ControllerDescriptor::new(
-                    concat!(module_path!(), "::", stringify!(#ident)),
-                    || ::core::any::TypeId::of::<#ident>(),
-                    #core::SourceLocation::new(file!(), line!(), column!()),
-                    || <#ident as #common::Sealable>::seals().into_definition(),
-                ).with_namespace(module_path!())
-            }
-        }
-    } else {
-        quote! {
-                #core::__private::inventory::submit! {
-                    #common::ControllerRouteDescriptor::with_registrar(
-                        concat!(module_path!(), "::", stringify!(#ident)),
-                        || ::core::any::TypeId::of::<#ident>(),
-                        &[#(#route_contracts,)*],
-                        #registrar_ident,
-                    )
-                    .with_namespace(module_path!())
-                }
+    let route_metadata = quote! {
+        #core::__private::inventory::submit! {
+            #common::ControllerDescriptor::new(
+                concat!(module_path!(), "::", stringify!(#ident)),
+                || ::core::any::TypeId::of::<#ident>(),
+                #core::SourceLocation::new(file!(), line!(), column!()),
+                || <#ident as #common::Sealable>::seals().into_definition(),
+            ).with_namespace(module_path!())
         }
     };
-    let seal_helper = if direct && cfg!(feature = "passport") {
+    let seal_helper = if cfg!(feature = "passport") {
         quote! {
             #(#cfg_attrs)*
             impl #ident {
@@ -275,7 +176,6 @@ pub(super) fn expand_controller_with_common(
         #seal_helper
         #(#cfg_attrs)*
         const _: () = {
-            #(#route_assertions)*
             fn __furnace_assert_controller_dependency<'a, T>(
                 context: &'a #core::ConstructionContext<'a>,
             ) -> #core::Result<T>
@@ -298,22 +198,6 @@ pub(super) fn expand_controller_with_common(
                     let erased: #core::ErasedProvider = ::std::sync::Arc::new(value);
                     Ok(erased)
                 })
-            }
-
-            #[doc(hidden)]
-            #[allow(non_snake_case)]
-            fn #registrar_ident(
-                mut __furnace_router: #common::__private::Router,
-                __furnace_runtime: &#common::__private::RouterBuildContext<'_>,
-                __furnace_routes: &mut #common::__private::ValidatedRouteIter<'_>,
-            ) -> #core::Result<#common::__private::Router> {
-                let __furnace_controller = __furnace_runtime.application()
-                    .resolve::<#ident>()?
-                    .as_ref()
-                    .clone();
-                #(#route_registrations)*
-                __furnace_routes.finish()?;
-                Ok(__furnace_router)
             }
 
             #core::__private::inventory::submit! {

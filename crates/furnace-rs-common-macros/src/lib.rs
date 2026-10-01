@@ -24,7 +24,6 @@ mod passport_principal;
 #[cfg(feature = "passport")]
 mod passport_strategy;
 mod path;
-mod routes;
 mod verb;
 
 /// Derives deterministic validation without changing Serde deserialization.
@@ -97,42 +96,6 @@ pub fn passport_strategy(arguments: TokenStream, item: TokenStream) -> TokenStre
 #[proc_macro_attribute]
 pub fn controller(arguments: TokenStream, item: TokenStream) -> TokenStream {
     controller::expand(arguments.into(), item.into())
-        .unwrap_or_else(syn::Error::into_compile_error)
-        .into()
-}
-
-/// Declares and validates a trait containing HTTP route contracts.
-///
-/// A route trait may optionally declare a `prefix = "/..."`. It must contain
-/// at least one method, and each method must be an async `&self` method with
-/// exactly one of the HTTP verb attributes [`macro@get`], [`macro@post`],
-/// [`macro@put`], [`macro@patch`], or [`macro@delete`]. Methods remain abstract
-/// so that the controller's implementation is the only handler body.
-///
-/// The macro rejects malformed or ambiguous paths, duplicate method/path
-/// pairs, generic traits, and default method implementations. It also emits
-/// static route descriptors for later catalog validation and a hidden typed
-/// registrar used after validation succeeds.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// #[furnace_rs_common::routes(prefix = "/users")]
-/// trait UserRoutes {
-///     #[furnace_rs_common::get("/:id")]
-///     async fn get_user(
-///         &self,
-///         id: furnace_rs_common::Path<u64>,
-///     ) -> furnace_rs_common::HttpResult<furnace_rs_common::Json<User>>;
-/// }
-/// # struct User;
-/// ```
-///
-/// The example is marked `ignore` for the same downstream-consumer reason as
-/// [`macro@controller`].
-#[proc_macro_attribute]
-pub fn routes(arguments: TokenStream, item: TokenStream) -> TokenStream {
-    routes::expand(arguments.into(), item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }

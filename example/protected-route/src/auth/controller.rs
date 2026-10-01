@@ -7,27 +7,20 @@ use super::{
     traits::AuthService,
 };
 
-#[routes(prefix = "/auth")]
-pub trait AuthRoutes {
-    #[post("/login")]
-    async fn login(&self, input: ValidatedJson<LoginInput>) -> HttpResult<Json<TokenResponse>>;
-
-    #[get("/me")]
-    #[guard(strategy = "jwt", principal = UserPrincipal, source = bearer, roles(any = ["reader"]))]
-    async fn me(
-        &self,
-        principal: Authenticated<UserPrincipal>,
-    ) -> HttpResult<Json<ProfileResponse>>;
-}
-
 // Controller: only translates HTTP input/output and invokes the service.
-#[controller(routes = [AuthRoutes])]
+#[controller]
 pub struct AuthController {
     service: Arc<dyn AuthService>,
-    logger: Logger,
 }
 
-impl AuthRoutes for AuthController {
+impl Sealable for AuthController {
+    fn seals() -> SealRegistration<Self> {
+        SealRegistration::new()
+    }
+}
+#[controller(route = "/auth")]
+impl AuthController {
+    #[post("/login")]
     async fn login(
         &self,
         ValidatedJson(input): ValidatedJson<LoginInput>,
@@ -41,7 +34,22 @@ impl AuthRoutes for AuthController {
             access_token: token,
         }))
     }
+}
 
+#[guard(strategy = "jwt", principal = UserPrincipal, source = bearer, roles(any = ["reader"]))]
+struct ProfileGuard;
+#[controller]
+pub struct ProfileController {
+    logger: Logger,
+}
+impl Sealable for ProfileController {
+    fn seals() -> SealRegistration<Self> {
+        Self::seal::<ProfileGuard>()
+    }
+}
+#[controller(route = "/auth")]
+impl ProfileController {
+    #[get("/me")]
     async fn me(
         &self,
         principal: Authenticated<UserPrincipal>,

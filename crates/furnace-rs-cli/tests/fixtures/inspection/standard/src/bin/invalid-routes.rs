@@ -1,25 +1,19 @@
 use furnace::prelude::*;
 
-#[furnace::routes]
-trait FirstRoutes {
-    #[furnace::get("/duplicate")]
-    async fn first(&self);
-}
-
-#[furnace::routes]
-trait SecondRoutes {
-    #[furnace::get("/duplicate")]
-    async fn second(&self);
-}
-
-#[furnace::controller(routes = [FirstRoutes, SecondRoutes])]
+#[furnace::controller]
 struct InvalidRoutesController;
 
-impl FirstRoutes for InvalidRoutesController {
-    async fn first(&self) {}
+impl ::furnace::Sealable for InvalidRoutesController {
+    fn seals() -> ::furnace::SealRegistration<Self> {
+        ::furnace::SealRegistration::new()
+    }
 }
 
-impl SecondRoutes for InvalidRoutesController {
+#[furnace::controller]
+impl InvalidRoutesController {
+    #[furnace::get("/duplicate")]
+    async fn first(&self) {}
+    #[furnace::get("/duplicate")]
     async fn second(&self) {}
 }
 
@@ -31,7 +25,6 @@ impl furnace::core::Cauldron for InvalidRoutesCauldron {
         self.controller::<InvalidRoutesController>()
     }
 }
-
 
 #[furnace::main]
 async fn main() -> Result<(), HttpRuntimeError> {

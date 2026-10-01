@@ -100,7 +100,7 @@ fn generated_project_compiles_and_exposes_the_minimal_application_offline() {
     assert_eq!(routes["data"]["routes"].as_array().unwrap().len(), 1);
     assert_eq!(route["method"], "GET");
     assert_eq!(route["path"], "/");
-    assert_eq!(route["route_trait"], "AppRoutes");
+    assert!(route.get("route_trait").is_none());
     assert_eq!(route["handler"], "hello");
     assert!(
         route["controller"]

@@ -11,25 +11,24 @@ fn marker_provider() -> Marker {
     Marker
 }
 
-#[furnace::routes(prefix = "/users")]
-trait UserRoutes {
-    #[furnace::get("/:id")]
-    async fn get_user(&self) -> &'static str;
-
-    #[furnace::post("/")]
-    async fn create_user(&self) -> &'static str;
-}
-
-#[furnace::controller(routes = [UserRoutes])]
+#[furnace::controller]
 struct UserController {
     _marker: Marker,
 }
 
-impl UserRoutes for UserController {
+impl ::furnace::Sealable for UserController {
+    fn seals() -> ::furnace::SealRegistration<Self> {
+        ::furnace::SealRegistration::new()
+    }
+}
+
+#[furnace::controller]
+impl UserController {
+    #[furnace::get("/users/:id")]
     async fn get_user(&self) -> &'static str {
         "user"
     }
-
+    #[furnace::post("/users")]
     async fn create_user(&self) -> &'static str {
         "created"
     }
@@ -43,7 +42,6 @@ impl furnace::core::Cauldron for AppCauldron {
         self.provide::<Marker>().controller::<UserController>()
     }
 }
-
 
 #[furnace::main]
 async fn main() -> Result<(), HttpRuntimeError> {

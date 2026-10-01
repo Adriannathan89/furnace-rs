@@ -69,55 +69,26 @@ fn rejects_invalid_names_sources_and_policy_forms() {
 }
 
 #[test]
-fn trait_guards_require_both_strategy_and_principal() {
-    let missing_principal = parsed(r#"strategy = "jwt""#);
-    assert!(validate_trait_guard(&missing_principal, Span::call_site()).is_err());
-
-    let missing_strategy = parsed("principal = UserPrincipal");
-    assert!(validate_trait_guard(&missing_strategy, Span::call_site()).is_err());
+fn policies_require_strategy_and_principal() {
+    for source in [r#"strategy = "jwt""#, "principal = UserPrincipal"] {
+        assert!(complete_policy(&parsed(source)).is_err());
+    }
 }
-
 #[test]
-fn method_fields_replace_only_their_matching_trait_fields() {
-    let inherited = parsed(
-        r#"strategy = "jwt", principal = UserPrincipal, source = bearer, roles(any = ["user"]), permissions(all = ["base"]), predicate = inherited"#,
+fn static_policy_metadata_preserves_all_rules_without_inventory_activation() {
+    let effective = complete_policy(&parsed(r#"strategy = "jwt", principal = UserPrincipal, roles(any = ["user"]), permissions(all = ["read"]), predicate = owns"#)).unwrap();
+    assert_eq!(effective.roles.as_ref().unwrap().values[0].value(), "user");
+    assert_eq!(
+        effective.permissions.as_ref().unwrap().values[0].value(),
+        "read"
     );
-    let method = parsed(r#"permissions(any = ["read"]), predicates = [replacement]"#);
-    validate_trait_guard(&inherited, Span::call_site()).unwrap();
-
-    let effective = merge(Some(&inherited), Some(&method), Span::call_site())
-        .unwrap()
-        .expect("a method guard should remain effective");
-    assert_eq!(effective.strategy.value(), "jwt");
-    assert!(matches!(effective.source, TokenSourceSpec::Bearer));
-    assert_eq!(effective.roles.unwrap().values[0].value(), "user");
-    assert_eq!(effective.permissions.unwrap().values[0].value(), "read");
     assert_eq!(effective.predicates.len(), 1);
-}
-
-#[test]
-fn skip_requires_an_inherited_trait_guard() {
-    let skip = parsed("skip");
-    let error = match merge(None, Some(&skip), Span::call_site()) {
-        Err(error) => error,
-        Ok(_) => panic!("a standalone skip must be rejected"),
-    };
-    assert!(error.to_string().contains("requires a guard"));
-}
-
-#[test]
-fn generated_guard_descriptors_retain_the_declaration_namespace() {
-    let spec = parsed(r#"strategy = "jwt", principal = UserPrincipal"#);
-    let effective = merge(Some(&spec), None, Span::call_site())
-        .expect("the complete trait guard should merge")
-        .expect("the complete trait guard should remain effective");
-    let (_, expanded) = effective.static_tokens(
+    let (_, tokens) = effective.static_tokens_with_registration(
         &syn::parse_quote!(furnace_rs_common),
-        &syn::parse_quote!(GuardedRoutes),
-        &syn::parse_quote!(profile),
+        &syn::parse_quote!(Policy),
+        &syn::parse_quote!(seal),
         &[],
     );
-    let expanded = expanded.to_string().split_whitespace().collect::<String>();
-
-    assert!(expanded.contains("with_requirement_subject(concat!(stringify!(GuardedRoutes),\"::\",stringify!(profile))).with_namespace(module_path!())"));
+    assert!(!tokens.to_string().contains("inventory"));
+    assert!(tokens.to_string().contains("with_namespace"));
 }

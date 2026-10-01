@@ -631,8 +631,8 @@ fn strategy_order(
 }
 
 fn guard_order(left: &&GuardDescriptor, right: &&GuardDescriptor) -> Ordering {
-    left.route_trait()
-        .cmp(right.route_trait())
+    left.policy_name()
+        .cmp(right.policy_name())
         .then_with(|| left.handler().cmp(right.handler()))
         .then_with(|| left.namespace().cmp(&right.namespace()))
         .then_with(|| location_order(left.location(), right.location()))

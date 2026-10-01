@@ -450,7 +450,7 @@ mod tests {
     };
     use crate::cors::CORS_AUTO_CONFIGURATION_ID;
     use crate::server_config::{HttpRuntimeMode, SERVER_AUTO_CONFIGURATION_ID, ServerBinding};
-    use crate::{ControllerRouteDescriptor, HttpMethod, RouteContractDescriptor, RouteDescriptor};
+    use crate::{ControllerEndpointDescriptor, HttpMethod, RouteDescriptor};
 
     static STARTS: AtomicUsize = AtomicUsize::new(0);
     static BINDS: AtomicUsize = AtomicUsize::new(0);
@@ -499,16 +499,19 @@ mod tests {
 
     mod standard_run {
         pub(super) mod routed {
-            #[furnace_rs_common_macros::routes]
-            pub(super) trait RoutedRoutes {
-                #[furnace_rs_common_macros::get("/standard-run-health")]
-                async fn health(&self) -> &'static str;
-            }
 
-            #[furnace_rs_common_macros::controller(routes = [RoutedRoutes])]
+            #[furnace_rs_common_macros::controller]
             pub(super) struct RoutedController;
 
-            impl RoutedRoutes for RoutedController {
+            impl crate::Sealable for RoutedController {
+                fn seals() -> crate::SealRegistration<Self> {
+                    crate::SealRegistration::new()
+                }
+            }
+
+            #[furnace_rs_common_macros::controller]
+            impl RoutedController {
+                #[furnace_rs_common_macros::get("/standard-run-health")]
                 async fn health(&self) -> &'static str {
                     "healthy"
                 }
@@ -553,20 +556,21 @@ mod tests {
             }
         }
 
-        #[furnace_rs_common_macros::routes]
-        #[furnace_rs_common_macros::guard(
-            strategy = "jwt",
-            principal = ClaimsPrincipal<UnreachableClaims>
-        )]
-        pub(super) trait UnreachableRoutes {
-            #[furnace_rs_common_macros::get("/unreachable")]
-            async fn unreachable(&self) -> &'static str;
-        }
-
-        #[furnace_rs_common_macros::controller(routes = [UnreachableRoutes])]
+        #[furnace_rs_common_macros::controller]
         pub(super) struct UnreachableController;
 
-        impl UnreachableRoutes for UnreachableController {
+        #[furnace_rs_common_macros::guard(principal = ClaimsPrincipal < UnreachableClaims >, strategy = "jwt")]
+        struct UnreachableControllerGuard;
+
+        impl crate::Sealable for UnreachableController {
+            fn seals() -> crate::SealRegistration<Self> {
+                Self::seal::<UnreachableControllerGuard>()
+            }
+        }
+
+        #[furnace_rs_common_macros::controller]
+        impl UnreachableController {
+            #[furnace_rs_common_macros::get("/unreachable")]
             async fn unreachable(&self) -> &'static str {
                 "unreachable"
             }
@@ -620,12 +624,12 @@ mod tests {
     }
 
     furnace_rs_core::__private::inventory::submit! {
-        ControllerRouteDescriptor::with_registrar(
-            "server_tests::PreflightController",
-            preflight_controller_type_id,
-            &[RouteContractDescriptor::new(
-                "HealthRoutes",
-                &[RouteDescriptor::new(
+        crate::ControllerDescriptor::new("test::PreflightController", preflight_controller_type_id, SourceLocation::new(file!(), line!(), column!()), crate::SealDefinition::default)
+    }
+
+    furnace_rs_core::__private::inventory::submit! {
+        ControllerEndpointDescriptor::new("server_tests::PreflightController", preflight_controller_type_id, SourceLocation::new(file!(), line!(), column!()),
+            &[RouteDescriptor::new(
                     HttpMethod::Get,
                     "",
                     "/health",
@@ -633,7 +637,6 @@ mod tests {
                     "health",
                     SourceLocation::new(file!(), line!(), column!()),
                 )],
-            )],
             preflight_registrar,
         )
         .with_namespace(module_path!())

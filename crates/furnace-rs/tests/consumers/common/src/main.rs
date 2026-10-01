@@ -1,15 +1,17 @@
 //! Verifies controller expansion through a direct common dependency.
 
-#[furnace_rs_common::routes]
-trait Routes {
-    #[furnace_rs_common::get("/")]
-    async fn index(&self);
-}
-
-#[furnace_rs_common::controller(routes = [Routes])]
+#[furnace_rs_common::controller]
 struct Controller;
 
-impl Routes for Controller {
+impl ::furnace_rs_common::Sealable for Controller {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl Controller {
+    #[furnace_rs_common::get("/")]
     async fn index(&self) {}
 }
 

@@ -313,10 +313,6 @@ pub use furnace_rs_common::patch;
 #[cfg(feature = "http")]
 pub use furnace_rs_common::post;
 
-/// Re-exports the route-trait declaration attribute.
-#[cfg(feature = "http")]
-pub use furnace_rs_common::routes;
-
 /// Re-exports the PUT route-contract attribute.
 #[cfg(feature = "http")]
 pub use furnace_rs_common::put;
@@ -342,7 +338,7 @@ pub mod prelude {
 
     /// Re-exports route-contract attributes.
     #[cfg(feature = "http")]
-    pub use furnace_rs_common::{delete, get, patch, post, put, routes};
+    pub use furnace_rs_common::{delete, get, patch, post, put};
 
     /// Re-exports standard HTTP request extractors and typed-header support.
     #[cfg(feature = "http")]

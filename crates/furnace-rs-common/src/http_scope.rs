@@ -4,12 +4,10 @@ use std::any::TypeId;
 
 use furnace_rs_core::{CauldronGraph, Furnace, Result};
 
-use crate::{
-    ControllerRouteDescriptor, HttpMethod, RouteCatalog, RouteContractDescriptor, RouteDescriptor,
-};
+use crate::{ControllerEndpointDescriptor, HttpMethod, RouteCatalog, RouteDescriptor};
 
 #[cfg(feature = "jwt")]
-use crate::{GuardCatalog, GuardDescriptor};
+use crate::GuardDescriptor;
 
 /// A selected Passport guard and the module context that selected it.
 #[cfg(feature = "jwt")]
@@ -46,7 +44,7 @@ pub(crate) struct RouteIdentity {
 }
 
 impl RouteIdentity {
-    fn new(controller: &ControllerRouteDescriptor, route: &RouteDescriptor) -> Self {
+    fn new(controller: &ControllerEndpointDescriptor, route: &RouteDescriptor) -> Self {
         Self {
             controller: controller.type_id(),
             method: route.method(),
@@ -65,7 +63,7 @@ impl RouteIdentity {
 
     pub(crate) fn matches(
         &self,
-        controller: &ControllerRouteDescriptor,
+        controller: &ControllerEndpointDescriptor,
         route: &RouteDescriptor,
     ) -> bool {
         self.controller == controller.type_id()
@@ -85,13 +83,13 @@ impl RouteIdentity {
 pub(crate) struct ScopedController {
     #[cfg(feature = "jwt")]
     seal: Option<ControllerSeal>,
-    descriptor: &'static ControllerRouteDescriptor,
+    descriptor: &'static ControllerEndpointDescriptor,
     selected_routes: Vec<RouteIdentity>,
     context_cauldron: Option<TypeId>,
 }
 
 impl ScopedController {
-    pub(crate) const fn descriptor(&self) -> &'static ControllerRouteDescriptor {
+    pub(crate) const fn descriptor(&self) -> &'static ControllerEndpointDescriptor {
         self.descriptor
     }
 
@@ -114,6 +112,17 @@ impl ScopedController {
         self.seal
             .and_then(|_| self.selected_routes.first().copied())
     }
+    pub(crate) fn guard_active(&self) -> bool {
+        #[cfg(feature = "jwt")]
+        {
+            self.seal.is_some()
+        }
+        #[cfg(not(feature = "jwt"))]
+        {
+            false
+        }
+    }
+
     fn has_routes(&self) -> bool {
         !self.selected_routes.is_empty()
     }
@@ -191,23 +200,7 @@ impl HttpApplicationScope {
         focused: bool,
     ) -> Result<Self> {
         #[cfg(feature = "jwt")]
-        let mut guards = if focused {
-            controllers
-                .iter()
-                .flat_map(|controller| {
-                    controller.descriptor().routes().filter_map(|route| {
-                        route.guard().map(|guard| ScopedGuard {
-                            occurrence: None,
-                            guard,
-                            context_cauldron: None,
-                        })
-                    })
-                })
-                .collect::<Vec<_>>()
-        } else {
-            Self::selected_guards(graph, &controllers)
-        };
-        #[cfg(not(feature = "jwt"))]
+        let mut guards = Vec::new();
         let _ = (graph, focused);
         let declarations = RouteCatalog::controllers();
         for controller in &mut controllers {
@@ -311,27 +304,13 @@ impl HttpApplicationScope {
     #[allow(dead_code)] // Used by the private inspection path added in the next task.
     pub(crate) fn route_records(
         &self,
-    ) -> impl Iterator<
-        Item = (
-            &ControllerRouteDescriptor,
-            Option<&RouteContractDescriptor>,
-            &RouteDescriptor,
-        ),
-    > {
+    ) -> impl Iterator<Item = (&ScopedController, &RouteDescriptor)> {
         self.controllers.iter().flat_map(|controller| {
             controller
                 .descriptor()
                 .routes()
                 .filter(move |route| controller.selects(route))
-                .map(move |route| {
-                    let contract = controller.descriptor().contracts().iter().find(|contract| {
-                        contract
-                            .routes()
-                            .iter()
-                            .any(|candidate| std::ptr::eq(candidate, route))
-                    });
-                    (controller.descriptor(), contract, route)
-                })
+                .map(move |route| (controller, route))
         })
     }
 
@@ -385,40 +364,6 @@ impl HttpApplicationScope {
                 })
                 .collect(),
         )
-    }
-
-    #[cfg(feature = "jwt")]
-    fn selected_guards(
-        cauldron_graph: Option<&CauldronGraph>,
-        controllers: &[ScopedController],
-    ) -> Vec<ScopedGuard> {
-        if cauldron_graph.is_none() {
-            return GuardCatalog::guards()
-                .into_iter()
-                .map(|guard| ScopedGuard {
-                    occurrence: None,
-                    guard,
-                    context_cauldron: None,
-                })
-                .collect();
-        };
-
-        controllers
-            .iter()
-            .flat_map(|controller| {
-                controller
-                    .descriptor()
-                    .routes()
-                    .filter(move |route| controller.selects(route))
-                    .filter_map(move |route| {
-                        route.guard().map(|guard| ScopedGuard {
-                            occurrence: None,
-                            guard,
-                            context_cauldron: controller.passport_context_cauldron(route),
-                        })
-                    })
-            })
-            .collect()
     }
 }
 

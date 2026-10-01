@@ -12,21 +12,20 @@ pub(crate) fn render_routes(report: &InspectionReport) -> String {
     let routes = ordered_routes(report);
 
     let mut output =
-        String::from("METHOD  PATH        ROUTE                    CONTROLLER       GUARD  SOURCE");
+        String::from("METHOD  PATH        HANDLER                  CONTROLLER       GUARD  SOURCE");
     if routes.is_empty() {
         output.push_str("\n(none)");
         return output;
     }
 
     for route in routes {
-        let route_name = format!("{}::{}", route.route_trait, route.handler);
         let guard = if route.guard_active { "yes" } else { "no" };
         write!(
             output,
             "\n{:<7} {:<10} {:<24} {:<16} {:<6} {}:{}:{}",
             route.method,
             route.path,
-            route_name,
+            route.handler,
             route.controller,
             guard,
             route.location.file,
@@ -241,7 +240,6 @@ pub(crate) fn ordered_routes(report: &InspectionReport) -> Vec<&RouteReport> {
             .cmp(&right.method)
             .then_with(|| left.path.cmp(&right.path))
             .then_with(|| left.controller.cmp(&right.controller))
-            .then_with(|| left.route_trait.cmp(&right.route_trait))
             .then_with(|| left.handler.cmp(&right.handler))
     });
     routes
@@ -420,7 +418,6 @@ mod tests {
                 RouteReport {
                     method: "POST".into(),
                     path: "/users".into(),
-                    route_trait: "UserRoutes".into(),
                     handler: "create_user".into(),
                     controller: "UserController".into(),
                     location: SourceReport {
@@ -433,7 +430,6 @@ mod tests {
                 RouteReport {
                     method: "GET".into(),
                     path: "/users/:id".into(),
-                    route_trait: "UserRoutes".into(),
                     handler: "get_user".into(),
                     controller: "UserController".into(),
                     location: SourceReport {
@@ -489,7 +485,7 @@ mod tests {
     fn renders_routes_in_stable_order() {
         assert_eq!(
             render_routes(&report()),
-            "METHOD  PATH        ROUTE                    CONTROLLER       GUARD  SOURCE\nGET     /users/:id UserRoutes::get_user     UserController   yes    src/user.rs:12:5\nPOST    /users     UserRoutes::create_user  UserController   no     src/user.rs:18:5"
+            "METHOD  PATH        HANDLER                  CONTROLLER       GUARD  SOURCE\nGET     /users/:id get_user                 UserController   yes    src/user.rs:12:5\nPOST    /users     create_user              UserController   no     src/user.rs:18:5"
         );
     }
 
@@ -530,7 +526,7 @@ mod tests {
 
         assert_eq!(
             render_routes(&report),
-            "METHOD  PATH        ROUTE                    CONTROLLER       GUARD  SOURCE\n(none)"
+            "METHOD  PATH        HANDLER                  CONTROLLER       GUARD  SOURCE\n(none)"
         );
         assert_eq!(
             render_graph(&report),

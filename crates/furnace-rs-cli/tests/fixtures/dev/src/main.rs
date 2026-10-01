@@ -1,20 +1,19 @@
-use std::{
-    fs::OpenOptions,
-    io::Write,
-};
+use std::{fs::OpenOptions, io::Write};
 
 use furnace::prelude::*;
 
-#[furnace::routes]
-trait HealthRoutes {
-    #[furnace::get("/health")]
-    async fn health(&self) -> &'static str;
-}
-
-#[furnace::controller(routes = [HealthRoutes])]
+#[furnace::controller]
 struct HealthController;
 
-impl HealthRoutes for HealthController {
+impl ::furnace::Sealable for HealthController {
+    fn seals() -> ::furnace::SealRegistration<Self> {
+        ::furnace::SealRegistration::new()
+    }
+}
+
+#[furnace::controller]
+impl HealthController {
+    #[furnace::get("/health")]
     async fn health(&self) -> &'static str {
         "healthy"
     }
@@ -28,7 +27,6 @@ impl furnace::core::Cauldron for AppCauldron {
         self.controller::<HealthController>()
     }
 }
-
 
 #[furnace::main]
 async fn main() -> Result<(), HttpRuntimeError> {

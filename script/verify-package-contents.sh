@@ -143,7 +143,6 @@ require_package_specific_content() {
         controller.rs.txt \
         furnace.toml.txt \
         main.rs.txt \
-        routes.rs.txt \
         service.rs.txt; do
         require_file "$package" "$actual" "src/scaffold/templates/$template"
       done

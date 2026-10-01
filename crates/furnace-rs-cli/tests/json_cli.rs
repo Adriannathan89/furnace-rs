@@ -115,7 +115,7 @@ fn syntax_failure_after_json_selection_writes_one_json_document_to_stdout() {
 }
 
 #[test]
-fn new_json_success_uses_the_full_schema_v1_snapshot_for_both_format_placements() {
+fn new_json_success_uses_the_full_schema_v2_snapshot_for_both_format_placements() {
     for arguments in [
         ["--format", "json", "new", "my-app"],
         ["new", "my-app", "--format", "json"],
@@ -144,7 +144,6 @@ fn new_json_success_uses_the_full_schema_v1_snapshot_for_both_format_placements(
                         "furnace.toml",
                         "src/main.rs",
                         "src/app/mod.rs",
-                        "src/app/routes.rs",
                         "src/app/controller.rs",
                         "src/app/service.rs"
                     ]
@@ -213,20 +212,18 @@ fn inspection_routes_json_is_ordered_public_schema_data() {
                 "routes": [
                     {
                         "method": "GET",
-                        "path": "/users/:id",
-                        "route_trait": "UserRoutes",
+                        "path": "/users/{id}",
                         "handler": "get_user",
                         "controller": "inspection_standard_fixture::UserController",
-                        "location": {"file": "src/main.rs", "line": 14, "column": 1},
+                        "location": {"file": "src/main.rs", "line": 25, "column": 1},
                         "guard_active": false
                     },
                     {
                         "method": "POST",
                         "path": "/users",
-                        "route_trait": "UserRoutes",
                         "handler": "create_user",
                         "controller": "inspection_standard_fixture::UserController",
-                        "location": {"file": "src/main.rs", "line": 14, "column": 1},
+                        "location": {"file": "src/main.rs", "line": 25, "column": 1},
                         "guard_active": false
                     }
                 ]
@@ -254,7 +251,7 @@ fn inspection_graph_json_keeps_only_ordered_public_graph_fields() {
         json!([{
             "type_name": "inspection_standard_fixture::AppCauldron",
             "namespace": "inspection_standard_fixture",
-            "location": {"file": "src/main.rs", "line": 38, "column": 1}
+            "location": {"file": "src/main.rs", "line": 37, "column": 1}
         }])
     );
     assert_eq!(document["data"]["imports"], json!([]));
@@ -355,9 +352,9 @@ fn failed_inspection_reports_keep_ordered_safe_partial_json_data() {
             .as_array()
             .expect("partial routes should be an array")
             .iter()
-            .map(|route| route["route_trait"].as_str().expect("route trait"))
+            .map(|route| route["handler"].as_str().expect("handler"))
             .collect::<Vec<_>>(),
-        ["FirstRoutes", "SecondRoutes"]
+        ["first", "second"]
     );
     assert_eq!(
         routes["diagnostics"]

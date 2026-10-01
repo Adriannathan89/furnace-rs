@@ -6,9 +6,8 @@ use std::any::TypeId;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use furnace_rs_common::{
-    FURNACE121, FURNACE130, GuardCatalog, GuardDescriptor, JwtClaims, JwtTokenKind,
-    PassportContext, PassportPrincipal, PassportResult, PassportStrategy, PassportStrategyCatalog,
-    TokenSource,
+    FURNACE121, FURNACE130, GuardDescriptor, JwtClaims, JwtTokenKind, PassportContext,
+    PassportPrincipal, PassportResult, PassportStrategy, PassportStrategyCatalog, TokenSource,
     core::{Config, ConfigBuilder, Furnace, LifecycleFuture, LifecycleHook, SourceLocation},
 };
 
@@ -92,20 +91,46 @@ impl PassportStrategy for RefreshStrategy {
     }
 }
 
-#[furnace_rs_common::routes(prefix = "/access")]
-#[furnace_rs_common::guard(strategy = "jwt", principal = UserPrincipal)]
-#[allow(dead_code)]
-trait AccessRoutes {
-    #[furnace_rs_common::get("/")]
-    async fn profile(&self);
+#[furnace_rs_common::controller]
+struct AccessRoutesController;
+
+#[furnace_rs_common::guard(principal = UserPrincipal, strategy = "jwt")]
+struct AccessRoutesControllerGuard;
+
+impl ::furnace_rs_common::Sealable for AccessRoutesController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<AccessRoutesControllerGuard>()
+    }
 }
 
-#[furnace_rs_common::routes(prefix = "/refresh")]
-#[furnace_rs_common::guard(strategy = "jwt-refresh", principal = RefreshPrincipal)]
-#[allow(dead_code)]
-trait RefreshRoutes {
-    #[furnace_rs_common::post("/")]
-    async fn refresh(&self);
+#[furnace_rs_common::controller]
+impl AccessRoutesController {
+    #[furnace_rs_common::get("/access")]
+
+    async fn profile(&self) {
+        unreachable!("metadata-only endpoint")
+    }
+}
+
+#[furnace_rs_common::controller]
+struct RefreshRoutesController;
+
+#[furnace_rs_common::guard(principal = RefreshPrincipal, strategy = "jwt-refresh")]
+struct RefreshRoutesControllerGuard;
+
+impl ::furnace_rs_common::Sealable for RefreshRoutesController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<RefreshRoutesControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl RefreshRoutesController {
+    #[furnace_rs_common::post("/refresh")]
+
+    async fn refresh(&self) {
+        unreachable!("metadata-only endpoint")
+    }
 }
 
 fn mismatched_principal_type_id() -> TypeId {
@@ -173,17 +198,24 @@ fn config() -> Config {
 
 #[test]
 fn managed_custom_strategies_override_jwt_and_select_refresh_independently() {
-    let guards = GuardCatalog::guards();
+    let guards = [
+        <AccessRoutesControllerGuard as furnace_rs_common::GuardPolicy>::descriptor(),
+        <RefreshRoutesControllerGuard as furnace_rs_common::GuardPolicy>::descriptor(),
+    ];
     let preflight = PassportStrategyCatalog::preflight(&guards).unwrap();
     let access = preflight
         .bindings()
         .iter()
-        .find(|binding| binding.guard().requirement_subject() == "AccessRoutes::profile")
+        .find(|binding| {
+            binding.guard().requirement_subject() == "AccessRoutesControllerGuard::seal"
+        })
         .unwrap();
     let refresh = preflight
         .bindings()
         .iter()
-        .find(|binding| binding.guard().requirement_subject() == "RefreshRoutes::refresh")
+        .find(|binding| {
+            binding.guard().requirement_subject() == "RefreshRoutesControllerGuard::seal"
+        })
         .unwrap();
 
     assert_eq!(access.strategy(), "jwt");

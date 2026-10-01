@@ -90,17 +90,21 @@ mod first {
         }
     }
 
-    #[furnace_rs_common::routes]
-    #[furnace_rs_common::guard(strategy = "jwt", principal = FirstPrincipal)]
-    pub trait FirstRoutes {
-        #[furnace_rs_common::get("/first")]
-        async fn profile(&self) -> &'static str;
-    }
-
-    #[furnace_rs_common::controller(routes = [FirstRoutes])]
+    #[furnace_rs_common::controller]
     pub struct FirstController;
 
-    impl FirstRoutes for FirstController {
+    #[furnace_rs_common::guard(principal = FirstPrincipal, strategy = "jwt")]
+    struct FirstControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for FirstController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<FirstControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl FirstController {
+        #[furnace_rs_common::get("/first")]
         async fn profile(&self) -> &'static str {
             "first"
         }
@@ -141,17 +145,21 @@ mod second {
         }
     }
 
-    #[furnace_rs_common::routes]
-    #[furnace_rs_common::guard(strategy = "jwt", principal = SecondPrincipal)]
-    pub trait SecondRoutes {
-        #[furnace_rs_common::get("/second")]
-        async fn profile(&self) -> &'static str;
-    }
-
-    #[furnace_rs_common::controller(routes = [SecondRoutes])]
+    #[furnace_rs_common::controller]
     pub struct SecondController;
 
-    impl SecondRoutes for SecondController {
+    #[furnace_rs_common::guard(principal = SecondPrincipal, strategy = "jwt")]
+    struct SecondControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for SecondController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<SecondControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl SecondController {
+        #[furnace_rs_common::get("/second")]
         async fn profile(&self) -> &'static str {
             "second"
         }
@@ -238,17 +246,21 @@ mod candidate_two {
 mod two_candidates {
     use super::*;
 
-    #[furnace_rs_common::routes]
-    #[furnace_rs_common::guard(strategy = "jwt", principal = ClaimsPrincipal<CandidateClaims>)]
-    pub trait CandidateRoutes {
-        #[furnace_rs_common::get("/candidates")]
-        async fn profile(&self) -> &'static str;
-    }
-
-    #[furnace_rs_common::controller(routes = [CandidateRoutes])]
+    #[furnace_rs_common::controller]
     pub struct CandidateController;
 
-    impl CandidateRoutes for CandidateController {
+    #[furnace_rs_common::guard(principal = ClaimsPrincipal < CandidateClaims >, strategy = "jwt")]
+    struct CandidateControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for CandidateController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<CandidateControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl CandidateController {
+        #[furnace_rs_common::get("/candidates")]
         async fn profile(&self) -> &'static str {
             "candidates"
         }
@@ -301,17 +313,21 @@ mod private_strategy {
 mod private_import {
     use super::*;
 
-    #[furnace_rs_common::routes]
-    #[furnace_rs_common::guard(strategy = "jwt", principal = NonBuiltinPrincipal)]
-    pub trait PrivateRoutes {
-        #[furnace_rs_common::get("/private")]
-        async fn profile(&self) -> &'static str;
-    }
-
-    #[furnace_rs_common::controller(routes = [PrivateRoutes])]
+    #[furnace_rs_common::controller]
     pub struct PrivateController;
 
-    impl PrivateRoutes for PrivateController {
+    #[furnace_rs_common::guard(principal = NonBuiltinPrincipal, strategy = "jwt")]
+    struct PrivateControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for PrivateController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<PrivateControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl PrivateController {
+        #[furnace_rs_common::get("/private")]
         async fn profile(&self) -> &'static str {
             "private"
         }
@@ -375,17 +391,21 @@ mod transitive_import {
 mod transitive_guard {
     use super::*;
 
-    #[furnace_rs_common::routes]
-    #[furnace_rs_common::guard(strategy = "jwt", principal = NonBuiltinPrincipal)]
-    pub trait TransitiveRoutes {
-        #[furnace_rs_common::get("/transitive")]
-        async fn profile(&self) -> &'static str;
-    }
-
-    #[furnace_rs_common::controller(routes = [TransitiveRoutes])]
+    #[furnace_rs_common::controller]
     pub struct TransitiveController;
 
-    impl TransitiveRoutes for TransitiveController {
+    #[furnace_rs_common::guard(principal = NonBuiltinPrincipal, strategy = "jwt")]
+    struct TransitiveControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for TransitiveController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<TransitiveControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl TransitiveController {
+        #[furnace_rs_common::get("/transitive")]
         async fn profile(&self) -> &'static str {
             "transitive"
         }
@@ -405,17 +425,21 @@ mod transitive_guard {
 mod no_custom {
     use super::*;
 
-    #[furnace_rs_common::routes]
-    #[furnace_rs_common::guard(strategy = "jwt", principal = ClaimsPrincipal<NoCustomClaims>)]
-    pub trait NoCustomRoutes {
-        #[furnace_rs_common::get("/builtin")]
-        async fn profile(&self) -> &'static str;
-    }
-
-    #[furnace_rs_common::controller(routes = [NoCustomRoutes])]
+    #[furnace_rs_common::controller]
     pub struct NoCustomController;
 
-    impl NoCustomRoutes for NoCustomController {
+    #[furnace_rs_common::guard(principal = ClaimsPrincipal < NoCustomClaims >, strategy = "jwt")]
+    struct NoCustomControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for NoCustomController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<NoCustomControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl NoCustomController {
+        #[furnace_rs_common::get("/builtin")]
         async fn profile(&self) -> &'static str {
             "builtin"
         }
@@ -434,17 +458,21 @@ mod no_custom {
 mod unimported_nested_strategy {
     use super::*;
 
-    #[furnace_rs_common::routes]
-    #[furnace_rs_common::guard(strategy = "jwt", principal = NonBuiltinPrincipal)]
-    pub trait ParentRoutes {
-        #[furnace_rs_common::get("/nested")]
-        async fn profile(&self) -> &'static str;
-    }
-
-    #[furnace_rs_common::controller(routes = [ParentRoutes])]
+    #[furnace_rs_common::controller]
     pub struct ParentController;
 
-    impl ParentRoutes for ParentController {
+    #[furnace_rs_common::guard(principal = NonBuiltinPrincipal, strategy = "jwt")]
+    struct ParentControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for ParentController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<ParentControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl ParentController {
+        #[furnace_rs_common::get("/nested")]
         async fn profile(&self) -> &'static str {
             "nested"
         }

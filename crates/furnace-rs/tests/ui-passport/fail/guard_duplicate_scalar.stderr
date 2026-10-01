@@ -1,5 +1,5 @@
 error: duplicate `strategy` guard argument
- --> tests/ui-passport/fail/guard_duplicate_scalar.rs:8:5
+ --> tests/ui-passport/fail/guard_duplicate_scalar.rs:7:5
   |
-8 |     strategy = "jwt-refresh",
+7 |     strategy = "jwt-refresh",
   |     ^^^^^^^^

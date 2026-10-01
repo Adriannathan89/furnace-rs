@@ -13,10 +13,11 @@ struct AppCauldron;
 
 impl framework::Cauldron for AppCauldron {
     fn register(self) -> framework::CauldronRegistration<Self> {
-        self.provide::<RenamedRepository>().controller::<Controller>().controller::<ExtractorController>()
+        self.provide::<RenamedRepository>()
+            .controller::<Controller>()
+            .controller::<ExtractorController>()
     }
 }
-
 
 #[storage]
 struct RenamedRepository {
@@ -63,54 +64,61 @@ fn passport_principal() {
     assert!(framework::PassportPrincipal::has_role(&principal, "member"));
 }
 
-#[routes]
-trait Routes {
-    #[get("/")]
-    async fn index(&self);
-}
-
-#[routes]
-trait ExtractorRoutes {
-    #[post("/:id")]
-    async fn custom_json_before_path(&self, body: furnace_rs::Json, id: framework::Path<u64>);
-
-    #[post("/json")]
-    async fn json(&self, body: framework::Json<String>);
-
-    #[post("/validated")]
-    async fn validated(&self, body: framework::ValidatedJson<CreateInput>);
-
-    #[post("/request")]
-    async fn request(&self, request: framework::Request);
-}
-
-#[controller(routes = [Routes])]
+#[controller]
 struct Controller;
 
-impl Routes for Controller {
+impl ::framework::Sealable for Controller {
+    fn seals() -> ::framework::SealRegistration<Self> {
+        ::framework::SealRegistration::new()
+    }
+}
+
+#[framework::controller]
+impl Controller {
+    #[get("/")]
     async fn index(&self) {}
 }
 
-#[controller(routes = [ExtractorRoutes])]
+#[controller]
 struct ExtractorController;
 
-impl ExtractorRoutes for ExtractorController {
+impl ::framework::Sealable for ExtractorController {
+    fn seals() -> ::framework::SealRegistration<Self> {
+        ::framework::SealRegistration::new()
+    }
+}
+
+#[framework::controller]
+impl ExtractorController {
+    #[post("/:id")]
     async fn custom_json_before_path(&self, _body: furnace_rs::Json, _id: framework::Path<u64>) {}
-
+    #[post("/json")]
     async fn json(&self, _body: framework::Json<String>) {}
-
+    #[post("/validated")]
     async fn validated(&self, body: framework::ValidatedJson<CreateInput>) {
         let _ = body.0.name;
     }
-
+    #[post("/request")]
     async fn request(&self, _request: framework::Request) {}
 }
 
 fn main() {
     #[derive(Input)]
-    struct RequestInput { #[validate(email)] email: String }
-    assert!(RequestInput { email: "user@example.com".into() }.validate().is_ok());
-    assert_eq!(Config::empty().parse::<Settings>().unwrap().host, "localhost");
+    struct RequestInput {
+        #[validate(email)]
+        email: String,
+    }
+    assert!(
+        RequestInput {
+            email: "user@example.com".into()
+        }
+        .validate()
+        .is_ok()
+    );
+    assert_eq!(
+        Config::empty().parse::<Settings>().unwrap().host,
+        "localhost"
+    );
     let _ = passport_principal;
     let _ = consume_repository;
 }

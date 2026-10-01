@@ -8,11 +8,6 @@
 
 use std::any::TypeId;
 use std::collections::BTreeMap;
-#[cfg(feature = "jwt")]
-use std::fmt;
-#[cfg(feature = "jwt")]
-use std::hash::{Hash, Hasher};
-use std::sync::OnceLock;
 
 use furnace_rs_core::{Diagnostic, Error, FURNACE030, Result, SourceLocation};
 
@@ -20,38 +15,6 @@ use crate::http_scope::ScopedController;
 
 #[cfg(feature = "jwt")]
 use crate::passport::{GuardDescriptor, PassportGuardState, PassportStrategyPreflight};
-
-#[cfg(feature = "jwt")]
-#[derive(Clone, Copy)]
-struct GuardReference(&'static crate::passport::GuardDescriptor);
-
-#[cfg(feature = "jwt")]
-impl PartialEq for GuardReference {
-    fn eq(&self, other: &Self) -> bool {
-        std::ptr::eq(self.0, other.0)
-    }
-}
-
-#[cfg(feature = "jwt")]
-impl Eq for GuardReference {}
-
-#[cfg(feature = "jwt")]
-impl Hash for GuardReference {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        (self.0 as *const crate::passport::GuardDescriptor).hash(state);
-    }
-}
-
-#[cfg(feature = "jwt")]
-impl fmt::Debug for GuardReference {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("GuardReference")
-            .field("route_trait", &self.0.route_trait())
-            .field("handler", &self.0.handler())
-            .finish()
-    }
-}
 
 /// An HTTP method declared by a route contract.
 ///
@@ -108,8 +71,6 @@ pub struct RouteDescriptor {
     handler: &'static str,
     namespace: Option<&'static str>,
     location: SourceLocation,
-    #[cfg(feature = "jwt")]
-    guard: Option<GuardReference>,
 }
 
 impl RouteDescriptor {
@@ -154,8 +115,6 @@ impl RouteDescriptor {
             handler,
             namespace: None,
             location,
-            #[cfg(feature = "jwt")]
-            guard: None,
         }
     }
 
@@ -201,201 +160,6 @@ impl RouteDescriptor {
     /// Returns the source location of the declaring route contract.
     pub const fn location(self) -> SourceLocation {
         self.location
-    }
-
-    /// Associates this route with one effective Passport guard descriptor.
-    ///
-    /// Route expansion uses the exact same static descriptor for catalog
-    /// inspection and future request-time enforcement.
-    #[cfg(feature = "jwt")]
-    #[doc(hidden)]
-    #[must_use]
-    pub const fn with_guard(mut self, guard: &'static crate::passport::GuardDescriptor) -> Self {
-        self.guard = Some(GuardReference(guard));
-        self
-    }
-
-    /// Returns the effective Passport guard for this route when it has one.
-    #[cfg(feature = "jwt")]
-    #[doc(hidden)]
-    #[must_use]
-    pub const fn guard(&self) -> Option<&'static crate::passport::GuardDescriptor> {
-        match self.guard {
-            Some(guard) => Some(guard.0),
-            None => None,
-        }
-    }
-}
-
-/// Route metadata contributed by one route trait to a controller.
-///
-/// A controller can implement multiple route contracts. The descriptor keeps
-/// each contract separate so callers can preserve trait and method order while
-/// validating the combined controller surface.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct RouteContractDescriptor {
-    trait_name: &'static str,
-    routes: &'static [RouteDescriptor],
-}
-
-impl RouteContractDescriptor {
-    /// Creates route-contract metadata emitted by `#[controller]`.
-    ///
-    /// The route slice must remain available for the entire program because
-    /// descriptors are registered as immutable static metadata. Runtime
-    /// validation rejects an empty trait name, an empty route slice, and
-    /// duplicate contract declarations.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use furnace_rs_common::{HttpMethod, RouteContractDescriptor, RouteDescriptor};
-    /// use furnace_rs_common::core::SourceLocation;
-    ///
-    /// const ROUTES: &[RouteDescriptor] = &[RouteDescriptor::new(
-    ///     HttpMethod::Get,
-    ///     "",
-    ///     "/health",
-    ///     "/health",
-    ///     "health",
-    ///     SourceLocation::new("routes.rs", 1, 1),
-    /// )];
-    /// const CONTRACT: RouteContractDescriptor =
-    ///     RouteContractDescriptor::new("HealthRoutes", ROUTES);
-    ///
-    /// assert_eq!(CONTRACT.trait_name(), "HealthRoutes");
-    /// ```
-    pub const fn new(trait_name: &'static str, routes: &'static [RouteDescriptor]) -> Self {
-        Self { trait_name, routes }
-    }
-
-    /// Returns the declared route trait name.
-    pub const fn trait_name(self) -> &'static str {
-        self.trait_name
-    }
-
-    /// Returns the routes supplied by this contract.
-    pub const fn routes(self) -> &'static [RouteDescriptor] {
-        self.routes
-    }
-}
-
-/// Static route metadata contributed by one managed controller.
-///
-/// Values are collected through the internal inventory registry when the
-/// application is linked. The descriptor stores no controller instance and is
-/// therefore safe to inspect during bootstrap before dependency construction.
-pub struct ControllerRouteDescriptor {
-    type_name: &'static str,
-    runtime_type_name: Option<fn() -> &'static str>,
-    type_id: fn() -> TypeId,
-    namespace: Option<&'static str>,
-    contracts: &'static [RouteContractDescriptor],
-    registrar: Option<ControllerRegistrar>,
-    endpoints: Option<&'static [RouteDescriptor]>,
-}
-
-impl ControllerRouteDescriptor {
-    /// Creates static controller-route metadata emitted by `#[controller]`.
-    ///
-    /// This constructor intentionally creates metadata without executable
-    /// registrar code. It is useful for catalog inspection and compatibility
-    /// tooling, but HTTP bootstrap rejects it with `FURNACE030`; use
-    /// [`Self::with_registrar`] for a controller that can be installed in a
-    /// router.
-    pub const fn new(
-        type_name: &'static str,
-        type_id: fn() -> TypeId,
-        contracts: &'static [RouteContractDescriptor],
-    ) -> Self {
-        Self {
-            type_name,
-            runtime_type_name: None,
-            type_id,
-            namespace: None,
-            contracts,
-            registrar: None,
-            endpoints: None,
-        }
-    }
-
-    /// Creates controller metadata with its typed HTTP route registrar.
-    ///
-    /// The registrar is invoked only after the complete descriptor catalog has
-    /// passed validation. It must consume exactly the validated routes supplied
-    /// by [`ValidatedRouteIter`], then return the updated router.
-    pub const fn with_registrar(
-        type_name: &'static str,
-        type_id: fn() -> TypeId,
-        contracts: &'static [RouteContractDescriptor],
-        registrar: ControllerRegistrar,
-    ) -> Self {
-        Self {
-            type_name,
-            runtime_type_name: None,
-            type_id,
-            namespace: None,
-            contracts,
-            registrar: Some(registrar),
-            endpoints: None,
-        }
-    }
-
-    /// Attaches the Rust namespace containing this controller declaration.
-    #[doc(hidden)]
-    #[must_use]
-    pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
-        self.namespace = Some(namespace);
-        self
-    }
-
-    /// Returns the Rust namespace containing this controller declaration, when available.
-    #[doc(hidden)]
-    pub const fn namespace(&self) -> Option<&'static str> {
-        self.namespace
-    }
-
-    /// Returns the controller type name.
-    pub fn type_name(&self) -> &'static str {
-        self.runtime_type_name.map_or(self.type_name, |name| name())
-    }
-
-    /// Returns the controller type identifier.
-    pub fn type_id(&self) -> TypeId {
-        (self.type_id)()
-    }
-
-    /// Returns route contracts implemented by the controller.
-    pub const fn contracts(&self) -> &'static [RouteContractDescriptor] {
-        self.contracts
-    }
-
-    pub(crate) fn routes(&self) -> impl Iterator<Item = &RouteDescriptor> {
-        self.contracts
-            .iter()
-            .flat_map(|contract| contract.routes())
-            .chain(self.endpoints.unwrap_or(&[]).iter())
-    }
-
-    const fn direct(
-        type_name: &'static str,
-        type_id: fn() -> TypeId,
-        endpoints: &'static [RouteDescriptor],
-        registrar: ControllerRegistrar,
-    ) -> Self {
-        Self {
-            type_name,
-            runtime_type_name: None,
-            type_id,
-            namespace: None,
-            contracts: &[],
-            registrar: Some(registrar),
-            endpoints: Some(endpoints),
-        }
-    }
-
-    fn registrar(&self) -> Option<ControllerRegistrar> {
-        self.registrar
     }
 }
 
@@ -454,8 +218,13 @@ impl ControllerDescriptor {
 
 /// One annotated inherent endpoint implementation, joined by controller identity.
 pub struct ControllerEndpointDescriptor {
-    view: ControllerRouteDescriptor,
+    type_name: &'static str,
+    runtime_type_name: Option<fn() -> &'static str>,
+    type_id: fn() -> TypeId,
     location: SourceLocation,
+    namespace: Option<&'static str>,
+    endpoints: &'static [RouteDescriptor],
+    registrar: ControllerRegistrar,
 }
 impl ControllerEndpointDescriptor {
     /// Records endpoints and their typed registrar without constructing a controller.
@@ -467,48 +236,54 @@ impl ControllerEndpointDescriptor {
         registrar: ControllerRegistrar,
     ) -> Self {
         Self {
-            view: ControllerRouteDescriptor::direct(type_name, type_id, endpoints, registrar),
+            type_name,
+            runtime_type_name: None,
+            type_id,
             location,
+            namespace: None,
+            endpoints,
+            registrar,
         }
     }
     /// Attaches the implementation's source namespace for inspection.
     #[doc(hidden)]
     pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
-        self.view.namespace = Some(namespace);
+        self.namespace = Some(namespace);
         self
     }
-    /// Attaches the canonical concrete Rust name for qualified implementation paths.
+    /// Attaches the concrete Rust name for qualified implementation paths.
     #[doc(hidden)]
     pub const fn with_runtime_type_name(mut self, name: fn() -> &'static str) -> Self {
-        self.view.runtime_type_name = Some(name);
+        self.runtime_type_name = Some(name);
         self
     }
-    /// Returns the controller's stable Rust name.
+    /// Returns the controller's Rust name.
     pub fn type_name(&self) -> &'static str {
-        self.view.type_name()
+        self.runtime_type_name.map_or(self.type_name, |name| name())
     }
     /// Returns the concrete controller identity.
     pub fn type_id(&self) -> TypeId {
-        self.view.type_id()
+        (self.type_id)()
     }
     /// Returns the implementation's source location.
     pub const fn location(&self) -> SourceLocation {
         self.location
     }
     /// Returns the declared endpoint metadata.
-    pub fn endpoints(&self) -> &'static [RouteDescriptor] {
-        self.view.endpoints.unwrap_or(&[])
+    pub const fn endpoints(&self) -> &'static [RouteDescriptor] {
+        self.endpoints
+    }
+    pub(crate) fn routes(&self) -> impl Iterator<Item = &RouteDescriptor> {
+        self.endpoints.iter()
     }
     /// Returns the typed controller registrar.
     #[doc(hidden)]
-    pub fn registrar(&self) -> ControllerRegistrar {
-        self.view
-            .registrar
-            .expect("endpoint registrars are mandatory")
+    pub const fn registrar(&self) -> ControllerRegistrar {
+        self.registrar
     }
     /// Returns the source namespace when supplied.
     pub const fn namespace(&self) -> Option<&'static str> {
-        self.view.namespace
+        self.namespace
     }
 }
 
@@ -746,8 +521,6 @@ impl<'a> ValidatedRouteIter<'a> {
     }
 }
 
-furnace_rs_core::__private::inventory::collect!(ControllerRouteDescriptor);
-
 /// Looks up and validates route-contract metadata.
 ///
 /// The catalog is a read-only view of metadata emitted by `#[routes]` and
@@ -780,11 +553,8 @@ impl RouteCatalog {
 
     pub(crate) fn route_controllers(
         select: impl Fn(TypeId) -> bool,
-    ) -> Result<Vec<&'static ControllerRouteDescriptor>> {
-        let mut result: Vec<_> = Self::legacy_controllers()
-            .into_iter()
-            .filter(|descriptor| select(descriptor.type_id()))
-            .collect();
+    ) -> Result<Vec<&'static ControllerEndpointDescriptor>> {
+        let mut result = Vec::new();
         let endpoints = Self::endpoint_sets();
         let mut seen = Vec::new();
         for controller in Self::controllers()
@@ -808,29 +578,10 @@ impl RouteCatalog {
                     "each controller must have exactly one annotated inherent endpoint implementation",
                 ));
             };
-            result.push(&endpoint.view);
+            result.push(**endpoint);
         }
         result.sort_by_key(|descriptor| descriptor.type_name());
         Ok(result)
-    }
-
-    /// Returns registered controllers in deterministic type-name order.
-    ///
-    /// The returned vector contains references to static descriptors; cloning
-    /// the vector does not clone controller state. This is an inspection-only
-    /// operation and does not resolve providers, invoke registrars, or start
-    /// lifecycle hooks.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use furnace_rs_common::RouteCatalog;
-    ///
-    /// let controllers = RouteCatalog::controllers();
-    /// assert!(controllers.iter().all(|controller| !controller.type_name().is_empty()));
-    /// ```
-    pub fn legacy_controllers() -> Vec<&'static ControllerRouteDescriptor> {
-        controller_cache().clone()
     }
 
     /// Returns route descriptors declared by controller `T`, preserving trait
@@ -948,7 +699,7 @@ impl RouteCatalog {
 #[allow(clippy::result_large_err)]
 #[doc(hidden)]
 pub fn validate_descriptors(
-    descriptors: &[&ControllerRouteDescriptor],
+    descriptors: &[&ControllerEndpointDescriptor],
 ) -> Result<Vec<ValidatedController>> {
     validate_with_selection(descriptors, |_, _| RouteSelection::all())
 }
@@ -1014,13 +765,13 @@ pub(crate) fn validate_scoped_descriptors(
 }
 
 fn validate_with_selection(
-    descriptors: &[&ControllerRouteDescriptor],
-    selection_for: impl Fn(&ControllerRouteDescriptor, &RouteDescriptor) -> RouteSelection,
+    descriptors: &[&ControllerEndpointDescriptor],
+    selection_for: impl Fn(&ControllerEndpointDescriptor, &RouteDescriptor) -> RouteSelection,
 ) -> Result<Vec<ValidatedController>> {
     let mut controllers = descriptors.to_vec();
     controllers.sort_by(|left, right| controller_sort_key(left).cmp(&controller_sort_key(right)));
 
-    let mut identities: Vec<&ControllerRouteDescriptor> = Vec::new();
+    let mut identities: Vec<&ControllerEndpointDescriptor> = Vec::new();
     let mut capture_routes = BTreeMap::new();
     let mut seen_routes: BTreeMap<(HttpMethod, String), (&str, RouteDescriptor)> = BTreeMap::new();
     let mut validated = Vec::with_capacity(controllers.len());
@@ -1030,21 +781,14 @@ fn validate_with_selection(
     }
 
     for controller in controllers {
-        validate_contract(controller)?;
-        let Some(registrar) = controller.registrar() else {
-            return Err(metadata_error(
-                controller.type_name(),
-                "controller metadata does not include a typed HTTP registrar",
-                controller_location(controller),
-            ));
-        };
+        let registrar = controller.registrar();
 
         let mut routes = Vec::new();
         for route in controller.routes() {
             let selection = selection_for(controller, route);
             let selected = selection.selected;
             if selected {
-                validate_route(route, controller.endpoints.is_some())?;
+                validate_route(route)?;
                 validate_capture_names(
                     &mut capture_routes,
                     controller.type_name(),
@@ -1068,7 +812,7 @@ fn validate_with_selection(
                 method: route.method(),
                 handler: route.handler(),
                 selected,
-                axum_path: selected.then(|| to_axum_path(route.full_path())),
+                axum_path: selected.then(|| route.full_path().to_owned()),
                 #[cfg(feature = "jwt")]
                 passport_context_cauldron: selection.passport_context_cauldron,
             });
@@ -1087,31 +831,15 @@ fn validate_with_selection(
     Ok(validated)
 }
 
-fn controller_cache() -> &'static Vec<&'static ControllerRouteDescriptor> {
-    static CONTROLLERS: OnceLock<Vec<&'static ControllerRouteDescriptor>> = OnceLock::new();
-    CONTROLLERS.get_or_init(|| {
-        let mut controllers: Vec<_> =
-            furnace_rs_core::__private::inventory::iter::<ControllerRouteDescriptor>
-                .into_iter()
-                .collect();
-        controllers.sort_by(|left, right| {
-            left.type_name()
-                .cmp(right.type_name())
-                .then_with(|| left.namespace().cmp(&right.namespace()))
-        });
-        controllers
-    })
-}
-
 fn routes_for_descriptor(
-    controller: &'static ControllerRouteDescriptor,
+    controller: &'static ControllerEndpointDescriptor,
 ) -> impl Iterator<Item = RouteDescriptor> {
     controller.routes().copied()
 }
 
 fn validate_controller_identity(
-    controller: &ControllerRouteDescriptor,
-    previous: &[&ControllerRouteDescriptor],
+    controller: &ControllerEndpointDescriptor,
+    previous: &[&ControllerEndpointDescriptor],
 ) -> Result<()> {
     if controller.type_name().is_empty() {
         return Err(metadata_error(
@@ -1140,60 +868,14 @@ fn validate_controller_identity(
     Ok(())
 }
 
-fn validate_contract(controller: &ControllerRouteDescriptor) -> Result<()> {
-    if controller.endpoints.is_some() {
-        return Ok(());
-    }
-    if controller.contracts().is_empty() {
-        return Err(metadata_error(
-            controller.type_name(),
-            "controller must declare at least one route contract",
-            controller_location(controller),
-        ));
-    }
-
-    let mut names = BTreeMap::new();
-    for contract in controller.contracts() {
-        if contract.trait_name().is_empty() {
-            return Err(metadata_error(
-                controller.type_name(),
-                "route contract name must not be empty",
-                controller_location(controller),
-            ));
-        }
-        if contract.routes().is_empty() {
-            return Err(metadata_error(
-                contract.trait_name(),
-                "route contract must declare at least one active route",
-                controller_location(controller),
-            ));
-        }
-        if names.insert(contract.trait_name(), ()).is_some() {
-            return Err(metadata_error(
-                contract.trait_name(),
-                "controller contains a duplicate route contract descriptor",
-                controller_location(controller),
-            ));
-        }
-    }
-    Ok(())
-}
-
-fn validate_route(route: &RouteDescriptor, native: bool) -> Result<()> {
-    validate_path(
-        route.prefix(),
-        true,
-        "route prefix",
-        route.location(),
-        native,
-    )?;
-    validate_path(route.path(), false, "route path", route.location(), native)?;
+fn validate_route(route: &RouteDescriptor) -> Result<()> {
+    validate_path(route.prefix(), true, "route prefix", route.location())?;
+    validate_path(route.path(), false, "route path", route.location())?;
     validate_path(
         route.full_path(),
         false,
         "route full path",
         route.location(),
-        native,
     )?;
     if canonical_join(route.prefix(), route.path()) != route.full_path() {
         return Err(metadata_error(
@@ -1215,7 +897,7 @@ fn canonical_join(prefix: &str, path: &str) -> String {
     }
 }
 
-fn validate_native_path(
+fn validate_path(
     value: &str,
     is_prefix: bool,
     subject: &str,
@@ -1269,121 +951,6 @@ fn validate_native_path(
     Ok(())
 }
 
-fn validate_path(
-    value: &str,
-    is_prefix: bool,
-    subject: &str,
-    location: SourceLocation,
-    native: bool,
-) -> Result<()> {
-    if native {
-        return validate_native_path(value, is_prefix, subject, location);
-    }
-    if is_prefix && value.is_empty() {
-        return Ok(());
-    }
-    if value.is_empty() || !value.starts_with('/') {
-        return Err(metadata_error(
-            subject,
-            format!("{subject} must be non-empty and start with `/`"),
-            Some(location),
-        ));
-    }
-    if value.contains(['?', '#']) {
-        return Err(metadata_error(
-            subject,
-            format!("{subject} must not contain a query string or fragment"),
-            Some(location),
-        ));
-    }
-    if value.chars().any(char::is_control) {
-        return Err(metadata_error(
-            subject,
-            format!("{subject} must not contain control characters"),
-            Some(location),
-        ));
-    }
-    if value.contains(['\\', '%']) || value.chars().any(char::is_whitespace) {
-        return Err(metadata_error(
-            subject,
-            format!("{subject} must not contain backslashes, percent-encoding, or whitespace"),
-            Some(location),
-        ));
-    }
-    if value != "/" && value.ends_with('/') {
-        return Err(metadata_error(
-            subject,
-            format!("{subject} must not end with `/`; use `/` only for the root route"),
-            Some(location),
-        ));
-    }
-    if value == "/" {
-        return Ok(());
-    }
-
-    let mut parameters = BTreeMap::new();
-    for segment in value.split('/').skip(1) {
-        if segment.is_empty() || matches!(segment, "." | "..") {
-            return Err(metadata_error(
-                subject,
-                format!("{subject} must not contain empty, `.` or `..` segments"),
-                Some(location),
-            ));
-        }
-        if segment.starts_with('*') || segment.contains(['{', '}']) {
-            return Err(metadata_error(
-                subject,
-                format!(
-                    "{subject} must not use Axum wildcard or brace-capture syntax; use `:parameter` captures"
-                ),
-                Some(location),
-            ));
-        }
-        if let Some(parameter) = segment.strip_prefix(':') {
-            let mut characters = parameter.chars();
-            let Some(first) = characters.next() else {
-                return Err(metadata_error(
-                    subject,
-                    format!("{subject} contains an empty parameter"),
-                    Some(location),
-                ));
-            };
-            if !(first == '_' || first.is_ascii_alphabetic())
-                || !characters
-                    .all(|character| character == '_' || character.is_ascii_alphanumeric())
-            {
-                return Err(metadata_error(
-                    subject,
-                    format!("{subject} parameters must use `[A-Za-z_][A-Za-z0-9_]*`"),
-                    Some(location),
-                ));
-            }
-            if parameters.insert(parameter, ()).is_some() {
-                return Err(metadata_error(
-                    subject,
-                    format!("{subject} must not repeat parameter `:{parameter}`"),
-                    Some(location),
-                ));
-            }
-        } else if segment.contains(':') {
-            return Err(metadata_error(
-                subject,
-                format!("{subject} parameters must occupy an entire path segment"),
-                Some(location),
-            ));
-        }
-    }
-
-    if is_prefix && value.contains(':') {
-        return Err(metadata_error(
-            subject,
-            "route prefix must not contain parameters; declare them on the endpoint path",
-            Some(location),
-        ));
-    }
-    Ok(())
-}
-
 fn validate_source_location(location: SourceLocation) -> Result<()> {
     if location.file.is_empty() || location.line == 0 || location.column == 0 {
         return Err(metadata_error(
@@ -1425,8 +992,8 @@ fn validate_capture_names(
     scope: &'static str,
 ) -> Result<()> {
     for (previous_controller, previous) in seen.values() {
-        let left = to_axum_path(previous.full_path());
-        let right = to_axum_path(route.full_path());
+        let left = previous.full_path();
+        let right = route.full_path();
         for (left, right) in left.split('/').zip(right.split('/')) {
             if left == right {
                 continue;
@@ -1463,20 +1030,8 @@ fn canonical_pattern(path: &str) -> String {
         .join("/")
 }
 
-fn to_axum_path(path: &str) -> String {
-    path.split('/')
-        .map(|segment| {
-            segment.strip_prefix(':').map_or_else(
-                || segment.to_owned(),
-                |parameter| format!("{{{parameter}}}"),
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("/")
-}
-
 fn controller_sort_key(
-    controller: &ControllerRouteDescriptor,
+    controller: &ControllerEndpointDescriptor,
 ) -> (&'static str, Option<&'static str>, &'static str, u32, u32) {
     let location = controller_location(controller).unwrap_or(SourceLocation::new("", 0, 0));
     (
@@ -1488,14 +1043,14 @@ fn controller_sort_key(
     )
 }
 
-fn controller_location(controller: &ControllerRouteDescriptor) -> Option<SourceLocation> {
+fn controller_location(controller: &ControllerEndpointDescriptor) -> Option<SourceLocation> {
     controller.routes().next().map(|route| route.location())
 }
 
 fn duplicate_controller_identity(
     subject: &str,
-    current: &ControllerRouteDescriptor,
-    previous: &ControllerRouteDescriptor,
+    current: &ControllerEndpointDescriptor,
+    previous: &ControllerEndpointDescriptor,
 ) -> Error {
     let primary = metadata_diagnostic(
         subject,
@@ -1607,13 +1162,6 @@ mod tests {
         }
     }
 
-    #[crate::routes]
-    #[crate::guard(strategy = "jwt", principal = SharedPrincipal)]
-    trait UnownedRoutes {
-        #[crate::get("/unowned-context")]
-        async fn profile(&self) -> &'static str;
-    }
-
     mod first {
         use super::*;
 
@@ -1641,10 +1189,21 @@ mod tests {
             }
         }
 
-        #[crate::controller(routes = [super::UnownedRoutes])]
+        #[crate::controller]
         pub struct FirstController;
 
-        impl super::UnownedRoutes for FirstController {
+        #[crate::guard(principal = SharedPrincipal, strategy = "jwt")]
+        struct FirstControllerGuard;
+
+        impl crate::Sealable for FirstController {
+            fn seals() -> crate::SealRegistration<Self> {
+                Self::seal::<FirstControllerGuard>()
+            }
+        }
+
+        #[crate::controller]
+        impl FirstController {
+            #[crate::get("/unowned-context")]
             async fn profile(&self) -> &'static str {
                 "first"
             }
@@ -1689,10 +1248,21 @@ mod tests {
             }
         }
 
-        #[crate::controller(routes = [super::UnownedRoutes])]
+        #[crate::controller]
         pub struct SecondController;
 
-        impl super::UnownedRoutes for SecondController {
+        #[crate::guard(principal = SharedPrincipal, strategy = "jwt")]
+        struct SecondControllerGuard;
+
+        impl crate::Sealable for SecondController {
+            fn seals() -> crate::SealRegistration<Self> {
+                Self::seal::<SecondControllerGuard>()
+            }
+        }
+
+        #[crate::controller]
+        impl SecondController {
+            #[crate::get("/unowned-context")]
             async fn profile(&self) -> &'static str {
                 "second"
             }
@@ -1825,7 +1395,10 @@ mod tests {
         let mut routes = controller.routes();
         let router = (controller.registrar())(axum::Router::new(), &runtime, &mut routes).unwrap();
         routes.finish().unwrap();
-        router
+        match controller.guard_layer(&runtime).unwrap() {
+            Some(layer) => router.layer(layer),
+            None => router,
+        }
     }
 
     fn authenticated_request(token: &str) -> Request<Body> {

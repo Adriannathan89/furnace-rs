@@ -12,11 +12,7 @@ impl PassportPrincipal for UserPrincipal {
     }
 }
 
-#[routes]
 #[guard(strategy = "jwt", principal = UserPrincipal, roles(any = []))]
-trait UserRoutes {
-    #[get("/profile")]
-    async fn profile(&self);
-}
+struct UserPolicy;
 
 fn main() {}

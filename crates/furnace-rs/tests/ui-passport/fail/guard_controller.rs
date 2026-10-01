@@ -1,5 +1,5 @@
 #[furnace_rs::common::guard(strategy = "jwt", principal = UserPrincipal)]
-#[furnace_rs::controller(routes = [MissingRoutes])]
+#[furnace_rs::controller]
 struct UserController;
 
 struct UserPrincipal;

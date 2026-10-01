@@ -31,16 +31,19 @@ enum CorsValue {
 }
 
 mod routed {
-    #[furnace_rs_common::routes]
-    pub trait RoutedRoutes {
-        #[furnace_rs_common::get("/health")]
-        async fn health(&self) -> &'static str;
-    }
 
-    #[furnace_rs_common::controller(routes = [RoutedRoutes])]
+    #[furnace_rs_common::controller]
     pub struct RoutedController;
 
-    impl RoutedRoutes for RoutedController {
+    impl ::furnace_rs_common::Sealable for RoutedController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            ::furnace_rs_common::SealRegistration::new()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl RoutedController {
+        #[furnace_rs_common::get("/health")]
         async fn health(&self) -> &'static str {
             "healthy"
         }

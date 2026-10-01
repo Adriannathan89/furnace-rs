@@ -28,21 +28,25 @@ async fn service_fixture_runs() {
         .await
         .unwrap();
 }
+
 #[cfg(feature = "http")]
-#[furnace_rs::routes]
-trait Routes {
-    #[get("/fixture")]
-    async fn fixture(&self) -> &'static str;
-}
-#[cfg(feature = "http")]
-#[furnace_rs::controller(routes = [Routes])]
+#[furnace_rs::controller]
 struct Controller;
 #[cfg(feature = "http")]
-impl Routes for Controller {
+impl ::furnace_rs::Sealable for Controller {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+#[cfg(feature = "http")]
+#[furnace_rs::controller]
+impl Controller {
+    #[get("/fixture")]
     async fn fixture(&self) -> &'static str {
         "fixture"
     }
 }
+
 #[cfg(feature = "http")]
 #[furnace_rs::test]
 async fn controller_fixture_runs() -> furnace_rs_testing::TestResult<()> {

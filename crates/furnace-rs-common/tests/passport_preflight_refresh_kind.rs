@@ -3,8 +3,8 @@
 #![cfg(all(feature = "http", feature = "jwt"))]
 
 use furnace_rs_common::{
-    FURNACE130, GuardCatalog, JwtClaims, JwtTokenKind, PassportContext, PassportPrincipal,
-    PassportResult, PassportStrategy, PassportStrategyCatalog,
+    FURNACE130, JwtClaims, JwtTokenKind, PassportContext, PassportPrincipal, PassportResult,
+    PassportStrategy, PassportStrategyCatalog,
 };
 
 #[derive(serde::Deserialize)]
@@ -41,17 +41,33 @@ impl PassportStrategy for IncorrectRefreshStrategy {
     }
 }
 
-#[furnace_rs_common::routes]
-#[furnace_rs_common::guard(strategy = "jwt-refresh", principal = RefreshPrincipal)]
-#[allow(dead_code)]
-trait RefreshRoutes {
+#[furnace_rs_common::controller]
+struct RefreshRoutesController;
+
+#[furnace_rs_common::guard(principal = RefreshPrincipal, strategy = "jwt-refresh")]
+struct RefreshRoutesControllerGuard;
+
+impl ::furnace_rs_common::Sealable for RefreshRoutesController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<RefreshRoutesControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl RefreshRoutesController {
     #[furnace_rs_common::post("/")]
-    async fn refresh(&self);
+
+    async fn refresh(&self) {
+        unreachable!("metadata-only endpoint")
+    }
 }
 
 #[test]
 fn preflight_rejects_an_access_strategy_registered_as_jwt_refresh() {
-    let error = PassportStrategyCatalog::preflight(&GuardCatalog::guards()).unwrap_err();
+    let error = PassportStrategyCatalog::preflight(&[
+        <RefreshRoutesControllerGuard as furnace_rs_common::GuardPolicy>::descriptor(),
+    ])
+    .unwrap_err();
 
     assert_eq!(error.code(), FURNACE130);
     assert!(error.to_string().contains("reserved_strategy_token_kind"));

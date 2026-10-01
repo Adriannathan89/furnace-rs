@@ -1,5 +1,5 @@
 error: guard policies cannot also be managed dependencies or controllers
  --> tests/ui-passport/fail/guard_controller.rs:2:1
   |
-2 | #[furnace_rs::controller(routes = [MissingRoutes])]
+2 | #[furnace_rs::controller]
   | ^

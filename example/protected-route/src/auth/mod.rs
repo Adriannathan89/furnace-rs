@@ -17,5 +17,6 @@ impl furnace_rs::core::Cauldron for AuthCauldron {
             .provide::<std::sync::Arc<dyn traits::AuthService>>()
             .provide::<service::DemoJwtStrategy>()
             .controller::<controller::AuthController>()
+            .controller::<controller::ProfileController>()
     }
 }

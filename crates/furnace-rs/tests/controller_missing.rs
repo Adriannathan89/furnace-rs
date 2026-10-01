@@ -3,9 +3,7 @@
 use std::any::TypeId;
 
 use furnace_rs::common::__private::RouterBuildContext;
-use furnace_rs::common::{
-    ControllerRouteDescriptor, HttpMethod, RouteContractDescriptor, RouteDescriptor, build_router,
-};
+use furnace_rs::common::{ControllerEndpointDescriptor, HttpMethod, RouteDescriptor, build_router};
 use furnace_rs::core::{FURNACE003, Furnace, Result, SourceLocation};
 
 struct MissingManualController;
@@ -31,15 +29,14 @@ const MISSING_MANUAL_ROUTE: RouteDescriptor = RouteDescriptor::new(
     "missing",
     SourceLocation::new("tests/missing_controller.rs", 3, 1),
 );
-const MISSING_MANUAL_CONTRACTS: &[RouteContractDescriptor] = &[RouteContractDescriptor::new(
-    "MissingRoutes",
-    &[MISSING_MANUAL_ROUTE],
-)];
+const MISSING_MANUAL_CONTRACTS: &[RouteDescriptor] = &[MISSING_MANUAL_ROUTE];
 
 furnace_rs::core::__private::inventory::submit! {
-    ControllerRouteDescriptor::with_registrar(
-        "test::MissingManualController",
-        missing_manual_type_id,
+    furnace_rs::common::ControllerDescriptor::new("test::MissingManualController", missing_manual_type_id, SourceLocation::new(file!(), line!(), column!()), furnace_rs::common::SealDefinition::default)
+}
+
+furnace_rs::core::__private::inventory::submit! {
+    ControllerEndpointDescriptor::new("test::MissingManualController", missing_manual_type_id, SourceLocation::new(file!(), line!(), column!()),
         MISSING_MANUAL_CONTRACTS,
         missing_controller_registrar,
     )

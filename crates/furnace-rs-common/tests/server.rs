@@ -9,16 +9,19 @@ use furnace_rs_common::core::{Diagnostic, Error, FURNACE020, Furnace};
 use furnace_rs_common::{FurnaceBurnExt, HttpRuntimeError, serve_router};
 
 mod standard_run {
-    #[furnace_rs_common::routes]
-    pub trait RoutedRoutes {
-        #[furnace_rs_common::get("/standard-run-health")]
-        async fn health(&self) -> &'static str;
-    }
 
-    #[furnace_rs_common::controller(routes = [RoutedRoutes])]
+    #[furnace_rs_common::controller]
     pub struct RoutedController;
 
-    impl RoutedRoutes for RoutedController {
+    impl ::furnace_rs_common::Sealable for RoutedController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            ::furnace_rs_common::SealRegistration::new()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl RoutedController {
+        #[furnace_rs_common::get("/standard-run-health")]
         async fn health(&self) -> &'static str {
             "healthy"
         }

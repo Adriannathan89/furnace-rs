@@ -1,8 +1,0 @@
-// src/app/routes.rs
-use furnace::prelude::*;
-
-#[routes]
-pub trait AppRoutes {
-    #[get("/")]
-    async fn hello(&self) -> &'static str;
-}

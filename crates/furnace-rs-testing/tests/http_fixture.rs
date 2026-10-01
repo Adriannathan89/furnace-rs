@@ -22,32 +22,26 @@ use std::{
 struct Service {
     message: String,
 }
-#[furnace_rs_common::routes]
-trait Routes {
-    #[get("/users")]
-    async fn users(&self) -> Json<Value>;
-    #[get("/text")]
-    async fn text(&self) -> Response;
-    #[post("/echo")]
-    async fn echo(&self, body: Json<Value>) -> (StatusCode, Json<Value>);
-    #[put("/echo")]
-    async fn put(&self) -> &'static str;
-    #[patch("/echo")]
-    async fn patch(&self) -> &'static str;
-    #[delete("/echo")]
-    async fn delete(&self) -> &'static str;
-    #[get("/broken")]
-    async fn broken(&self) -> Response;
-}
-#[furnace_rs_common::controller(routes = [Routes])]
+
+#[furnace_rs_common::controller]
 struct Controller {
     service: Service,
     resource: Resource,
 }
-impl Routes for Controller {
+
+impl ::furnace_rs_common::Sealable for Controller {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl Controller {
+    #[get("/users")]
     async fn users(&self) -> Json<Value> {
         Json(json!({"name":self.service.message,"id":1}))
     }
+    #[get("/text")]
     async fn text(&self) -> Response {
         let _ = &self.resource;
         (
@@ -59,36 +53,47 @@ impl Routes for Controller {
         )
             .into_response()
     }
+    #[post("/echo")]
     async fn echo(&self, Json(body): Json<Value>) -> (StatusCode, Json<Value>) {
         (StatusCode::CREATED, Json(body))
     }
+    #[put("/echo")]
     async fn put(&self) -> &'static str {
         "put"
     }
+    #[patch("/echo")]
     async fn patch(&self) -> &'static str {
         "patch"
     }
+    #[delete("/echo")]
     async fn delete(&self) -> &'static str {
         "delete"
     }
+    #[get("/broken")]
     async fn broken(&self) -> Response {
         Response::new(Body::from_stream(stream::once(async {
             Err::<String, _>(std::io::Error::other("broken body"))
         })))
     }
 }
-#[furnace_rs_common::routes]
-trait OtherRoutes {
-    #[get("/other")]
-    async fn other(&self) -> &'static str;
-}
-#[furnace_rs_common::controller(routes = [OtherRoutes])]
+
+#[furnace_rs_common::controller]
 struct Other;
-impl OtherRoutes for Other {
+
+impl ::furnace_rs_common::Sealable for Other {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        ::furnace_rs_common::SealRegistration::new()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl Other {
+    #[get("/other")]
     async fn other(&self) -> &'static str {
         panic!("unselected")
     }
 }
+
 #[derive(Clone, Default)]
 struct Stops(Arc<AtomicUsize>);
 struct StopHook(Stops);

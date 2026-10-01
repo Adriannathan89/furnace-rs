@@ -1,5 +1,5 @@
-error: `#[routes]` does not support generic traits
- --> tests/ui/fail/routes_generic.rs:2:13
+error: endpoint controllers require a non-generic inherent implementation
+ --> tests/ui/fail/routes_generic.rs:8:1
   |
-2 | trait Routes<T> {
-  |             ^
+8 | impl<T> Routes<T> {
+  | ^^^^

@@ -17,7 +17,7 @@ use furnace_rs_common::{
     PassportPrincipal, PassportRejection, PassportResult, PassportStrategy, build_router,
     controller,
     core::{Config, ConfigBuilder, Furnace, MapSource},
-    passport_strategy, routes,
+    passport_strategy,
 };
 use tower::ServiceExt;
 
@@ -69,17 +69,21 @@ impl PassportStrategy for ErrorStrategy {
     }
 }
 
-#[routes(prefix = "/errors")]
-#[furnace_rs_common::guard(strategy = "jwt", principal = ErrorPrincipal)]
-trait ErrorRoutes {
-    #[furnace_rs_common::get("/protected")]
-    async fn protected(&self) -> &'static str;
-}
-
-#[controller(routes = [ErrorRoutes])]
+#[controller]
 struct ErrorController;
 
-impl ErrorRoutes for ErrorController {
+#[furnace_rs_common::guard(principal = ErrorPrincipal, strategy = "jwt")]
+struct ErrorControllerGuard;
+
+impl ::furnace_rs_common::Sealable for ErrorController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<ErrorControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl ErrorController {
+    #[furnace_rs_common::get("/errors/protected")]
     async fn protected(&self) -> &'static str {
         HANDLER_CALLS.fetch_add(1, Ordering::SeqCst);
         "handler-ran"

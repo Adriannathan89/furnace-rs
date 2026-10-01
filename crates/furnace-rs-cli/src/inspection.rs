@@ -150,7 +150,6 @@ fn inspection_data(report: &InspectionReport, package_root: &Path) -> CommandDat
                     RouteData::new(
                         &route.method,
                         &route.path,
-                        &route.route_trait,
                         &route.handler,
                         &route.controller,
                         source_location(&route.location, package_root),

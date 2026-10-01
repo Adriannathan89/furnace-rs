@@ -33,47 +33,85 @@ impl PassportPrincipal for UserClaims {
     }
 }
 
-#[routes(prefix = "/users")]
-#[guard(
-    strategy = "jwt",
-    principal = UserPrincipal,
-    source = cookie("access_token"),
-    roles(any = ["user", "admin"]),
-    permissions(all = ["profile:base"]),
-)]
-trait UserRoutes {
-    #[get("/profile")]
-    #[guard(
-        strategy = "jwt-refresh",
-        principal = UserPrincipal,
-        source = bearer,
-        roles(all = ["member"]),
-        permissions(any = ["profile:read"]),
-        predicate = owns_profile,
-    )]
-    async fn profile(&self);
+#[furnace_rs::controller]
+struct UserRoutesController;
 
-    #[post("/login")]
-    #[guard(skip)]
-    async fn login(&self);
+#[furnace_rs::guard(permissions (any = ["profile:read"]), predicate = owns_profile, principal = UserPrincipal, roles (all = ["member"]), source = bearer, strategy = "jwt-refresh")]
+struct UserRoutesControllerGuard;
+
+impl ::furnace_rs::Sealable for UserRoutesController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        Self::seal::<UserRoutesControllerGuard>()
+    }
 }
 
-#[routes]
-trait MethodOnlyRoutes {
+#[furnace_rs::controller]
+impl UserRoutesController {
+    #[get("/users/profile")]
+
+    async fn profile(&self) {
+        unreachable!("metadata-only endpoint")
+    }
+}
+
+#[furnace_rs::controller]
+struct UserRoutesController1;
+
+impl ::furnace_rs::Sealable for UserRoutesController1 {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+
+#[furnace_rs::controller]
+impl UserRoutesController1 {
+    #[post("/users/login")]
+
+    async fn login(&self) {
+        unreachable!("metadata-only endpoint")
+    }
+}
+
+#[furnace_rs::controller]
+struct MethodOnlyRoutesController;
+
+#[furnace_rs::guard(predicates = [owns_profile , may_read], principal = UserPrincipal, strategy = "jwt")]
+struct MethodOnlyRoutesControllerGuard;
+
+impl ::furnace_rs::Sealable for MethodOnlyRoutesController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        Self::seal::<MethodOnlyRoutesControllerGuard>()
+    }
+}
+
+#[furnace_rs::controller]
+impl MethodOnlyRoutesController {
     #[get("/method-only")]
-    #[guard(
-        strategy = "jwt",
-        principal = UserPrincipal,
-        predicates = [owns_profile, may_read],
-    )]
-    async fn method_only(&self);
+
+    async fn method_only(&self) {
+        unreachable!("metadata-only endpoint")
+    }
 }
 
-#[routes]
-#[guard(strategy = "jwt", principal = ClaimsPrincipal<UserClaims>)]
-trait BuiltinJwtRoutes {
+#[furnace_rs::controller]
+struct BuiltinJwtRoutesController;
+
+#[furnace_rs::guard(principal = ClaimsPrincipal < UserClaims >, strategy = "jwt")]
+struct BuiltinJwtRoutesControllerGuard;
+
+impl ::furnace_rs::Sealable for BuiltinJwtRoutesController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        Self::seal::<BuiltinJwtRoutesControllerGuard>()
+    }
+}
+
+#[furnace_rs::controller]
+impl BuiltinJwtRoutesController {
     #[get("/builtin")]
-    async fn builtin(&self);
+
+    async fn builtin(&self) {
+        unreachable!("metadata-only endpoint")
+    }
 }
 
 fn main() {}

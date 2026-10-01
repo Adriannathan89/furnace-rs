@@ -40,12 +40,25 @@ impl PassportStrategy for UnmanagedStrategy {
     }
 }
 
-#[furnace_rs_common::routes]
-#[furnace_rs_common::guard(strategy = "jwt", principal = Principal)]
-#[allow(dead_code)]
-trait ProtectedRoutes {
+#[furnace_rs_common::controller]
+struct ProtectedRoutesController;
+
+#[furnace_rs_common::guard(principal = Principal, strategy = "jwt")]
+struct ProtectedRoutesControllerGuard;
+
+impl ::furnace_rs_common::Sealable for ProtectedRoutesController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<ProtectedRoutesControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl ProtectedRoutesController {
     #[furnace_rs_common::get("/")]
-    async fn profile(&self);
+
+    async fn profile(&self) {
+        unreachable!("metadata-only endpoint")
+    }
 }
 
 #[test]

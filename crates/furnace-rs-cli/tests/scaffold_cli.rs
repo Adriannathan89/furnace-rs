@@ -12,6 +12,12 @@ use serde_json::{Deserializer, Value, json};
 use tempfile::tempdir;
 
 #[test]
+fn generated_project_has_only_the_six_direct_controller_files() {
+    assert_eq!(GENERATED_FILES.len(), 6);
+    assert!(!GENERATED_FILES.contains(&"src/app/routes.rs"));
+}
+
+#[test]
 fn name_and_templates_accept_the_approved_project_names() {
     for name in ["a", "app1", "my-app", "my_app"] {
         let validated = ProjectName::parse(name)
@@ -95,17 +101,12 @@ fn name_and_templates_render_the_exact_minimal_project_manifest() {
         ),
         (
             "src/app/mod.rs".to_owned(),
-            "// src/app/mod.rs\nmod controller;\nmod routes;\nmod service;\n\nuse furnace::prelude::*;\n\n#[cauldron]\npub struct AppCauldron;\n\nimpl Cauldron for AppCauldron {\n    fn register(self) -> CauldronRegistration<Self> {\n        self.provide::<service::AppService>()\n            .controller::<controller::AppController>()\n    }\n}\n"
-                .to_owned(),
-        ),
-        (
-            "src/app/routes.rs".to_owned(),
-            "// src/app/routes.rs\nuse furnace::prelude::*;\n\n#[routes]\npub trait AppRoutes {\n    #[get(\"/\")]\n    async fn hello(&self) -> &'static str;\n}\n"
+            "// src/app/mod.rs\nmod controller;\nmod service;\n\nuse furnace::prelude::*;\n\n#[cauldron]\npub struct AppCauldron;\n\nimpl Cauldron for AppCauldron {\n    fn register(self) -> CauldronRegistration<Self> {\n        self.provide::<service::AppService>()\n            .controller::<controller::AppController>()\n    }\n}\n"
                 .to_owned(),
         ),
         (
             "src/app/controller.rs".to_owned(),
-            "// src/app/controller.rs\nuse furnace::prelude::*;\n\nuse super::{routes::AppRoutes, service::AppService};\n\n#[controller(routes = [AppRoutes])]\npub struct AppController {\n    service: AppService,\n}\n\nimpl AppRoutes for AppController {\n    async fn hello(&self) -> &'static str {\n        self.service.hello()\n    }\n}\n"
+            "// src/app/controller.rs\nuse furnace::prelude::*;\n\nuse super::service::AppService;\n\n#[controller]\npub struct AppController {\n    service: AppService,\n}\n\nimpl Sealable for AppController {\n    fn seals() -> SealRegistration<Self> {\n        SealRegistration::new()\n    }\n}\n\n#[controller(route = \"/\")]\nimpl AppController {\n    #[get]\n    async fn hello(&self) -> &'static str {\n        self.service.hello()\n    }\n}\n"
                 .to_owned(),
         ),
         (
@@ -123,7 +124,6 @@ fn name_and_templates_render_the_exact_minimal_project_manifest() {
             Path::new("furnace.toml"),
             Path::new("src/main.rs"),
             Path::new("src/app/mod.rs"),
-            Path::new("src/app/routes.rs"),
             Path::new("src/app/controller.rs"),
             Path::new("src/app/service.rs"),
         ]

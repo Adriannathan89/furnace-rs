@@ -7,16 +7,18 @@ use furnace_rs_persistence::sea_orm::DatabaseCauldron;
 mod delivery {
     use furnace_rs::prelude::*;
 
-    #[routes]
-    pub trait HealthRoutes {
-        #[get("/health")]
-        async fn health(&self) -> &'static str;
-    }
-
-    #[controller(routes = [HealthRoutes])]
+    #[controller]
     pub struct HealthController;
 
-    impl HealthRoutes for HealthController {
+    impl ::furnace_rs::Sealable for HealthController {
+        fn seals() -> ::furnace_rs::SealRegistration<Self> {
+            ::furnace_rs::SealRegistration::new()
+        }
+    }
+
+    #[furnace_rs::controller]
+    impl HealthController {
+        #[get("/health")]
         async fn health(&self) -> &'static str {
             "healthy"
         }

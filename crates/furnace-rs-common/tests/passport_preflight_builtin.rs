@@ -3,8 +3,7 @@
 #![cfg(all(feature = "http", feature = "jwt"))]
 
 use furnace_rs_common::{
-    ClaimsPrincipal, GuardCatalog, JwtService, JwtTokenKind, PassportPrincipal,
-    PassportStrategyCatalog,
+    ClaimsPrincipal, JwtService, JwtTokenKind, PassportPrincipal, PassportStrategyCatalog,
     core::{AutoConfigurationStatus, Config, ConfigBuilder, Furnace, MapSource},
 };
 
@@ -21,12 +20,25 @@ impl PassportPrincipal for UserClaims {
     }
 }
 
-#[furnace_rs_common::routes(prefix = "/users")]
-#[furnace_rs_common::guard(strategy = "jwt", principal = ClaimsPrincipal<UserClaims>)]
-#[allow(dead_code)]
-trait UserRoutes {
-    #[furnace_rs_common::get("/profile")]
-    async fn profile(&self);
+#[furnace_rs_common::controller]
+struct UserRoutesController;
+
+#[furnace_rs_common::guard(principal = ClaimsPrincipal < UserClaims >, strategy = "jwt")]
+struct UserRoutesControllerGuard;
+
+impl ::furnace_rs_common::Sealable for UserRoutesController {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<UserRoutesControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl UserRoutesController {
+    #[furnace_rs_common::get("/users/profile")]
+
+    async fn profile(&self) {
+        unreachable!("metadata-only endpoint")
+    }
 }
 
 fn config(values: impl IntoIterator<Item = (&'static str, &'static str)>) -> Config {
@@ -38,7 +50,7 @@ fn config(values: impl IntoIterator<Item = (&'static str, &'static str)>) -> Con
 
 #[test]
 fn claims_principal_selects_the_built_in_jwt_adapter() {
-    let guards = GuardCatalog::guards();
+    let guards = [<UserRoutesControllerGuard as furnace_rs_common::GuardPolicy>::descriptor()];
     let preflight = PassportStrategyCatalog::preflight(&guards).unwrap();
     let binding = preflight.bindings().first().unwrap();
 
@@ -66,7 +78,7 @@ fn guarded_route_activates_jwt_without_a_direct_provider_requirement() {
     assert_eq!(report.requirements().len(), 1);
     assert_eq!(
         report.requirements()[0].provider_type_name(),
-        "UserRoutes::profile"
+        "UserRoutesControllerGuard::seal"
     );
     assert!(report.requirements()[0].location().is_some());
 }
@@ -94,6 +106,6 @@ fn explicit_jwt_service_still_overrides_guard_driven_configuration_before_parsin
     assert!(report.configuration().is_empty());
     assert_eq!(
         report.requirements()[0].provider_type_name(),
-        "UserRoutes::profile"
+        "UserRoutesControllerGuard::seal"
     );
 }

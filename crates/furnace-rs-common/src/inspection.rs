@@ -360,8 +360,6 @@ pub struct RouteReport {
     pub method: String,
     /// Complete route path.
     pub path: String,
-    /// Route trait identity.
-    pub route_trait: String,
     /// Route handler identity.
     pub handler: String,
     /// Controller identity.
@@ -658,19 +656,13 @@ fn inspect_scope(
 ) -> (Vec<RouteReport>, bool, bool) {
     let mut routes = scope
         .route_records()
-        .map(|(controller, contract, route)| RouteReport {
+        .map(|(controller, route)| RouteReport {
             method: route.method().as_str().to_owned(),
             path: route.full_path().to_owned(),
-            route_trait: contract
-                .map(|contract| contract.trait_name().to_owned())
-                .unwrap_or_default(),
             handler: route.handler().to_owned(),
-            controller: controller.type_name().to_owned(),
+            controller: controller.descriptor().type_name().to_owned(),
             location: source_report(route.location()),
-            #[cfg(feature = "jwt")]
-            guard_active: route.guard().is_some(),
-            #[cfg(not(feature = "jwt"))]
-            guard_active: false,
+            guard_active: controller.guard_active(),
         })
         .collect::<Vec<_>>();
     routes.sort_by(|left, right| {
@@ -678,7 +670,6 @@ fn inspect_scope(
             .cmp(&right.method)
             .then_with(|| left.path.cmp(&right.path))
             .then_with(|| left.controller.cmp(&right.controller))
-            .then_with(|| left.route_trait.cmp(&right.route_trait))
             .then_with(|| left.handler.cmp(&right.handler))
     });
 
@@ -992,16 +983,18 @@ mod tests {
         }
     }
 
-    #[crate::routes]
-    trait InspectionRoutes {
-        #[crate::get("/inspection")]
-        async fn inspection(&self) -> &'static str;
-    }
-
-    #[crate::controller(routes = [InspectionRoutes])]
+    #[crate::controller]
     struct InspectionController;
 
-    impl InspectionRoutes for InspectionController {
+    impl crate::Sealable for InspectionController {
+        fn seals() -> crate::SealRegistration<Self> {
+            crate::SealRegistration::new()
+        }
+    }
+
+    #[crate::controller]
+    impl InspectionController {
+        #[crate::get("/inspection")]
         async fn inspection(&self) -> &'static str {
             "inspection"
         }

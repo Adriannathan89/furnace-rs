@@ -34,15 +34,21 @@ impl PassportStrategy for IncorrectStrategy {
     }
 }
 
-#[furnace_rs_common::routes]
-#[furnace_rs_common::guard(strategy = "jwt", principal = ClaimsPrincipal<Claims>)]
-trait Routes {
-    #[furnace_rs_common::get("/")]
-    async fn index(&self) -> &'static str;
-}
-#[furnace_rs_common::controller(routes = [Routes])]
+#[furnace_rs_common::controller]
 struct Controller;
-impl Routes for Controller {
+
+#[furnace_rs_common::guard(principal = ClaimsPrincipal < Claims >, strategy = "jwt")]
+struct ControllerGuard;
+
+impl ::furnace_rs_common::Sealable for Controller {
+    fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+        Self::seal::<ControllerGuard>()
+    }
+}
+
+#[furnace_rs_common::controller]
+impl Controller {
+    #[furnace_rs_common::get("/")]
     async fn index(&self) -> &'static str {
         "protected"
     }

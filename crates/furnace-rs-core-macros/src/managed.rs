@@ -115,7 +115,7 @@ fn expand_managed_with_core(
         fields,
         ..
     } = item;
-    let inner_ident = format_ident!("__Mads{}Inner", ident);
+    let inner_ident = format_ident!("__Furnace{}Inner", ident);
     let constructor_ident = format_ident!("__furnace_construct_{}", ident);
     let type_id_ident = format_ident!("__furnace_type_id_{}", ident);
     let runtime_type_name_ident = format_ident!("__furnace_runtime_type_name_{}", ident);

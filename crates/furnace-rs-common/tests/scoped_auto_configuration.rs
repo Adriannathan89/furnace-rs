@@ -22,16 +22,19 @@ impl furnace_rs_common::PassportPrincipal for UnreachableClaims {
 }
 
 mod public_http {
-    #[furnace_rs_common::routes]
-    pub trait PublicRoutes {
-        #[furnace_rs_common::get("/public")]
-        async fn public(&self) -> &'static str;
-    }
 
-    #[furnace_rs_common::controller(routes = [PublicRoutes])]
+    #[furnace_rs_common::controller]
     pub struct PublicController;
 
-    impl PublicRoutes for PublicController {
+    impl ::furnace_rs_common::Sealable for PublicController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            ::furnace_rs_common::SealRegistration::new()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl PublicController {
+        #[furnace_rs_common::get("/public")]
         async fn public(&self) -> &'static str {
             "public"
         }
@@ -50,17 +53,21 @@ mod public_http {
 mod guarded_http {
     use super::*;
 
-    #[furnace_rs_common::routes]
-    #[furnace_rs_common::guard(strategy = "jwt", principal = ClaimsPrincipal<UnreachableClaims>)]
-    pub trait GuardedRoutes {
-        #[furnace_rs_common::get("/guarded")]
-        async fn guarded(&self) -> &'static str;
-    }
-
-    #[furnace_rs_common::controller(routes = [GuardedRoutes])]
+    #[furnace_rs_common::controller]
     pub struct GuardedController;
 
-    impl GuardedRoutes for GuardedController {
+    #[furnace_rs_common::guard(principal = ClaimsPrincipal < UnreachableClaims >, strategy = "jwt")]
+    struct GuardedControllerGuard;
+
+    impl ::furnace_rs_common::Sealable for GuardedController {
+        fn seals() -> ::furnace_rs_common::SealRegistration<Self> {
+            Self::seal::<GuardedControllerGuard>()
+        }
+    }
+
+    #[furnace_rs_common::controller]
+    impl GuardedController {
+        #[furnace_rs_common::get("/guarded")]
         async fn guarded(&self) -> &'static str {
             "guarded"
         }

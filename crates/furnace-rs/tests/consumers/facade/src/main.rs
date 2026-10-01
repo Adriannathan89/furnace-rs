@@ -11,22 +11,23 @@ impl furnace_rs::core::Cauldron for AppCauldron {
     }
 }
 
-
 #[storage]
 struct Repository {
     value: u32,
 }
 
-#[routes]
-trait Routes {
-    #[get("/")]
-    async fn index(&self);
-}
-
-#[controller(routes = [Routes])]
+#[controller]
 struct Controller;
 
-impl Routes for Controller {
+impl ::furnace_rs::Sealable for Controller {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+
+#[furnace_rs::controller]
+impl Controller {
+    #[get("/")]
     async fn index(&self) {}
 }
 

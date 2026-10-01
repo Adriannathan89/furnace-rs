@@ -1,5 +1,5 @@
-error: route path must be non-empty and start with `/`
- --> tests/ui/fail/routes_invalid_endpoint_path.rs:3:23
+error: endpoint paths must start with `/`
+ --> tests/ui/fail/routes_invalid_endpoint_path.rs:9:23
   |
-3 |     #[furnace_rs::get("index")]
+9 |     #[furnace_rs::get("index")]
   |                       ^^^^^^^
