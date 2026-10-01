@@ -94,14 +94,14 @@ The snippets describe the proposed API rather than APIs already available in the
 
 ## Branding and rename boundary
 
-Use `furnace-rs` for the project title and repository branding. Cargo packages and Rust imports use the shorter `furnace` family:
+Use `furnace-rs` for the project title, repository branding, and facade Cargo package. The crates.io package `furnace` is already registered, so the new packages use the `furnace-rs` family. A public crates.io API check on 2026-10-01 returned HTTP 200 for `furnace` and HTTP 404 for all proposed names in the table below. This is a point-in-time check, not a package-name reservation. Rust imports may keep the shorter namespace through explicit Cargo dependency aliases:
 
 | Current name | New name |
 | --- | --- |
-| `mads`, `mads-core`, `mads-core-macros` | `furnace`, `furnace-core`, `furnace-core-macros` |
-| `mads-common`, `mads-common-macros` | `furnace-common`, `furnace-common-macros` |
-| `mads-persistence`, `mads-testing`, `mads-extra` | `furnace-persistence`, `furnace-testing`, `furnace-extra` |
-| `mads-cli` package and `mads` executable | `furnace-cli` package and `furnace` executable |
+| `mads`, `mads-core`, `mads-core-macros` | `furnace-rs`, `furnace-rs-core`, `furnace-rs-core-macros` |
+| `mads-common`, `mads-common-macros` | `furnace-rs-common`, `furnace-rs-common-macros` |
+| `mads-persistence`, `mads-testing`, `mads-extra` | `furnace-rs-persistence`, `furnace-rs-testing`, `furnace-rs-extra` |
+| `mads-cli` package and `mads` executable | `furnace-rs-cli` package and `furnace` executable |
 | `Mads`, `MadsBuilder`, `MadsBurnExt` | `Furnace`, `FurnaceBuilder`, `FurnaceBurnExt` |
 | `Furnace` module trait, `FurnaceRegistration` | `Cauldron`, `CauldronRegistration` |
 | `FurnaceDefinition`, `FurnaceMember`, `FurnaceImport` | `CauldronDefinition`, `CauldronMember`, `CauldronImport` |
@@ -113,6 +113,15 @@ Use `furnace-rs` for the project title and repository branding. Cargo packages a
 | `MADS_INTERNAL_INSPECTION_*` | `FURNACE_INTERNAL_INSPECTION_*` |
 | Diagnostic constants/codes `MADS008`, etc. | `FURNACE008`, preserving numeric suffixes |
 | Official identifiers `mads.common.*`, `mads.persistence.*` | `furnace.common.*`, `furnace.persistence.*` |
+
+Recommended dependency declaration for facade consumers and generated projects:
+
+```toml
+[dependencies]
+furnace = { package = "furnace-rs", version = "=0.9.2", default-features = false, features = ["http", "runtime-tokio"] }
+```
+
+This keeps `use furnace::prelude::*` and `#[furnace::main]`. Without a dependency alias, the default import name is `furnace_rs`. Internal dependencies may likewise use short keys such as `furnace-core = { package = "furnace-rs-core", ... }`; proc-macro crate discovery must resolve actual Cargo package names and honor consumer aliases. Example persistence imports use an explicit `furnace-persistence` alias for `furnace-rs-persistence`. Cargo package identity, Rust import aliases, and the CLI executable are separate names.
 
 Rename workspace directories, manifests, internal dependency keys, crate-path discovery, lockfiles, generated symbols, CLI metadata fields, temporary file prefixes, scripts, workflows, runnable examples, and active documentation. Keep feature names and existing package versions; this work does not select a release version.
 
@@ -186,7 +195,7 @@ Publish a migration guide with before/after package/config/environment names, ca
 
 ## Required acceptance coverage
 
-- External and renamed dependency consumers compile the new crate family and public preludes; old packages/imports/macros/startup names are rejected in intentional failure fixtures.
+- External consumers using default names (`furnace_rs`) and recommended or arbitrary aliases (`furnace`, etc.) compile the new crate family and public preludes; old packages/imports/macros/startup names are rejected in intentional failure fixtures.
 - Core-only, HTTP-only, JWT-only, cookies, logger, persistence, and focused testing feature boundaries remain correct.
 - A dependency-bearing controller uses direct methods without a route trait; sync/async methods and native typed extractors behave correctly.
 - Base GET/POST coexist; prefixed parameter endpoints extract IDs; malformed paths and duplicate canonical verb/path combinations fail before constructors.
