@@ -4,7 +4,7 @@ use std::any::TypeId;
 use std::sync::OnceLock;
 
 use crate::{
-    Diagnostic, Error, MADS001, MADS002, MADS003, Module, ModuleDescriptor, ProviderDescriptor,
+    Diagnostic, Error, Furnace, MADS001, MADS002, MADS003, ModuleDescriptor, ProviderDescriptor,
     Result,
 };
 
@@ -33,7 +33,7 @@ impl Catalog {
 
     /// Selects the single static module descriptor registered for `M`.
     #[allow(clippy::result_large_err)]
-    pub fn module_for<M: Module>() -> Result<&'static ModuleDescriptor> {
+    pub fn module_for<M: Furnace>() -> Result<&'static ModuleDescriptor> {
         let type_id = TypeId::of::<M>();
         let modules: Vec<_> = Self::modules()
             .into_iter()

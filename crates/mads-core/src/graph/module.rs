@@ -11,6 +11,7 @@ pub struct ModuleNode {
     type_name: &'static str,
     namespace: &'static str,
     location: SourceLocation,
+    definition: Option<crate::FurnaceDefinition>,
 }
 
 impl ModuleNode {
@@ -24,7 +25,7 @@ impl ModuleNode {
         self.type_name
     }
 
-    /// Returns the Rust namespace owned by this module.
+    /// Returns the Rust namespace containing the furnace declaration.
     pub const fn namespace(&self) -> &'static str {
         self.namespace
     }
@@ -100,13 +101,76 @@ impl ModuleGraph {
         &self.provider_ownership
     }
 
-    /// Finds the nearest reachable module namespace that contains `namespace`.
-    #[doc(hidden)]
-    pub fn owner_for_namespace(&self, namespace: &str) -> Option<&ModuleNode> {
+    /// Returns the explicit owner of a registered output.
+    pub fn owner_of(&self, output: TypeId) -> Option<&ModuleNode> {
+        self.modules.iter().find(|node| {
+            node.definition.as_ref().is_some_and(|definition| {
+                definition
+                    .members
+                    .iter()
+                    .any(|member| member.type_id == output)
+            })
+        })
+    }
+
+    /// Returns whether a furnace explicitly exports an output.
+    pub fn exports(&self, module: TypeId, output: TypeId) -> bool {
         self.modules
             .iter()
-            .filter(|module| namespace_contains(module.namespace(), namespace))
-            .max_by_key(|module| module.namespace().len())
+            .find(|node| node.type_id == module)
+            .and_then(|node| node.definition.as_ref())
+            .is_some_and(|definition| {
+                definition
+                    .exports
+                    .iter()
+                    .any(|member| member.type_id == output)
+            })
+    }
+
+    /// Returns whether a reachable furnace is global.
+    pub fn is_global(&self, module: TypeId) -> bool {
+        self.modules
+            .iter()
+            .find(|node| node.type_id == module)
+            .and_then(|node| node.definition.as_ref())
+            .is_some_and(|definition| definition.global)
+    }
+
+    /// Returns whether the output was explicitly registered as a controller.
+    pub fn is_controller(&self, output: TypeId) -> bool {
+        self.modules
+            .iter()
+            .filter_map(|node| node.definition.as_ref())
+            .flat_map(|definition| &definition.members)
+            .any(|member| member.type_id == output && member.controller)
+    }
+
+    /// Returns whether a furnace can consume a registered output.
+    pub fn can_access(&self, requester: TypeId, output: TypeId) -> bool {
+        self.owner_of(output).is_some_and(|owner| {
+            owner.type_id == requester
+                || self.exports(owner.type_id, output)
+                    && (self.directly_imports(requester, owner.type_id)
+                        || self.is_global(owner.type_id))
+        })
+    }
+
+    /// Iterates explicitly registered controller output identifiers.
+    #[doc(hidden)]
+    pub fn registered_controllers(&self) -> impl Iterator<Item = TypeId> + '_ {
+        self.members()
+            .filter(|(_, member)| member.controller)
+            .map(|(_, member)| member.type_id)
+    }
+
+    pub(crate) fn members(
+        &self,
+    ) -> impl Iterator<Item = (&ModuleNode, &crate::furnace::FurnaceMember)> {
+        self.modules.iter().flat_map(|node| {
+            node.definition.iter().flat_map(move |definition| {
+                definition.members.iter().map(move |member| (node, member))
+            })
+        })
     }
 
     /// Returns whether `importer` directly imports `imported`.
@@ -154,28 +218,6 @@ pub(crate) fn build_module_graph(
     })
 }
 
-pub(crate) fn validate_module_catalog(modules: &[&'static ModuleDescriptor]) -> Result<()> {
-    for (index, descriptor) in modules.iter().copied().enumerate() {
-        let Some(namespace) = descriptor.namespace() else {
-            continue;
-        };
-        let conflicts = modules
-            .iter()
-            .copied()
-            .enumerate()
-            .filter(|(candidate_index, candidate)| {
-                *candidate_index != index && candidate.namespace() == Some(namespace)
-            })
-            .map(|(_, candidate)| candidate)
-            .collect::<Vec<_>>();
-        if !conflicts.is_empty() {
-            return Err(module_namespace_error(descriptor, &conflicts));
-        }
-    }
-
-    Ok(())
-}
-
 fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
     if let Some(cycle_start) = state.stack.iter().position(|id| *id == module) {
         return Err(state.module_cycle_error(&state.stack[cycle_start..], module));
@@ -185,15 +227,84 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
     }
 
     let descriptor = state.require_descriptor(module)?;
-    state.validate_unique_namespace(descriptor)?;
     let node = state.push_node(descriptor)?;
     state.stack.push(module);
-    state.validate_duplicate_direct_imports(descriptor)?;
-    for import in descriptor.imports() {
-        let imported = state.require_descriptor(import.type_id())?;
-        let imported_node = state.ensure_node(imported)?;
-        state.push_edge(node, imported_node);
-        visit(import.type_id(), state)?;
+    if let Some(register) = descriptor.registration() {
+        let definition = register();
+        let mut seen = HashSet::new();
+        for member in &definition.members {
+            if !seen.insert(member.type_id)
+                || state.modules.iter().any(|module| {
+                    module.definition.as_ref().is_some_and(|other| {
+                        other
+                            .members
+                            .iter()
+                            .any(|other| other.type_id == member.type_id)
+                    })
+                })
+            {
+                return Err(registration_error(
+                    "duplicate furnace member",
+                    member.type_name,
+                    member.location,
+                    descriptor.type_name(),
+                ));
+            }
+        }
+        let mut exports = HashSet::new();
+        for export in &definition.exports {
+            if !exports.insert(export.type_id)
+                || !definition
+                    .members
+                    .iter()
+                    .any(|member| member.type_id == export.type_id && !member.controller)
+            {
+                return Err(registration_error(
+                    "invalid furnace export",
+                    export.type_name,
+                    export.location,
+                    descriptor.type_name(),
+                ));
+            }
+        }
+        let mut imports = HashSet::new();
+        for import in &definition.imports {
+            if !imports.insert(import.type_id) {
+                return Err(registration_error(
+                    "duplicate direct furnace import",
+                    import.type_name,
+                    import.location,
+                    descriptor.type_name(),
+                ));
+            }
+        }
+        let imports: Vec<_> = definition
+            .imports
+            .iter()
+            .map(|import| import.type_id)
+            .collect();
+        state.modules[node].definition = Some(definition);
+        for imported in imports {
+            let imported_descriptor = state.require_descriptor(imported)?;
+            if imported_descriptor.registration().is_none() {
+                return Err(registration_error(
+                    "missing furnace registration",
+                    imported_descriptor.type_name(),
+                    imported_descriptor.location(),
+                    descriptor.type_name(),
+                ));
+            }
+            let imported_node = state.ensure_node(imported_descriptor)?;
+            state.push_edge(node, imported_node);
+            visit(imported, state)?;
+        }
+    } else {
+        return Err(registration_error(
+            "missing furnace registration",
+            descriptor.type_name(),
+            descriptor.location(),
+            descriptor.type_name(),
+        ));
     }
     state.stack.pop();
     Ok(())
@@ -253,58 +364,6 @@ impl BuildState<'_> {
         }
     }
 
-    fn validate_unique_namespace(&self, descriptor: &ModuleDescriptor) -> Result<()> {
-        let Some(namespace) = descriptor.namespace() else {
-            return Err(Error::new(
-                Diagnostic::new(
-                    MADS008,
-                    "missing module namespace",
-                    "rooted module graphs require namespace metadata",
-                )
-                .with_subject(descriptor.type_name())
-                .with_location(descriptor.location()),
-            ));
-        };
-
-        let conflicts = self
-            .descriptors
-            .iter()
-            .copied()
-            .filter(|candidate| {
-                candidate.type_id() != descriptor.type_id()
-                    && candidate.namespace() == Some(namespace)
-            })
-            .collect::<Vec<_>>();
-        if !conflicts.is_empty() {
-            return Err(module_namespace_error(descriptor, &conflicts));
-        }
-
-        Ok(())
-    }
-
-    fn validate_duplicate_direct_imports(&self, descriptor: &ModuleDescriptor) -> Result<()> {
-        let mut seen = Vec::new();
-        for import in descriptor.imports() {
-            let imported = import.type_id();
-            if seen.contains(&imported) {
-                return Err(Error::new(
-                    Diagnostic::new(
-                        MADS008,
-                        "duplicate direct module import",
-                        format!(
-                            "module `{}` appears more than once in the direct import list",
-                            import.type_name()
-                        ),
-                    )
-                    .with_subject(descriptor.type_name())
-                    .with_location(descriptor.location()),
-                ));
-            }
-            seen.push(imported);
-        }
-        Ok(())
-    }
-
     fn push_node(&mut self, descriptor: &ModuleDescriptor) -> Result<usize> {
         self.ensure_node(descriptor)
     }
@@ -330,6 +389,7 @@ impl BuildState<'_> {
             type_name: descriptor.type_name(),
             namespace,
             location: descriptor.location(),
+            definition: None,
         });
         Ok(index)
     }
@@ -391,39 +451,20 @@ impl BuildState<'_> {
     }
 }
 
-fn module_namespace_error(descriptor: &ModuleDescriptor, conflicts: &[&ModuleDescriptor]) -> Error {
-    let namespace = descriptor
-        .namespace()
-        .expect("namespace collision candidates have namespace metadata");
-    let primary = Diagnostic::new(
-        MADS008,
-        "ambiguous module namespace",
-        "multiple module declarations claim the same Rust namespace",
-    )
-    .with_subject(namespace)
-    .with_location(descriptor.location());
-    let related = conflicts.iter().map(|conflict| {
-        Diagnostic::new(
-            MADS008,
-            "conflicting module namespace declaration",
-            "this module declaration claims the same namespace",
-        )
-        .with_subject(namespace)
-        .with_location(conflict.location())
-    });
-    Error::from_diagnostics(primary, related)
-}
-
-fn namespace_contains(parent: &str, child: &str) -> bool {
-    child == parent
-        || child
-            .strip_prefix(parent)
-            .is_some_and(|suffix| suffix.starts_with("::"))
-}
-
 fn location_order(left: SourceLocation, right: SourceLocation) -> std::cmp::Ordering {
     left.file
         .cmp(right.file)
         .then_with(|| left.line.cmp(&right.line))
         .then_with(|| left.column.cmp(&right.column))
+}
+
+fn registration_error(
+    title: &'static str,
+    subject: &'static str,
+    location: SourceLocation,
+    requester: &'static str,
+) -> Error {
+    Error::new(Diagnostic::new(MADS008, title,
+        format!("furnace `{requester}` must register unique members and imports, and export only its local providers"))
+        .with_subject(subject).with_location(location))
 }

@@ -1,104 +1,180 @@
 //! Integration tests for deterministic rooted module graph construction.
 
-use mads_core::{MADS008, ModuleNode, module};
+use mads_core::{MADS008, ModuleNode, furnace};
 
 struct UndeclaredRoot;
 
-impl mads_core::Module for UndeclaredRoot {}
+impl mads_core::Furnace for UndeclaredRoot {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        mads_core::FurnaceRegistration::new(self)
+    }
+}
 
 mod diamond {
-    use super::module;
+    use super::furnace;
 
     pub mod shared {
-        use super::module;
+        use super::furnace;
 
-        #[module]
+        #[furnace]
         pub struct SharedModule;
+
+        impl mads_core::Furnace for SharedModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                mads_core::FurnaceRegistration::new(self)
+            }
+        }
     }
 
     pub mod left {
-        use super::{module, shared::SharedModule};
+        use super::{furnace, shared::SharedModule};
 
-        #[module(imports = [SharedModule])]
+        #[furnace]
         pub struct LeftModule;
+
+        impl mads_core::Furnace for LeftModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(SharedModule)
+            }
+        }
     }
 
     pub mod right {
-        use super::{module, shared::SharedModule};
+        use super::{furnace, shared::SharedModule};
 
-        #[module(imports = [SharedModule])]
+        #[furnace]
         pub struct RightModule;
+
+        impl mads_core::Furnace for RightModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(SharedModule)
+            }
+        }
     }
 
     pub mod root {
-        use super::{left::LeftModule, module, right::RightModule};
+        use super::{furnace, left::LeftModule, right::RightModule};
 
-        #[module(imports = [LeftModule, RightModule])]
+        #[furnace]
         pub struct DiamondRoot;
+
+        impl mads_core::Furnace for DiamondRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(LeftModule).import(RightModule)
+            }
+        }
     }
 }
 
 mod duplicate_import {
-    use super::module;
+    use super::furnace;
 
     pub mod leaf {
-        use super::module;
+        use super::furnace;
 
-        #[module]
+        #[furnace]
         pub struct LeafModule;
+
+        impl mads_core::Furnace for LeafModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                mads_core::FurnaceRegistration::new(self)
+            }
+        }
     }
 
     pub mod root {
-        use super::{leaf::LeafModule, module};
+        use super::{furnace, leaf::LeafModule};
 
-        #[module(imports = [LeafModule, LeafModule])]
+        #[furnace]
         pub struct DuplicateImportRoot;
+
+        impl mads_core::Furnace for DuplicateImportRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(LeafModule).import(LeafModule)
+            }
+        }
     }
 }
 
 mod self_import {
-    use super::module;
+    use super::furnace;
 
-    #[module(imports = [SelfImportModule])]
+    #[furnace]
     pub struct SelfImportModule;
+
+    impl mads_core::Furnace for SelfImportModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.import(SelfImportModule)
+        }
+    }
 }
 
 mod cycle {
-    use super::module;
+    use super::furnace;
 
     pub mod first {
-        use super::{module, second::SecondCycleModule};
+        use super::{furnace, second::SecondCycleModule};
 
-        #[module(imports = [SecondCycleModule])]
+        #[furnace]
         pub struct FirstCycleModule;
+
+        impl mads_core::Furnace for FirstCycleModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(SecondCycleModule)
+            }
+        }
     }
 
     pub mod second {
-        use super::{first::FirstCycleModule, module};
+        use super::{first::FirstCycleModule, furnace};
 
-        #[module(imports = [FirstCycleModule])]
+        #[furnace]
         pub struct SecondCycleModule;
+
+        impl mads_core::Furnace for SecondCycleModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(FirstCycleModule)
+            }
+        }
     }
 }
 
 mod namespace_collision {
-    use super::module;
+    use super::furnace;
 
     pub mod shared_namespace {
-        use super::module;
+        use super::furnace;
 
-        #[module]
+        #[furnace]
         pub struct FirstModule;
 
-        #[module]
+        impl mads_core::Furnace for FirstModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                mads_core::FurnaceRegistration::new(self)
+            }
+        }
+
+        #[furnace]
         pub struct SecondModule;
+
+        impl mads_core::Furnace for SecondModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                mads_core::FurnaceRegistration::new(self)
+            }
+        }
     }
 
     pub mod root {
-        use super::{module, shared_namespace::FirstModule};
+        use super::{furnace, shared_namespace::FirstModule};
 
-        #[module(imports = [FirstModule])]
+        #[furnace]
         pub struct CollisionRoot;
+
+        impl mads_core::Furnace for CollisionRoot {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.import(FirstModule)
+            }
+        }
     }
 }
 
@@ -212,35 +288,26 @@ fn multi_module_cycle_reports_stable_chain_and_locations() {
 }
 
 #[test]
-fn rooted_namespace_collision_reports_an_unimported_declaration() {
+fn same_namespace_furnaces_do_not_claim_each_others_declarations() {
     use namespace_collision::{root::CollisionRoot, shared_namespace};
-
-    let error = match mads_core::__private::build_module_graph::<CollisionRoot>() {
-        Ok(_) => panic!("a collision with an unimported declaration must fail"),
-        Err(error) => error,
-    };
-    assert_eq!(error.code(), MADS008);
-    let rendered = error.to_string();
-    assert!(rendered.contains(module_path_for::<shared_namespace::FirstModule>()));
-    assert_eq!(error.diagnostics().len(), 2);
+    let graph = mads_core::__private::build_module_graph::<CollisionRoot>().unwrap();
     assert!(
-        error
-            .diagnostics()
+        graph
+            .modules()
             .iter()
-            .all(|diagnostic| diagnostic.to_string().contains("module_graph.rs"))
+            .any(|module| module.type_id()
+                == std::any::TypeId::of::<shared_namespace::FirstModule>())
+    );
+    assert!(
+        !graph
+            .modules()
+            .iter()
+            .any(|module| module.type_id()
+                == std::any::TypeId::of::<shared_namespace::SecondModule>())
     );
 }
 
 #[test]
-fn rootless_analysis_reports_complete_catalog_namespace_collisions() {
-    let analysis = mads_core::Mads::builder().analyze();
-
-    assert_eq!(analysis.diagnostics()[0].code(), MADS008);
-    assert_eq!(analysis.diagnostics().len(), 2);
-}
-
-fn module_path_for<T>() -> &'static str {
-    std::any::type_name::<T>()
-        .rsplit_once("::")
-        .map_or("", |(namespace, _)| namespace)
+fn rootless_provider_analysis_ignores_furnace_namespace_overlap() {
+    assert!(mads_core::Mads::builder().analyze().is_valid());
 }

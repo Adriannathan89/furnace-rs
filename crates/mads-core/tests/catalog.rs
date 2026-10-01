@@ -6,7 +6,7 @@ use std::process::Command;
 use std::sync::Arc;
 
 use mads_core::{
-    Catalog, ConstructionContext, ErasedProvider, MADS001, MADS002, MADS003, Mads, Module,
+    Catalog, ConstructionContext, ErasedProvider, Furnace, MADS001, MADS002, MADS003, Mads,
     ModuleDescriptor, ProviderDescriptor, ProviderFuture, ProviderKind, ProviderVisibility,
     SourceLocation,
 };
@@ -18,17 +18,43 @@ struct Missing;
 struct MissingModule;
 struct Zeta;
 
-#[mads_core::module]
+#[mads_core::furnace]
 struct ImportedModule;
 
-#[mads_core::module]
+impl mads_core::Furnace for ImportedModule {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        mads_core::FurnaceRegistration::new(self)
+    }
+}
+
+#[mads_core::furnace]
 struct SecondImportedModule;
 
-#[mads_core::module(imports = [SecondImportedModule, ImportedModule])]
+impl mads_core::Furnace for SecondImportedModule {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        mads_core::FurnaceRegistration::new(self)
+    }
+}
+
+#[mads_core::furnace]
 struct AnnotatedModule;
 
-impl Module for DuplicateModule {}
-impl Module for MissingModule {}
+impl mads_core::Furnace for AnnotatedModule {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        self.import(SecondImportedModule).import(ImportedModule)
+    }
+}
+
+impl Furnace for DuplicateModule {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        mads_core::FurnaceRegistration::new(self)
+    }
+}
+impl Furnace for MissingModule {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        mads_core::FurnaceRegistration::new(self)
+    }
+}
 
 fn alpha_type_id() -> TypeId {
     TypeId::of::<Alpha>()
@@ -55,16 +81,16 @@ fn duplicate_constructor<'a>(_: &'a ConstructionContext<'a>) -> ProviderFuture<'
 }
 
 inventory::submit! {
-    ModuleDescriptor::new("zeta::Module", zeta_type_id, SourceLocation::new(file!(), line!(), column!()))
+    ModuleDescriptor::new("zeta::Furnace", zeta_type_id, SourceLocation::new(file!(), line!(), column!()))
 }
 
 inventory::submit! {
-    ModuleDescriptor::new("alpha::Module", alpha_type_id, SourceLocation::new(file!(), line!(), column!()))
+    ModuleDescriptor::new("alpha::Furnace", alpha_type_id, SourceLocation::new(file!(), line!(), column!()))
 }
 
 inventory::submit! {
     ModuleDescriptor::new(
-        "duplicate::Module",
+        "duplicate::Furnace",
         duplicate_module_type_id,
         SourceLocation::new("duplicate_module.rs", 1, 1),
     )
@@ -72,7 +98,7 @@ inventory::submit! {
 
 inventory::submit! {
     ModuleDescriptor::new(
-        "duplicate::Module",
+        "duplicate::Furnace",
         duplicate_module_type_id,
         SourceLocation::new("duplicate_module.rs", 1, 1),
     )
@@ -124,20 +150,20 @@ fn modules_are_sorted_by_stable_name() {
     assert_eq!(
         names,
         [
-            "alpha::Module",
+            "alpha::Furnace",
             concat!(module_path!(), "::AnnotatedModule"),
             concat!(module_path!(), "::ImportedModule"),
             concat!(module_path!(), "::SecondImportedModule"),
-            "duplicate::Module",
-            "duplicate::Module",
-            "zeta::Module",
+            "duplicate::Furnace",
+            "duplicate::Furnace",
+            "zeta::Furnace",
         ]
     );
 }
 
 #[test]
 fn module_for_selects_the_annotated_module_descriptor() {
-    fn assert_module<T: Module>() {}
+    fn assert_module<T: Furnace>() {}
 
     assert_module::<AnnotatedModule>();
 
@@ -149,15 +175,15 @@ fn module_for_selects_the_annotated_module_descriptor() {
         concat!(module_path!(), "::AnnotatedModule")
     );
     assert_eq!(descriptor.namespace(), Some(module_path!()));
-    assert_eq!(descriptor.imports().len(), 2);
-    assert_eq!(descriptor.imports()[0].type_name(), "SecondImportedModule");
+    assert!(descriptor.registration().is_some());
+    let graph = mads_core::__private::build_module_graph::<AnnotatedModule>().unwrap();
+    assert_eq!(graph.imports().len(), 2);
     assert_eq!(
-        descriptor.imports()[0].type_id(),
+        graph.imports()[0].imported(&graph).type_id(),
         TypeId::of::<SecondImportedModule>()
     );
-    assert_eq!(descriptor.imports()[1].type_name(), "ImportedModule");
     assert_eq!(
-        descriptor.imports()[1].type_id(),
+        graph.imports()[1].imported(&graph).type_id(),
         TypeId::of::<ImportedModule>()
     );
 }
@@ -178,7 +204,7 @@ fn module_macro_requires_imports_to_implement_module() {
     .expect("temporary consumer manifest should be written");
     fs::write(
         source_dir.join("main.rs"),
-        "struct NotAModule;\n\n#[mads_core::module(imports = [NotAModule])]\nstruct AppModule;\n\nfn main() {}\n",
+        "struct NotAModule;\n#[mads_core::furnace]\nstruct AppModule;\nimpl mads_core::Furnace for AppModule { fn register(self) -> mads_core::FurnaceRegistration<Self> { self.import(NotAModule) } }\nfn main() {}\n",
     )
     .expect("temporary consumer source should be written");
 
@@ -192,7 +218,7 @@ fn module_macro_requires_imports_to_implement_module() {
 
     assert!(!output.status.success(), "consumer unexpectedly compiled");
     assert!(
-        stderr.contains("NotAModule: Module") && stderr.contains("trait bound"),
+        stderr.contains("NotAModule: Furnace") && stderr.contains("trait bound"),
         "consumer failed for an unexpected reason:\n{stderr}"
     );
 }
