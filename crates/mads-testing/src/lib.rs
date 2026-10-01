@@ -6,8 +6,17 @@
 
 mod error;
 mod fixture;
+mod http;
+mod response;
 pub use error::{TestError, TestResult};
-pub use fixture::{SubjectFixture, TestContext, TestFixtureBuilder};
+pub use fixture::{ControllerFixture, SubjectFixture, TestContext, TestFixtureBuilder};
+
+pub use http::{TestClient, TestRequest};
+pub use response::TestResponse;
+/// Native HTTP request and response comparison types.
+pub mod http_types {
+    pub use axum::http::{HeaderName, HeaderValue, Method, StatusCode, header};
+}
 
 /// Native SeaORM types for preparing a scripted SQLite mock database.
 pub mod sea_orm {

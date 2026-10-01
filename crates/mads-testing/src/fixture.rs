@@ -71,6 +71,14 @@ impl TestFixtureBuilder {
         }
     }
 
+    /// Selects one registered controller and its dependency chain.
+    pub fn controller<T: Send + Sync + 'static>(self) -> ControllerFixture<T> {
+        ControllerFixture {
+            setup: self,
+            subject: PhantomData,
+        }
+    }
+
     pub(crate) async fn build<T: Send + Sync + 'static>(mut self) -> TestResult<Mads> {
         if let Some(error) = self.error {
             return Err(error);
@@ -110,6 +118,29 @@ impl<T: Send + Sync + 'static> SubjectFixture<T> {
         let app = self.setup.build::<T>().await?;
         let context = TestContext::new(app.context().clone());
         run_scoped(app, context, body).await
+    }
+}
+
+/// A registered controller ready for scoped HTTP execution.
+#[must_use]
+pub struct ControllerFixture<T> {
+    setup: TestFixtureBuilder,
+    subject: PhantomData<fn() -> T>,
+}
+impl<T: Send + Sync + 'static> ControllerFixture<T> {
+    /// Builds the selected router, starts the chain, runs the body, and shuts down.
+    ///
+    /// Body panics resume after awaited shutdown; cancellation and process abort
+    /// cannot guarantee asynchronous cleanup.
+    pub async fn run<F, Fut>(self, body: F) -> TestResult<()>
+    where
+        F: FnOnce(crate::TestClient) -> Fut,
+        Fut: Future<Output = ()>,
+    {
+        let app = self.setup.build::<T>().await?;
+        let router = mads_common::__private::build_test_router_for::<T>(&app)?;
+        let client = crate::TestClient::new(TestContext::new(app.context().clone()), router);
+        run_scoped(app, client, body).await
     }
 }
 
