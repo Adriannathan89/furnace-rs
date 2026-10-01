@@ -1,6 +1,6 @@
 # furnace-rs branding, cauldrons, direct controller endpoints, and seals
 
-Status: proposed specification for user review. The conversation approves the names, direct endpoints, the two uses of `#[controller]`, and controller-wide protection. The concrete contracts and migration boundaries below require review before writing the implementation plan.
+Status: approved by the user on 2026-10-01, including the furnace-rs package family and dependency aliases. The corresponding written implementation plan awaits review before product implementation.
 
 ## Intent
 
