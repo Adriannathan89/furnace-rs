@@ -4,6 +4,14 @@
 
 **Goal:** Add a module-free `mads-testing` fixture for focused provider construction, SQLite-backed SeaORM mocks, and in-process controller assertions with reliable lifecycle shutdown.
 
+**Execution status (2026-10-01):** Tasks 1–5 implemented on `feat/mads-testing`.
+The final review's focused Passport isolation issue was fixed. Workspace tests
+passed (711 passed, 7 ignored); formatting, Clippy, documentation, and the
+coverage gate passed (89.06% line coverage). Tests that bind localhost required
+execution outside the restricted sandbox. Two minor review notes remain:
+the duplicate-supply test lacks an explicit constructor sentinel, and the
+malformed-JSON test does not specifically assert the parser cause.
+
 **Architecture:** Add a focused provider selection path to core and a selected-controller route path to common HTTP. The testing crate owns the public fixture, mock validation, request/assertion API, and scoped lifecycle runner. `#[mads::test]` registers one async function with Cargo through Tokio and generates `test_fixture()` inside that function.
 
 **Tech Stack:** Rust 2024, Rust 1.94, MADS core/common/facade, SeaORM 2.0 mock, Axum 0.8, Tower 0.5, Tokio, serde_json, futures-util.
