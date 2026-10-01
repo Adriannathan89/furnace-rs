@@ -1,6 +1,6 @@
 # furnace-rs, Cauldrons, Direct Controllers, and Seals Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Ship the approved furnace-rs package family, explicit cauldrons, inherent controller endpoints, and controller-wide typed seals without weakening dependency ownership or startup validation.
 
@@ -10,7 +10,7 @@
 
 **Spec:** [Approved design](../specs/2026-10-01-furnace-rs-cauldron-controller-design.md).
 
-**Status:** Spec approved by the user. This execution plan awaits review; no product implementation is authorized by the plan's existence alone. Preserve the prior native execution method and user-authorized per-task local commits on `refactor/mads-declaration-module`.
+**Status:** All eight tasks implemented and verified on the user-assigned `refactor/mads-declaration-module` branch. Local per-task commits preserved. Stable/MSRV gates and one fresh whole-branch review completed; see [verification report](../reports/2026-10-01-furnace-rs-verification.md) for results, fixes, rulings, deferred minors, and external database coverage.
 
 ## Global Constraints
 
@@ -63,11 +63,11 @@ Run sequentially on the existing user-assigned branch. Task 1 keeps the existing
 - Macro path lookup uses the actual package names `furnace-rs-core`, `furnace-rs-common`, and `furnace-rs`, and honors Cargo aliases. Generated scaffold manifests use `furnace = { package = "furnace-rs", version = "=0.9.2", ... }`.
 - Produce config/environment/diagnostic/identifier changes and version-2 topology fields. Keep legacy route-trait columns only during Tasks 1–5.
 
-- [ ] Write external consumers for default `furnace_rs`, alias `furnace`, arbitrary alias `framework`, and a shadowing local `mod furnace`; assert new declarations/runtime compile. Add config tests loading `furnace.toml`/`FURNACE_SERVER_PORT`, ignoring implicit `mads.toml`/`MADS_SERVER_PORT`, and preserving `.env`/file/env precedence. Add JSON/protocol tests asserting both version constants equal 2 and ownership fields use `root_cauldron`/`cauldron`.
-- [ ] Run the new consumers/config tests against the current checkout; confirm missing new package/API/config behavior is the RED cause, recording it before rename.
-- [ ] Perform the rename and exact public-name/brand mappings from the spec; migrate existing fixtures required to run the new package names. Update diagnostic strings/snapshots after inspecting actual differences. Update remote branding references in files without mutating Git remote settings or rewriting historical artifacts.
-- [ ] Run `cargo test --locked -p furnace-rs-core -p furnace-rs-core-macros`, facade `path_resolution`/`feature_matrix`, and CLI inspection/watch/configuration tests; run `cargo check -p furnace-rs --no-default-features`. Confirm `cargo metadata --locked --no-deps` lists exactly the nine new names and unchanged versions.
-- [ ] Commit `feat!: rename the framework to furnace-rs and cauldrons` with this task's fixture changes.
+- [x] Write external consumers for default `furnace_rs`, alias `furnace`, arbitrary alias `framework`, and a shadowing local `mod furnace`; assert new declarations/runtime compile. Add config tests loading `furnace.toml`/`FURNACE_SERVER_PORT`, ignoring implicit `mads.toml`/`MADS_SERVER_PORT`, and preserving `.env`/file/env precedence. Add JSON/protocol tests asserting both version constants equal 2 and ownership fields use `root_cauldron`/`cauldron`.
+- [x] Run the new consumers/config tests against the current checkout; confirm missing new package/API/config behavior is the RED cause, recording it before rename.
+- [x] Perform the rename and exact public-name/brand mappings from the spec; migrate existing fixtures required to run the new package names. Update diagnostic strings/snapshots after inspecting actual differences. Update remote branding references in files without mutating Git remote settings or rewriting historical artifacts.
+- [x] Run `cargo test --locked -p furnace-rs-core -p furnace-rs-core-macros`, facade `path_resolution`/`feature_matrix`, and CLI inspection/watch/configuration tests; run `cargo check -p furnace-rs --no-default-features`. Confirm `cargo metadata --locked --no-deps` lists exactly the nine new names and unchanged versions.
+- [x] Commit `feat!: rename the framework to furnace-rs and cauldrons` with this task's fixture changes.
 
 ### Task 2: Typed static seal declarations and guard policy types
 
@@ -80,11 +80,11 @@ Run sequentially on the existing user-assigned branch. Task 1 keeps the existing
 - Produce doc-hidden public `GuardPolicy: Send + Sync + 'static { fn descriptor() -> &'static GuardDescriptor; }`, implemented by `#[guard(...)]` on a non-generic unit policy struct. Its descriptor retains existing typed principal/adapters/source/authorization policy without an endpoint skip flag.
 - `Sealable`, empty `SealRegistration::new()`, and `SealDefinition` are HTTP-only APIs. Gate `GuardPolicy`, `SealEntry`, `entries()`, and typed `.seal::<G>()` methods on HTTP+JWT; the controller macro emits its typed helper only when the owning macro/runtime Passport feature is enabled, without relying on a downstream application feature named `jwt`. Keep the existing route-trait guard grammar only for staged legacy consumers until Task 6. Do not inject/construct guard policy structs or make them DI members.
 
-- [ ] Add `seal_recording_does_not_construct_values`: erase empty/one/two declarations, assert 0/1/2 entries with authored identities/locations and constructor counters still 0. Add unit policy UI pass/fail cases for JWT/cookie gating, roles/permissions/predicates, invalid principal/source, generics, named fields, and `skip`.
-- [ ] Run `cargo test -p furnace-rs-common --all-features --test seal_registration` and the new UI cases; record RED missing Sealable/policy type support.
-- [ ] Implement the interfaces and unit-policy expansion using the current typed Passport adapters. Keep Sealable/empty recording HTTP-only, and gate actual nonempty Passport policies on HTTP+JWT. Preserve grammar validation at the offending attribute token.
-- [ ] Run the focused tests/UI cases plus `cargo check -p furnace-rs --no-default-features --features http` and common JWT-only/cookies feature checks; assert direct policy factory callbacks are never invoked during recording.
-- [ ] Commit `feat(http): declare static controller seals and guard policies`.
+- [x] Add `seal_recording_does_not_construct_values`: erase empty/one/two declarations, assert 0/1/2 entries with authored identities/locations and constructor counters still 0. Add unit policy UI pass/fail cases for JWT/cookie gating, roles/permissions/predicates, invalid principal/source, generics, named fields, and `skip`.
+- [x] Run `cargo test -p furnace-rs-common --all-features --test seal_registration` and the new UI cases; record RED missing Sealable/policy type support.
+- [x] Implement the interfaces and unit-policy expansion using the current typed Passport adapters. Keep Sealable/empty recording HTTP-only, and gate actual nonempty Passport policies on HTTP+JWT. Preserve grammar validation at the offending attribute token.
+- [x] Run the focused tests/UI cases plus `cargo check -p furnace-rs --no-default-features --features http` and common JWT-only/cookies feature checks; assert direct policy factory callbacks are never invoked during recording.
+- [x] Commit `feat(http): declare static controller seals and guard policies`.
 
 ### Task 3: Direct inherent controller endpoints and typed adapters
 
@@ -98,11 +98,11 @@ Run sequentially on the existing user-assigned branch. Task 1 keeps the existing
 - Canonical RouteDescriptor paths normalize `/:id` to `/{id}`, preserve native brace/wildcard forms, and join prefixes without double slashes. Bare GET/POST use the base path. Endpoint identity uses controller TypeId, HTTP method, canonical full path, and method name, with no route-trait identity.
 - Adapt reusable typed handler generation to call `controller.method(...)` or `Controller::method(...)`, await only async methods, preserve native extractors/IntoResponse, and suppress cfg-disabled metadata/adapters together.
 
-- [ ] Add a dependency-bearing direct controller with `GET /user/{id}`, base GET/POST, sync/async methods, a helper without an HTTP verb, and native extractors. Assert responses, captured ID, prefix joining, and constructor dependency order. Add colon/brace-equivalent conflicts, parameterized paths with the same structural pattern but different capture names, wildcard conflicts, and cfg-disabled endpoint tests. Assert conflicts fail preflight rather than panicking during Axum registration; reject inconsistent capture names across verbs sharing a structural path while preserving legitimate static-vs-parameter routing. Add UI cases for missing Sealable, non-inherent/generic impls, unsupported receivers/parameter layouts, multiple verbs, bare verbs outside an annotated impl, malformed parameter/wildcard paths, and reserved method `seal`.
-- [ ] Run the direct controller tests and new UI consumers; record RED because empty-argument struct controllers/inherent endpoint blocks are unsupported.
-- [ ] Dispatch `#[controller]` by ItemStruct/ItemImpl. Extract shared parser/adapter routines instead of duplicating the legacy route expander. Emit static descriptor sets and a seal callback without reading source files or sharing mutable proc-macro state. Stage the old argument-bearing struct controller path separately until Task 6.
-- [ ] Run macro tests, `direct_controller`, facade path resolution/UI, and existing native extractor/input validation tests; verify default/aliased imports and local namespace shadowing for struct, endpoint, and guard expansions.
-- [ ] Commit `feat(http): declare endpoints on controller implementations`.
+- [x] Add a dependency-bearing direct controller with `GET /user/{id}`, base GET/POST, sync/async methods, a helper without an HTTP verb, and native extractors. Assert responses, captured ID, prefix joining, and constructor dependency order. Add colon/brace-equivalent conflicts, parameterized paths with the same structural pattern but different capture names, wildcard conflicts, and cfg-disabled endpoint tests. Assert conflicts fail preflight rather than panicking during Axum registration; reject inconsistent capture names across verbs sharing a structural path while preserving legitimate static-vs-parameter routing. Add UI cases for missing Sealable, non-inherent/generic impls, unsupported receivers/parameter layouts, multiple verbs, bare verbs outside an annotated impl, malformed parameter/wildcard paths, and reserved method `seal`.
+- [x] Run the direct controller tests and new UI consumers; record RED because empty-argument struct controllers/inherent endpoint blocks are unsupported.
+- [x] Dispatch `#[controller]` by ItemStruct/ItemImpl. Extract shared parser/adapter routines instead of duplicating the legacy route expander. Emit static descriptor sets and a seal callback without reading source files or sharing mutable proc-macro state. Stage the old argument-bearing struct controller path separately until Task 6.
+- [x] Run macro tests, `direct_controller`, facade path resolution/UI, and existing native extractor/input validation tests; verify default/aliased imports and local namespace shadowing for struct, endpoint, and guard expansions.
+- [x] Commit `feat(http): declare endpoints on controller implementations`.
 
 ### Task 4: Selected endpoint/security preflight before construction
 
@@ -116,7 +116,7 @@ Run sequentially on the existing user-assigned branch. Task 1 keeps the existing
 - Scoped endpoint occurrences carry controller identity, endpoint identity, optional static policy descriptor, registration location, and controller owner. Policy declaration TypeId/namespace does not grant provider access; use the controller's cauldron for actual managed JWT/strategy dependencies.
 - Produce `furnace_common::__private::preflight_http(&PreflightContext<'_>) -> Vec<Diagnostic>` for the registered callback and tests. Keep core independent of HTTP types.
 
-- [ ] Add a preflight rejection with both provider/default constructor counters; assert invalid analysis/build, `FURNACE030` for duplicate endpoints or `FURNACE008` for missing/duplicate endpoint sets/multiple seals, and counters remain 0. Pin rooted and low-level builder paths. Add two independent roots/diamond callback counters and an unrelated malformed unregistered strategy/controller descriptor; assert only the selected scope is validated. Add focused HTTP tests beside unselected conflicting inventory.
+- [x] Add a preflight rejection with both provider/default constructor counters; assert invalid analysis/build, `FURNACE030` for duplicate endpoints or `FURNACE008` for missing/duplicate endpoint sets/multiple seals, and counters remain 0. Pin rooted and low-level builder paths. Add two independent roots/diamond callback counters and an unrelated malformed unregistered strategy/controller descriptor; assert only the selected scope is validated. Add focused HTTP tests beside unselected conflicting inventory.
 The conflict fixture in `cauldron_http_preflight.rs` pins the preconstruction requirement explicitly:
 
 ```rust,ignore
@@ -130,11 +130,11 @@ assert_eq!(PROVIDER_CONSTRUCTIONS.load(Ordering::SeqCst), 0);
 assert_eq!(DEFAULT_CONSTRUCTIONS.load(Ordering::SeqCst), 0);
 ```
 
-- [ ] Add shared-policy controllers with private/local/direct exported/global exported JwtService and custom strategies; assert private supplied JWT and inaccessible strategies fail with `FURNACE009`/existing strategy diagnostic before constructors. Official unowned defaults remain conditional/ambient. Registered invalid strategies still fail, matching the prior Passport regressions.
-- [ ] Run `integration_preflight` and `cauldron_http_preflight`; record RED showing route conflicts run too late or seal metadata is not selected/validated.
-- [ ] Implement the generic callback boundary and selected common validator. Refactor current JWT guard requirements to consume the selected seals and controller contexts; preserve default precedence and aggregate safe diagnostics without duplicate copies from evaluator/preflight. Build root/focus contexts explicitly rather than treating focused tests as complete inventory.
-- [ ] Run core tests and focused/common scope, auto-configuration, Passport preflight/boundary tests. Verify `cargo tree -p furnace-rs-core --edges normal` contains no Axum/HTTP/JWT/SeaORM additions.
-- [ ] Commit `feat(core): preflight selected endpoints and seals before construction`.
+- [x] Add shared-policy controllers with private/local/direct exported/global exported JwtService and custom strategies; assert private supplied JWT and inaccessible strategies fail with `FURNACE009`/existing strategy diagnostic before constructors. Official unowned defaults remain conditional/ambient. Registered invalid strategies still fail, matching the prior Passport regressions.
+- [x] Run `integration_preflight` and `cauldron_http_preflight`; record RED showing route conflicts run too late or seal metadata is not selected/validated.
+- [x] Implement the generic callback boundary and selected common validator. Refactor current JWT guard requirements to consume the selected seals and controller contexts; preserve default precedence and aggregate safe diagnostics without duplicate copies from evaluator/preflight. Build root/focus contexts explicitly rather than treating focused tests as complete inventory.
+- [x] Run core tests and focused/common scope, auto-configuration, Passport preflight/boundary tests. Verify `cargo tree -p furnace-rs-core --edges normal` contains no Axum/HTTP/JWT/SeaORM additions.
+- [x] Commit `feat(core): preflight selected endpoints and seals before construction`.
 
 ### Task 5: Controller-wide request protection and principal delivery
 
@@ -145,12 +145,12 @@ assert_eq!(DEFAULT_CONSTRUCTIONS.load(Ordering::SeqCst), 0);
 - Every registrar for a sealed controller invokes the existing authentication/authorization pipeline with the selected policy before invoking its inherent method. Public empty-seal controllers install ordinary handlers.
 - Preserve typed PassportGuard/principal extraction, verified-claims caching, token source handling, policy order (roles, permissions, predicates), status normalization, native response escape hatches, and server-side-only failure sources.
 
-- [ ] Add requests covering GET-by-ID, base GET, and POST on one sealed controller: missing/invalid credentials return 401, failed policy returns 403, and handler counters remain 0; authorized requests call handlers and expose typed principals. Add an unsealed controller's public request and cookie-source cases.
-- [ ] Add the same policy on controllers in two disjoint cauldrons, each with a same-named locally registered custom strategy. Assert each request invokes its own context binding and no global cache leaks across applications. Add direct-import and global-exported strategy success cases.
-- [ ] Run `controller_seals`; record RED missing policy attachment/request binding before adapting handler dispatch.
-- [ ] Adapt request protection to direct endpoint descriptors and static seal selection; keep one guard pipeline per controller and reject route-level policy attributes during macro parsing.
-- [ ] Run `controller_seals`, native Passport, bearer/cookie, authorization/redaction, principal, and router/server tests with loopback permission where needed.
-- [ ] Commit `feat(http): protect every controller endpoint with its declared seal`.
+- [x] Add requests covering GET-by-ID, base GET, and POST on one sealed controller: missing/invalid credentials return 401, failed policy returns 403, and handler counters remain 0; authorized requests call handlers and expose typed principals. Add an unsealed controller's public request and cookie-source cases.
+- [x] Add the same policy on controllers in two disjoint cauldrons, each with a same-named locally registered custom strategy. Assert each request invokes its own context binding and no global cache leaks across applications. Add direct-import and global-exported strategy success cases.
+- [x] Run `controller_seals`; record RED missing policy attachment/request binding before adapting handler dispatch.
+- [x] Adapt request protection to direct endpoint descriptors and static seal selection; keep one guard pipeline per controller and reject route-level policy attributes during macro parsing.
+- [x] Run `controller_seals`, native Passport, bearer/cookie, authorization/redaction, principal, and router/server tests with loopback permission where needed.
+- [x] Commit `feat(http): protect every controller endpoint with its declared seal`.
 
 ### Task 6: Migrate all consumers, scaffold/inspection, and remove route traits
 
@@ -162,11 +162,11 @@ assert_eq!(DEFAULT_CONSTRUCTIONS.load(Ordering::SeqCst), 0);
 - Scaffold emits exactly `Cargo.toml`, `furnace.toml`, `src/main.rs`, and `src/app/{mod,controller,service}.rs`, with an AppCauldron, explicit service/controller registration, inherent base GET, and empty seals. No `routes.rs`/`mod routes`.
 - Focused HTTP fixtures select their subject controller's inherent methods/seals/dependency chain; supplied fixture values remain isolated. Infrastructure and application examples use explicit cauldrons and correctly typed factory outputs.
 
-- [ ] Add compile-fail cases proving old names/routes/guard targets/skip are rejected, and external pass cases for the complete spec example. Add scaffold exact-file/content assertions and offline generated consumer inspection/HTTP smoke tests. Assert schema/protocol 2, missing `route_trait`, correct `root_cauldron`, safe partial failures, and inspection constructor/bind counters 0. Reject protocol 1 before app work.
-- [ ] Run these acceptance cases while staged legacy APIs still exist; record legacy compile-fail RED and obsolete scaffold/report output RED.
-- [ ] Migrate each consumer preserving its intended behavior, replacing route-trait calls with inherent methods and explicit Sealable. Update all templates/CLI DTOs together, then remove legacy macro/runtime trait support and obsolete diagnostics. Inspect UI snapshot changes, including separate stable/MSRV compiler wording, before accepting snapshots.
-- [ ] Run full common/facade/testing package tests, CLI scaffold/inspection/protocol/dev tests, all standalone examples and persistence standard startup checks; scan active code for old names/macros/files/implicit env prefixes. Classify historical and intentional failure matches separately.
-- [ ] Commit `feat!: migrate consumers to cauldrons and sealed direct controllers`.
+- [x] Add compile-fail cases proving old names/routes/guard targets/skip are rejected, and external pass cases for the complete spec example. Add scaffold exact-file/content assertions and offline generated consumer inspection/HTTP smoke tests. Assert schema/protocol 2, missing `route_trait`, correct `root_cauldron`, safe partial failures, and inspection constructor/bind counters 0. Reject protocol 1 before app work.
+- [x] Run these acceptance cases while staged legacy APIs still exist; record legacy compile-fail RED and obsolete scaffold/report output RED.
+- [x] Migrate each consumer preserving its intended behavior, replacing route-trait calls with inherent methods and explicit Sealable. Update all templates/CLI DTOs together, then remove legacy macro/runtime trait support and obsolete diagnostics. Inspect UI snapshot changes, including separate stable/MSRV compiler wording, before accepting snapshots.
+- [x] Run full common/facade/testing package tests, CLI scaffold/inspection/protocol/dev tests, all standalone examples and persistence standard startup checks; scan active code for old names/macros/files/implicit env prefixes. Classify historical and intentional failure matches separately.
+- [x] Commit `feat!: migrate consumers to cauldrons and sealed direct controllers`.
 
 ### Task 7: Active documentation, migration, and release tooling
 
@@ -176,11 +176,11 @@ assert_eq!(DEFAULT_CONSTRUCTIONS.load(Ordering::SeqCst), 0);
 - Migration docs use default `furnace_rs` and recommended facade alias correctly, typed cauldron registration, direct controller methods, canonical paths, public/protected seals, explicit infrastructure exports, renamed config/env/CLI, and schema 2.
 - CI/script package order lists all nine `furnace-rs` packages, new command/archive/config payloads, unchanged versions/features/MSRV, and `FURNACE_TEST_DATABASE_URL` for ignored live tests. No upload or publishing is executed locally.
 
-- [ ] Add release/tooling assertions that all package/version pins, archive policy groups, PostgreSQL env, schema version, and generated file count match the final spec. Verify active guides contain the complete protected/public examples and no claim that Rust `pub` grants DI access.
-- [ ] Run affected CLI release/documentation tests and rustdoc; record stale expectations and the previously deferred facade `pub` sentence as failures/mismatches to correct.
-- [ ] Update active docs and tooling; add an unreleased breaking entry without choosing a release version. Keep historical specs/plans/reports intact and link the new migration guide where historical APIs are mentioned in active navigation.
-- [ ] Run release-automation tests, strict rustdoc, and archive payload checks. New unpublished package identities may prevent registry-dependent `cargo package --no-verify`; distinguish that external registry resolution limitation from a payload failure, inspect `cargo package --list` and local archives when possible, and report exact unavailable validation rather than changing publish identities to make checks pass.
-- [ ] Commit `docs!: document furnace-rs controllers, seals, and migration`.
+- [x] Add release/tooling assertions that all package/version pins, archive policy groups, PostgreSQL env, schema version, and generated file count match the final spec. Verify active guides contain the complete protected/public examples and no claim that Rust `pub` grants DI access.
+- [x] Run affected CLI release/documentation tests and rustdoc; record stale expectations and the previously deferred facade `pub` sentence as failures/mismatches to correct.
+- [x] Update active docs and tooling; add an unreleased breaking entry without choosing a release version. Keep historical specs/plans/reports intact and link the new migration guide where historical APIs are mentioned in active navigation.
+- [x] Run release-automation tests, strict rustdoc, and archive payload checks. New unpublished package identities may prevent registry-dependent `cargo package --no-verify`; distinguish that external registry resolution limitation from a payload failure, inspect `cargo package --list` and local archives when possible, and report exact unavailable validation rather than changing publish identities to make checks pass.
+- [x] Commit `docs!: document furnace-rs controllers, seals, and migration`.
 
 ### Task 8: Full verification, final review, and local handoff
 
@@ -188,13 +188,13 @@ assert_eq!(DEFAULT_CONSTRUCTIONS.load(Ordering::SeqCst), 0);
 
 **Interfaces:** Final branch has no staged compatibility paths, no uncommitted product edits, and the complete spec acceptance matrix. Preserve assigned branch and local task commits; do not push/merge/publish.
 
-- [ ] Run `cargo fmt --all --check` and `cargo clippy --workspace --all-targets --all-features -- -D warnings`.
-- [ ] Run `cargo test --locked --workspace --all-features --no-fail-fast` and separate locked workspace doctests; use loopback permission for HTTP/CLI integrations.
-- [ ] Run core-only facade, HTTP-only facade, JWT-only common, cookies, persistence without features and with sea-orm-postgres checks. Inspect normal dependency trees to confirm boundaries.
-- [ ] Run strict rustdoc, every standalone example manifest, native persistence example, and archive checks. Record registry resolution limitations for unpublished renamed package dependencies without publishing them.
-- [ ] Run installed Rust 1.94 full workspace tests; run the ignored real database tests if `FURNACE_TEST_DATABASE_URL` is available, otherwise record the existing CI PostgreSQL job as required external verification. Do not install a toolchain or provision a database merely to claim coverage.
-- [ ] Produce a whole-branch review package from this task's implementation base. Dispatch exactly one fresh read-only final reviewer under executing-plans, with this spec/plan, Review Focus, verification evidence, and rulings ledger. Reproduce important findings with failing tests and fix them in one pass; rerun full affected/stable/MSRV gates. Record minor findings for the user rather than silently expanding scope.
-- [ ] Commit demonstrated verification fixes and the final report/task-status update. Preserve local branch and clean working tree; remove only this plan's disposable execution artifacts after their record is committed.
+- [x] Run `cargo fmt --all --check` and `cargo clippy --workspace --all-targets --all-features -- -D warnings`.
+- [x] Run `cargo test --locked --workspace --all-features --no-fail-fast` and separate locked workspace doctests; use loopback permission for HTTP/CLI integrations.
+- [x] Run core-only facade, HTTP-only facade, JWT-only common, cookies, persistence without features and with sea-orm-postgres checks. Inspect normal dependency trees to confirm boundaries.
+- [x] Run strict rustdoc, every standalone example manifest, native persistence example, and archive checks. Record registry resolution limitations for unpublished renamed package dependencies without publishing them.
+- [x] Run installed Rust 1.94 full workspace tests; run the ignored real database tests if `FURNACE_TEST_DATABASE_URL` is available, otherwise record the existing CI PostgreSQL job as required external verification. Do not install a toolchain or provision a database merely to claim coverage.
+- [x] Produce a whole-branch review package from this task's implementation base. Dispatch exactly one fresh read-only final reviewer under executing-plans, with this spec/plan, Review Focus, verification evidence, and rulings ledger. Reproduce important findings with failing tests and fix them in one pass; rerun full affected/stable/MSRV gates. Record minor findings for the user rather than silently expanding scope.
+- [x] Commit demonstrated verification fixes and the final report/task-status update. Preserve local branch and clean working tree; remove only this plan's disposable execution artifacts after their record is committed.
 
 ## Self-review and handoff
 
