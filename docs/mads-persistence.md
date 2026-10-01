@@ -317,13 +317,22 @@ without creating one runtime enum for incompatible native database types.
 `DatabaseModule` is global:
 
 ```rust
-#[mads_core::furnace(global)]
+#[mads_core::furnace]
 pub struct DatabaseModule;
+impl mads_core::Furnace for DatabaseModule {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        self.provide::<DatabaseFactory>()
+            .provide::<SeaOrmPostgres>()
+            .provide::<DatabaseConnection>()
+            .export::<DatabaseConnection>()
+            .global()
+    }
+}
 ```
 
 Importing the module is the explicit opt-in that selects and constructs the
-connection. Once the root imports it, its public native provider is visible to
-every selected module according to current global-module rules.
+connection. Once the root imports it, its explicitly exported native connection is visible to every reachable furnace.
+The factory and connector remain private.
 
 A complete application entry point is:
 
@@ -356,12 +365,22 @@ mod users {
 
     #[furnace]
     pub struct UserModule;
+    impl Furnace for UserModule {
+        fn register(self) -> FurnaceRegistration<Self> {
+            self.provide::<UserRepository>()
+        }
+    }
 }
 
 use users::UserModule;
 
-#[furnace(imports = [DatabaseModule, UserModule])]
+#[furnace]
 struct AppModule;
+impl Furnace for AppModule {
+    fn register(self) -> FurnaceRegistration<Self> {
+        self.import(DatabaseModule).import(UserModule)
+    }
+}
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
