@@ -119,7 +119,7 @@
                 ),
             )
             .expect_err("provider arguments must be rejected");
-            assert!(error.to_string().contains("provider(lifecycle)"));
+            assert!(error.to_string().contains("element(lifecycle)"));
         }
 
         #[test]
@@ -131,7 +131,7 @@
             );
             for arguments in [quote!(other), quote!(lifecycle, other), quote!(lifecycle lifecycle)] {
                 let error = parse_provider_mode(arguments).expect_err("arguments must fail");
-                assert!(error.to_string().contains("provider(lifecycle)"));
+                assert!(error.to_string().contains("element(lifecycle)"));
             }
         }
 

@@ -8,10 +8,7 @@ use std::sync::Arc;
 use crate::lifecycle::LifecycleRegistration;
 use crate::{ConstructionContext, ErasedProvider, LifecycleResource, Result, SourceLocation};
 
-/// Marker implemented by `#[module]` declarations.
-pub trait Module: Send + Sync + 'static {}
-
-/// One direct module import emitted by `#[module(imports = [ImportedModule])]`.
+/// Static import metadata retained for low-level descriptor consumers.
 pub struct ModuleImportDescriptor {
     type_name: &'static str,
     type_id: fn() -> TypeId,
@@ -258,6 +255,7 @@ impl ProviderDescriptor {
 
 /// Describes a statically declared application module.
 pub struct ModuleDescriptor {
+    registration: Option<fn() -> crate::FurnaceDefinition>,
     type_name: &'static str,
     type_id: fn() -> TypeId,
     namespace: Option<&'static str>,
@@ -278,9 +276,22 @@ impl ModuleDescriptor {
             type_id,
             namespace: None,
             imports: &[],
+            registration: None,
             global: false,
             location,
         }
+    }
+
+    /// Attaches an explicit furnace registration callback.
+    #[must_use]
+    pub const fn with_registration(mut self, callback: fn() -> crate::FurnaceDefinition) -> Self {
+        self.registration = Some(callback);
+        self
+    }
+
+    /// Returns the explicit registration callback.
+    pub const fn registration(&self) -> Option<fn() -> crate::FurnaceDefinition> {
+        self.registration
     }
 
     /// Attaches the Rust namespace containing this module declaration.

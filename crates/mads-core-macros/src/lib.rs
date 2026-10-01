@@ -6,10 +6,10 @@
 use proc_macro::TokenStream;
 
 mod configuration;
+mod furnace;
 #[path = "main.rs"]
 mod main_attribute;
 mod managed;
-mod module_v2;
 mod path;
 mod provider;
 mod test_fn;
@@ -40,19 +40,17 @@ pub fn main(arguments: TokenStream, item: TokenStream) -> TokenStream {
     }
 }
 
-/// Declares a non-generic unit struct as an application module.
-///
-/// Use `imports = [Module, ...]` to declare direct module dependencies.
+/// Declares a non-generic unit struct composed through `Furnace::register`.
 #[proc_macro_attribute]
-pub fn module(arguments: TokenStream, item: TokenStream) -> TokenStream {
-    module_v2::expand(arguments.into(), item.into())
+pub fn furnace(arguments: TokenStream, item: TokenStream) -> TokenStream {
+    furnace::expand(arguments.into(), item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
 
 /// Declares a free function as a general-purpose provider.
 #[proc_macro_attribute]
-pub fn provider(arguments: TokenStream, item: TokenStream) -> TokenStream {
+pub fn element(arguments: TokenStream, item: TokenStream) -> TokenStream {
     provider::expand(arguments.into(), item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
@@ -60,7 +58,7 @@ pub fn provider(arguments: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Declares a named-field or unit struct as an application service.
 #[proc_macro_attribute]
-pub fn service(arguments: TokenStream, item: TokenStream) -> TokenStream {
+pub fn burner(arguments: TokenStream, item: TokenStream) -> TokenStream {
     managed::expand(managed::ManagedKind::Service, arguments.into(), item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
@@ -68,7 +66,7 @@ pub fn service(arguments: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Declares a named-field or unit struct as a persistence repository.
 #[proc_macro_attribute]
-pub fn repository(arguments: TokenStream, item: TokenStream) -> TokenStream {
+pub fn storage(arguments: TokenStream, item: TokenStream) -> TokenStream {
     managed::expand(
         managed::ManagedKind::Repository,
         arguments.into(),

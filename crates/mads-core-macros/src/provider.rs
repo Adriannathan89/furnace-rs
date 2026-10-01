@@ -40,7 +40,7 @@ fn parse_provider_mode(arguments: TokenStream) -> syn::Result<ProviderMode> {
     let argument = syn::parse2::<Ident>(arguments).map_err(|_| {
         Error::new(
             span,
-            "`#[mads::provider]` supports only `#[mads::provider]` and `#[mads::provider(lifecycle)]`",
+            "`#[mads::element]` supports only `#[mads::element]` and `#[mads::element(lifecycle)]`",
         )
     })?;
     if argument == "lifecycle" {
@@ -48,7 +48,7 @@ fn parse_provider_mode(arguments: TokenStream) -> syn::Result<ProviderMode> {
     } else {
         Err(Error::new(
             argument.span(),
-            "`#[mads::provider]` supports only `#[mads::provider]` and `#[mads::provider(lifecycle)]`",
+            "`#[mads::element]` supports only `#[mads::element]` and `#[mads::element(lifecycle)]`",
         ))
     }
 }
@@ -60,41 +60,41 @@ fn validate_signature(item: &ItemFn) -> syn::Result<()> {
     }) {
         return Err(Error::new(
             receiver.span(),
-            "`#[mads::provider]` cannot be applied to methods; declare a free function without a `self` receiver",
+            "`#[mads::element]` cannot be applied to methods; declare a free function without a `self` receiver",
         ));
     }
 
     if let Some(parameter) = item.sig.generics.params.first() {
         return Err(Error::new(
             parameter.span(),
-            "`#[mads::provider]` does not support lifetime, type, or const generics",
+            "`#[mads::element]` does not support lifetime, type, or const generics",
         ));
     }
 
     if let Some(variadic) = &item.sig.variadic {
         return Err(Error::new(
             variadic.span(),
-            "`#[mads::provider]` does not support variadic functions",
+            "`#[mads::element]` does not support variadic functions",
         ));
     }
 
     if let Some(unsafety) = &item.sig.unsafety {
         return Err(Error::new(
             unsafety.span(),
-            "`#[mads::provider]` does not support unsafe functions",
+            "`#[mads::element]` does not support unsafe functions",
         ));
     }
 
     match &item.sig.output {
         ReturnType::Default => Err(Error::new(
             item.sig.ident.span(),
-            "`#[mads::provider]` requires an explicit concrete return type",
+            "`#[mads::element]` requires an explicit concrete return type",
         )),
         ReturnType::Type(_, output) => {
             non_concrete_output_span(output).map_or(Ok(()), |non_concrete| {
                 Err(Error::new(
                     non_concrete,
-                    "`#[mads::provider]` requires an explicit concrete return type",
+                    "`#[mads::element]` requires an explicit concrete return type",
                 ))
             })
         }
@@ -228,7 +228,7 @@ fn validate_lifecycle_signature(item: &ItemFn) -> syn::Result<()> {
 
     Err(Error::new(
         item.sig.span(),
-        "`#[mads::provider(lifecycle)]` has two accepted async forms: `async fn ... -> LifecycleResource<T>` or `async fn ... -> mads_core::Result<LifecycleResource<T>>`",
+        "`#[mads::element(lifecycle)]` has two accepted async forms: `async fn ... -> LifecycleResource<T>` or `async fn ... -> mads_core::Result<LifecycleResource<T>>`",
     ))
 }
 

@@ -9,8 +9,8 @@
 
         #[test]
         fn managed_kind_metadata_is_distinct() {
-            assert_eq!(kind_name(&ManagedKind::Service), "service");
-            assert_eq!(kind_name(&ManagedKind::Repository), "repository");
+            assert_eq!(kind_name(&ManagedKind::Service), "burner");
+            assert_eq!(kind_name(&ManagedKind::Repository), "storage");
             assert_eq!(
                 ManagedKind::Service
                     .provider_kind(&syn::parse_quote!(mads))
@@ -23,11 +23,11 @@
                     .to_string(),
                 "mads :: ProviderKind :: Repository"
             );
-            assert!(ManagedKind::Service.supported_form().contains("service"));
+            assert!(ManagedKind::Service.supported_form().contains("burner"));
             assert!(
                 ManagedKind::Repository
                     .supported_form()
-                    .contains("repository")
+                    .contains("storage")
             );
         }
 

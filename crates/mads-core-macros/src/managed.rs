@@ -20,8 +20,8 @@ pub(crate) enum ManagedKind {
 impl ManagedKind {
     fn attribute_name(&self) -> &'static str {
         match self {
-            Self::Service => "service",
-            Self::Repository => "repository",
+            Self::Service => "burner",
+            Self::Repository => "storage",
         }
     }
 

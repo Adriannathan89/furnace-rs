@@ -12,8 +12,8 @@
 //! the public, retained [`AutoConfigurationReport`] records that explain their
 //! decisions. Reports retain only stable identifiers, reason codes, and redacted
 //! configuration evidence; they never retain resolved configuration values. The
-//! v0.5 catalog is complete across statically discovered providers. Module-scoped
-//! reachability is deferred to v0.6. Core re-exports the procedural macros
+//! declaration catalog is discovered statically; rooted builds select only explicitly
+//! registered furnace members and enforce imports and exports. Core re-exports the procedural macros
 //! without introducing integration dependencies.
 
 #![deny(missing_docs)]
@@ -29,6 +29,7 @@ mod configuration;
 mod context;
 mod descriptor;
 mod diagnostic;
+mod furnace;
 mod graph;
 mod lifecycle;
 mod registry;
@@ -50,7 +51,7 @@ pub use configuration::{
 };
 pub use context::{ApplicationContext, ConstructionContext};
 pub use descriptor::{
-    DependencyDescriptor, Module, ModuleDescriptor, ModuleImportDescriptor, ProviderConstructor,
+    DependencyDescriptor, ModuleDescriptor, ModuleImportDescriptor, ProviderConstructor,
     ProviderDescriptor, ProviderFuture, ProviderKind, ProviderVisibility,
 };
 #[doc(hidden)]
@@ -59,6 +60,9 @@ pub use diagnostic::{
     Diagnostic, DiagnosticCode, Error, MADS001, MADS002, MADS003, MADS004, MADS005, MADS006,
     MADS007, MADS008, MADS009, MADS010, MADS011, MADS020, MADS030, Result, SourceLocation,
 };
+#[doc(hidden)]
+pub use furnace::FurnaceDefinition;
+pub use furnace::{Furnace, FurnaceRegistration};
 pub use graph::{
     ApplicationGraph, ConstructionPlan, ConstructionStep, DependencyEdge, GraphAnalysis,
     ModuleGraph, ModuleImportEdge, ModuleNode, ProviderNode, ProviderOrigin, ProviderOwnership,
@@ -75,7 +79,7 @@ pub use lifecycle::{
 };
 pub use registry::{ErasedProvider, ProviderRegistry};
 
-pub use mads_core_macros::{Configuration, main, module, provider, repository, service, test};
+pub use mads_core_macros::{Configuration, burner, element, furnace, main, storage, test};
 
 /// Implementation details used by MADS.rs procedural macro expansions.
 #[doc(hidden)]
@@ -92,7 +96,7 @@ pub mod __private {
     pub use inventory;
 
     /// Builds a rooted module graph for integration coverage and downstream framework crates.
-    pub fn build_module_graph<M: crate::Module>() -> crate::Result<crate::ModuleGraph> {
+    pub fn build_module_graph<M: crate::Furnace>() -> crate::Result<crate::ModuleGraph> {
         let modules = crate::Catalog::modules();
         crate::graph::build_module_graph(TypeId::of::<M>(), &modules)
     }

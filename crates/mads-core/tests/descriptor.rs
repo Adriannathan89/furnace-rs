@@ -117,9 +117,9 @@ fn ordinary_descriptor_contract_remains_unchanged_and_lifecycle_is_additive() {
 #[test]
 fn module_descriptor_preserves_identity_and_location() {
     let location = SourceLocation::new("module.rs", 56, 78);
-    let descriptor = ModuleDescriptor::new("descriptor::Module", output_type_id, location);
+    let descriptor = ModuleDescriptor::new("descriptor::Furnace", output_type_id, location);
 
-    assert_eq!(descriptor.type_name(), "descriptor::Module");
+    assert_eq!(descriptor.type_name(), "descriptor::Furnace");
     assert_eq!(descriptor.type_id(), TypeId::of::<Output>());
     assert_eq!(descriptor.location(), location);
     assert_eq!(descriptor.namespace(), None);
