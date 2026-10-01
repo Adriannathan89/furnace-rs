@@ -1,10 +1,10 @@
 //! Public MADS.rs facade and feature composition boundary.
 //!
 //! The default facade composes the HTTP and logger integrations with the
-//! Tokio runtime. A root [`Module`] selects the Rust-namespace-owned providers,
+//! Tokio runtime. A root [`Furnace`] selects explicitly registered providers,
 //! controllers, routes, guards, strategies, and official auto-configurations
 //! that belong to one application. Direct imports and unrestricted `pub`
-//! visibility govern access across module boundaries.
+//! exports govern access across furnace boundaries.
 //!
 //! The standard startup path loads optional `.env`, optional `mads.toml`, and
 //! final `MADS_*` overrides from the current working directory in that order.
@@ -18,17 +18,23 @@
 //! mod user {
 //!     use mads::prelude::*;
 //!
-//!     #[module]
+//!     #[furnace]
 //!     pub struct UserHttpModule;
+//!     impl Furnace for UserHttpModule {
+//!         fn register(self) -> FurnaceRegistration<Self> { FurnaceRegistration::new(self) }
+//!     }
 //! }
 //! use user::UserHttpModule;
 //!
-//! #[module(imports = [UserHttpModule])]
+//! #[furnace]
 //! struct AppModule;
+//! impl Furnace for AppModule {
+//!     fn register(self) -> FurnaceRegistration<Self> { self.import(UserHttpModule) }
+//! }
 //!
 //! #[mads::main]
 //! async fn main() -> Result<(), HttpRuntimeError> {
-//!     Mads::run::<AppModule>().await
+//!     Mads::burn::<AppModule>().await
 //! }
 //! ```
 //!
@@ -42,8 +48,11 @@
 //! ```no_run
 //! use mads::prelude::*;
 //!
-//! # #[module]
+//! # #[furnace]
 //! # struct AppModule;
+//! # impl Furnace for AppModule {
+//! #     fn register(self) -> FurnaceRegistration<Self> { FurnaceRegistration::new(self) }
+//! # }
 //! # async fn low_level(
 //! #     config: Config,
 //! #     native_router: mads::axum::Router,
@@ -85,7 +94,7 @@
 //!     }
 //! }
 //!
-//! #[service]
+//! #[burner]
 //! struct AccessStrategy;
 //! #[passport_strategy(name = "jwt")]
 //! impl PassportStrategy for AccessStrategy {
@@ -101,7 +110,7 @@
 //!     }
 //! }
 //!
-//! #[service]
+//! #[burner]
 //! struct RefreshStrategy;
 //! #[passport_strategy(name = "jwt-refresh")]
 //! impl PassportStrategy for RefreshStrategy {
@@ -180,11 +189,8 @@ pub use mads_core::main;
 /// Registers an async Cargo test with a function-local fixture builder.
 pub use mads_core::test;
 
-/// Re-exports the application-module declaration attribute.
-pub use mads_core::module;
-
-/// Re-exports the general-purpose provider declaration attribute.
-pub use mads_core::provider;
+/// Re-exports explicit furnace registration and dependency declarations.
+pub use mads_core::{Furnace, FurnaceRegistration, burner, element, furnace, storage};
 
 /// Re-exports explicit typed configuration, structured failures, and secret values.
 pub use mads_core::{
@@ -199,14 +205,8 @@ pub use mads_core::{
 
 /// Re-exports root-module contracts and retained module-graph inspection records.
 pub use mads_core::{
-    Module, ModuleGraph, ModuleImportDescriptor, ModuleImportEdge, ModuleNode, ProviderOwnership,
+    ModuleGraph, ModuleImportDescriptor, ModuleImportEdge, ModuleNode, ProviderOwnership,
 };
-
-/// Re-exports the repository declaration attribute.
-pub use mads_core::repository;
-
-/// Re-exports the service declaration attribute.
-pub use mads_core::service;
 
 /// Re-exports enabled standard integrations.
 #[cfg(any(
@@ -265,7 +265,7 @@ pub use mads_common::{
 /// Re-exports HTTP router construction, configuration, and runtime startup functions.
 #[cfg(feature = "http")]
 pub use mads_common::{
-    HttpRuntimeError, MADS031, MadsRunExt, build_router, configure_router, serve, serve_router,
+    HttpRuntimeError, MADS031, MadsBurnExt, build_router, configure_router, serve, serve_router,
 };
 
 /// Re-exports guarded Passport authentication and policy contracts.
@@ -310,20 +310,11 @@ pub use mads_extra as extra;
 
 /// Collects application-facing MADS.rs imports.
 pub mod prelude {
+    /// Re-exports explicit furnace registration and dependency declarations.
+    pub use mads_core::{Furnace, FurnaceRegistration, burner, element, furnace, storage};
+
     /// Re-exports the asynchronous MADS.rs entry-point attribute.
     pub use mads_core::main;
-
-    /// Re-exports the application-module declaration attribute.
-    pub use mads_core::module;
-
-    /// Re-exports the general-purpose provider declaration attribute.
-    pub use mads_core::provider;
-
-    /// Re-exports the repository declaration attribute.
-    pub use mads_core::repository;
-
-    /// Re-exports the service declaration attribute.
-    pub use mads_core::service;
 
     /// Re-exports the managed-controller declaration attribute.
     #[cfg(feature = "http")]
@@ -355,7 +346,7 @@ pub mod prelude {
     /// Re-exports HTTP router construction, configuration, and runtime startup functions.
     #[cfg(feature = "http")]
     pub use mads_common::{
-        HttpRuntimeError, MADS031, MadsRunExt, build_router, configure_router, serve, serve_router,
+        HttpRuntimeError, MADS031, MadsBurnExt, build_router, configure_router, serve, serve_router,
     };
 
     /// Re-exports application-facing Passport guards, strategies, and extractors.
@@ -393,8 +384,8 @@ pub mod prelude {
         AutoConfigurationStatus, Catalog, Config, ConfigBuilder, Configuration,
         ConfigurationErrors, ConfigurationIssue, ConfigurationResult, ConstructionPlan,
         ConstructionStep, DependencyEdge, Diagnostic, Error, GraphAnalysis, LifecycleHook,
-        LifecycleState, Mads, Module, ModuleGraph, ModuleImportDescriptor, ModuleImportEdge,
-        ModuleNode, ProviderNode, ProviderOrigin, ProviderOwnership, ProviderState,
-        ProviderVisibility, Secret, SourceLocation,
+        LifecycleState, Mads, ModuleGraph, ModuleImportDescriptor, ModuleImportEdge, ModuleNode,
+        ProviderNode, ProviderOrigin, ProviderOwnership, ProviderState, ProviderVisibility, Secret,
+        SourceLocation,
     };
 }

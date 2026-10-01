@@ -2,7 +2,7 @@
 
 use mads::prelude::*;
 
-#[repository]
+#[storage]
 struct MainRepository {
     value: u32,
 }

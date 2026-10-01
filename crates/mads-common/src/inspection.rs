@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use mads_core::{
-    AutoConfigurationStatus, Config, Diagnostic, DiagnosticCode, Error, GraphInspectionSnapshot,
-    Mads, Module, ModuleGraph, ProviderOrigin, ProviderState, ProviderVisibility,
+    AutoConfigurationStatus, Config, Diagnostic, DiagnosticCode, Error, Furnace,
+    GraphInspectionSnapshot, Mads, ModuleGraph, ProviderOrigin, ProviderState, ProviderVisibility,
 };
 use serde::{Deserialize, Serialize};
 
@@ -284,7 +284,7 @@ fn publish_atomic(path: &Path, bytes: &[u8]) -> mads_core::Result<()> {
     publication
 }
 
-fn run_inspection<M: Module>(root: &Path, request: InspectionRequest) -> mads_core::Result<()> {
+fn run_inspection<M: Furnace>(root: &Path, request: InspectionRequest) -> mads_core::Result<()> {
     #[derive(Serialize)]
     struct Acknowledgement<'a> {
         protocol_version: u32,
@@ -306,7 +306,7 @@ fn run_inspection<M: Module>(root: &Path, request: InspectionRequest) -> mads_co
     publish_atomic(&response_path, &response)
 }
 
-pub(crate) fn try_run_inspection<M: Module>(
+pub(crate) fn try_run_inspection<M: Furnace>(
     root: &Path,
 ) -> Option<Result<(), crate::server::HttpRuntimeError>> {
     let request = match InspectionRequest::from_environment() {
@@ -375,9 +375,9 @@ pub struct RouteReport {
 pub struct ModuleReport {
     /// Stable module type name.
     pub type_name: String,
-    /// Module namespace.
+    /// Furnace namespace.
     pub namespace: String,
-    /// Module declaration location.
+    /// Furnace declaration location.
     pub location: SourceReport,
 }
 
@@ -583,7 +583,7 @@ impl InspectionEnvelope {
 }
 
 /// Assembles a side-effect-free report for a rooted standard HTTP application.
-pub(crate) fn inspect_standard_application<M: Module>(
+pub(crate) fn inspect_standard_application<M: Furnace>(
     root: &Path,
     kind: InspectionKind,
 ) -> InspectionReport {
@@ -971,14 +971,21 @@ mod tests {
 
     struct Marker;
 
-    #[mads_core::provider]
+    #[mads_core::element]
     fn marker_provider() -> Marker {
         CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
         Marker
     }
 
-    #[mads_core::module]
+    #[mads_core::furnace]
     struct AppModule;
+
+    impl mads_core::Furnace for AppModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.provide::<Marker>()
+                .controller::<InspectionController>()
+        }
+    }
 
     #[crate::routes]
     trait InspectionRoutes {

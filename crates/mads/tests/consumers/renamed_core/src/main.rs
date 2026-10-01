@@ -8,10 +8,17 @@ struct Settings {
     port: u16,
 }
 
-#[runtime::module]
+#[runtime::furnace]
 struct AppModule;
 
-#[runtime::repository]
+impl runtime::Furnace for AppModule {
+    fn register(self) -> runtime::FurnaceRegistration<Self> {
+        self.provide::<Repository>()
+    }
+}
+
+
+#[runtime::storage]
 struct Repository;
 
 fn framework_result() -> runtime::Result<()> {

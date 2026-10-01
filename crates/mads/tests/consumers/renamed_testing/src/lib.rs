@@ -1,5 +1,5 @@
 //! A consumer with renamed dependencies and no direct Tokio dependency.
-#[framework::service]
+#[framework::burner]
 struct Service;
 #[framework::test]
 async fn renamed_fixture_runs() -> fixtures::TestResult<()> {

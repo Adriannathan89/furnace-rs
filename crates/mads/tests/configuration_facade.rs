@@ -45,17 +45,23 @@ mod selected {
 
     pub static CONSTRUCTIONS: AtomicUsize = AtomicUsize::new(0);
 
-    #[module]
+    #[furnace]
     pub struct AppModule;
 
-    #[provider]
+    impl mads::core::Furnace for AppModule {
+        fn register(self) -> mads::core::FurnaceRegistration<Self> {
+            self.provide::<AppConfig>().provide::<Consumer>()
+        }
+    }
+
+    #[element]
     fn app_config(config: Config) -> mads::core::Result<AppConfig> {
         Ok(config.parse()?)
     }
 
     pub struct Consumer;
 
-    #[provider]
+    #[element]
     fn consumer(config: AppConfig) -> Consumer {
         let _ = config.api_key.expose();
         CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
@@ -87,8 +93,14 @@ async fn selected_provider_failure_prevents_dependent_construction() {
 mod unused {
     use super::*;
 
-    #[module]
+    #[furnace]
     pub struct EmptyModule;
+
+    impl mads::core::Furnace for EmptyModule {
+        fn register(self) -> mads::core::FurnaceRegistration<Self> {
+            mads::core::FurnaceRegistration::new(self)
+        }
+    }
 
     #[derive(Configuration)]
     #[allow(dead_code)]

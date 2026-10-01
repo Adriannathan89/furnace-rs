@@ -23,10 +23,17 @@ impl SecondRoutes for InvalidRoutesController {
     async fn second(&self) {}
 }
 
-#[mads::module]
+#[mads::furnace]
 struct InvalidRoutesModule;
+
+impl mads::core::Furnace for InvalidRoutesModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        self.controller::<InvalidRoutesController>()
+    }
+}
+
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<InvalidRoutesModule>().await
+    Mads::burn::<InvalidRoutesModule>().await
 }

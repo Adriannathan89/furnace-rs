@@ -69,7 +69,7 @@ fn a_binary_without_standard_run_is_killed_and_diagnosed() {
         .assert()
         .code(1)
         .stderr(contains("MADS203"))
-        .stderr(contains("Mads::run::<AppModule>()"));
+        .stderr(contains("Mads::burn::<AppModule>()"));
 
     let heartbeat_after_exit = std::fs::read(&heartbeat)
         .expect("non-cooperating fixture should publish a heartbeat before termination");

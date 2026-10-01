@@ -2,10 +2,17 @@
 
 use mads::prelude::*;
 
-#[module]
+#[furnace]
 struct AppModule;
 
-#[repository]
+impl mads::core::Furnace for AppModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        self.provide::<Repository>().controller::<Controller>()
+    }
+}
+
+
+#[storage]
 struct Repository {
     value: u32,
 }

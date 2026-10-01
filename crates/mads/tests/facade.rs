@@ -14,22 +14,29 @@ fn framework_result() -> mads::core::Result<()> {
 mod declarations {
     use mads::prelude::*;
 
-    #[module]
+    #[furnace]
     pub(super) struct PreludeModule;
+
+    impl mads::core::Furnace for PreludeModule {
+        fn register(self) -> mads::core::FurnaceRegistration<Self> {
+            mads::core::FurnaceRegistration::new(self)
+        }
+    }
 }
 
 #[test]
 fn prelude_exposes_the_http_runtime_surface() {
     use mads::prelude::{
-        BadRequest, Conflict, Created, Forbidden, Header, HttpError, HttpResult, HttpRuntimeError,
-        Input, InternalError, Json, Mads, MadsRunExt, Module, ModuleGraph, ModuleImportDescriptor,
-        ModuleImportEdge, ModuleNode, NoContent, NotFound, Path, ProviderOwnership, Query, Request,
-        SourcedValidationIssue, Unauthorized, ValidatedJson, ValidatedPath, ValidatedQuery,
-        ValidationError, ValidationErrors, ValidationIssue, ValidationPathSegment,
-        ValidationResult, ValidationSource, build_router, configure_router, serve, serve_router,
+        BadRequest, Conflict, Created, Forbidden, Furnace, Header, HttpError, HttpResult,
+        HttpRuntimeError, Input, InternalError, Json, Mads, MadsBurnExt, ModuleGraph,
+        ModuleImportDescriptor, ModuleImportEdge, ModuleNode, NoContent, NotFound, Path,
+        ProviderOwnership, Query, Request, SourcedValidationIssue, Unauthorized, ValidatedJson,
+        ValidatedPath, ValidatedQuery, ValidationError, ValidationErrors, ValidationIssue,
+        ValidationPathSegment, ValidationResult, ValidationSource, build_router, configure_router,
+        serve, serve_router,
     };
 
-    fn assert_module<T: Module>() {}
+    fn assert_module<T: Furnace>() {}
     fn assert_input<T: Input>() {}
 
     let _ = std::any::TypeId::of::<BadRequest>();
@@ -70,9 +77,9 @@ fn prelude_exposes_the_http_runtime_surface() {
     let _ = |application: mads::core::Mads, router: mads::axum::Router| {
         serve_router(application, router, "127.0.0.1:0")
     };
-    let _ = <Mads as MadsRunExt>::run::<declarations::PreludeModule>;
+    let _ = <Mads as MadsBurnExt>::burn::<declarations::PreludeModule>;
 
-    fn assert_root_module<T: mads::Module>() {}
+    fn assert_root_module<T: mads::Furnace>() {}
     assert_root_module::<declarations::PreludeModule>();
     let _ = std::any::TypeId::of::<mads::ModuleGraph>();
     let _ = std::any::TypeId::of::<mads::ModuleImportDescriptor>();
@@ -97,7 +104,7 @@ fn prelude_exposes_the_http_runtime_surface() {
     let _ = |application: mads::core::Mads, router: mads::axum::Router| {
         mads::serve_router(application, router, "127.0.0.1:0")
     };
-    let _ = <mads::core::Mads as mads::MadsRunExt>::run::<declarations::PreludeModule>;
+    let _ = <mads::core::Mads as mads::MadsBurnExt>::burn::<declarations::PreludeModule>;
     let _ = framework_result;
     let _: mads::common::axum::Router = mads::common::axum::Router::new();
 }
@@ -154,18 +161,27 @@ fn prelude_exposes_core_types_and_bare_attributes() {
     mod core_declarations {
         use mads::prelude::*;
 
-        #[module]
+        #[furnace]
         struct PreludeModule;
 
-        #[provider]
+        impl mads::core::Furnace for PreludeModule {
+            fn register(self) -> mads::core::FurnaceRegistration<Self> {
+                self.provide::<usize>()
+                    .provide::<PreludeRepository>()
+                    .provide::<PreludeService>()
+                    .controller::<PreludeController>()
+            }
+        }
+
+        #[element]
         fn prelude_value() -> usize {
             1
         }
 
-        #[repository]
+        #[storage]
         struct PreludeRepository;
 
-        #[service]
+        #[burner]
         struct PreludeService;
 
         #[allow(dead_code)]
@@ -196,19 +212,34 @@ fn prelude_exposes_core_types_and_bare_attributes() {
     let _: mads::core::MadsBuilder = Mads::builder_with_config(Config::empty());
 }
 
-#[mads::module]
+#[mads::furnace]
 struct FacadeModule;
 
+impl mads::core::Furnace for FacadeModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        self.provide::<PublicGraphService>()
+            .provide::<u16>()
+            .provide::<FacadeRepository>()
+            .provide::<QueryUsecase>()
+            .provide::<CommandUsecase>()
+            .controller::<FacadeController>()
+            .provide::<GroupedFallibleProvider>()
+            .provide::<FacadeService>()
+            .controller::<RootController>()
+            .export::<PublicGraphService>()
+    }
+}
+
 /// Public managed service used to verify facade visibility metadata.
-#[mads::service]
+#[mads::burner]
 pub struct PublicGraphService;
 
-#[mads::provider]
+#[mads::element]
 pub(crate) fn restricted_graph_value() -> u16 {
     16
 }
 
-#[mads::repository]
+#[mads::storage]
 struct FacadeRepository;
 
 #[derive(Clone)]
@@ -216,10 +247,10 @@ struct Clock;
 
 struct GroupedFallibleProvider;
 
-#[mads::service]
+#[mads::burner]
 struct QueryUsecase;
 
-#[mads::service]
+#[mads::burner]
 struct CommandUsecase;
 
 #[mads::routes(prefix = "/users")]
@@ -255,12 +286,12 @@ impl CommandRoutes for FacadeController {
 }
 
 #[allow(clippy::result_large_err, unused_parens)]
-#[mads::provider]
+#[mads::element]
 fn grouped_fallible_provider() -> (mads::core::Result<GroupedFallibleProvider>) {
     Ok(GroupedFallibleProvider)
 }
 
-#[mads::service]
+#[mads::burner]
 struct FacadeService {
     repository: FacadeRepository,
     clock: Clock,

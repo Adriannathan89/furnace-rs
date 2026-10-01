@@ -11,7 +11,7 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use mads_core::{Diagnostic, DiagnosticCode, Error, MADS020, Mads, Module};
+use mads_core::{Diagnostic, DiagnosticCode, Error, Furnace, MADS020, Mads};
 use tokio::net::TcpListener;
 
 use crate::cors::CORS_AUTO_CONFIGURATION_ID;
@@ -75,23 +75,23 @@ impl StdError for HttpRuntimeError {
 
 /// Runs a rooted application module with conventional HTTP configuration.
 ///
-/// Import this trait to call [`Mads::run`]. The standard path loads optional
+/// Import this trait to call [`Mads::burn`]. The standard path loads optional
 /// `.env` and `mads.toml` files from the current working directory, applies
 /// `MADS_*` environment overrides, and owns automatic HTTP binding. Use the
 /// low-level [`Mads::builder`] and [`serve`] APIs when the application needs
 /// explicit configuration, providers, lifecycle hooks, or a listener address.
-pub trait MadsRunExt {
+pub trait MadsBurnExt {
     /// Builds and runs the selected rooted application module.
-    fn run<M>() -> impl Future<Output = Result<(), HttpRuntimeError>> + Send
+    fn burn<M>() -> impl Future<Output = Result<(), HttpRuntimeError>> + Send
     where
-        M: Module;
+        M: Furnace;
 }
 
-impl MadsRunExt for Mads {
+impl MadsBurnExt for Mads {
     #[allow(clippy::manual_async_fn)] // The public trait keeps an explicit `Send` future.
-    fn run<M>() -> impl Future<Output = Result<(), HttpRuntimeError>> + Send
+    fn burn<M>() -> impl Future<Output = Result<(), HttpRuntimeError>> + Send
     where
-        M: Module,
+        M: Furnace,
     {
         async move {
             let root = std::env::current_dir().map_err(config_directory_error)?;
@@ -148,7 +148,7 @@ impl PreparedStandardRun {
     }
 }
 
-async fn prepare_standard_run<M: Module>(
+async fn prepare_standard_run<M: Furnace>(
     root: &Path,
 ) -> Result<PreparedStandardRun, HttpRuntimeError> {
     let config = load_standard_config_from(root).map_err(HttpRuntimeError::Bootstrap)?;
@@ -439,8 +439,8 @@ mod tests {
     use std::time::Duration;
 
     use mads_core::{
-        ApplicationContext, AutoConfigurationStatus, ConfigBuilder, Diagnostic, Error,
-        LifecycleFuture, LifecycleHook, MADS011, MADS020, Mads, MapSource, Module, SourceLocation,
+        ApplicationContext, AutoConfigurationStatus, ConfigBuilder, Diagnostic, Error, Furnace,
+        LifecycleFuture, LifecycleHook, MADS011, MADS020, Mads, MapSource, SourceLocation,
     };
     use tokio::net::TcpListener;
 
@@ -475,12 +475,26 @@ mod tests {
             .unwrap();
     }
 
-    #[mads_core::module]
+    #[mads_core::furnace]
     struct ServerTestApp;
 
+    impl mads_core::Furnace for ServerTestApp {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.controller::<PreflightController>()
+                .provide::<RouterPreflightEvents>()
+                .provide::<PreflightPermit>()
+        }
+    }
+
     mod raw_router {
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub(super) struct App;
+
+        impl mads_core::Furnace for App {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                mads_core::FurnaceRegistration::new(self)
+            }
+        }
     }
 
     mod standard_run {
@@ -500,13 +514,25 @@ mod tests {
                 }
             }
 
-            #[mads_core::module]
+            #[mads_core::furnace]
             pub struct RoutedApp;
+
+            impl mads_core::Furnace for RoutedApp {
+                fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                    self.controller::<RoutedController>()
+                }
+            }
         }
 
         pub(super) mod empty {
-            #[mads_core::module]
+            #[mads_core::furnace]
             pub struct EmptyApp;
+
+            impl mads_core::Furnace for EmptyApp {
+                fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                    mads_core::FurnaceRegistration::new(self)
+                }
+            }
         }
     }
 
@@ -546,12 +572,18 @@ mod tests {
             }
         }
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub(super) struct UnreachableJwtModule;
+
+        impl mads_core::Furnace for UnreachableJwtModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.controller::<UnreachableController>()
+            }
+        }
     }
 
     struct PreflightController;
-    struct PreflightPermit;
+    struct PreflightPermit(bool);
 
     #[derive(Clone)]
     struct RouterPreflightEvents(Arc<Mutex<Vec<&'static str>>>);
@@ -565,7 +597,13 @@ mod tests {
         context: &crate::__private::RouterBuildContext<'_>,
         routes: &mut crate::__private::ValidatedRouteIter<'_>,
     ) -> mads_core::Result<axum::Router> {
-        let _ = context.application().resolve::<PreflightPermit>()?;
+        if !context.application().resolve::<PreflightPermit>()?.0 {
+            return Err(Error::new(Diagnostic::new(
+                mads_core::MADS003,
+                "test preflight rejected",
+                "the registrar has not been permitted",
+            )));
+        }
         context
             .application()
             .resolve::<RouterPreflightEvents>()?
@@ -650,9 +688,10 @@ mod tests {
         builder
             .provide(RouterPreflightEvents(router_preflight_events))
             .unwrap();
-        if preflight_permitted {
-            builder.provide(PreflightPermit).unwrap();
-        }
+        builder.provide(PreflightController).unwrap();
+        builder
+            .provide(PreflightPermit(preflight_permitted))
+            .unwrap();
         builder.build().await.unwrap()
     }
 
@@ -660,7 +699,7 @@ mod tests {
         SocketAddr::from((Ipv4Addr::LOCALHOST, 0))
     }
 
-    fn automatic_standard_builder<M: Module>(host: &str) -> mads_core::MadsBuilder {
+    fn automatic_standard_builder<M: Furnace>(host: &str) -> mads_core::MadsBuilder {
         let config = ConfigBuilder::new()
             .source(MapSource::new(
                 "test",

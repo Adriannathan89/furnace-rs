@@ -2,7 +2,7 @@
 
 use framework::prelude::*;
 
-#[repository]
+#[storage]
 struct MainRepository {
     value: u32,
 }

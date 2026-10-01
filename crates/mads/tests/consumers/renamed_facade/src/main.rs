@@ -8,10 +8,17 @@ struct Settings {
     host: String,
 }
 
-#[module]
+#[furnace]
 struct AppModule;
 
-#[repository]
+impl framework::Furnace for AppModule {
+    fn register(self) -> framework::FurnaceRegistration<Self> {
+        self.provide::<RenamedRepository>().controller::<Controller>().controller::<ExtractorController>()
+    }
+}
+
+
+#[storage]
 struct RenamedRepository {
     value: u32,
 }

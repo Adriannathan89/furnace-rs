@@ -2,10 +2,17 @@
 
 use mads_core::AutoConfigurationStatus;
 
-#[mads_core::module]
+#[mads_core::furnace]
 struct AppModule;
 
-#[mads_core::repository]
+impl mads_core::Furnace for AppModule {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        self.provide::<Repository>()
+    }
+}
+
+
+#[mads_core::storage]
 struct Repository;
 
 fn framework_result() -> mads_core::Result<()> {

@@ -6,7 +6,7 @@ use std::error::Error as _;
 use std::io;
 
 use mads_common::core::{Diagnostic, Error, MADS020, Mads};
-use mads_common::{HttpRuntimeError, MadsRunExt, serve_router};
+use mads_common::{HttpRuntimeError, MadsBurnExt, serve_router};
 
 mod standard_run {
     #[mads_common::routes]
@@ -24,8 +24,14 @@ mod standard_run {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct RoutedApp;
+
+    impl mads_common::core::Furnace for RoutedApp {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<RoutedController>()
+        }
+    }
 }
 
 fn core_error(message: &str) -> Error {
@@ -68,7 +74,7 @@ async fn serve_router_is_available_for_raw_native_routers() {
 
 #[test]
 fn run_extension_is_available_for_root_modules() {
-    let runtime = Mads::run::<standard_run::RoutedApp>();
+    let runtime = Mads::burn::<standard_run::RoutedApp>();
 
     drop(runtime);
 }

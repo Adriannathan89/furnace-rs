@@ -397,7 +397,7 @@ async fn supervise(
         ensure_child_is_running(child)?;
         if Instant::now() >= handshake_deadline {
             return Err(inspection_error(
-                "the application did not acknowledge the inspection request in time; private inspection requires the standard Mads::run::<AppModule>() entry point",
+                "the application did not acknowledge the inspection request in time; private inspection requires the standard Mads::burn::<AppModule>() entry point",
             ));
         }
         tokio::time::sleep(timeouts.poll).await;
@@ -435,7 +435,7 @@ fn ensure_child_is_running(child: &mut Child) -> Result<(), CliError> {
         inspection_error("could not observe the inspection application").with_source(error)
     })? {
         Some(status) => Err(inspection_error(format!(
-            "the application exited before completing private inspection ({status}); private inspection requires the standard Mads::run::<AppModule>() entry point"
+            "the application exited before completing private inspection ({status}); private inspection requires the standard Mads::burn::<AppModule>() entry point"
         ))),
         None => Ok(()),
     }
