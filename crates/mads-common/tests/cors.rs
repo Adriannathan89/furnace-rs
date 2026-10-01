@@ -239,7 +239,7 @@ mod passport {
         }
     }
 
-    #[mads_common::core::service]
+    #[mads_common::core::burner]
     struct Strategy;
 
     #[passport_strategy(name = "cors")]
@@ -276,8 +276,14 @@ mod passport {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     struct GuardedApplication;
+
+    impl mads_common::core::Furnace for GuardedApplication {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.provide::<Strategy>().controller::<GuardedController>()
+        }
+    }
 
     #[tokio::test]
     async fn preflight_bypasses_passport_guard_and_strategy_before_actual_requests_run_them() {

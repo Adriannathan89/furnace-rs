@@ -40,6 +40,14 @@ pub(crate) fn select_scoped_providers(
             .copied()
             .filter(|descriptor| descriptor.type_id() == member.type_id)
             .collect();
+        let known_controller = matching.iter().any(|descriptor| descriptor.is_controller());
+        if (member.controller && !matching.is_empty() && !known_controller)
+            || (known_controller && graph.exports(owner.type_id(), member.type_id))
+        {
+            diagnostics.push(Diagnostic::new(crate::MADS008, "invalid furnace controller registration",
+                format!("furnace `{}` must register controller metadata with `.controller::<T>()` and cannot export controllers", owner.type_name()))
+                .with_subject(member.type_name).with_location(member.location));
+        }
         let supplied = satisfied
             .iter()
             .find(|provider| provider.type_id == member.type_id);

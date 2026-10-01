@@ -16,7 +16,7 @@ use mads_common::{
     ClaimsPrincipal, JwtClaims, JwtService, JwtSignOptions, JwtTokenKind, MADS130, PassportContext,
     PassportPrincipal, PassportResult, PassportStrategy, PassportStrategyCatalog,
     PassportStrategyPreflight, build_router,
-    core::{Config, ConfigBuilder, Mads, MapSource, Module, Result},
+    core::{Config, ConfigBuilder, Furnace, Mads, MapSource, Result},
 };
 use tower::ServiceExt;
 
@@ -70,7 +70,7 @@ no_permissions!(SecondPrincipal);
 mod first {
     use super::*;
 
-    #[mads_core::service]
+    #[mads_core::burner]
     pub struct FirstJwtStrategy;
 
     #[mads_common::passport_strategy(name = "jwt")]
@@ -106,14 +106,22 @@ mod first {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct FirstModule;
+
+    impl mads_common::core::Furnace for FirstModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.provide::<FirstJwtStrategy>()
+                .controller::<FirstController>()
+                .export::<FirstJwtStrategy>()
+        }
+    }
 }
 
 mod second {
     use super::*;
 
-    #[mads_core::service]
+    #[mads_core::burner]
     pub struct SecondJwtStrategy;
 
     #[mads_common::passport_strategy(name = "jwt")]
@@ -149,14 +157,22 @@ mod second {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct SecondModule;
+
+    impl mads_common::core::Furnace for SecondModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.provide::<SecondJwtStrategy>()
+                .controller::<SecondController>()
+                .export::<SecondJwtStrategy>()
+        }
+    }
 }
 
 mod candidate_one {
     use super::*;
 
-    #[mads_core::service]
+    #[mads_core::burner]
     pub struct CandidateOneJwtStrategy;
 
     #[mads_common::passport_strategy(name = "jwt")]
@@ -175,14 +191,21 @@ mod candidate_one {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct CandidateOneModule;
+
+    impl mads_common::core::Furnace for CandidateOneModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.provide::<CandidateOneJwtStrategy>()
+                .export::<CandidateOneJwtStrategy>()
+        }
+    }
 }
 
 mod candidate_two {
     use super::*;
 
-    #[mads_core::service]
+    #[mads_core::burner]
     pub struct CandidateTwoJwtStrategy;
 
     #[mads_common::passport_strategy(name = "jwt")]
@@ -201,8 +224,15 @@ mod candidate_two {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct CandidateTwoModule;
+
+    impl mads_common::core::Furnace for CandidateTwoModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.provide::<CandidateTwoJwtStrategy>()
+                .export::<CandidateTwoJwtStrategy>()
+        }
+    }
 }
 
 mod two_candidates {
@@ -224,17 +254,22 @@ mod two_candidates {
         }
     }
 
-    #[mads_common::core::module(imports = [
-        super::candidate_one::CandidateOneModule,
-        super::candidate_two::CandidateTwoModule,
-    ])]
+    #[mads_common::core::furnace]
     pub struct CandidateGuardModule;
+
+    impl mads_common::core::Furnace for CandidateGuardModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<CandidateController>()
+                .import(super::candidate_one::CandidateOneModule)
+                .import(super::candidate_two::CandidateTwoModule)
+        }
+    }
 }
 
 mod private_strategy {
     use super::*;
 
-    #[mads_core::service]
+    #[mads_core::burner]
     struct PrivateJwtStrategy;
 
     #[mads_common::passport_strategy(name = "jwt")]
@@ -253,8 +288,14 @@ mod private_strategy {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct PrivateStrategyModule;
+
+    impl mads_common::core::Furnace for PrivateStrategyModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.provide::<PrivateJwtStrategy>()
+        }
+    }
 }
 
 mod private_import {
@@ -276,14 +317,21 @@ mod private_import {
         }
     }
 
-    #[mads_common::core::module(imports = [super::private_strategy::PrivateStrategyModule])]
+    #[mads_common::core::furnace]
     pub struct PrivateGuardModule;
+
+    impl mads_common::core::Furnace for PrivateGuardModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<PrivateController>()
+                .import(super::private_strategy::PrivateStrategyModule)
+        }
+    }
 }
 
 mod transitive_strategy {
     use super::*;
 
-    #[mads_core::service]
+    #[mads_core::burner]
     pub struct TransitiveJwtStrategy;
 
     #[mads_common::passport_strategy(name = "jwt")]
@@ -302,13 +350,26 @@ mod transitive_strategy {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct TransitiveStrategyModule;
+
+    impl mads_common::core::Furnace for TransitiveStrategyModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.provide::<TransitiveJwtStrategy>()
+                .export::<TransitiveJwtStrategy>()
+        }
+    }
 }
 
 mod transitive_import {
-    #[mads_common::core::module(imports = [super::transitive_strategy::TransitiveStrategyModule])]
+    #[mads_common::core::furnace]
     pub struct MiddleModule;
+
+    impl mads_common::core::Furnace for MiddleModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.import(super::transitive_strategy::TransitiveStrategyModule)
+        }
+    }
 }
 
 mod transitive_guard {
@@ -330,8 +391,15 @@ mod transitive_guard {
         }
     }
 
-    #[mads_common::core::module(imports = [super::transitive_import::MiddleModule])]
+    #[mads_common::core::furnace]
     pub struct TransitiveGuardModule;
+
+    impl mads_common::core::Furnace for TransitiveGuardModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<TransitiveController>()
+                .import(super::transitive_import::MiddleModule)
+        }
+    }
 }
 
 mod no_custom {
@@ -353,8 +421,14 @@ mod no_custom {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct NoCustomModule;
+
+    impl mads_common::core::Furnace for NoCustomModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<NoCustomController>()
+        }
+    }
 }
 
 mod unimported_nested_strategy {
@@ -379,7 +453,7 @@ mod unimported_nested_strategy {
     pub mod child {
         use super::*;
 
-        #[mads_core::service]
+        #[mads_core::burner]
         pub struct ChildJwtStrategy;
 
         #[mads_common::passport_strategy(name = "jwt")]
@@ -398,56 +472,124 @@ mod unimported_nested_strategy {
             }
         }
 
-        #[mads_common::core::module]
+        #[mads_common::core::furnace]
         pub struct ChildStrategyModule;
+
+        impl mads_common::core::Furnace for ChildStrategyModule {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.provide::<ChildJwtStrategy>()
+                    .export::<ChildJwtStrategy>()
+            }
+        }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct ParentGuardModule;
+
+    impl mads_common::core::Furnace for ParentGuardModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<ParentController>()
+        }
+    }
 }
 
 mod roots {
     pub(super) mod first {
-        #[mads_common::core::module(imports = [super::super::first::FirstModule])]
+        #[mads_common::core::furnace]
         pub struct FirstRoot;
+
+        impl mads_common::core::Furnace for FirstRoot {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.provide::<mads_common::JwtService>()
+                    .export::<mads_common::JwtService>()
+                    .global()
+                    .import(super::super::first::FirstModule)
+            }
+        }
     }
 
     pub(super) mod second {
-        #[mads_common::core::module(imports = [super::super::second::SecondModule])]
+        #[mads_common::core::furnace]
         pub struct SecondRoot;
+
+        impl mads_common::core::Furnace for SecondRoot {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.provide::<mads_common::JwtService>()
+                    .export::<mads_common::JwtService>()
+                    .global()
+                    .import(super::super::second::SecondModule)
+            }
+        }
     }
 
     pub(super) mod candidate {
-        #[mads_common::core::module(imports = [
-            super::super::two_candidates::CandidateGuardModule,
-        ])]
+        #[mads_common::core::furnace]
         pub struct CandidateRoot;
+
+        impl mads_common::core::Furnace for CandidateRoot {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.provide::<mads_common::JwtService>()
+                    .export::<mads_common::JwtService>()
+                    .global()
+                    .import(super::super::two_candidates::CandidateGuardModule)
+            }
+        }
     }
 
     pub(super) mod private {
-        #[mads_common::core::module(imports = [
-            super::super::private_import::PrivateGuardModule,
-        ])]
+        #[mads_common::core::furnace]
         pub struct PrivateRoot;
+
+        impl mads_common::core::Furnace for PrivateRoot {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.provide::<mads_common::JwtService>()
+                    .export::<mads_common::JwtService>()
+                    .global()
+                    .import(super::super::private_import::PrivateGuardModule)
+            }
+        }
     }
 
     pub(super) mod transitive {
-        #[mads_common::core::module(imports = [
-            super::super::transitive_guard::TransitiveGuardModule,
-        ])]
+        #[mads_common::core::furnace]
         pub struct TransitiveRoot;
+
+        impl mads_common::core::Furnace for TransitiveRoot {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.provide::<mads_common::JwtService>()
+                    .export::<mads_common::JwtService>()
+                    .global()
+                    .import(super::super::transitive_guard::TransitiveGuardModule)
+            }
+        }
     }
 
     pub(super) mod no_custom {
-        #[mads_common::core::module(imports = [super::super::no_custom::NoCustomModule])]
+        #[mads_common::core::furnace]
         pub struct NoCustomRoot;
+
+        impl mads_common::core::Furnace for NoCustomRoot {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.provide::<mads_common::JwtService>()
+                    .export::<mads_common::JwtService>()
+                    .global()
+                    .import(super::super::no_custom::NoCustomModule)
+            }
+        }
     }
 
     pub(super) mod nested {
-        #[mads_common::core::module(imports = [
-            super::super::unimported_nested_strategy::ParentGuardModule,
-        ])]
+        #[mads_common::core::furnace]
         pub struct NestedRoot;
+
+        impl mads_common::core::Furnace for NestedRoot {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.provide::<mads_common::JwtService>()
+                    .export::<mads_common::JwtService>()
+                    .global()
+                    .import(super::super::unimported_nested_strategy::ParentGuardModule)
+            }
+        }
     }
 }
 
@@ -461,7 +603,7 @@ fn config() -> Config {
         .unwrap()
 }
 
-async fn application_for<M: Module>() -> Mads {
+async fn application_for<M: Furnace>() -> Mads {
     let config = config();
     let jwt = JwtService::from_config(&config).unwrap();
     let mut builder = Mads::builder_with_config(config);
@@ -478,7 +620,7 @@ fn authenticated_request(path: &str, token: &str) -> Request<Body> {
         .unwrap()
 }
 
-fn preflight_for<M: Module>() -> Result<PassportStrategyPreflight<'static>> {
+fn preflight_for<M: Furnace>() -> Result<PassportStrategyPreflight<'static>> {
     let graph = mads_common::core::__private::build_module_graph::<M>()?;
     mads_common::__private::preflight_scoped(Some(&graph))
 }

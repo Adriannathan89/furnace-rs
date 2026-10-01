@@ -68,10 +68,10 @@ fn unreachable_adapter<'a>(
     Box::pin(async { panic!("the metadata-only adapter must not be invoked") })
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct UserLookup;
 
-#[mads_core::service]
+#[mads_core::burner]
 struct AppJwtStrategy {
     users: UserLookup,
 }
@@ -93,7 +93,7 @@ impl PassportStrategy for AppJwtStrategy {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct AlphaStrategy;
 
 #[mads_common::passport_strategy(name = "alpha")]

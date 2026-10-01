@@ -59,7 +59,7 @@ impl PassportPrincipal for PolicyPrincipal {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct PolicyStrategy;
 
 #[passport_strategy(name = "jwt")]

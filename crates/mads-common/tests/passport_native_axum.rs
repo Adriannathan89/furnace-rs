@@ -57,7 +57,7 @@ impl PassportPrincipal for NativePrincipal {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct NativeStrategy;
 
 #[passport_strategy(name = "native")]

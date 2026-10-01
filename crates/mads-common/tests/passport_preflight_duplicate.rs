@@ -25,7 +25,7 @@ impl PassportPrincipal for Principal {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct FirstStrategy;
 
 #[mads_common::passport_strategy(name = "jwt")]
@@ -44,7 +44,7 @@ impl PassportStrategy for FirstStrategy {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct SecondStrategy;
 
 #[mads_common::passport_strategy(name = "jwt")]
@@ -76,7 +76,7 @@ static LIFECYCLE_STARTS: AtomicUsize = AtomicUsize::new(0);
 
 struct OrdinaryProvider;
 
-#[mads_core::provider]
+#[mads_core::element]
 fn ordinary_provider() -> OrdinaryProvider {
     ORDINARY_CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
     OrdinaryProvider

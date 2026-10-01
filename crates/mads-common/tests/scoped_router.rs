@@ -33,8 +33,14 @@ mod users {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct UserHttpModule;
+
+    impl mads_common::core::Furnace for UserHttpModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<UserController>()
+        }
+    }
 }
 
 mod shared_contracts {
@@ -65,8 +71,14 @@ mod admin {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct AdminHttpModule;
+
+    impl mads_common::core::Furnace for AdminHttpModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<AdminController>()
+        }
+    }
 }
 
 mod duplicate_one {
@@ -87,8 +99,14 @@ mod duplicate_one {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct DuplicateOneHttpModule;
+
+    impl mads_common::core::Furnace for DuplicateOneHttpModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<DuplicateOneController>()
+        }
+    }
 }
 
 mod duplicate_two {
@@ -109,8 +127,14 @@ mod duplicate_two {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct DuplicateTwoHttpModule;
+
+    impl mads_common::core::Furnace for DuplicateTwoHttpModule {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<DuplicateTwoController>()
+        }
+    }
 }
 
 mod nested_controller_scope {
@@ -134,8 +158,14 @@ mod nested_controller_scope {
             }
         }
 
-        #[mads_common::core::module]
+        #[mads_common::core::furnace]
         pub struct ReachableModule;
+
+        impl mads_common::core::Furnace for ReachableModule {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.controller::<ReachableController>()
+            }
+        }
     }
 
     pub mod unimported {
@@ -156,12 +186,24 @@ mod nested_controller_scope {
             }
         }
 
-        #[mads_common::core::module]
+        #[mads_common::core::furnace]
         pub struct UnreachableModule;
+
+        impl mads_common::core::Furnace for UnreachableModule {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.controller::<UnreachableController>()
+            }
+        }
     }
 
-    #[mads_common::core::module(imports = [reachable::ReachableModule])]
+    #[mads_common::core::furnace]
     pub struct ParentApplication;
+
+    impl mads_common::core::Furnace for ParentApplication {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.import(reachable::ReachableModule)
+        }
+    }
 }
 
 mod nested_route_scope {
@@ -176,8 +218,14 @@ mod nested_route_scope {
             async fn unreachable(&self) -> &'static str;
         }
 
-        #[mads_common::core::module]
+        #[mads_common::core::furnace]
         pub struct UnreachableContractModule;
+
+        impl mads_common::core::Furnace for UnreachableContractModule {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                mads_common::core::FurnaceRegistration::new(self)
+            }
+        }
     }
 
     pub mod reachable {
@@ -205,34 +253,60 @@ mod nested_route_scope {
             }
         }
 
-        #[mads_common::core::module]
+        #[mads_common::core::furnace]
         pub struct ReachableModule;
+
+        impl mads_common::core::Furnace for ReachableModule {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.controller::<ReachableController>()
+            }
+        }
     }
 
-    #[mads_common::core::module(imports = [reachable::ReachableModule])]
+    #[mads_common::core::furnace]
     pub struct ParentApplication;
+
+    impl mads_common::core::Furnace for ParentApplication {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.import(reachable::ReachableModule)
+        }
+    }
 }
 
 mod applications {
     pub(super) mod users {
-        #[mads_common::core::module(imports = [super::super::users::UserHttpModule])]
+        #[mads_common::core::furnace]
         pub struct UsersApplication;
+
+        impl mads_common::core::Furnace for UsersApplication {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.import(super::super::users::UserHttpModule)
+            }
+        }
     }
 
     pub(super) mod users_and_admin {
-        #[mads_common::core::module(imports = [
-            super::super::users::UserHttpModule,
-            super::super::admin::AdminHttpModule,
-        ])]
+        #[mads_common::core::furnace]
         pub struct UsersAndAdminApplication;
+
+        impl mads_common::core::Furnace for UsersAndAdminApplication {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.import(super::super::users::UserHttpModule)
+                    .import(super::super::admin::AdminHttpModule)
+            }
+        }
     }
 
     pub(super) mod conflicting {
-        #[mads_common::core::module(imports = [
-            super::super::duplicate_one::DuplicateOneHttpModule,
-            super::super::duplicate_two::DuplicateTwoHttpModule,
-        ])]
+        #[mads_common::core::furnace]
         pub struct ConflictingApplication;
+
+        impl mads_common::core::Furnace for ConflictingApplication {
+            fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+                self.import(super::super::duplicate_one::DuplicateOneHttpModule)
+                    .import(super::super::duplicate_two::DuplicateTwoHttpModule)
+            }
+        }
     }
 }
 
@@ -311,7 +385,7 @@ async fn rooted_router_excludes_unimported_child_controllers_under_a_reachable_p
 }
 
 #[tokio::test]
-async fn rooted_router_excludes_routes_owned_by_unimported_child_modules() {
+async fn registered_controller_keeps_contracts_from_other_rust_namespaces() {
     let mut builder = Mads::builder();
     builder
         .root::<nested_route_scope::ParentApplication>()
@@ -325,7 +399,7 @@ async fn rooted_router_excludes_routes_owned_by_unimported_child_modules() {
     );
     assert_eq!(
         request_status(router, "/nested-unreachable-contract").await,
-        StatusCode::NOT_FOUND
+        StatusCode::OK
     );
 }
 

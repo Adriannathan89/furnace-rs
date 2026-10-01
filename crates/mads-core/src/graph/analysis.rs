@@ -190,6 +190,7 @@ fn descriptor_order(left: &ProviderDescriptor, right: &ProviderDescriptor) -> Or
 fn exact_identity(left: &ProviderDescriptor, right: &ProviderDescriptor) -> bool {
     left.type_id() == right.type_id()
         && left.kind() == right.kind()
+        && left.is_controller() == right.is_controller()
         && left.type_name() == right.type_name()
         && left.namespace() == right.namespace()
         && left.visibility() == right.visibility()

@@ -54,7 +54,7 @@ struct ContextRecord {
     remote_addr: Option<String>,
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct UserStrategy;
 
 #[passport_strategy(name = "jwt")]

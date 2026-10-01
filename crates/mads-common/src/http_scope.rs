@@ -2,7 +2,7 @@
 
 use std::any::TypeId;
 
-use mads_core::{Catalog, Mads, ModuleDescriptor, ModuleGraph, Result};
+use mads_core::{Mads, ModuleGraph, Result};
 
 use crate::{
     ControllerRouteDescriptor, HttpMethod, RouteCatalog, RouteContractDescriptor, RouteDescriptor,
@@ -180,6 +180,20 @@ impl HttpApplicationScope {
     }
 
     pub(crate) fn for_module_graph(module_graph: Option<&ModuleGraph>) -> Result<Self> {
+        if let Some(graph) = module_graph {
+            for output in graph.registered_controllers() {
+                if !RouteCatalog::controllers()
+                    .iter()
+                    .any(|controller| controller.type_id() == output)
+                {
+                    return Err(mads_core::Error::new(mads_core::Diagnostic::new(
+                        mads_core::MADS008,
+                        "missing registered controller",
+                        "a controller registration has no controller metadata",
+                    )));
+                }
+            }
+        }
         let controllers = match module_graph {
             None => Self::complete_controllers(),
             Some(graph) => Self::rooted_controllers(graph),
@@ -272,45 +286,31 @@ impl HttpApplicationScope {
     }
 
     fn rooted_controllers(graph: &ModuleGraph) -> Vec<ScopedController> {
-        let mut controllers = Vec::new();
-
-        for descriptor in RouteCatalog::controllers() {
-            let Some(owner) = owner_for_namespace(descriptor.namespace()) else {
-                continue;
-            };
-            if !is_reachable(graph, owner.type_id()) {
-                continue;
-            }
-            let context_module = Some(owner.type_id());
-            let mut selected_routes = Vec::new();
-
-            for contract in descriptor.contracts() {
-                for route in contract.routes() {
-                    let route_context = route_context(graph, context_module, route);
-                    if route_context.is_some() {
+        RouteCatalog::controllers()
+            .into_iter()
+            .filter(|descriptor| graph.is_controller(descriptor.type_id()))
+            .map(|descriptor| {
+                let context_module = graph
+                    .owner_of(descriptor.type_id())
+                    .map(|owner| owner.type_id());
+                let selected_routes = descriptor
+                    .contracts()
+                    .iter()
+                    .flat_map(|contract| contract.routes())
+                    .map(|route| {
+                        let identity = RouteIdentity::new(descriptor, route);
                         #[cfg(feature = "jwt")]
-                        let passport_context_module = route.guard().and_then(|guard| {
-                            owner_for_namespace(guard.namespace())
-                                .filter(|owner| is_reachable(graph, owner.type_id()))
-                                .map(ModuleDescriptor::type_id)
-                                .or(route_context)
-                        });
-                        let route = RouteIdentity::new(descriptor, route);
-                        #[cfg(feature = "jwt")]
-                        let route = route.with_passport_context_module(passport_context_module);
-                        selected_routes.push(route);
-                    }
+                        let identity = identity.with_passport_context_module(context_module);
+                        identity
+                    })
+                    .collect();
+                ScopedController {
+                    descriptor,
+                    selected_routes,
+                    context_module,
                 }
-            }
-
-            controllers.push(ScopedController {
-                descriptor,
-                selected_routes,
-                context_module,
-            });
-        }
-
-        controllers
+            })
+            .collect()
     }
 
     #[cfg(feature = "jwt")]
@@ -346,42 +346,4 @@ impl HttpApplicationScope {
             })
             .collect()
     }
-}
-
-fn route_context(
-    graph: &ModuleGraph,
-    controller_context: Option<TypeId>,
-    route: &RouteDescriptor,
-) -> Option<TypeId> {
-    match owner_for_namespace(route.namespace()) {
-        Some(owner) if is_reachable(graph, owner.type_id()) => Some(owner.type_id()),
-        Some(_) => None,
-        None => controller_context,
-    }
-}
-
-pub(crate) fn owner_for_namespace(namespace: Option<&str>) -> Option<&'static ModuleDescriptor> {
-    let namespace = namespace?;
-    Catalog::modules()
-        .into_iter()
-        .filter(|module| {
-            module
-                .namespace()
-                .is_some_and(|owner| namespace_contains(owner, namespace))
-        })
-        .max_by_key(|module| module.namespace().map_or(0, str::len))
-}
-
-fn is_reachable(graph: &ModuleGraph, module: TypeId) -> bool {
-    graph
-        .modules()
-        .iter()
-        .any(|candidate| candidate.type_id() == module)
-}
-
-fn namespace_contains(parent: &str, child: &str) -> bool {
-    child == parent
-        || child
-            .strip_prefix(parent)
-            .is_some_and(|suffix| suffix.starts_with("::"))
 }

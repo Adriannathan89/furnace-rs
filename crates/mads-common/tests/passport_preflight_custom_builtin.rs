@@ -20,7 +20,7 @@ impl PassportPrincipal for UserClaims {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct CustomJwtStrategy;
 
 #[mads_common::passport_strategy(name = "jwt")]

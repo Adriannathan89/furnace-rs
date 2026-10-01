@@ -9,11 +9,11 @@ use std::sync::{Arc, OnceLock};
 
 use axum::http::Extensions;
 use mads_core::{
-    ApplicationContext, Catalog, Diagnostic, Error, ModuleGraph, ProviderDescriptor,
-    ProviderVisibility, Result, SourceLocation,
+    ApplicationContext, Catalog, Diagnostic, Error, ModuleGraph, ProviderDescriptor, Result,
+    SourceLocation,
 };
 
-use crate::http_scope::{ScopedGuard, owner_for_namespace};
+use crate::http_scope::ScopedGuard;
 use crate::{JwtClaims, JwtTokenKind, VerifiedJwt};
 
 use super::{
@@ -739,29 +739,12 @@ fn scoped_strategy_visible(
     module_graph: Option<&ModuleGraph>,
     guard_context: Option<TypeId>,
     strategy: &PassportStrategyDescriptor,
-    providers: &[&'static ProviderDescriptor],
+    _providers: &[&'static ProviderDescriptor],
 ) -> bool {
     let (Some(graph), Some(guard_context)) = (module_graph, guard_context) else {
         return true;
     };
-    let Some(namespace) = strategy.namespace() else {
-        return false;
-    };
-    let Some(strategy_owner) = owner_for_namespace(Some(namespace)) else {
-        return false;
-    };
-    let provider = providers
-        .iter()
-        .copied()
-        .find(|provider| provider_matches_strategy(provider, strategy))
-        .expect("strategy metadata was validated before scoped resolution");
-
-    strategy_visible(
-        graph,
-        guard_context,
-        strategy_owner.type_id(),
-        provider.visibility(),
-    )
+    graph.can_access(guard_context, strategy.provider_type_id())
 }
 
 fn provider_matches_strategy(
@@ -770,17 +753,6 @@ fn provider_matches_strategy(
 ) -> bool {
     provider.type_id() == strategy.provider_type_id()
         && provider.runtime_type_name() == Some(strategy.provider_type_name())
-}
-
-fn strategy_visible(
-    graph: &ModuleGraph,
-    guard_context: TypeId,
-    strategy_owner: TypeId,
-    provider_visibility: ProviderVisibility,
-) -> bool {
-    guard_context == strategy_owner
-        || (provider_visibility == ProviderVisibility::Public
-            && graph.directly_imports(guard_context, strategy_owner))
 }
 
 fn resolve_custom_strategy<'a>(

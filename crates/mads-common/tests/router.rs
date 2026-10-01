@@ -32,8 +32,14 @@ mod cors_routes {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct CorsApplication;
+
+    impl mads_common::core::Furnace for CorsApplication {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<CorsController>()
+        }
+    }
 }
 
 fn cors_config() -> Config {

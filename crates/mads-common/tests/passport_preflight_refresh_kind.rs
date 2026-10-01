@@ -22,7 +22,7 @@ impl PassportPrincipal for RefreshPrincipal {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct IncorrectRefreshStrategy;
 
 #[mads_common::passport_strategy(name = "jwt-refresh")]

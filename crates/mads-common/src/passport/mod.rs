@@ -28,7 +28,7 @@
 //!     }
 //! }
 //!
-//! #[mads_core::service]
+//! #[mads_core::burner]
 //! struct AccessStrategy;
 //! #[passport_strategy(name = "jwt")]
 //! impl PassportStrategy for AccessStrategy {
@@ -44,7 +44,7 @@
 //!     }
 //! }
 //!
-//! #[mads_core::service]
+//! #[mads_core::burner]
 //! struct RefreshStrategy;
 //! #[passport_strategy(name = "jwt-refresh")]
 //! impl PassportStrategy for RefreshStrategy {

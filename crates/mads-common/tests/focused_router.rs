@@ -1,4 +1,4 @@
-//! Module-free selected controller routing.
+//! Furnace-free selected controller routing.
 #![cfg(feature = "http")]
 #![allow(missing_docs)]
 
@@ -38,11 +38,11 @@ impl OtherRoutes for Other {
         panic!("unselected route ran")
     }
 }
-#[mads_core::service]
+#[mads_core::burner]
 struct NoRoutes;
-#[mads_core::service]
+#[mads_core::burner]
 struct Invalid;
-#[mads_core::service]
+#[mads_core::burner]
 struct Ambiguous;
 fn invalid_id() -> TypeId {
     TypeId::of::<Invalid>()

@@ -133,6 +133,7 @@ impl DependencyDescriptor {
 
 /// Describes a statically declared provider and its constructor.
 pub struct ProviderDescriptor {
+    controller: bool,
     kind: ProviderKind,
     type_name: &'static str,
     type_id: fn() -> TypeId,
@@ -157,6 +158,7 @@ impl ProviderDescriptor {
         constructor: ProviderConstructor,
     ) -> Self {
         Self {
+            controller: false,
             kind,
             type_name,
             type_id,
@@ -168,6 +170,20 @@ impl ProviderDescriptor {
             constructor,
             lifecycle_constructor: None,
         }
+    }
+
+    /// Marks constructor metadata emitted by a managed controller declaration.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn with_controller(mut self) -> Self {
+        self.controller = true;
+        self
+    }
+
+    /// Returns whether this declaration describes a managed controller.
+    #[doc(hidden)]
+    pub const fn is_controller(&self) -> bool {
+        self.controller
     }
 
     /// Attaches the constructor that retains lifecycle registrations.

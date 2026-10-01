@@ -1207,7 +1207,7 @@ mod tests {
         body::Body,
         http::{Request, StatusCode, header::AUTHORIZATION},
     };
-    use mads_core::{Config, ConfigBuilder, Mads, MapSource, Module};
+    use mads_core::{Config, ConfigBuilder, Furnace, Mads, MapSource};
     use tower::ServiceExt;
 
     use super::{RouterBuildContext, ValidatedController, validate_scoped_descriptors};
@@ -1249,7 +1249,7 @@ mod tests {
     mod first {
         use super::*;
 
-        #[mads_core::service]
+        #[mads_core::burner]
         pub struct FirstStrategy;
 
         #[crate::passport_strategy(name = "jwt")]
@@ -1282,14 +1282,22 @@ mod tests {
             }
         }
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct FirstModule;
+
+        impl mads_core::Furnace for FirstModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<FirstStrategy>()
+                    .controller::<FirstController>()
+                    .export::<FirstStrategy>()
+            }
+        }
     }
 
     mod second {
         use super::*;
 
-        #[mads_core::service]
+        #[mads_core::burner]
         pub struct SecondStrategy;
 
         #[crate::passport_strategy(name = "jwt")]
@@ -1322,14 +1330,22 @@ mod tests {
             }
         }
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct SecondModule;
+
+        impl mads_core::Furnace for SecondModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<SecondStrategy>()
+                    .controller::<SecondController>()
+                    .export::<SecondStrategy>()
+            }
+        }
     }
 
     mod foreign {
         use super::*;
 
-        #[mads_core::service]
+        #[mads_core::burner]
         pub struct ForeignStrategy;
 
         #[crate::passport_strategy(name = "jwt")]
@@ -1349,28 +1365,60 @@ mod tests {
             }
         }
 
-        #[mads_core::module]
+        #[mads_core::furnace]
         pub struct ForeignModule;
+
+        impl mads_core::Furnace for ForeignModule {
+            fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                self.provide::<ForeignStrategy>()
+                    .export::<ForeignStrategy>()
+            }
+        }
     }
 
     mod roots {
         pub(super) mod first {
-            #[mads_core::module(imports = [super::super::first::FirstModule])]
+            #[mads_core::furnace]
             pub struct FirstRoot;
+
+            impl mads_core::Furnace for FirstRoot {
+                fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                    self.provide::<crate::JwtService>()
+                        .export::<crate::JwtService>()
+                        .global()
+                        .import(super::super::first::FirstModule)
+                }
+            }
         }
 
         pub(super) mod second {
-            #[mads_core::module(imports = [super::super::second::SecondModule])]
+            #[mads_core::furnace]
             pub struct SecondRoot;
+
+            impl mads_core::Furnace for SecondRoot {
+                fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                    self.provide::<crate::JwtService>()
+                        .export::<crate::JwtService>()
+                        .global()
+                        .import(super::super::second::SecondModule)
+                }
+            }
         }
 
         pub(super) mod combined {
-            #[mads_core::module(imports = [
-                super::super::first::FirstModule,
-                super::super::second::SecondModule,
-                super::super::foreign::ForeignModule,
-            ])]
+            #[mads_core::furnace]
             pub struct CombinedRoot;
+
+            impl mads_core::Furnace for CombinedRoot {
+                fn register(self) -> mads_core::FurnaceRegistration<Self> {
+                    self.provide::<crate::JwtService>()
+                        .export::<crate::JwtService>()
+                        .global()
+                        .import(super::super::first::FirstModule)
+                        .import(super::super::second::SecondModule)
+                        .import(super::super::foreign::ForeignModule)
+                }
+            }
         }
     }
 
@@ -1384,7 +1432,7 @@ mod tests {
             .unwrap()
     }
 
-    async fn application_for<M: Module>() -> Mads {
+    async fn application_for<M: Furnace>() -> Mads {
         let config = config();
         let jwt = JwtService::from_config(&config).unwrap();
         let mut builder = Mads::builder_with_config(config);

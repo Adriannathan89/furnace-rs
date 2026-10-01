@@ -34,7 +34,7 @@ static LIFECYCLE_STARTS: AtomicUsize = AtomicUsize::new(0);
 
 struct OrdinaryProvider;
 
-#[mads_core::provider]
+#[mads_core::element]
 fn ordinary_provider() -> OrdinaryProvider {
     ORDINARY_CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
     OrdinaryProvider

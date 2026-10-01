@@ -42,7 +42,7 @@ impl PassportPrincipal for ErrorPrincipal {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct ErrorStrategy;
 
 #[passport_strategy(name = "jwt")]

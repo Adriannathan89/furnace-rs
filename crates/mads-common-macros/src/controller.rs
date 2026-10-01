@@ -287,6 +287,7 @@ fn expand_controller_with_common(
                 )
                 .with_runtime_type_name(|| ::core::any::type_name::<#ident>())
                 .with_namespace(module_path!())
+                .with_controller()
             }
 
             #core::__private::inventory::submit! {

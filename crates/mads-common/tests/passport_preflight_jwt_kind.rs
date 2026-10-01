@@ -22,7 +22,7 @@ impl PassportPrincipal for AccessPrincipal {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct IncorrectAccessStrategy;
 
 #[mads_common::passport_strategy(name = "jwt")]

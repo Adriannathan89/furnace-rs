@@ -52,7 +52,7 @@ impl PassportPrincipal for MismatchedPrincipal {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct AccessStrategy;
 
 #[mads_common::passport_strategy(name = "jwt")]
@@ -72,7 +72,7 @@ impl PassportStrategy for AccessStrategy {
     }
 }
 
-#[mads_core::service]
+#[mads_core::burner]
 struct RefreshStrategy;
 
 #[mads_common::passport_strategy(name = "jwt-refresh")]
@@ -135,7 +135,7 @@ static LIFECYCLE_STARTS: AtomicUsize = AtomicUsize::new(0);
 
 struct OrdinaryProvider;
 
-#[mads_core::provider]
+#[mads_core::element]
 fn ordinary_provider() -> OrdinaryProvider {
     ORDINARY_CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
     OrdinaryProvider

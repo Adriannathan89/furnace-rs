@@ -8,8 +8,8 @@ use mads_common::__private::{
     load_standard_config_from_for_test, server_binding_address_for_test,
 };
 use mads_common::core::{
-    AutoConfigurationReport, AutoConfigurationStatus, Config, ConfigBuilder, EnvSource,
-    GraphAnalysis, MADS020, Mads, MadsBuilder, MapSource, Module, TomlSource,
+    AutoConfigurationReport, AutoConfigurationStatus, Config, ConfigBuilder, EnvSource, Furnace,
+    GraphAnalysis, MADS020, Mads, MadsBuilder, MapSource, TomlSource,
 };
 
 const CORS_ID: &str = "mads.common.http.cors";
@@ -46,13 +46,25 @@ mod routed {
         }
     }
 
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct RoutedApp;
+
+    impl mads_common::core::Furnace for RoutedApp {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            self.controller::<RoutedController>()
+        }
+    }
 }
 
 mod empty {
-    #[mads_common::core::module]
+    #[mads_common::core::furnace]
     pub struct EmptyApp;
+
+    impl mads_common::core::Furnace for EmptyApp {
+        fn register(self) -> mads_common::core::FurnaceRegistration<Self> {
+            mads_common::core::FurnaceRegistration::new(self)
+        }
+    }
 }
 
 fn config(values: impl IntoIterator<Item = (&'static str, &'static str)>) -> Config {
@@ -109,7 +121,7 @@ fn assert_invalid_cors(config: Config, redacted_value: Option<&str>) {
     }
 }
 
-fn automatic_builder<M: Module>(config: Config) -> MadsBuilder {
+fn automatic_builder<M: Furnace>(config: Config) -> MadsBuilder {
     let mut builder = Mads::builder_with_config(config);
     builder.root::<M>().unwrap();
     assert!(enable_automatic_server_for_test(&mut builder));
@@ -122,7 +134,7 @@ fn automatic_rootless_builder(config: Config) -> MadsBuilder {
     builder
 }
 
-fn automatic_cors_builder<M: Module>(config: Config) -> MadsBuilder {
+fn automatic_cors_builder<M: Furnace>(config: Config) -> MadsBuilder {
     let mut builder = Mads::builder_with_config(config);
     builder.root::<M>().unwrap();
     assert!(enable_automatic_cors_for_test(&mut builder));
