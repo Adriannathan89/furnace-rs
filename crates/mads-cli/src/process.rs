@@ -75,8 +75,8 @@ async fn spawn_dev_application_from_parts(
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .kill_on_drop(true);
-    let child = command
-        .spawn()
+    let child = spawn_dev_child(&mut command)
+        .await
         .map_err(|error| process_error("could not start the selected application", error))?;
 
     Ok(ApplicationProcess {
@@ -84,6 +84,23 @@ async fn spawn_dev_application_from_parts(
         control_directory,
         shutdown_path,
     })
+}
+
+async fn spawn_dev_child(command: &mut Command) -> std::io::Result<tokio::process::Child> {
+    // A concurrent fork can briefly inherit a writable descriptor for the
+    // shadow executable even after the copy closes its own descriptor.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+    loop {
+        match command.spawn() {
+            Err(error)
+                if error.kind() == std::io::ErrorKind::ExecutableFileBusy
+                    && tokio::time::Instant::now() < deadline =>
+            {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+            result => return result,
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -184,6 +201,55 @@ mod tests {
 
     const GRACEFUL_FIXTURE: &str = "process::tests::graceful_fixture_child";
     const FORCED_FIXTURE: &str = "process::tests::forced_fixture_child";
+
+    #[cfg(target_os = "linux")]
+    #[tokio::test]
+    async fn spawn_retries_while_executable_is_temporarily_busy() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let root = tempfile::tempdir().unwrap();
+        let executable = root.path().join("application");
+        fs::write(&executable, "#!/bin/sh\nexit 0\n").unwrap();
+        fs::set_permissions(&executable, fs::Permissions::from_mode(0o700)).unwrap();
+        let writer = fs::OpenOptions::new()
+            .write(true)
+            .open(&executable)
+            .unwrap();
+        let mut command = tokio::process::Command::new(&executable);
+        command.kill_on_drop(true);
+        assert_eq!(
+            command.spawn().unwrap_err().kind(),
+            std::io::ErrorKind::ExecutableFileBusy
+        );
+
+        let (child, ()) = tokio::join!(super::spawn_dev_child(&mut command), async move {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            drop(writer);
+        });
+        assert!(child.unwrap().wait().await.unwrap().success());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[tokio::test]
+    async fn spawn_returns_an_error_when_executable_stays_busy() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let root = tempfile::tempdir().unwrap();
+        let executable = root.path().join("application");
+        fs::write(&executable, "#!/bin/sh\nexit 0\n").unwrap();
+        fs::set_permissions(&executable, fs::Permissions::from_mode(0o700)).unwrap();
+        let _writer = fs::OpenOptions::new()
+            .write(true)
+            .open(&executable)
+            .unwrap();
+        let mut command = tokio::process::Command::new(&executable);
+        let error =
+            tokio::time::timeout(Duration::from_secs(2), super::spawn_dev_child(&mut command))
+                .await
+                .expect("a permanently busy executable must not retry forever")
+                .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::ExecutableFileBusy);
+    }
 
     #[tokio::test]
     async fn graceful_stop_notifies_and_reaps_the_child() {
