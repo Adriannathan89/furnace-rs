@@ -37,7 +37,7 @@ Minor findings: none. Historical benchmark concerns are outside this follow-up a
 
 ## External coverage
 
-No test database is provisioned. The existing real PostgreSQL cases require `FURNACE_TEST_DATABASE_URL`; their ignored status is retained and CI must provide the external database coverage.
+At the original seal verification run, four real PostgreSQL cases were ignored because `FURNACE_TEST_DATABASE_URL` was unavailable. After the user authorized minimal local PostgreSQL, all four passed on both stable and Rust 1.94, and all three benchmark database/recovery cases passed. See the [database verification follow-up](2026-10-02-postgres-verification.md). Their source-level `#[ignore]` remains appropriate for ordinary runs without a database; the dedicated acceptance commands explicitly ran them.
 
 ## Handoff
 
