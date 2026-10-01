@@ -18,6 +18,7 @@ const PACKAGES: &[&str] = &[
     "mads-persistence",
     "mads-extra",
     "mads-common",
+    "mads-testing",
     "mads",
     "mads-cli",
 ];
@@ -28,6 +29,7 @@ const PUBLISH_ORDER: &[&str] = &[
     "mads-core",
     "mads-extra",
     "mads-common",
+    "mads-testing",
     "mads",
     "mads-persistence",
     "mads-cli",
@@ -350,6 +352,9 @@ fn package_content_policy_checks_every_workspace_archive() {
         .output()
         .expect("package-content policy should start");
     assert_success(&output);
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("verified package contents for 9 crates")
+    );
 }
 
 #[test]
@@ -712,6 +717,10 @@ fn fixture_manifest(package: &str, version: &str) -> String {
             ("mads-common-macros", "../mads-common-macros"),
             ("mads-core", "../mads-core"),
         ],
+        "mads-testing" => vec![
+            ("mads-core", "../mads-core"),
+            ("mads-common", "../mads-common"),
+        ],
         "mads" => vec![
             ("mads-common", "../mads-common"),
             ("mads-core", "../mads-core"),
@@ -730,6 +739,9 @@ fn fixture_manifest(package: &str, version: &str) -> String {
                 "{dependency} = {{ path = \"{path}\", version = \"={version}\" }}\n"
             ));
         }
+    }
+    if package == "mads" {
+        manifest.push_str(&format!("\n[dev-dependencies]\nmads-testing = {{ path = \"../mads-testing\", version = \"={version}\" }}\n"));
     }
     manifest
 }

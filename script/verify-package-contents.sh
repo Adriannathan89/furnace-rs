@@ -17,6 +17,7 @@ packages=(
   mads-persistence
   mads-extra
   mads-common
+  mads-testing
   mads
   mads-cli
 )
@@ -124,8 +125,13 @@ require_package_specific_content() {
         require_file "$package" "$actual" "$source"
       done
       ;;
+    mads-testing)
+      for source in src/error.rs src/fixture.rs src/http.rs src/response.rs tests/subject_fixture.rs tests/http_fixture.rs; do
+        require_file "$package" "$actual" "$source"
+      done
+      ;;
     mads)
-      for prefix in tests/ui/ tests/ui-configuration/ tests/ui-input/ tests/ui-passport/; do
+      for prefix in tests/ui/ tests/ui-configuration/ tests/ui-input/ tests/ui-passport/ tests/ui-test-attribute/; do
         require_prefix "$package" "$actual" "$prefix"
       done
       ;;

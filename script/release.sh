@@ -59,6 +59,7 @@ packages = (
     "mads-persistence",
     "mads-extra",
     "mads-common",
+    "mads-testing",
     "mads",
     "mads-cli",
 )

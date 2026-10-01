@@ -20,13 +20,15 @@ If the current workspace version is `0.9.0-beta.1`, the result is
 `0.9.0-beta.1`.
 
 The script updates `[workspace.package].version`, every exact internal MADS
-dependency pin, and all eight workspace package records in `Cargo.lock`. It
+dependency pin, and all nine workspace package records in `Cargo.lock`. It
 then runs locked Cargo metadata and workspace checks.
 
-All packages, including `mads-cli`, inherit the workspace version. The script
-rejects a CLI manifest that pins its own version.
+All packages, including `mads-testing` and `mads-cli`, inherit the workspace
+version. The script rejects a CLI manifest that pins its own version.
 
 It does not edit README or changelog content, commit, tag, push, or publish.
 Review and commit the Cargo changes, update the `## [X.Y.Z-beta.N]` changelog
 section, then push the commit to `beta` to use the existing beta publication
 workflow. Configure `CRATES_IO_TOKEN` in the GitHub `beta` environment.
+
+The workflow publishes `mads-testing` after `mads-common` and before `mads`.

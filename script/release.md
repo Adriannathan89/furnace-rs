@@ -21,8 +21,8 @@ internal MADS crate dependency to `=0.9.1`, updates matching MADS package
 records in every `Cargo.lock`, then runs locked Cargo metadata and workspace
 checks.
 
-All eight packages, including `mads-cli`, inherit the workspace version. The
-script rejects a CLI manifest that pins its own version.
+All nine packages, including `mads-testing` and `mads-cli`, inherit the
+workspace version. The script rejects a CLI manifest that pins its own version.
 
 It does not edit README or changelog content, commit, tag, push, or publish.
 Review the Cargo changes and complete the release documentation manually.
@@ -31,3 +31,5 @@ After committing the prepared stable version, push it to `main`. The stable
 publication workflow runs all release gates, publishes missing crate versions
 to crates.io in dependency order, and creates the `v0.9.1` Git tag and stable
 GitHub Release. Configure `CRATES_IO_TOKEN` in the GitHub `stable` environment.
+
+The workflow publishes `mads-testing` after `mads-common` and before `mads`.
