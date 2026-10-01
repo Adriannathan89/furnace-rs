@@ -5,5 +5,12 @@ mod service;
 
 use mads::prelude::*;
 
-#[module]
+#[furnace]
 pub struct AppModule;
+
+impl Furnace for AppModule {
+    fn register(self) -> FurnaceRegistration<Self> {
+        self.provide::<service::AppService>()
+            .controller::<controller::AppController>()
+    }
+}

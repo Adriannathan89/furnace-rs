@@ -1,7 +1,7 @@
 // src/app/service.rs
 use mads::prelude::*;
 
-#[service]
+#[burner]
 pub struct AppService;
 
 impl AppService {

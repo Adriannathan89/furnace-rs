@@ -8,7 +8,7 @@ static CONSTRUCTIONS: AtomicUsize = AtomicUsize::new(0);
 
 struct OtherwiseUnused;
 
-#[mads::provider]
+#[mads::element]
 fn otherwise_unused() -> OtherwiseUnused {
     CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
     OtherwiseUnused

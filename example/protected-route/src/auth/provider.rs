@@ -16,7 +16,7 @@ struct DemoConfig {
 }
 
 // Provider: binds each trait to the implementation used by this application.
-#[provider]
+#[element]
 pub fn user_repository(config: Config) -> mads::core::Result<Arc<dyn UserRepository>> {
     let settings: DemoConfig = config.parse()?;
     Ok(Arc::new(DemoUserRepository::new(
@@ -25,7 +25,7 @@ pub fn user_repository(config: Config) -> mads::core::Result<Arc<dyn UserReposit
     )))
 }
 
-#[provider]
+#[element]
 pub fn auth_service(service: AuthServiceImpl) -> Arc<dyn AuthService> {
     Arc::new(service)
 }

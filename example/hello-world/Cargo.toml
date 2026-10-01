@@ -8,4 +8,4 @@ publish = false
 [workspace]
 
 [dependencies]
-mads = { version = "=0.9.1", default-features = false, features = ["http", "runtime-tokio"] }
+mads = { path = "../../crates/mads", version = "=0.9.2", default-features = false, features = ["http", "runtime-tokio"] }

@@ -3,7 +3,7 @@ use sea_orm::DbErr;
 use super::{model::Post, repository::PostRepository};
 use mads::prelude::*;
 
-#[service]
+#[burner]
 pub struct PostService {
     repository: PostRepository,
 }

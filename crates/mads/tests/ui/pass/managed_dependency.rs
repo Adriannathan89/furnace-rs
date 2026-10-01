@@ -3,7 +3,7 @@
 #[derive(Clone)]
 struct Dependency;
 
-#[mads::service]
+#[mads::burner]
 struct Service {
     dependency: Dependency,
 }

@@ -4,10 +4,16 @@ use mads::prelude::*;
 use mads_persistence::sea_orm::DatabaseModule;
 use post::PostModule;
 
-#[module(imports = [DatabaseModule, PostModule])]
+#[furnace]
 struct AppModule;
+
+impl mads::core::Furnace for AppModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        self.import(DatabaseModule).import(PostModule)
+    }
+}
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<AppModule>().await
+    Mads::burn::<AppModule>().await
 }

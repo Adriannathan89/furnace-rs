@@ -16,7 +16,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-#[mads_core::repository]
+#[mads_core::storage]
 struct Repository {
     db: DatabaseConnection,
 }
@@ -34,14 +34,14 @@ impl Repository {
             .unwrap()
     }
 }
-#[mads_core::service]
+#[mads_core::burner]
 struct Service {
     repo: Repository,
 }
-#[mads_core::service]
+#[mads_core::burner]
 struct Unrelated;
 // Calling a registered production connector is a test failure.
-#[mads_core::provider]
+#[mads_core::element]
 fn production_database() -> DatabaseConnection {
     panic!("production connector ran")
 }
@@ -162,7 +162,7 @@ impl LifecycleHook for Hook {
     }
 }
 struct Managed;
-#[mads_core::provider(lifecycle)]
+#[mads_core::element(lifecycle)]
 async fn managed(events: Events, mode: Mode) -> LifecycleResource<Managed> {
     LifecycleResource::new(Managed)
         .with_infrastructure_hook(

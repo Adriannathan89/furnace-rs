@@ -18,7 +18,7 @@ use std::{
     },
 };
 
-#[mads_core::service]
+#[mads_core::burner]
 struct Service {
     message: String,
 }
@@ -109,7 +109,7 @@ impl LifecycleHook for StopHook {
 }
 #[derive(Clone)]
 struct Resource;
-#[mads_core::provider(lifecycle)]
+#[mads_core::element(lifecycle)]
 async fn resource(stops: Stops) -> LifecycleResource<Resource> {
     LifecycleResource::new(Resource).with_application_hook(StopHook(stops))
 }

@@ -8,7 +8,7 @@ use super::{
 };
 
 // Service: login and identity lookup are application use cases.
-#[service]
+#[burner]
 pub struct AuthServiceImpl {
     repository: Arc<dyn UserRepository>,
     jwt: JwtService,
@@ -35,7 +35,7 @@ impl AuthService for AuthServiceImpl {
     }
 }
 
-#[service]
+#[burner]
 pub struct DemoJwtStrategy {
     service: Arc<dyn AuthService>,
 }

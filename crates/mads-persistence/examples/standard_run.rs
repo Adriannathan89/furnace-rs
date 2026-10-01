@@ -22,14 +22,26 @@ mod delivery {
         }
     }
 
-    #[module]
+    #[furnace]
     pub struct HealthModule;
+
+    impl mads_core::Furnace for HealthModule {
+        fn register(self) -> mads_core::FurnaceRegistration<Self> {
+            self.controller::<HealthController>()
+        }
+    }
 }
 
-#[module(imports = [DatabaseModule, delivery::HealthModule])]
+#[furnace]
 struct AppModule;
+
+impl mads_core::Furnace for AppModule {
+    fn register(self) -> mads_core::FurnaceRegistration<Self> {
+        self.import(DatabaseModule).import(delivery::HealthModule)
+    }
+}
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<AppModule>().await
+    Mads::burn::<AppModule>().await
 }

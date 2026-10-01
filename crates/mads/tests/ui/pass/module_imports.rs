@@ -1,12 +1,26 @@
 use mads::prelude::*;
 
-#[module]
+#[furnace]
 struct FeatureModule;
 
-#[module(imports = [FeatureModule])]
+impl mads::core::Furnace for FeatureModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        mads::core::FurnaceRegistration::new(self)
+    }
+}
+
+
+#[furnace]
 struct AppModule;
 
-fn assert_module<T: Module>() {}
+impl mads::core::Furnace for AppModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        self.import(FeatureModule)
+    }
+}
+
+
+fn assert_module<T: Furnace>() {}
 
 fn main() {
     assert_module::<FeatureModule>();

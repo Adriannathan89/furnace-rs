@@ -1,11 +1,11 @@
 //! Function-level fixture macro and Cargo test discovery.
 #![allow(missing_docs)]
 use mads_testing::sea_orm::{DatabaseConnection, DbBackend, MockDatabase};
-#[mads::repository]
+#[mads::storage]
 struct Repository {
     database: DatabaseConnection,
 }
-#[mads::service]
+#[mads::burner]
 struct Service {
     repository: Repository,
 }

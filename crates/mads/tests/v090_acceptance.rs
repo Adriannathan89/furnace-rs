@@ -44,15 +44,23 @@ mod application {
         pub(super) username: String,
     }
 
-    #[module]
+    #[furnace]
     pub(super) struct AcceptanceModule;
 
-    #[provider]
+    impl mads::core::Furnace for AcceptanceModule {
+        fn register(self) -> mads::core::FurnaceRegistration<Self> {
+            self.provide::<AcceptanceConfig>()
+                .provide::<AcceptanceService>()
+                .controller::<AcceptanceController>()
+        }
+    }
+
+    #[element]
     fn acceptance_config(config: Config) -> mads::core::Result<AcceptanceConfig> {
         Ok(config.parse()?)
     }
 
-    #[service]
+    #[burner]
     pub(super) struct AcceptanceService;
 
     impl AcceptanceService {

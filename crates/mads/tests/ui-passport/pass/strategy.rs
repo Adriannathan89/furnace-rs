@@ -17,10 +17,10 @@ impl PassportPrincipal for UserPrincipal {
     }
 }
 
-#[core::service]
+#[core::burner]
 struct UserLookup;
 
-#[core::service]
+#[core::burner]
 struct AppJwtStrategy {
     users: UserLookup,
 }

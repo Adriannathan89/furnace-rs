@@ -4,7 +4,7 @@ use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, QueryOrder
 
 use super::model::{Post, entity};
 
-#[repository]
+#[storage]
 pub struct PostRepository {
     database: DatabaseConnection,
 }

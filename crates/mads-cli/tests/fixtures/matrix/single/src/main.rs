@@ -15,10 +15,17 @@ impl HealthRoutes for HealthController {
     }
 }
 
-#[mads::module]
+#[mads::furnace]
 struct AppModule;
+
+impl mads::core::Furnace for AppModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        self.controller::<HealthController>()
+    }
+}
+
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<AppModule>().await
+    Mads::burn::<AppModule>().await
 }

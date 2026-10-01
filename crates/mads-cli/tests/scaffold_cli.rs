@@ -90,12 +90,12 @@ fn name_and_templates_render_the_exact_minimal_project_manifest() {
         ),
         (
             "src/main.rs".to_owned(),
-            "// src/main.rs\nmod app;\n\nuse app::AppModule;\nuse mads::prelude::*;\n\n#[mads::main]\nasync fn main() -> Result<(), HttpRuntimeError> {\n    Mads::run::<AppModule>().await\n}\n"
+            "// src/main.rs\nmod app;\n\nuse app::AppModule;\nuse mads::prelude::*;\n\n#[mads::main]\nasync fn main() -> Result<(), HttpRuntimeError> {\n    Mads::burn::<AppModule>().await\n}\n"
                 .to_owned(),
         ),
         (
             "src/app/mod.rs".to_owned(),
-            "// src/app/mod.rs\nmod controller;\nmod routes;\nmod service;\n\nuse mads::prelude::*;\n\n#[module]\npub struct AppModule;\n"
+            "// src/app/mod.rs\nmod controller;\nmod routes;\nmod service;\n\nuse mads::prelude::*;\n\n#[furnace]\npub struct AppModule;\n\nimpl Furnace for AppModule {\n    fn register(self) -> FurnaceRegistration<Self> {\n        self.provide::<service::AppService>()\n            .controller::<controller::AppController>()\n    }\n}\n"
                 .to_owned(),
         ),
         (
@@ -110,7 +110,7 @@ fn name_and_templates_render_the_exact_minimal_project_manifest() {
         ),
         (
             "src/app/service.rs".to_owned(),
-            "// src/app/service.rs\nuse mads::prelude::*;\n\n#[service]\npub struct AppService;\n\nimpl AppService {\n    pub fn hello(&self) -> &'static str {\n        \"Hello World!\"\n    }\n}\n"
+            "// src/app/service.rs\nuse mads::prelude::*;\n\n#[burner]\npub struct AppService;\n\nimpl AppService {\n    pub fn hello(&self) -> &'static str {\n        \"Hello World!\"\n    }\n}\n"
                 .to_owned(),
         ),
     ];

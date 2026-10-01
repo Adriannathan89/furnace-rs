@@ -1,9 +1,9 @@
 # MADS 0.9 examples
 
 These are three independent Rust projects. Run each command from its example
-directory so `Mads::run` loads that project's `mads.toml` and optional `.env`.
-Each project targets MADS 0.9.1 crates from crates.io; none uses
-workspace path dependencies or the removed `mads db` commands.
+directory so `Mads::burn` loads that project's `mads.toml` and optional `.env`.
+Each project uses local workspace crates to demonstrate the new explicit furnace
+registration API.
 
 | Project | What it demonstrates | Port |
 | --- | --- | --- |

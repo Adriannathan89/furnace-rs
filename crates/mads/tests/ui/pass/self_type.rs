@@ -1,6 +1,6 @@
 //! Confirms nested `Self` field types refer to the generated public handle.
 
-#[mads::service]
+#[mads::burner]
 struct RecursiveService {
     parent: Box<Self>,
 }

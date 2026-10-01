@@ -14,7 +14,7 @@ struct CombinedValue {
 /// Output type for the public provider visibility fixture.
 pub struct PublicProviderValue;
 
-#[mads::provider]
+#[mads::element]
 fn configured_value(config: Config) -> ConfiguredValue {
     ConfiguredValue(
         config
@@ -24,7 +24,7 @@ fn configured_value(config: Config) -> ConfiguredValue {
     )
 }
 
-#[mads::provider]
+#[mads::element]
 async fn combined_value(
     config: Config,
     configured: ConfiguredValue,
@@ -35,7 +35,7 @@ async fn combined_value(
     })
 }
 
-#[mads::provider]
+#[mads::element]
 /// Public provider used to verify visibility metadata.
 pub fn public_provider() -> PublicProviderValue {
     PublicProviderValue

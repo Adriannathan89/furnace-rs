@@ -3,10 +3,16 @@ mod auth;
 use auth::AuthModule;
 use mads::prelude::*;
 
-#[module(imports = [LoggerModule, AuthModule])]
+#[furnace]
 struct AppModule;
+
+impl mads::core::Furnace for AppModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        self.import(LoggerModule).import(AuthModule)
+    }
+}
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<AppModule>().await
+    Mads::burn::<AppModule>().await
 }

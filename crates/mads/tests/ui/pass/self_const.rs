@@ -1,6 +1,6 @@
 //! Confirms `Self` paths in field-type const expressions target the public handle.
 
-#[mads::service]
+#[mads::burner]
 struct BufferedService {
     bytes: [u8; Self::CAPACITY],
 }

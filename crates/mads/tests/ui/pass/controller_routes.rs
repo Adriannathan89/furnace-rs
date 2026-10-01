@@ -5,11 +5,11 @@
 use mads::common::{Json, Path};
 
 /// Query application service.
-#[mads::service]
+#[mads::burner]
 pub struct QueryUsecase;
 
 /// Command application service.
-#[mads::service]
+#[mads::burner]
 pub struct CommandUsecase;
 
 /// Query route contract.

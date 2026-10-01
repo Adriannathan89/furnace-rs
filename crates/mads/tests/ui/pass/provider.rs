@@ -8,27 +8,27 @@ struct SyncFallible;
 
 struct CoreFallible;
 
-#[mads::provider]
+#[mads::element]
 fn sync_value() -> String {
     "value".to_owned()
 }
 
-#[mads::provider]
+#[mads::element]
 async fn async_value(config: Config) -> mads::core::Result<usize> {
     Ok(config.len())
 }
 
-#[mads::provider]
+#[mads::element]
 async fn async_direct() -> AsyncDirect {
     AsyncDirect
 }
 
-#[mads::provider]
+#[mads::element]
 fn sync_fallible() -> Result<SyncFallible> {
     Ok(SyncFallible)
 }
 
-#[mads::provider]
+#[mads::element]
 fn core_fallible() -> mads_core::Result<CoreFallible> {
     Ok(CoreFallible)
 }

@@ -5,5 +5,13 @@ mod service;
 
 use mads::prelude::*;
 
-#[module]
+#[furnace]
 pub struct PostModule;
+
+impl mads::core::Furnace for PostModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        self.provide::<service::PostService>()
+            .provide::<repository::PostRepository>()
+            .controller::<controller::PostController>()
+    }
+}

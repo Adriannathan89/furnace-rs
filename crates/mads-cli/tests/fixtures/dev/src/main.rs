@@ -20,8 +20,15 @@ impl HealthRoutes for HealthController {
     }
 }
 
-#[mads::module]
+#[mads::furnace]
 struct AppModule;
+
+impl mads::core::Furnace for AppModule {
+    fn register(self) -> mads::core::FurnaceRegistration<Self> {
+        self.controller::<HealthController>()
+    }
+}
+
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
@@ -34,5 +41,5 @@ async fn main() -> Result<(), HttpRuntimeError> {
         .open(path)
         .expect("start log should be writable");
     writeln!(log, "{}|{arguments}", std::process::id()).expect("start log entry should write");
-    Mads::run::<AppModule>().await
+    Mads::burn::<AppModule>().await
 }
