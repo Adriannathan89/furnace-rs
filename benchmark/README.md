@@ -129,14 +129,14 @@ cargo build --release --locked --manifest-path benchmark/targets/axum/Cargo.toml
 cd benchmark/targets/fiber && mkdir -p bin && go build -o bin/furnace-rs-bench-fiber . && cd ../../..
 ```
 
-`build_furnace.py` copies each FURNACE example to a temporary directory and patches
-its `furnace-rs`/`furnace-rs-persistence` dependencies to this checkout for the build. It
+`build_furnace.py` copies each FURNACE example to a temporary directory and rewrites
+its local dependency paths to absolute paths in this checkout for the build. It
 does not edit the examples or their lockfiles. The reproducible local-source
 lockfiles are stored in `benchmark/targets/furnace-rs/locks/`; on a warm cache,
-`build_furnace.py --offline` avoids network access. This is necessary because the
-current published-package lockfile of the examples has a registry checksum
-mismatch for `furnace-rs-common-macros 0.9.1`. Results from this command measure
-**local FURNACE 0.9.1 source**, not the published crate archive.
+`build_furnace.py --offline` avoids network access. The helper uses an existing
+lock from that directory with `--locked`, or saves the resolved lock after the
+first successful build. Results from this command measure **local FURNACE 0.9.2
+source**, not the published crate archive.
 
 For CRUD, provision three isolated PostgreSQL databases, apply the same
 `example/posts-crud/migrations/001_create_posts.sql` to each, and set:

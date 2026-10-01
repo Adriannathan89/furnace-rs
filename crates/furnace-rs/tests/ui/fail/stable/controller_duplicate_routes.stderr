@@ -1,17 +1,17 @@
 error: `#[get]` must be used on a method inside an inherent `#[controller]` implementation
- --> tests/ui/fail/controller_duplicate_routes.rs:3:23
+ --> tests/ui/fail/stable/controller_duplicate_routes.rs:3:23
   |
 3 |     #[furnace_rs::get("/")]
   |                       ^^^
 
 error: `#[controller]` struct arguments are unsupported; put `route` on the inherent implementation
- --> tests/ui/fail/controller_duplicate_routes.rs:7:26
+ --> tests/ui/fail/stable/controller_duplicate_routes.rs:7:26
   |
 7 | #[furnace_rs::controller(routes = [Route, Route])]
   |                          ^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0433]: cannot find `routes` in `furnace_rs`
- --> tests/ui/fail/controller_duplicate_routes.rs:1:15
+ --> tests/ui/fail/stable/controller_duplicate_routes.rs:1:15
   |
 1 | #[furnace_rs::routes]
   |               ^^^^^^ could not find `routes` in `furnace_rs`

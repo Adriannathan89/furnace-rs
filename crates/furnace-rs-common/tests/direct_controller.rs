@@ -232,3 +232,54 @@ fn wildcard_and_parameter_tree_conflicts_are_rejected() {
         furnace_rs_common::core::FURNACE030
     );
 }
+
+mod divergent_captures {
+    use super::*;
+    #[controller]
+    pub struct Controller;
+    impl Sealable for Controller {
+        fn seals() -> SealRegistration<Self> {
+            SealRegistration::new()
+        }
+    }
+    #[controller(route = "/branches")]
+    impl Controller {
+        #[get("/:id/foo")]
+        fn foo(&self, Path(id): Path<String>) -> String {
+            format!("id:{id}")
+        }
+        #[get("/:name/bar")]
+        fn bar(&self, Path(name): Path<String>) -> String {
+            format!("name:{name}")
+        }
+    }
+    #[cauldron]
+    pub struct Root;
+    impl Cauldron for Root {
+        fn register(self) -> CauldronRegistration<Self> {
+            self.controller::<Controller>()
+        }
+    }
+}
+
+#[tokio::test]
+async fn divergent_capture_branches_preserve_native_parameter_names() {
+    RouteCatalog::validate_controller::<divergent_captures::Controller>().unwrap();
+    let mut builder = Furnace::builder();
+    builder.root::<divergent_captures::Root>().unwrap();
+    let app = builder.build().await.unwrap();
+    let router = build_router(&app).unwrap();
+    for (uri, expected) in [
+        ("/branches/42/foo", "id:42"),
+        ("/branches/alice/bar", "name:alice"),
+    ] {
+        let response = router
+            .clone()
+            .oneshot(Request::builder().uri(uri).body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert_eq!(body.as_ref(), expected.as_bytes());
+    }
+}

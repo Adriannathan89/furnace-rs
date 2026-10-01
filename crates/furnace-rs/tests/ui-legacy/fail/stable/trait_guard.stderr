@@ -1,17 +1,17 @@
 error: `#[get]` must be used on a method inside an inherent `#[controller]` implementation
- --> tests/ui-legacy/fail/trait_guard.rs:5:34
+ --> tests/ui-legacy/fail/stable/trait_guard.rs:5:34
   |
 5 | trait Routes { #[furnace_rs::get("/")] async fn endpoint(&self); }
   |                                  ^^^
 
 error: `#[guard]` requires a unit policy struct; attach it with the controller seal
- --> tests/ui-legacy/fail/trait_guard.rs:4:21
+ --> tests/ui-legacy/fail/stable/trait_guard.rs:4:21
   |
 4 | #[furnace_rs::guard(strategy = "custom", principal = Principal)]
   |                     ^^^^^^^^
 
 error[E0433]: cannot find `routes` in `furnace_rs`
- --> tests/ui-legacy/fail/trait_guard.rs:3:15
+ --> tests/ui-legacy/fail/stable/trait_guard.rs:3:15
   |
 3 | #[furnace_rs::routes]
   |               ^^^^^^ could not find `routes` in `furnace_rs`

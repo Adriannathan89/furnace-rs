@@ -984,7 +984,8 @@ fn validate_routes(
     Ok(())
 }
 
-// Axum shares a path tree across HTTP methods, so capture names must agree.
+// Axum shares a path tree across HTTP methods. Capture names must agree
+// for the same complete path shape, but may differ on divergent branches.
 fn validate_capture_names(
     seen: &mut BTreeMap<String, (&'static str, RouteDescriptor)>,
     controller: &'static str,
@@ -992,23 +993,38 @@ fn validate_capture_names(
     scope: &'static str,
 ) -> Result<()> {
     for (previous_controller, previous) in seen.values() {
-        let left = previous.full_path();
-        let right = route.full_path();
-        for (left, right) in left.split('/').zip(right.split('/')) {
+        let left: Vec<_> = previous.full_path().split('/').collect();
+        let right: Vec<_> = route.full_path().split('/').collect();
+        let mut different_capture_names = false;
+        for (left, right) in left.iter().zip(&right) {
             if left == right {
                 continue;
             }
             if left.starts_with('{') && right.starts_with('{') {
-                return Err(conflicting_routes(
-                    controller,
-                    route,
-                    previous_controller,
-                    *previous,
-                    scope,
-                ));
+                if left.starts_with("{*") || right.starts_with("{*") {
+                    return Err(conflicting_routes(
+                        controller,
+                        route,
+                        previous_controller,
+                        *previous,
+                        scope,
+                    ));
+                }
+                different_capture_names = true;
+                continue;
             }
             // Different static branches or a static/capture pair can coexist.
+            different_capture_names = false;
             break;
+        }
+        if different_capture_names && left.len() == right.len() {
+            return Err(conflicting_routes(
+                controller,
+                route,
+                previous_controller,
+                *previous,
+                scope,
+            ));
         }
     }
     seen.insert(route.full_path().to_owned(), (controller, route));

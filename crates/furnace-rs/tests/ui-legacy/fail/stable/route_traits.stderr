@@ -1,17 +1,17 @@
 error: `#[get]` must be used on a method inside an inherent `#[controller]` implementation
- --> tests/ui-legacy/fail/route_traits.rs:2:34
+ --> tests/ui-legacy/fail/stable/route_traits.rs:2:34
   |
 2 | trait Routes { #[furnace_rs::get("/")] async fn endpoint(&self); }
   |                                  ^^^
 
 error: `#[controller]` struct arguments are unsupported; put `route` on the inherent implementation
- --> tests/ui-legacy/fail/route_traits.rs:3:26
+ --> tests/ui-legacy/fail/stable/route_traits.rs:3:26
   |
 3 | #[furnace_rs::controller(routes = [Routes])]
   |                          ^^^^^^^^^^^^^^^^^
 
 error[E0433]: cannot find `routes` in `furnace_rs`
- --> tests/ui-legacy/fail/route_traits.rs:1:15
+ --> tests/ui-legacy/fail/stable/route_traits.rs:1:15
   |
 1 | #[furnace_rs::routes]
   |               ^^^^^^ could not find `routes` in `furnace_rs`

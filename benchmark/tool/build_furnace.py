@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Build unchanged FURNACE examples against this checkout without editing their locks."""
+"""Build staged FURNACE examples against this checkout without editing source locks."""
 
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
+import tomllib
 
 from run import ROOT
 
@@ -17,6 +20,19 @@ EXAMPLES = ("hello-world", "posts-crud", "protected-route")
 
 def stage_example(source: Path, destination: Path, lockfile: Path | None = None) -> Path:
     shutil.copytree(source, destination, ignore=shutil.ignore_patterns("Cargo.lock", "target", ".env", ".env.*"))
+    manifest = destination / "Cargo.toml"
+    text = manifest.read_text()
+    data = tomllib.loads(text)
+    tables = [data, *data.get("target", {}).values(), data.get("workspace", {})]
+    for table in tables:
+        for kind in ("dependencies", "dev-dependencies", "build-dependencies"):
+            for dependency in table.get(kind, {}).values():
+                if isinstance(dependency, dict) and "path" in dependency:
+                    relative = dependency["path"]
+                    absolute = str((source / relative).resolve())
+                    pattern = r"\bpath\s*=\s*([\"'])" + re.escape(relative) + r"\1"
+                    text = re.sub(pattern, lambda _: "path = " + json.dumps(absolute), text)
+    manifest.write_text(text)
     if lockfile is not None:
         shutil.copy2(lockfile, destination / "Cargo.lock")
     return destination
