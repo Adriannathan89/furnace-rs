@@ -15,7 +15,7 @@ furnace-rs = "=0.9.2"
 furnace-rs-testing = "=0.9.2"
 ```
 
-Apply `#[furnace-rs::test]` to a zero-argument, nongeneric `async fn`. Cargo discovers
+Apply `#[furnace_rs::test]` to a zero-argument, nongeneric `async fn`. Cargo discovers
 it as a test, and the macro creates `test_fixture()` inside that function.
 No separate Tokio dependency or `#[tokio::test]` is needed. The supported fixture
 entry point is available only inside annotated tests; hidden macro internals
@@ -26,17 +26,17 @@ are not a security boundary against deliberate use.
 ```rust
 use furnace_rs_testing::sea_orm::{DatabaseConnection, DbBackend, MockDatabase};
 
-#[furnace-rs::storage]
+#[furnace_rs::storage]
 struct UserRepository {
     database: DatabaseConnection,
 }
 
-#[furnace-rs::burner]
+#[furnace_rs::burner]
 struct UserService {
     repository: UserRepository,
 }
 
-#[furnace-rs::test]
+#[furnace_rs::test]
 async fn service_uses_mock_database() {
     test_fixture()
         .mock_database(MockDatabase::new(DbBackend::Sqlite))
@@ -60,22 +60,20 @@ used. `provide(DatabaseConnection)` is rejected. A type may be supplied once.
 ```rust
 use furnace_rs_testing::http_types::{HeaderValue, StatusCode, header::CONTENT_TYPE};
 
-#[furnace-rs::routes]
-trait UserRoutes {
-    #[get("/users")]
-    async fn users(&self) -> furnace-rs::Json<serde_json::Value>;
-}
-
-#[furnace-rs::controller(routes = [UserRoutes])]
+#[furnace_rs::controller]
 struct UserController;
-
-impl UserRoutes for UserController {
-    async fn users(&self) -> furnace-rs::Json<serde_json::Value> {
-        furnace-rs::Json(serde_json::json!({ "name": "Ada" }))
+impl furnace_rs::Sealable for UserController {
+    fn seals() -> furnace_rs::SealRegistration<Self> { furnace_rs::SealRegistration::new() }
+}
+#[furnace_rs::controller]
+impl UserController {
+    #[furnace_rs::get("/users")]
+    async fn users(&self) -> furnace_rs::Json<serde_json::Value> {
+        furnace_rs::Json(serde_json::json!({ "name": "Ada" }))
     }
 }
 
-#[furnace-rs::test]
+#[furnace_rs::test]
 async fn controller_returns_users() {
     test_fixture().controller::<UserController>()
         .run(|client| async move {

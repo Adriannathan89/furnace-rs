@@ -1,6 +1,6 @@
 # furnace-rs-cli
 
-`furnace-rs-cli` builds the Cargo-native `furnace-rs` developer executable. It is the
+`furnace-rs-cli` builds the Cargo-native `furnace` developer executable. It is the
 project/tooling boundary of furnace-rs: it selects Cargo packages and binaries,
 runs applications, inspects application graphs, supervises development loops,
 and renders offline project scaffolds.
@@ -12,14 +12,14 @@ run the produced `furnace` binary; contributors work in `crates/furnace-rs-cli/s
 
 | Command area | Responsibility |
 | --- | --- |
-| `furnace new <name>` | Validate a project name, render exactly seven files, and publish the project atomically without network or Cargo side effects. |
+| `furnace new <name>` | Validate a project name, render exactly six files, and publish the project atomically without network or Cargo side effects. |
 | `furnace run` | Resolve the selected package/binary through Cargo metadata, build it, and execute the emitted artifact while preserving application streams. |
 | `furnace dev` | Watch relevant files, debounce changes, rebuild when needed, restart safely, and keep the last successful process alive across compile failures. |
 | `furnace routes` | Inspect selected route metadata without normal provider construction or server startup. |
 | `furnace graph` | Inspect rooted cauldrons, providers, dependencies, and construction order. |
 | `furnace doctor` | Render grouped health/diagnostic evidence for server, graph, routes, and auto-configuration. |
 
-Finite commands default to human output and can request schema-version-1 JSON.
+Finite commands default to human output and can request schema-version-2 JSON.
 `run` and `dev` intentionally keep streamed Cargo/compiler/application output
 instead of wrapping it in that finite-command envelope.
 
@@ -73,13 +73,13 @@ Important external dependencies:
 
 - `cargo_metadata` and `semver` for Cargo package/binary resolution.
 - `notify` for cross-platform file watching.
-- `serde` and `serde_json` for reports and schema-version-1 JSON output.
+- `serde` and `serde_json` for reports and schema-version-2 JSON output.
 - `syn` for scaffold syntax handling.
 - `tokio` for process supervision and async orchestration.
 - `rustix` for platform-sensitive filesystem/process support.
 - `tempfile` for isolated staging and test projects.
 
-This crate produces the `furnace-rs` executable and has no first-party dependents.
+This crate produces the `furnace` executable and has no first-party dependents.
 The implementation depends on the facade and common inspection contract, not
 on application internals.
 
@@ -92,7 +92,7 @@ on application internals.
 - `src/process.rs`, `src/dev.rs`, `src/dev_state.rs`, and `src/watch.rs` —
   process lifecycle and development supervision.
 - `src/inspection.rs` — private child protocol and report acquisition.
-- `src/output/` and `src/render.rs` — human output, JSON v1 records, paths,
+- `src/output/` and `src/render.rs` — human output, JSON v2 records, paths,
   routes, graph, and doctor rendering.
 - `src/scaffold/` — names, templates, validation, staging, and publication.
 - `src/diagnostic.rs` — CLI-owned diagnostics and redaction.

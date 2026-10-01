@@ -16,7 +16,7 @@ crate is an implementation dependency, not a normal application dependency.
 | `#[burner]` | Declares an application-scoped managed service and its dependency metadata. |
 | `#[storage]` | Declares an application-scoped repository with the same concrete-type wiring model. |
 | `#[derive(Configuration)]` | Generates a typed, prefix-aware view over the core `Config` document. |
-| `#[furnace-rs::main]` | Converts an async application entry point into a synchronous Tokio-backed entry point when the runtime feature is enabled. |
+| `#[furnace_rs::main]` | Converts an async application entry point into a synchronous Tokio-backed entry point when the runtime feature is enabled. |
 
 Provider, service, and repository arguments become concrete dependency edges.
 Managed handles are required to be cloneable and shareable so the constructed

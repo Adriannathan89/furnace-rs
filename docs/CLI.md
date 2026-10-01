@@ -19,7 +19,7 @@ name starts with lowercase ASCII; its remaining characters may be lowercase
 ASCII, digits, `-`, or `_`. Rust 2024 keywords and Cargo-reserved package names
 are rejected. FURNACE preserves the supplied directory and package spelling.
 
-The generated project contains exactly these seven files:
+The generated project contains exactly these six files:
 
 ```text
 <name>/
@@ -29,7 +29,6 @@ The generated project contains exactly these seven files:
     ├── main.rs
     └── app/
         ├── mod.rs
-        ├── routes.rs
         ├── controller.rs
         └── service.rs
 ```
@@ -137,16 +136,15 @@ completion. `data` is the command object, safe partial inspection data, or
 ```
 
 Severity is always `error` or `warning`; nullable `subject` and `location` are
-intentional. Schema version 1 may add fields, and consumers must ignore unknown
+intentional. Schema version 2 may add fields, and consumers must ignore unknown
 object fields. Removing, renaming, changing the type of, or changing the
 meaning of an existing field requires a new `schema_version`.
 
-The finite schema owners are `new`, `routes`, `graph`, `doctor`, `db generate`,
-`db migrate`, `db rollback`, and `db status`. A non-null source location has
+The finite schema owners are `new`, `routes`, `graph`, and `doctor`. A non-null source location has
 one-based line and column numbers:
 
 ```json
-{"file":"src/app/routes.rs","line":6,"column":5}
+{"file":"src/app/controller.rs","line":6,"column":5}
 ```
 
 ### JSON command data
@@ -162,7 +160,6 @@ one-based line and column numbers:
     "furnace.toml",
     "src/main.rs",
     "src/app/mod.rs",
-    "src/app/routes.rs",
     "src/app/controller.rs",
     "src/app/service.rs"
   ]
@@ -170,8 +167,8 @@ one-based line and column numbers:
 ```
 
 `routes` returns `{ "routes": [...] }`; every route record has `method`,
-`path`, `route_trait`, `handler`, `controller`, `location`, and
-`guard_active`. Route order remains method, path, controller, route trait, and
+`path`, `handler`, `controller`, `location`, and
+`guard_active`. Route order remains method, path, controller, and
 handler order. `graph` returns `root_cauldron`, `cauldrons`, `imports`,
 `providers`, `dependencies`, and nullable `construction_order`. Cauldron records
 contain `type_name`, `namespace`, and `location`; import records contain
@@ -185,10 +182,9 @@ construction plan exists.
   "routes": [{
     "method": "GET",
     "path": "/",
-    "route_trait": "AppRoutes",
     "handler": "hello",
     "controller": "AppController",
-    "location": {"file":"src/app/routes.rs","line":6,"column":5},
+    "location": {"file":"src/app/controller.rs","line":6,"column":5},
     "guard_active": false
   }]
 }

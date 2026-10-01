@@ -62,13 +62,14 @@
 //! # fn main() {}
 //! ```
 //!
-//! Route policy inherits field by field. A method replaces only the fields it
-//! supplies, while `skip` removes an inherited guard:
+//! One static policy protects all controller endpoints. Separate public endpoints
+//! into an unsealed controller:
 //!
 //! ```no_run
-//! use furnace_rs_common::{Authenticated, PassportPrincipal, guard, routes};
+//! use furnace_rs_common::{Authenticated, PassportPrincipal, guard, controller, get, post, Sealable, SealRegistration};
 //! # use furnace_rs_common::{
-//! #     __private, core, ErasedAuthentication, GuardDescriptor, GuardPredicate,
+//! #     __private, core, ControllerDescriptor, ControllerEndpointDescriptor,
+//! #     ErasedAuthentication, GuardDescriptor, GuardPolicy, GuardPredicate,
 //! #     HttpMethod, PolicyClause, PolicyMode, RouteDescriptor, TokenSource,
 //! # };
 //!
@@ -81,24 +82,31 @@
 //! }
 //! fn owns_profile(_: &UserPrincipal) -> bool { true }
 //!
-//! #[routes(prefix = "/users")]
-//! #[guard(
-//!     strategy = "jwt",
-//!     principal = UserPrincipal,
-//!     source = bearer,
-//!     roles(any = ["user", "admin"]),
-//! )]
-//! trait UserRoutes {
-//!     #[furnace_rs_common::get("/profile")]
-//!     #[guard(
-//!         permissions(all = ["profile:read"]),
-//!         predicate = owns_profile,
-//!     )]
-//!     async fn profile(&self, principal: Authenticated<UserPrincipal>);
-//!
-//!     #[furnace_rs_common::post("/login")]
-//!     #[guard(skip)]
-//!     async fn login(&self);
+//! #[guard(strategy = "jwt", principal = UserPrincipal, source = bearer,
+//!     roles(any = ["user", "admin"]), permissions(all = ["profile:read"]),
+//!     predicate = owns_profile)]
+//! struct UserGuard;
+//! #[controller]
+//! struct UserController;
+//! impl Sealable for UserController {
+//!     fn seals() -> SealRegistration<Self> { Self::seal::<UserGuard>() }
+//! }
+//! #[controller(route = "/users")]
+//! impl UserController {
+//!     #[get("/profile")]
+//!     async fn profile(&self, _principal: Authenticated<UserPrincipal>) -> &'static str {
+//!         "profile"
+//!     }
+//! }
+//! #[controller]
+//! struct LoginController;
+//! impl Sealable for LoginController {
+//!     fn seals() -> SealRegistration<Self> { SealRegistration::new() }
+//! }
+//! #[controller(route = "/users")]
+//! impl LoginController {
+//!     #[post("/login")]
+//!     fn login(&self) -> &'static str { "login" }
 //! }
 //! # fn main() {}
 //! ```

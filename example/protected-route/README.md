@@ -45,3 +45,7 @@ This intentionally stores a plaintext demo password in memory. It has no user
 registration, password hashing, token revocation, or durable sessions. For a
 real application, replace the repository with persistent users, store password
 hashes, and apply your session and rotation policy.
+
+`AuthController` exposes public login with an empty seal. `ProfileController`
+seals every profile endpoint with `ProfileGuard`; both controllers are explicitly
+registered in `AuthCauldron`.

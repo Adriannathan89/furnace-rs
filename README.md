@@ -11,10 +11,9 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 
 ## What is furnace-rs?
 
-FURNACE stands for **Modular Architecture Design System**. The name began as a
-deliberate, playful misspelling of “mad,” reflecting the feeling developers can
-have when low-level application architecture becomes repetitive and difficult
-to wire together.
+The furnace metaphor describes startup: a `Cauldron` groups explicitly registered
+components, and `Furnace::burn` starts the selected application. Services use
+`#[burner]`, repositories use `#[storage]`, and factories use `#[element]`.
 
 The philosophy is to take that frustration out of Rust application
 development. FURNACE keeps architecture explicit, typed, and inspectable while
@@ -34,7 +33,7 @@ furnace dev
 ```
 
 `furnace new` creates exactly `Cargo.toml`, `furnace.toml`, `src/main.rs`, and
-`src/app/{mod,routes,controller,service}.rs`. The generated application has
+`src/app/{mod,controller,service}.rs`. The generated application has
 only the `http` and `runtime-tokio` FURNACE features—no database, JWT, cookie,
 migration, or authentication setup—and answers `GET /` with `Hello World!`.
 The application package starts at `0.1.0`; its FURNACE dependency is pinned to the
@@ -61,17 +60,17 @@ For repeatable HTTP load and failure checks, see the [benchmark suite](benchmark
 ## Standard application
 
 ```rust,no_run
-use furnace-rs::prelude::*;
+use furnace::prelude::*;
 
-#[routes]
-trait HelloRoutes {
-    #[get("/")]
-    async fn hello(&self) -> &'static str;
-}
-#[controller(routes = [HelloRoutes])]
+#[controller]
 struct HelloController;
-impl HelloRoutes for HelloController {
-    async fn hello(&self) -> &'static str { "Hello, world!" }
+impl Sealable for HelloController {
+    fn seals() -> SealRegistration<Self> { SealRegistration::new() }
+}
+#[controller(route = "/")]
+impl HelloController {
+    #[get]
+    fn hello(&self) -> &'static str { "Hello, world!" }
 }
 
 #[cauldron]
@@ -82,19 +81,19 @@ impl Cauldron for AppCauldron {
     }
 }
 
-#[furnace-rs::main]
+#[furnace::main]
 async fn main() -> Result<(), HttpRuntimeError> {
     Furnace::burn::<AppCauldron>().await
 }
 ```
 
 `Furnace::burn` starts the root cauldron and its imports. Register dependencies with
-`.provide::<T>()`, controllers with `.controller::<T>()`, and imported furnaces
+`.provide::<T>()`, controllers with `.controller::<T>()`, and imported cauldrons
 with `.import(OtherCauldron)`. Cross-cauldron injection requires `.export::<T>()`;
 `.global()` exposes only those exports throughout the reachable application.
 Rust namespaces and `pub` visibility do not determine DI membership.
 
-See the [breaking-change migration guide](docs/importance/cauldron-registration-migration.md)
+See the [breaking-change migration guide](docs/importance/furnace-rs-migration.md)
 for the `cauldron`, `burner`, `storage`, and `element` vocabulary and factory registration.
 
 ## Workspace crates
@@ -141,7 +140,7 @@ guides for dependencies, source layout, and change ownership.
 
 ~~~toml
 [dependencies]
-furnace-rs = "0.9.2"
+furnace = { package = "furnace-rs", version = "=0.9.2" }
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
@@ -208,7 +207,7 @@ Use `#[derive(serde::Deserialize, Input)]` with `ValidatedJson<T>`,
 `body`, `query`, or `path` source, and invoke a handler only on valid input.
 
 ```rust,no_run
-use furnace-rs::prelude::*;
+use furnace::prelude::*;
 
 #[derive(serde::Deserialize, Input)]
 struct CreateUser {
@@ -218,12 +217,18 @@ struct CreateUser {
     password: String,
 }
 
-#[routes(prefix = "/users")]
-trait UserRoutes {
-    #[post("/")]
-    async fn create(&self, body: ValidatedJson<CreateUser>) -> HttpResult<Json<User>>;
+#[controller]
+struct UserController;
+impl Sealable for UserController {
+    fn seals() -> SealRegistration<Self> { SealRegistration::new() }
 }
-# struct User;
+#[controller(route = "/users")]
+impl UserController {
+    #[post]
+    async fn create(&self, _body: ValidatedJson<CreateUser>) -> HttpResult<&'static str> {
+        Ok("created")
+    }
+}
 ```
 
 The built-ins are `email`, `length(min = N)`, `length(max = N)`,
@@ -327,7 +332,7 @@ new loader or global type discovery. Derive a named configuration struct and
 request it explicitly through `Config::parse`:
 
 ```rust,no_run
-use furnace-rs::prelude::*;
+use furnace::prelude::*;
 
 #[derive(Configuration)]
 #[config(prefix = "app")]
@@ -340,7 +345,7 @@ struct AppConfig {
 }
 
 #[element]
-fn app_config(config: Config) -> furnace-rs::core::Result<AppConfig> {
+fn app_config(config: Config) -> furnace::core::Result<AppConfig> {
     Ok(config.parse()?)
 }
 ```
@@ -401,15 +406,15 @@ furnace-rs-persistence = { version = "0.9.2", features = ["sea-orm-postgres"] }
 ```rust,ignore
 use furnace_rs_persistence::sea_orm::{DatabaseConnection, DatabaseCauldron};
 
-#[furnace-rs::cauldron]
+#[furnace::cauldron]
 struct AppCauldron;
-impl furnace-rs::Cauldron for AppCauldron {
-    fn register(self) -> furnace-rs::CauldronRegistration<Self> {
+impl furnace::Cauldron for AppCauldron {
+    fn register(self) -> furnace::CauldronRegistration<Self> {
         self.import(DatabaseCauldron).provide::<UserRepository>()
     }
 }
 
-#[furnace-rs::element]
+#[furnace::element]
 fn repository(database: DatabaseConnection) -> UserRepository {
     UserRepository::new(database)
 }
@@ -484,7 +489,7 @@ process working directory.
 
 ```rust,ignore
 use std::time::Duration;
-use furnace-rs::prelude::*;
+use furnace::prelude::*;
 
 let access = jwt.sign(
     UserClaims { user_id: 7 },
@@ -546,37 +551,33 @@ persistence, rotation, reuse detection, and revocation.
 ```rust,ignore
 fn owns_profile(principal: &UserPrincipal) -> bool { principal.user_id == 7 }
 
-#[routes(prefix = "/users")]
 #[guard(
-    strategy = "jwt",
-    principal = UserPrincipal,
-    source = bearer,
-    roles(any = ["user", "admin"]),
+    strategy = "jwt", principal = UserPrincipal, source = bearer,
+    roles(any = ["user", "admin"]), permissions(all = ["profile:read"]),
+    predicate = owns_profile,
 )]
-trait UserRoutes {
+struct UserGuard;
+#[controller]
+struct UserController;
+impl Sealable for UserController {
+    fn seals() -> SealRegistration<Self> { Self::seal::<UserGuard>() }
+}
+#[controller(route = "/users")]
+impl UserController {
     #[get("/profile")]
-    #[guard(
-        permissions(all = ["profile:read"]),
-        predicate = owns_profile,
-    )]
-    async fn profile(
-        &self,
-        principal: Authenticated<UserPrincipal>,
-        token: VerifiedToken<UserClaims>,
-    ) -> HttpResult<Json<Profile>>;
-
-    #[post("/login")]
-    #[guard(skip)]
-    async fn login(&self) -> HttpResult<Json<LoginResponse>>;
+    async fn profile(&self, principal: Authenticated<UserPrincipal>) -> HttpResult<&'static str> {
+        let _ = principal;
+        Ok("profile")
+    }
 }
 ```
 
-Trait policies inherit. A method replaces only fields it supplies;
-`#[guard(skip)]` is the sole opt-out. Roles, permissions, and predicates are
-ANDed; `any`/`all` controls matching inside one role or permission clause, and
-every predicate must be a synchronous `fn(&UserPrincipal) -> bool`. A guard
-uses exactly one source. With `cookies`, select
-`source = cookie("refresh_token")`; there is no Bearer fallback.
+One static policy protects every endpoint of its controller. An empty
+`SealRegistration::new()` makes a controller public; use a separate public
+controller for login. Roles, permissions, and predicates are ANDed;
+`any`/`all` controls matching inside each clause. Every predicate must be a
+synchronous `fn(&UserPrincipal) -> bool`. A guard uses exactly one source.
+With `cookies`, select `source = cookie("refresh_token")`.
 
 Authentication and strategy rejection map to generic `401 Unauthorized` with
 `WWW-Authenticate: Bearer`, authorization policy failures to `403 Forbidden`,
@@ -603,34 +604,31 @@ auto-configuration. Before `PassportGuard::build()`, a managed provider must
 directly require `JwtService`, or the builder must explicitly provide a
 concrete `JwtService`; otherwise construction fails with `FURNACE131`.
 
-See the complete [Passport/JWT example](docs/examples/passport_jwt.md) and the
+See the [current migration guide](docs/importance/furnace-rs-migration.md) and the
 [v0.5.5 security and release notes](docs/importance/version_0.5.5/passport-jwt-and-cookies.md).
 
 ## A typed HTTP route
 
-`#[furnace-rs::routes]` records immutable metadata and emits a typed registration
-adapter. `#[furnace-rs::controller]` resolves the managed controller once while the
-router is built; handlers do not receive manual `State<AppState>` or perform
-per-request provider resolution.
+`#[controller]` declares a managed struct and its inherent endpoint implementation.
+Generated adapters resolve the controller once while building the router and
+call its Rust methods directly. Handlers use native Axum extractors.
 
 ```rust,no_run
-use furnace-rs::prelude::*;
+use furnace::prelude::*;
 
 #[derive(Clone, serde::Serialize)]
 struct User {
     id: u64,
 }
 
-#[furnace-rs::routes(prefix = "/readme-users")]
-trait UserRoutes {
-    #[furnace-rs::get("/:id")]
-    async fn get_user(&self, id: Path<u64>) -> HttpResult<Json<User>>;
-}
-
-#[furnace-rs::controller(routes = [UserRoutes])]
+#[controller]
 struct UserController;
-
-impl UserRoutes for UserController {
+impl Sealable for UserController {
+    fn seals() -> SealRegistration<Self> { SealRegistration::new() }
+}
+#[controller(route = "/readme-users")]
+impl UserController {
+    #[get("/:id")]
     async fn get_user(&self, Path(id): Path<u64>) -> HttpResult<Json<User>> {
         Ok(Json(User { id }))
     }
@@ -642,7 +640,7 @@ impl Cauldron for AppCauldron {
     fn register(self) -> CauldronRegistration<Self> { self.controller::<UserController>() }
 }
 
-#[furnace-rs::main]
+#[furnace::main]
 async fn main() -> Result<(), HttpRuntimeError> {
     Furnace::burn::<AppCauldron>().await
 }
@@ -653,12 +651,12 @@ async fn main() -> Result<(), HttpRuntimeError> {
 The prelude exports `Path<T>`, `Query<T>`, `Json<T>`, `Header<T>`, `Request`,
 `HttpResult<T>`, `Created<T>`, `NoContent`, `build_router`, `configure_router`,
 `serve`, and `serve_router`.
-`furnace-rs::common::axum` remains the native Axum escape hatch for extractors,
+`furnace::common::axum` remains the native Axum escape hatch for extractors,
 responses, routers, middleware, and Tower composition.
 
-FURNACE route metadata uses `/:parameter`; the validated adapter translates it to
-Axum 0.8 syntax only while registering the route. Invalid metadata and
-conflicts fail with `FURNACE030` before router construction. GET also handles
+Endpoint attributes accept `/:id` or `/{id}` and a final `/*rest` or
+`/{*rest}` wildcard. Metadata uses canonical Axum brace paths. Invalid selected
+metadata and path-tree conflicts fail before provider construction. GET also handles
 HEAD, OPTIONS is not synthesized, static routes win over parameter routes, and
 trailing slashes remain strict. `build_router(&application)` returns the raw
 generated router; merge native routes before `configure_router` or
@@ -732,12 +730,12 @@ the [MIT License](LICENSE-MIT), at your option.
 ## Focused tests
 
 Add `furnace-rs-testing = "=0.9.2"` under `[dev-dependencies]`. Annotate an async,
-zero-argument test function with `#[furnace-rs::test]`; Cargo runs it without a separate
+zero-argument test function with `#[furnace::test]`; Cargo runs it without a separate
 Tokio dependency. The local `test_fixture()` builds one registered subject's
 dependency chain without module setup.
 
 ```rust
-#[furnace-rs::test]
+#[furnace::test]
 async fn controller_returns_ok() {
     test_fixture()
         .mock_database(furnace_rs_testing::sea_orm::MockDatabase::new(

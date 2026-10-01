@@ -1,4 +1,4 @@
-//! Expansion for managed controllers associated with route traits.
+//! Expansion for managed controllers associated with inherent endpoint implementations.
 //!
 //! The expansion keeps the user's documented struct and field visibility while
 //! moving the actual fields into a private `Arc`-backed representation. It also

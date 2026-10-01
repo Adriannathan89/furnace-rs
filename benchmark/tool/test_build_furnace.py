@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from build_mads import stage_example
+from build_furnace import stage_example
 
 
 class StageExampleTests(unittest.TestCase):

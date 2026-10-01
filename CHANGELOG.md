@@ -1,13 +1,17 @@
 # Changelog
 
-All notable changes to MADS.rs are documented in this file.
+All notable changes to furnace-rs are documented in this file.
 
-## Unreleased breaking registration change
+## Unreleased breaking furnace-rs migration
 
-- Replace `module`, `service`, `repository`, and `provider` attributes with `furnace`, `burner`, `storage`, and `element`.
-- Register providers, controllers, imports, explicit exports, and global status in `Furnace::register`; Rust namespaces and `pub` no longer determine dependency visibility.
-- Start applications with `Mads::burn` and `MadsBurnExt`; remove legacy declaration and startup aliases.
-- Migrate official logger/database furnaces, application scaffolding, and examples. See [the migration guide](docs/importance/furnace-registration-migration.md).
+- Rename all nine packages to the `furnace-rs` family and the CLI executable to `furnace`.
+- Replace module/service/repository/provider attributes with `cauldron`, `burner`, `storage`, and `element`.
+- Register dependencies, controllers, imports, explicit exports, and global status in `Cauldron::register`; Rust `pub` controls Rust name visibility only.
+- Start applications with `Furnace::burn` and `FurnaceBurnExt`.
+- Declare endpoints directly in an inherent `#[controller(route = "/users")]` implementation; remove `#[routes]` and `controller(routes = ...)`.
+- Attach one static `#[guard]` policy through `Sealable`; every endpoint is protected, with public endpoints on a separate unsealed controller.
+- Rename conventional config/environment keys to `furnace.toml`/`FURNACE_*`, emit schema/protocol 2 endpoint reports, and generate six scaffold files.
+- Keep workspace version 0.9.2, edition 2024, Rust 1.94, and public feature gates unchanged. See [the migration guide](docs/importance/furnace-rs-migration.md).
 
 ## [0.9.2] - Unreleased
 

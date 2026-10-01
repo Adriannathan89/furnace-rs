@@ -217,13 +217,13 @@ impl GuardDescriptor {
         self.namespace
     }
 
-    /// Returns the route-contract trait name.
+    /// Returns the static policy declaration name.
     #[must_use]
     pub const fn policy_name(&self) -> &'static str {
         self.policy_name
     }
 
-    /// Returns the guarded route method name.
+    /// Returns the policy declaration label (`seal` for generated policies).
     #[must_use]
     pub const fn handler(&self) -> &'static str {
         self.handler

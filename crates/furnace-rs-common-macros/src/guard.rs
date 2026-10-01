@@ -1,4 +1,4 @@
-//! Parsing and expansion support for inheritable Passport route guards.
+//! Parsing and expansion support for static Passport policies.
 
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
@@ -512,7 +512,7 @@ fn claims_principal_claims(principal: &Type) -> Option<Type> {
     }
 }
 
-/// Emits a focused error for `#[guard]` that was not consumed by `#[routes]`.
+/// Emits a focused error for `#[guard]` that was applied to a non-policy item.
 pub(crate) fn outside_contract(arguments: TokenStream, item: TokenStream) -> TokenStream {
     if let Ok(policy) = syn::parse2::<syn::ItemStruct>(item.clone()) {
         return expand_policy(arguments, policy).unwrap_or_else(Error::into_compile_error);

@@ -5,7 +5,7 @@
 //! boundary is always available through [`core`].
 #![cfg_attr(
     feature = "http",
-    doc = "\nThe `http` feature provides compile-time controller and route contracts and the Axum runtime. [`build_router`] validates every controller selected for the application before it resolves a controller or invokes a typed registrar; [`serve`] performs that same validation before lifecycle startup or socket binding. Use [`serve_router`] to run a complete raw router after merging generated and native routes; it applies final application-wide router configuration before lifecycle startup. Use [`routes`] to declare a route contract and [`controller`] to bind it to a managed controller. The resulting descriptors can be inspected through [`RouteCatalog`] before the HTTP runtime installs handlers. [`axum`] is deliberately re-exported for native extractors, response types, routers, middleware, and Tower composition."
+    doc = "\nThe `http` feature provides managed controllers and inherent endpoints and the Axum runtime. [`build_router`] validates every controller selected for the application before it resolves a controller or invokes a typed registrar; [`serve`] performs that same validation before lifecycle startup or socket binding. Use [`serve_router`] to run a complete raw router after merging generated and native routes; it applies final application-wide router configuration before lifecycle startup. Use [`controller`] on a struct and exactly one inherent implementation to declare endpoints, and [`Sealable`] for their protection. The resulting descriptors can be inspected through [`RouteCatalog`] before the HTTP runtime installs handlers. [`axum`] is deliberately re-exported for native extractors, response types, routers, middleware, and Tower composition."
 )]
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -140,11 +140,11 @@ pub use furnace_rs_core as core;
 #[cfg(feature = "logger")]
 pub use logger::{ConsoleLoggerService, LogLevel, Logger, LoggerCauldron, LoggerService};
 
-/// Declares a managed controller and its route-trait contracts.
+/// Declares a managed controller struct or its inherent HTTP endpoints.
 #[cfg(feature = "http")]
 pub use furnace_rs_common_macros::controller;
 
-/// Declares an inheritable Passport policy inside a `#[routes]` contract.
+/// Declares a static unit-struct Passport policy attached by a controller seal.
 #[cfg(all(feature = "http", feature = "jwt"))]
 pub use furnace_rs_common_macros::guard;
 

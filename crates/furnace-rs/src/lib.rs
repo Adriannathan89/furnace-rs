@@ -3,8 +3,9 @@
 //! The default facade composes the HTTP and logger integrations with the
 //! Tokio runtime. A root [`Cauldron`] selects explicitly registered providers,
 //! controllers, routes, guards, strategies, and official auto-configurations
-//! that belong to one application. Direct imports and unrestricted `pub`
-//! exports govern access across cauldron boundaries.
+//! that belong to one application. Direct imports and explicit
+//! `.export::<T>()` declarations govern DI access across cauldron boundaries.
+//! Rust `pub` controls Rust name visibility only.
 //!
 //! The standard startup path loads optional `.env`, optional `furnace.toml`, and
 //! final `FURNACE_*` overrides from the current working directory in that order.
@@ -129,9 +130,8 @@
 //! # }
 //! ```
 //!
-//! Route guards inherit field by field. Method clauses replace only supplied
-//! fields, cookie sources select exactly one named cookie, and `skip` removes
-//! an inherited guard:
+//! A static controller seal protects every endpoint. Empty seals declare a public
+//! controller; cookie policies select exactly one named cookie:
 //!
 //! ```
 //! # #[cfg(feature = "jwt")]
@@ -147,28 +147,31 @@
 //! }
 //! fn owns_profile(_: &UserPrincipal) -> bool { true }
 //!
-//! #[routes(prefix = "/users")]
-//! #[guard(
-//!     strategy = "jwt",
-//!     principal = UserPrincipal,
-//!     source = bearer,
-//!     roles(any = ["user", "admin"]),
-//! )]
-//! trait UserRoutes {
+//! #[guard(strategy = "jwt", principal = UserPrincipal, source = bearer,
+//!     roles(any = ["user", "admin"]), permissions(all = ["profile:read"]),
+//!     predicate = owns_profile)]
+//! struct UserGuard;
+//! #[controller]
+//! struct UserController;
+//! impl Sealable for UserController {
+//!     fn seals() -> SealRegistration<Self> { Self::seal::<UserGuard>() }
+//! }
+//! #[controller(route = "/users")]
+//! impl UserController {
 //!     #[get("/profile")]
-//!     #[guard(
-//!         permissions(all = ["profile:read"]),
-//!         predicate = owns_profile,
-//!     )]
-//!     async fn profile(&self, principal: Authenticated<UserPrincipal>);
-//!
-//!     #[post("/refresh")]
-//!     #[guard(strategy = "jwt-refresh", source = cookie("refresh_token"))]
-//!     async fn refresh(&self);
-//!
+//!     async fn profile(&self, _principal: Authenticated<UserPrincipal>) -> &'static str {
+//!         "profile"
+//!     }
+//! }
+//! #[controller]
+//! struct LoginController;
+//! impl Sealable for LoginController {
+//!     fn seals() -> SealRegistration<Self> { SealRegistration::new() }
+//! }
+//! #[controller(route = "/users")]
+//! impl LoginController {
 //!     #[post("/login")]
-//!     #[guard(skip)]
-//!     async fn login(&self);
+//!     fn login(&self) -> &'static str { "login" }
 //! }
 //! # fn main() {}
 //! # }

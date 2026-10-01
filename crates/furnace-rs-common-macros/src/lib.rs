@@ -1,15 +1,8 @@
-//! Procedural macros for compile-time controller and route contracts.
+//! Procedural macros for managed controllers and inherent HTTP endpoints.
 //!
-//! The attributes in this crate are re-exported by `furnace-rs-common` and, when the
-//! `common` feature is enabled, by the `furnace_rs` facade. They validate the shape
-//! of route traits and controllers during compilation, then emit the static
-//! metadata consumed by `furnace_rs_common::RouteCatalog` and the FURNACE dependency
-//! graph. Route traits also receive hidden, typed Axum registrars, and each
-//! controller descriptor stores a concrete registrar function pointer.
-//! Runtime bootstrap validates the complete catalog before any generated
-//! registrar is invoked. The generated registrars resolve application-scoped
-//! controllers once and invoke handler trait methods through typed Rust calls,
-//! never through handler-name metadata.
+//! A struct `#[controller]` records dependency and seal metadata; an inherent
+//! implementation `#[controller(route = "/users")]` emits typed Axum adapters.
+//! Static unit-struct guard policies become active only through selected seals.
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -59,40 +52,13 @@ pub fn passport_strategy(arguments: TokenStream, item: TokenStream) -> TokenStre
         .into()
 }
 
-/// Declares a managed controller and the route traits it must implement.
+/// Declares a managed controller struct or its inherent endpoint implementation.
 ///
-/// The attribute accepts one argument in the form
-/// `routes = [RouteTrait, ...]`. The annotated item must be a non-generic
-/// named-field or unit struct. Every listed trait must be implemented by the
-/// controller; otherwise compilation fails at the controller declaration.
-/// Named fields are treated as dependency edges and are resolved by the FURNACE
-/// construction context when the controller is built. The generated public
-/// handle is cheap to clone because its state is stored behind an `Arc`. A
-/// hidden registrar resolves that handle once and installs every declared
-/// route trait through typed dispatch.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// #[furnace_rs_common::routes]
-/// trait HealthRoutes {
-///     #[furnace_rs_common::get("/health")]
-///     async fn health(&self) -> furnace_rs_common::HttpResult<&'static str>;
-/// }
-///
-/// #[furnace_rs_common::controller(routes = [HealthRoutes])]
-/// struct HealthController;
-///
-/// impl HealthRoutes for HealthController {
-///     async fn health(&self) -> furnace_rs_common::HttpResult<&'static str> {
-///         Ok("ok")
-///     }
-/// }
-/// ```
-///
-/// The example is marked `ignore` because procedural-macro documentation is
-/// compiled in the macro crate itself, while the attributes require a
-/// downstream consumer crate and the `furnace-rs-common` runtime dependency.
+/// Annotate the struct with bare `#[controller]` and implement `Sealable`.
+/// Annotate exactly one inherent implementation with `#[controller]` or
+/// `#[controller(route = "/users")]`; its endpoint methods use HTTP verb
+/// attributes. Handlers may be synchronous or asynchronous with `&self` or
+/// no receiver. Named fields are resolved as managed dependencies.
 #[proc_macro_attribute]
 pub fn controller(arguments: TokenStream, item: TokenStream) -> TokenStream {
     controller::expand(arguments.into(), item.into())
@@ -100,68 +66,43 @@ pub fn controller(arguments: TokenStream, item: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Declares an inheritable Passport policy on a route trait or route method.
+/// Declares a complete static Passport policy on a non-generic unit struct.
 ///
-/// `#[routes]` consumes valid guard attributes and emits their effective
-/// static metadata. Applying this attribute to any other item produces a
-/// focused diagnostic.
+/// A controller attaches it through `Sealable::seals`; every endpoint then
+/// shares its strategy, principal, source, role, permission, and predicate rules.
 #[proc_macro_attribute]
 pub fn guard(arguments: TokenStream, item: TokenStream) -> TokenStream {
     guard::outside_contract(arguments.into(), item.into()).into()
 }
 
-/// Marks a GET method inside a trait annotated with [`macro@routes`].
+/// Marks a GET endpoint inside an inherent `#[controller]` implementation.
 ///
-/// The attribute takes exactly one string path, such as `#[get("/:id")]`.
-/// It is only valid on an abstract async route-contract method; using it on a
-/// free function, an inherent method, or a trait without [`macro@routes`]
-/// produces a compile-time diagnostic.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// #[furnace_rs_common::routes]
-/// trait HealthRoutes {
-///     #[furnace_rs_common::get("/health")]
-///     async fn health(&self);
-/// }
-/// ```
+/// Use a bare attribute for the base route or one string path such as
+/// `#[get("/:id")]`. Colon captures and wildcards normalize to Axum brace syntax.
 #[proc_macro_attribute]
 pub fn get(arguments: TokenStream, item: TokenStream) -> TokenStream {
     verb::outside_contract("get", arguments.into(), item.into()).into()
 }
 
-/// Marks a POST method inside a trait annotated with [`macro@routes`].
-///
-/// The attribute takes exactly one string path and is validated together with
-/// the route trait's optional prefix.
+/// Marks a POST endpoint, with a bare attribute or one string path.
 #[proc_macro_attribute]
 pub fn post(arguments: TokenStream, item: TokenStream) -> TokenStream {
     verb::outside_contract("post", arguments.into(), item.into()).into()
 }
 
-/// Marks a PUT method inside a trait annotated with [`macro@routes`].
-///
-/// The attribute takes exactly one string path and is validated together with
-/// the route trait's optional prefix.
+/// Marks a PUT endpoint, with a bare attribute or one string path.
 #[proc_macro_attribute]
 pub fn put(arguments: TokenStream, item: TokenStream) -> TokenStream {
     verb::outside_contract("put", arguments.into(), item.into()).into()
 }
 
-/// Marks a PATCH method inside a trait annotated with [`macro@routes`].
-///
-/// The attribute takes exactly one string path and is validated together with
-/// the route trait's optional prefix.
+/// Marks a PATCH endpoint, with a bare attribute or one string path.
 #[proc_macro_attribute]
 pub fn patch(arguments: TokenStream, item: TokenStream) -> TokenStream {
     verb::outside_contract("patch", arguments.into(), item.into()).into()
 }
 
-/// Marks a DELETE method inside a trait annotated with [`macro@routes`].
-///
-/// The attribute takes exactly one string path and is validated together with
-/// the route trait's optional prefix.
+/// Marks a DELETE endpoint, with a bare attribute or one string path.
 #[proc_macro_attribute]
 pub fn delete(arguments: TokenStream, item: TokenStream) -> TokenStream {
     verb::outside_contract("delete", arguments.into(), item.into()).into()

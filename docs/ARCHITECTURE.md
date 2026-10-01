@@ -7,7 +7,7 @@ compiler-diagnostic, machine-output, and minimal-scaffolding surface while
 removing the former Diesel and CLI migration integrations.
 
 ~~~text
-application cauldrons, providers, route traits, controllers
+application cauldrons, providers, inherent endpoints, controllers
                  |
                  v
      furnace-rs-core macros       furnace-rs-common macros
@@ -144,8 +144,8 @@ automatic database-to-HTTP mapping. Applications choose a domain-specific
 
 `#[cauldron]` declares a unit root type with an authored `Cauldron::register`
 chain. Membership uses `.provide::<T>()` and `.controller::<T>()`; `.import(M)`
-collects reachable furnaces. Outputs have one owner in the selected graph.
-Across furnaces, dependencies require explicit exports and a direct import or a
+collects reachable cauldrons. Outputs have one owner in the selected graph.
+Across cauldrons, dependencies require explicit exports and a direct import or a
 reachable global export. Rust namespace placement and `pub` do not grant DI
 visibility; imports are not transitive. A builder without `root::<AppCauldron>()`
 retains complete-catalog behavior.
@@ -166,21 +166,21 @@ outermost layer.
 
 ## CLI, inspection, and scaffolding boundary
 
-`furnace-rs run` and `furnace-rs dev` stream Cargo, rustc, and application output unchanged
-and do not accept JSON wrapping. `furnace-rs routes`, `furnace-rs graph`, and `furnace-rs doctor`
+`furnace run` and `furnace dev` stream Cargo, rustc, and application output unchanged
+and do not accept JSON wrapping. `furnace routes`, `furnace graph`, and `furnace doctor`
 compile the standard entry point and receive private child inspection metadata
 before normal application construction. The child protocol remains private;
-the CLI converts it to a public human report or schema-version-1 JSON result.
+the CLI converts it to a public human report or schema-version-2 JSON result.
 Invalid route/graph reports preserve safe partial public data with diagnostics.
 
 Finite commands (`new`, `routes`, `graph`, and `doctor`) accept
 `--format human|json` before or
 after their command path. JSON stdout has exactly one newline-terminated
-document with `schema_version: 1`, a canonical command, `ok`, command-specific
-data or null, and ordered warning/error diagnostics. Schema version 1 permits
+document with `schema_version: 2`, a canonical command, `ok`, command-specific
+data or null, and ordered warning/error diagnostics. Schema version 2 permits
 additive fields only; breaking field changes require a new version.
 
-`furnace-rs new <name>` bundles the fixed seven-file starter and validates all input
+`furnace new <name>` bundles the fixed six-file starter and validates all input
 before private sibling staging. One atomic rename publishes the destination;
 pre-existing paths and failed staging remain untouched. It is offline and does
 not run Cargo, install dependencies, initialise Git, select a template, or
@@ -197,3 +197,15 @@ JWT, cookie, migration, and Git setup. Trait/interface bindings, login,
 credential validation, password hashing, CSRF, remote JWKS, JWE, MySQL/SQLite,
 multiple listeners, TLS, and HTTP/2-specific configuration remain
 application-owned or later work.
+
+## Static controller protection
+
+A managed controller struct supplies one `Sealable::seals` callback and exactly
+one annotated inherent endpoint implementation. Selection joins their static
+metadata by `TypeId`. Seals are memoized within one analysis, validated against
+selected virtual outputs, and never construct a controller. Empty seals are
+public; one guard protects every endpoint; multiple seals fail preconstruction.
+Each endpoint binding retains its controller, method, canonical path, handler,
+and owning cauldron context. The Passport layer wraps each controller router
+before merge, preserving native extractor behavior and local strategy visibility.
+See [the breaking migration guide](importance/furnace-rs-migration.md).

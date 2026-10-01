@@ -1,7 +1,7 @@
 //! HTTP route metadata and validation for the common Axum adapter.
 //!
 //! The types in this module are the stable boundary between compile-time route
-//! macros and the v0.3 HTTP adapter. They contain only immutable, `'static`
+//! macros and the HTTP adapter. They contain only immutable, `'static`
 //! metadata, so catalog inspection does not construct controllers or start a
 //! server. [`RouteCatalog`] provides deterministic lookup and conflict
 //! validation over the descriptors registered by `#[controller]`.
@@ -16,7 +16,7 @@ use crate::http_scope::ScopedController;
 #[cfg(feature = "jwt")]
 use crate::passport::{GuardDescriptor, PassportGuardState, PassportStrategyPreflight};
 
-/// An HTTP method declared by a route contract.
+/// An HTTP method declared by an endpoint declaration.
 ///
 /// This enum mirrors the route attributes exported by the common integration
 /// (`#[get]`, `#[post]`, `#[put]`, `#[patch]`, and `#[delete]`).
@@ -59,7 +59,7 @@ impl HttpMethod {
 /// Static metadata for one route method.
 ///
 /// A descriptor records both the method-local path and the canonical path after
-/// applying the route-trait prefix. Its source location points back to the
+/// applying the controller prefix. Its source location points back to the
 /// route declaration, allowing catalog diagnostics to identify the offending
 /// source span without retaining runtime state.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -74,7 +74,7 @@ pub struct RouteDescriptor {
 }
 
 impl RouteDescriptor {
-    /// Creates static route metadata emitted by `#[routes]`.
+    /// Creates static route metadata emitted by `#[controller]`.
     ///
     /// Integrations that construct descriptors manually receive the same
     /// fail-closed validation as macro-generated metadata when they pass the
@@ -137,7 +137,7 @@ impl RouteDescriptor {
         self.method
     }
 
-    /// Returns the route-trait prefix, or an empty string when no prefix exists.
+    /// Returns the controller prefix, or an empty string when no prefix exists.
     pub const fn prefix(self) -> &'static str {
         self.prefix
     }
@@ -152,12 +152,12 @@ impl RouteDescriptor {
         self.full_path
     }
 
-    /// Returns the route-contract method name.
+    /// Returns the endpoint handler name.
     pub const fn handler(self) -> &'static str {
         self.handler
     }
 
-    /// Returns the source location of the declaring route contract.
+    /// Returns the source location of the declaring endpoint declaration.
     pub const fn location(self) -> SourceLocation {
         self.location
     }
@@ -521,9 +521,9 @@ impl<'a> ValidatedRouteIter<'a> {
     }
 }
 
-/// Looks up and validates route-contract metadata.
+/// Looks up and validates inherent endpoint metadata.
 ///
-/// The catalog is a read-only view of metadata emitted by `#[routes]` and
+/// The catalog is a read-only view of metadata emitted by `#[controller]` and
 /// `#[controller]`. Validation canonicalizes parameter names, so routes such as
 /// `/users/:id` and `/users/:user_id` conflict when they use the same HTTP
 /// method and controller scope. A conflict is reported as the framework's
@@ -584,8 +584,8 @@ impl RouteCatalog {
         Ok(result)
     }
 
-    /// Returns route descriptors declared by controller `T`, preserving trait
-    /// and method order.
+    /// Returns route descriptors declared by controller `T`, preserving endpoint
+    /// declaration order.
     ///
     /// An unregistered type produces an empty vector. `T` must be a concrete,
     /// thread-safe application type because it is matched by its `TypeId`.
@@ -1419,7 +1419,7 @@ mod tests {
             .root::<roots::combined::CombinedRoot>()
             .unwrap();
         let combined = combined_builder.analyze();
-        // Shared legacy contracts collide when both controllers are selected.
+        // Shared endpoint paths collide when both controllers are selected.
         assert!(
             combined
                 .diagnostics()

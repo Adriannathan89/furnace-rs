@@ -60,7 +60,7 @@ not silently become FURNACE-managed routes.
 
 | Area | Main APIs |
 | --- | --- |
-| Routing | `routes`, `controller`, `get`/`post`/`put`/`patch`/`delete`, `build_router`, `configure_router`, `serve_router` |
+| Routing | `controller`, `Sealable`, `get`/`post`/`put`/`patch`/`delete`, `build_router`, `configure_router`, `serve_router` |
 | Requests | Native Axum extractors plus `ValidatedJson`, `ValidatedQuery`, and `ValidatedPath` |
 | Errors | `BadRequest`, `Unauthorized`, `Forbidden`, `NotFound`, `Conflict`, `ValidationError`, `InternalError` |
 | Authentication | `JwtService`, `PassportStrategy`, `PassportPrincipal`, `Authenticated`, `PassportGuard` |

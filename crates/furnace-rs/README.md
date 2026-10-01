@@ -49,7 +49,7 @@ its own manifest.
 | `logger` | `furnace-rs-common/logger` | Tracing-based application logging. |
 | `jwt` | `furnace-rs-common/jwt` | JWT service, claims, profiles, algorithms, and key handling without Axum. |
 | `cookies` | `http` + `furnace-rs-common/cookies` | Cookie extraction/response support; cookies imply HTTP. |
-| `runtime-tokio` | `furnace-rs-core/runtime-tokio` | Tokio support for `#[furnace-rs::main]`. |
+| `runtime-tokio` | `furnace-rs-core/runtime-tokio` | Tokio support for `#[furnace_rs::main]`. |
 | `extra` | `furnace-rs-extra` | Reserved extension boundary. |
 
 Passport guards and strategies require `http + jwt`. Cookie guards add
@@ -72,17 +72,17 @@ The facade re-exports:
 
 - Core declarations: `cauldron`, `element`, `burner`, `storage`,
   `Configuration`, `Secret`, `Cauldron`, `CauldronRegistration`, and the builder/application types under
-  `furnace-rs::core`.
-- Integration declarations: `routes`, HTTP verbs, `controller`, `guard`,
+  `furnace_rs::core`.
+- Integration declarations: HTTP verbs, `controller`, `guard`,
   `Input`, Passport derives, and strategy metadata when the required features
   are enabled.
 - HTTP types: native Axum extractors/responses, validated extractors,
   `HttpResult`, standard REST errors, router builders, and serving functions.
 - Authentication/cookies: `JwtService`, claims/options, Passport types,
   `CookieJar`, and cookie response composition.
-- Native escape hatches: `furnace-rs::axum` and Tower-compatible router composition.
+- Native escape hatches: `furnace_rs::axum` and Tower-compatible router composition.
 
-Use `furnace-rs::prelude` for the normal application surface. Reach into `furnace-rs::core`
+Use `furnace_rs::prelude` for the normal application surface. Reach into `furnace_rs::core`
 when the application needs framework-neutral configuration, graph, or lifecycle
 types.
 
@@ -96,8 +96,8 @@ Furnace::burn::<AppCauldron>()
         ├── loads .env/furnace.toml/FURNACE_* from the current directory
         ├── selects the rooted module scope
         ├── analyzes auto-configuration and the provider graph
-        ├── constructs providers
-        ├── validates routes and finalizes the Axum router
+        ├── validates selected endpoints, seals, and virtual dependency outputs
+        ├── constructs providers and finalizes the Axum router
         ├── starts lifecycle and registered resource readiness
         ├── binds and serves
         └── shuts down in reverse order

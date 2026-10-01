@@ -273,7 +273,6 @@ fn cli_documentation_lists_the_exact_surface() {
         "furnace.toml",
         "src/main.rs",
         "src/app/mod.rs",
-        "src/app/routes.rs",
         "src/app/controller.rs",
         "src/app/service.rs",
         "FURNACE_SERVER__HOST",

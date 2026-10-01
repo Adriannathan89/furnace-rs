@@ -845,3 +845,55 @@ fn release_updates_internal_pins_through_the_recommended_facade_alias() {
         "furnace = { package = \"furnace-rs\", path = \"../furnace-rs\", version = \"=0.9.3\" }"
     ));
 }
+
+#[test]
+fn furnace_migration_guide_documents_the_complete_breaking_surface() {
+    let root = workspace_root();
+    let guide = fs::read_to_string(root.join("docs/importance/furnace-rs-migration.md"))
+        .expect("the current migration guide must exist");
+    for required in [
+        "furnace_rs",
+        "package = \"furnace-rs\"",
+        "#[controller(route = \"/users\")]",
+        "impl Sealable",
+        "SealRegistration::new()",
+        "Self::seal::<UserGuard>()",
+        ".provide::<UserService>()",
+        ".controller::<UserController>()",
+        ".export::<",
+        ".global()",
+        "FURNACE_SERVER__PORT",
+        "schema 2",
+    ] {
+        assert!(
+            guide.contains(required),
+            "migration guide missing {required}"
+        );
+    }
+    let facade = fs::read_to_string(root.join("crates/furnace-rs/src/lib.rs")).unwrap();
+    assert!(
+        !facade.contains("unrestricted `pub`"),
+        "Rust visibility must not imply DI visibility"
+    );
+    let readme = fs::read_to_string(root.join("README.md")).unwrap();
+    assert!(!readme.contains("#[routes"));
+    assert!(!readme.contains("controller(routes"));
+    assert!(readme.contains("furnace-rs-migration.md"));
+}
+
+#[test]
+fn furnace_tooling_documents_schema_two_and_six_file_scaffolding() {
+    let root = workspace_root();
+    let cli = fs::read_to_string(root.join("docs/CLI.md")).unwrap();
+    assert!(cli.contains("six files"));
+    assert!(cli.contains("Schema version 2"));
+    assert!(!cli.contains("route_trait"));
+    assert!(!cli.contains("src/app/routes.rs"));
+    assert_eq!(furnace_rs_cli::scaffold::GENERATED_FILES.len(), 6);
+    for workflow in ["ci.yml", "beta-publish.yml", "stable-publish.yml"] {
+        let source = fs::read_to_string(root.join(".github/workflows").join(workflow)).unwrap();
+        assert!(source.contains("FURNACE_TEST_DATABASE_URL"));
+        assert!(source.contains("furnace_test"));
+        assert!(!source.contains("mads_test"));
+    }
+}
