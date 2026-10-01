@@ -286,3 +286,63 @@ async fn focus_does_not_evaluate_unrelated_auto_configuration() {
         8
     );
 }
+
+#[derive(Clone)]
+struct FocusedDefault(u32);
+#[mads_core::service]
+struct DefaultConsumer {
+    value: FocusedDefault,
+}
+fn focused_default_id() -> TypeId {
+    TypeId::of::<FocusedDefault>()
+}
+fn evaluate_focused_default(
+    context: &mads_core::__private::AutoConfigurationContext<'_>,
+) -> mads_core::__private::AutoConfigurationEvaluation {
+    let requirements = context.requirements::<FocusedDefault>();
+    if context.has_provider::<FocusedDefault>() {
+        mads_core::__private::AutoConfigurationEvaluation::overridden(
+            mads_core::AutoConfigurationReasonCode::new("supplied"),
+            "already supplied",
+            requirements,
+            Vec::new(),
+        )
+    } else {
+        mads_core::__private::AutoConfigurationEvaluation::active(
+            mads_core::AutoConfigurationReasonCode::new("required"),
+            "selected chain requires it",
+            requirements,
+            Vec::new(),
+        )
+    }
+}
+fn apply_focused_default(
+    _: &mads_core::__private::AutoConfigurationApplyContext<'_>,
+) -> mads_core::Result<mads_core::__private::AutoConfigurationContribution> {
+    Ok(mads_core::__private::AutoConfigurationContribution::new(
+        FocusedDefault(12),
+    ))
+}
+mads_core::__private::inventory::submit! {
+    mads_core::__private::AutoConfigurationDescriptor::new(
+        "focused_selection.default", "FocusedDefault", focused_default_id,
+        SourceLocation::new(file!(),line!(),column!()), evaluate_focused_default, apply_focused_default)
+}
+#[tokio::test]
+async fn focus_evaluates_only_auto_configuration_needed_by_selected_chain() {
+    let mut builder = Mads::builder();
+    builder.__test_focus::<DefaultConsumer>().unwrap();
+    let app = builder.build().await.unwrap();
+    assert_eq!(
+        app.context().resolve::<DefaultConsumer>().unwrap().value.0,
+        12
+    );
+    assert_eq!(app.auto_configurations().len(), 1);
+}
+#[tokio::test]
+async fn focus_required_supply_blocks_even_a_relevant_auto_configuration() {
+    let mut builder = Mads::builder();
+    builder.__test_focus::<DefaultConsumer>().unwrap();
+    builder.__test_require_provided::<FocusedDefault>();
+    assert_eq!(builder.build().await.err().unwrap().code(), MADS003);
+}

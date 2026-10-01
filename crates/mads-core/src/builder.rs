@@ -210,17 +210,7 @@ impl MadsBuilder {
     fn analyze_builder(&self) -> BuilderAnalysis {
         let providers = Catalog::providers();
         if let Some((target, name)) = self.focus {
-            return BuilderAnalysis {
-                public: select_focused_providers(
-                    target,
-                    name,
-                    &providers,
-                    &self.satisfied,
-                    &self.required_supplies,
-                ),
-                selected: Vec::new(),
-                failure: None,
-            };
+            return self.analyze_focused(target, name, &providers);
         }
         let Some(root) = &self.root else {
             return self.analyze_complete_catalog(&providers);
@@ -267,6 +257,72 @@ impl MadsBuilder {
             public,
             selected: auto_configuration.selected,
             failure: auto_configuration.failure,
+        }
+    }
+
+    fn analyze_focused(
+        &self,
+        target: TypeId,
+        name: &'static str,
+        providers: &[&'static ProviderDescriptor],
+    ) -> BuilderAnalysis {
+        let initial = select_focused_providers(
+            target,
+            name,
+            providers,
+            &self.satisfied,
+            &self.required_supplies,
+            &[],
+        );
+        let selected_providers = providers
+            .iter()
+            .copied()
+            .filter(|descriptor| {
+                initial
+                    .graph()
+                    .providers
+                    .iter()
+                    .any(|node| node.type_id == descriptor.type_id())
+            })
+            .collect::<Vec<_>>();
+        let automatic = auto_configuration::descriptors()
+            .into_iter()
+            .filter(|descriptor| {
+                let output = descriptor.output_type_id();
+                !self.required_supplies.contains(&output)
+                    && initial.graph().providers.iter().any(|node| {
+                        node.type_id == output
+                            || node
+                                .declared_dependencies
+                                .iter()
+                                .any(|dependency| dependency.type_id() == output)
+                    })
+            })
+            .collect::<Vec<_>>();
+        let automatic = auto_configuration::analyze_parts(
+            &automatic,
+            &selected_providers,
+            &self.satisfied,
+            &self.config,
+            &self.auto_configuration_inputs,
+            None,
+        );
+        let mut satisfied = self.satisfied.clone();
+        satisfied.extend(automatic.virtual_satisfied);
+        let mut public = select_focused_providers(
+            target,
+            name,
+            providers,
+            &satisfied,
+            &self.required_supplies,
+            &automatic.covered_missing,
+        );
+        public.append_diagnostics(automatic.diagnostics);
+        public.auto_configurations = automatic.reports;
+        BuilderAnalysis {
+            public,
+            selected: automatic.selected,
+            failure: automatic.failure,
         }
     }
 

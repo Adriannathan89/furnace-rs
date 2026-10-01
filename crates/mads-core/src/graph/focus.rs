@@ -11,6 +11,7 @@ pub(crate) fn select_focused_providers(
     providers: &[&'static ProviderDescriptor],
     supplied: &[SatisfiedProvider],
     required: &[TypeId],
+    covered_missing: &[TypeId],
 ) -> GraphAnalysis {
     let mut pending = vec![target];
     let mut visited = Vec::new();
@@ -36,7 +37,7 @@ pub(crate) fn select_focused_providers(
         .filter(|value| visited.contains(&value.type_id))
         .cloned()
         .collect::<Vec<_>>();
-    let mut analysis = analyze_descriptors(&selected, &supplied, &[]);
+    let mut analysis = analyze_descriptors(&selected, &supplied, covered_missing);
     // A supplied subject still has to name a registered declaration.
     if !selected.iter().any(|p| p.type_id() == target) {
         analysis.append_diagnostics(vec![
