@@ -130,8 +130,8 @@
 //! # }
 //! ```
 //!
-//! A static controller seal protects every endpoint. Empty seals declare a public
-//! controller; cookie policies select exactly one named cookie:
+//! Controllers without `Sealable` are public. A static controller seal protects
+//! endpoints except those marked `#[seal(skip)]`; cookie policies select one named cookie:
 //!
 //! ```
 //! # #[cfg(feature = "jwt")]
@@ -165,9 +165,6 @@
 //! }
 //! #[controller]
 //! struct LoginController;
-//! impl Sealable for LoginController {
-//!     fn seals() -> SealRegistration<Self> { SealRegistration::new() }
-//! }
 //! #[controller(route = "/users")]
 //! impl LoginController {
 //!     #[post("/login")]
@@ -204,6 +201,10 @@ pub use furnace_rs_common::{GuardPolicy, SealEntry};
 /// Re-exports static controller protection declarations.
 #[cfg(feature = "http")]
 pub use furnace_rs_common::{SealDefinition, SealRegistration, Sealable};
+
+/// Makes an endpoint public by bypassing its controller seal.
+#[cfg(feature = "http")]
+pub use furnace_rs_common::seal;
 
 /// Re-exports controller and endpoint discovery metadata.
 #[cfg(feature = "http")]
@@ -341,7 +342,7 @@ pub mod prelude {
 
     /// Re-exports route-contract attributes.
     #[cfg(feature = "http")]
-    pub use furnace_rs_common::{delete, get, patch, post, put};
+    pub use furnace_rs_common::{delete, get, patch, post, put, seal};
 
     /// Re-exports standard HTTP request extractors and typed-header support.
     #[cfg(feature = "http")]

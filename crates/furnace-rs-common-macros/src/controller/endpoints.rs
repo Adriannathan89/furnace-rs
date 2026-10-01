@@ -84,6 +84,40 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                 "`seal` is reserved for static controller protection",
             ));
         }
+        let seal_attributes = method
+            .attrs
+            .iter()
+            .filter(|attr| {
+                attr.path()
+                    .segments
+                    .last()
+                    .is_some_and(|segment| segment.ident == "seal")
+            })
+            .collect::<Vec<_>>();
+        if seal_attributes.len() > 1 {
+            return Err(Error::new(
+                seal_attributes[1].span(),
+                "an endpoint can declare `#[seal(skip)]` only once",
+            ));
+        }
+        let seal_skipped = if let Some(attr) = seal_attributes.first() {
+            let value = attr.parse_args::<syn::Ident>()?;
+            if value != "skip" {
+                return Err(Error::new(
+                    value.span(),
+                    "endpoint seals accept only `#[seal(skip)]`",
+                ));
+            }
+            true
+        } else {
+            false
+        };
+        method.attrs.retain(|attr| {
+            attr.path()
+                .segments
+                .last()
+                .is_none_or(|segment| segment.ident != "seal")
+        });
         let verbs = method
             .attrs
             .iter()
@@ -109,6 +143,12 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
             }
         }
         if verbs.is_empty() {
+            if seal_skipped {
+                return Err(Error::new(
+                    method.sig.ident.span(),
+                    "`#[seal(skip)]` requires an HTTP endpoint",
+                ));
+            }
             continue;
         }
         if verbs.len() != 1 {
@@ -178,7 +218,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
             #(#conditional)*
             #common::RouteDescriptor::new(#method_token, #prefix, #path, #full_path, #handler,
                 #common::core::SourceLocation::new(file!(), line!(), column!()))
-                .with_namespace(module_path!())
+                .with_namespace(module_path!()).with_seal_skipped(#seal_skipped)
         });
         let mut types = method
             .sig

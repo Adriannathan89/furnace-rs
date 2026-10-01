@@ -1,0 +1,5 @@
+error: endpoint seals accept only `#[seal(skip)]`
+ --> tests/ui-direct/fail/seal_invalid.rs:7:12
+  |
+7 |     #[seal(unknown)]
+  |            ^^^^^^^

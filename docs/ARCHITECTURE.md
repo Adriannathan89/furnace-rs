@@ -200,12 +200,16 @@ application-owned or later work.
 
 ## Static controller protection
 
-A managed controller struct supplies one `Sealable::seals` callback and exactly
-one annotated inherent endpoint implementation. Selection joins their static
+A managed controller struct optionally implements `Sealable::seals` and has
+exactly one annotated inherent endpoint implementation. Generated metadata uses
+concrete-type autoref dispatch to select an explicit implementation, falling back
+to public metadata when the trait is absent; no blanket implementation conflicts
+with user-defined seals. Selection joins their static
 metadata by `TypeId`. Seals are memoized within one analysis, validated against
 selected virtual outputs, and never construct a controller. Empty seals are
-public; one guard protects every endpoint; multiple seals fail preconstruction.
+public; one guard protects endpoints except those marked `#[seal(skip)]`;
+multiple seals fail preconstruction. Only protected occurrences contribute
+JWT/strategy requirements or receive Passport bindings.
 Each endpoint binding retains its controller, method, canonical path, handler,
-and owning cauldron context. The Passport layer wraps each controller router
-before merge, preserving native extractor behavior and local strategy visibility.
+and owning cauldron context. The Passport layer wraps each protected method router before methods are merged, preserving native extractor behavior and local strategy visibility.
 See [the breaking migration guide](importance/furnace-rs-migration.md).

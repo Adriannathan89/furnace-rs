@@ -662,7 +662,7 @@ fn inspect_scope(
             handler: route.handler().to_owned(),
             controller: controller.descriptor().type_name().to_owned(),
             location: source_report(route.location()),
-            guard_active: controller.guard_active(),
+            guard_active: controller.guard_active(route),
         })
         .collect::<Vec<_>>();
     routes.sort_by(|left, right| {
@@ -997,6 +997,75 @@ mod tests {
         #[crate::get("/inspection")]
         async fn inspection(&self) -> &'static str {
             "inspection"
+        }
+    }
+
+    #[cfg(feature = "jwt")]
+    mod endpoint_seal_reports {
+        use super::*;
+        #[derive(serde::Deserialize)]
+        struct Claims;
+        impl crate::PassportPrincipal for Claims {
+            fn has_role(&self, _: &str) -> bool {
+                false
+            }
+            fn has_permission(&self, _: &str) -> bool {
+                false
+            }
+        }
+        #[crate::guard(strategy = "jwt", principal = crate::ClaimsPrincipal<Claims>)]
+        struct Policy;
+        #[crate::controller]
+        struct Mixed;
+        impl crate::Sealable for Mixed {
+            fn seals() -> crate::SealRegistration<Self> {
+                Self::seal::<Policy>()
+            }
+        }
+        #[crate::controller(route = "/mixed")]
+        impl Mixed {
+            #[crate::get]
+            #[crate::seal(skip)]
+            fn public(&self) {}
+            #[crate::post]
+            fn protected(&self) {}
+        }
+        #[crate::controller]
+        struct Public;
+        #[crate::controller(route = "/public-default")]
+        impl Public {
+            #[crate::get]
+            fn index(&self) {}
+        }
+        #[furnace_rs_core::cauldron]
+        struct Root;
+        impl furnace_rs_core::Cauldron for Root {
+            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
+                self.controller::<Mixed>().controller::<Public>()
+            }
+        }
+        #[test]
+        fn reports_protection_for_each_method_and_public_default() {
+            let root = tempfile::tempdir().unwrap();
+            std::fs::write(
+                root.path().join("furnace.toml"),
+                "[passport]\nsecret = \"01234567890123456789012345678901\"\n",
+            )
+            .unwrap();
+            let report = inspect_standard_application::<Root>(root.path(), InspectionKind::Routes);
+            assert!(!report.failed, "{:?}", report.diagnostics);
+            for (method, path, protected) in [
+                ("GET", "/mixed", false),
+                ("POST", "/mixed", true),
+                ("GET", "/public-default", false),
+            ] {
+                let route = report
+                    .routes
+                    .iter()
+                    .find(|route| route.method == method && route.path == path)
+                    .unwrap();
+                assert_eq!(route.guard_active, protected);
+            }
         }
     }
 

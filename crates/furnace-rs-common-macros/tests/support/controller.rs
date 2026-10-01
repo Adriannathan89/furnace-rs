@@ -18,9 +18,6 @@ fn records_a_managed_controller_and_its_static_seal_callback() {
         expand_controller_with_common(item, &syn::parse_quote!(furnace_rs_common)).unwrap(),
     );
     assert!(expanded.contains("ControllerDescriptor::new"));
-    assert!(
-        expanded.contains("<Controllerasfurnace_rs_common::Sealable>::seals().into_definition()")
-    );
     assert_eq!(
         expanded.matches("with_namespace(module_path!())").count(),
         2

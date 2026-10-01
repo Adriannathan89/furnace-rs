@@ -106,7 +106,7 @@ fn name_and_templates_render_the_exact_minimal_project_manifest() {
         ),
         (
             "src/app/controller.rs".to_owned(),
-            "// src/app/controller.rs\nuse furnace::prelude::*;\n\nuse super::service::AppService;\n\n#[controller]\npub struct AppController {\n    service: AppService,\n}\n\nimpl Sealable for AppController {\n    fn seals() -> SealRegistration<Self> {\n        SealRegistration::new()\n    }\n}\n\n#[controller(route = \"/\")]\nimpl AppController {\n    #[get]\n    async fn hello(&self) -> &'static str {\n        self.service.hello()\n    }\n}\n"
+            "// src/app/controller.rs\nuse furnace::prelude::*;\n\nuse super::service::AppService;\n\n#[controller]\npub struct AppController {\n    service: AppService,\n}\n\n#[controller(route = \"/\")]\nimpl AppController {\n    #[get]\n    async fn hello(&self) -> &'static str {\n        self.service.hello()\n    }\n}\n"
                 .to_owned(),
         ),
         (

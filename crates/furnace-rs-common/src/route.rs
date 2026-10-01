@@ -69,6 +69,7 @@ pub struct RouteDescriptor {
     path: &'static str,
     full_path: &'static str,
     handler: &'static str,
+    seal_skipped: bool,
     namespace: Option<&'static str>,
     location: SourceLocation,
 }
@@ -113,9 +114,22 @@ impl RouteDescriptor {
             path,
             full_path,
             handler,
+            seal_skipped: false,
             namespace: None,
             location,
         }
+    }
+
+    /// Marks this endpoint as public even when its controller declares a seal.
+    #[must_use]
+    pub const fn with_seal_skipped(mut self, skipped: bool) -> Self {
+        self.seal_skipped = skipped;
+        self
+    }
+
+    /// Returns whether this endpoint bypasses its controller's seal.
+    pub const fn seal_skipped(self) -> bool {
+        self.seal_skipped
     }
 
     /// Attaches the Rust namespace containing this route declaration.
@@ -393,28 +407,11 @@ pub type ControllerRegistrar = fn(
 #[doc(hidden)]
 #[derive(Debug)]
 pub struct ValidatedController {
-    #[cfg(feature = "jwt")]
-    controller_id: TypeId,
-    #[cfg(feature = "jwt")]
-    sealed_endpoint: Option<crate::http_scope::RouteIdentity>,
     registrar: ControllerRegistrar,
     routes: Vec<ValidatedRoute>,
 }
 
 impl ValidatedController {
-    #[cfg(feature = "jwt")]
-    pub(crate) fn guard_layer(
-        &self,
-        runtime: &RouterBuildContext<'_>,
-    ) -> Result<Option<crate::passport::PassportGuardLayer>> {
-        self.sealed_endpoint
-            .map(|occurrence| {
-                runtime
-                    .endpoint_guard_state(occurrence)
-                    .map(crate::passport::PassportGuardLayer::new)
-            })
-            .transpose()
-    }
     /// Returns the generated registrar for this controller.
     #[doc(hidden)]
     pub const fn registrar(&self) -> ControllerRegistrar {
@@ -428,6 +425,8 @@ impl ValidatedController {
             routes: self.routes.iter(),
             #[cfg(feature = "jwt")]
             passport_context_cauldron: None,
+            #[cfg(feature = "jwt")]
+            guard_occurrence: None,
         }
     }
 }
@@ -440,6 +439,8 @@ struct ValidatedRoute {
     axum_path: Option<String>,
     #[cfg(feature = "jwt")]
     passport_context_cauldron: Option<TypeId>,
+    #[cfg(feature = "jwt")]
+    guard_occurrence: Option<crate::http_scope::RouteIdentity>,
 }
 
 /// Iterates validated Axum paths for a generated controller registrar.
@@ -451,6 +452,8 @@ pub struct ValidatedRouteIter<'a> {
     routes: std::slice::Iter<'a, ValidatedRoute>,
     #[cfg(feature = "jwt")]
     passport_context_cauldron: Option<TypeId>,
+    #[cfg(feature = "jwt")]
+    guard_occurrence: Option<crate::http_scope::RouteIdentity>,
 }
 
 impl<'a> ValidatedRouteIter<'a> {
@@ -482,6 +485,7 @@ impl<'a> ValidatedRouteIter<'a> {
         }
         #[cfg(feature = "jwt")]
         {
+            self.guard_occurrence = route.selected.then_some(route.guard_occurrence).flatten();
             self.passport_context_cauldron = route
                 .selected
                 .then_some(route.passport_context_cauldron)
@@ -493,6 +497,26 @@ impl<'a> ValidatedRouteIter<'a> {
                 .as_deref()
                 .expect("selected routes retain a validated Axum path")
         }))
+    }
+
+    /// Applies the seal for the last selected endpoint to its method router.
+    #[doc(hidden)]
+    #[allow(clippy::result_large_err)]
+    pub fn protect(
+        &self,
+        runtime: &RouterBuildContext<'_>,
+        handler: axum::routing::MethodRouter,
+    ) -> Result<axum::routing::MethodRouter> {
+        #[cfg(feature = "jwt")]
+        if let Some(occurrence) = self.guard_occurrence {
+            return Ok(
+                handler.route_layer(crate::passport::PassportGuardLayer::new(
+                    runtime.endpoint_guard_state(occurrence)?,
+                )),
+            );
+        }
+        let _ = runtime;
+        Ok(handler)
     }
 
     /// Returns the module context chosen for the last selected guarded route.
@@ -709,6 +733,8 @@ struct RouteSelection {
     selected: bool,
     #[cfg(feature = "jwt")]
     passport_context_cauldron: Option<TypeId>,
+    #[cfg(feature = "jwt")]
+    guard_occurrence: Option<crate::http_scope::RouteIdentity>,
 }
 
 impl RouteSelection {
@@ -717,6 +743,8 @@ impl RouteSelection {
             selected: true,
             #[cfg(feature = "jwt")]
             passport_context_cauldron: None,
+            #[cfg(feature = "jwt")]
+            guard_occurrence: None,
         }
     }
 
@@ -725,6 +753,8 @@ impl RouteSelection {
             selected: false,
             #[cfg(feature = "jwt")]
             passport_context_cauldron: None,
+            #[cfg(feature = "jwt")]
+            guard_occurrence: None,
         }
     }
 }
@@ -736,7 +766,7 @@ pub(crate) fn validate_scoped_descriptors(
         .iter()
         .map(ScopedController::descriptor)
         .collect::<Vec<_>>();
-    let mut validated = validate_with_selection(&controllers, |controller, route| {
+    let validated = validate_with_selection(&controllers, |controller, route| {
         let Some(scoped) = descriptors
             .iter()
             .find(|scoped| std::ptr::eq(scoped.descriptor(), controller))
@@ -747,20 +777,13 @@ pub(crate) fn validate_scoped_descriptors(
         RouteSelection {
             selected,
             #[cfg(feature = "jwt")]
+            guard_occurrence: scoped.sealed_endpoint(route),
+            #[cfg(feature = "jwt")]
             passport_context_cauldron: selected
                 .then(|| scoped.passport_context_cauldron(route))
                 .flatten(),
         }
     })?;
-    #[cfg(feature = "jwt")]
-    for controller in &mut validated {
-        controller.sealed_endpoint = descriptors
-            .iter()
-            .find(|scope| scope.descriptor().type_id() == controller.controller_id)
-            .and_then(ScopedController::sealed_endpoint);
-    }
-    #[cfg(not(feature = "jwt"))]
-    let _ = &mut validated;
     Ok(validated)
 }
 
@@ -815,17 +838,12 @@ fn validate_with_selection(
                 axum_path: selected.then(|| route.full_path().to_owned()),
                 #[cfg(feature = "jwt")]
                 passport_context_cauldron: selection.passport_context_cauldron,
+                #[cfg(feature = "jwt")]
+                guard_occurrence: selection.guard_occurrence,
             });
         }
 
-        validated.push(ValidatedController {
-            #[cfg(feature = "jwt")]
-            controller_id: controller.type_id(),
-            #[cfg(feature = "jwt")]
-            sealed_endpoint: None,
-            registrar,
-            routes,
-        });
+        validated.push(ValidatedController { registrar, routes });
     }
 
     Ok(validated)
@@ -1411,10 +1429,7 @@ mod tests {
         let mut routes = controller.routes();
         let router = (controller.registrar())(axum::Router::new(), &runtime, &mut routes).unwrap();
         routes.finish().unwrap();
-        match controller.guard_layer(&runtime).unwrap() {
-            Some(layer) => router.layer(layer),
-            None => router,
-        }
+        router
     }
 
     fn authenticated_request(token: &str) -> Request<Body> {

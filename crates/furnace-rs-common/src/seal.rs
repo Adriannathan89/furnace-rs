@@ -10,18 +10,21 @@ use furnace_rs_core::SourceLocation;
 use std::any::{TypeId, type_name};
 
 /// Declares one controller's protection independently of its constructed state.
+///
+/// Implement this trait to protect a controller. Controllers without it are
+/// public. Endpoints marked `#[seal(skip)]` bypass the declared policy.
 pub trait Sealable: Send + Sync + Sized + 'static {
     /// Returns an empty declaration for public endpoints or one typed policy.
     fn seals() -> SealRegistration<Self>;
 }
 
 /// Records a controller's ordered policy declarations without evaluating them.
-pub struct SealRegistration<C: Sealable> {
+pub struct SealRegistration<C> {
     definition: SealDefinition,
     marker: PhantomData<fn() -> C>,
 }
 
-impl<C: Sealable> SealRegistration<C> {
+impl<C> SealRegistration<C> {
     /// Starts an empty declaration, making the controller public.
     pub fn new() -> Self {
         Self {
@@ -51,9 +54,45 @@ impl<C: Sealable> SealRegistration<C> {
     }
 }
 
-impl<C: Sealable> Default for SealRegistration<C> {
+impl<C> Default for SealRegistration<C> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Concrete-controller probe used by generated metadata callbacks.
+#[doc(hidden)]
+pub struct SealProbe<C>(PhantomData<fn() -> C>);
+
+impl<C> SealProbe<C> {
+    /// Creates a probe without constructing the controller.
+    pub const fn new() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<C> Default for SealProbe<C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Resolves an explicit seal or falls back to a public declaration.
+#[doc(hidden)]
+pub trait OptionalSeal {
+    /// Returns static protection metadata for the concrete controller.
+    fn optional_seal(self) -> SealDefinition;
+}
+
+impl<C> OptionalSeal for &SealProbe<C> {
+    fn optional_seal(self) -> SealDefinition {
+        SealDefinition::default()
+    }
+}
+
+impl<C: Sealable> OptionalSeal for &&SealProbe<C> {
+    fn optional_seal(self) -> SealDefinition {
+        C::seals().into_definition()
     }
 }
 

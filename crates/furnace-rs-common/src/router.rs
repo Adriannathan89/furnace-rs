@@ -95,11 +95,6 @@ fn register_scope(
         let controller_router =
             (controller.registrar())(axum::Router::new(), &runtime, &mut routes)?;
         routes.finish()?;
-        #[cfg(feature = "jwt")]
-        let controller_router = match controller.guard_layer(&runtime)? {
-            Some(layer) => controller_router.route_layer(layer),
-            None => controller_router,
-        };
         router = router.merge(controller_router);
     }
     Ok(router)

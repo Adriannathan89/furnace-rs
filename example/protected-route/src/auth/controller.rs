@@ -13,11 +13,6 @@ pub struct AuthController {
     service: Arc<dyn AuthService>,
 }
 
-impl Sealable for AuthController {
-    fn seals() -> SealRegistration<Self> {
-        SealRegistration::new()
-    }
-}
 #[controller(route = "/auth")]
 impl AuthController {
     #[post("/login")]

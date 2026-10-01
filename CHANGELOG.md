@@ -9,7 +9,7 @@ All notable changes to furnace-rs are documented in this file.
 - Register dependencies, controllers, imports, explicit exports, and global status in `Cauldron::register`; Rust `pub` controls Rust name visibility only.
 - Start applications with `Furnace::burn` and `FurnaceBurnExt`.
 - Declare endpoints directly in an inherent `#[controller(route = "/users")]` implementation; remove `#[routes]` and `controller(routes = ...)`.
-- Attach one static `#[guard]` policy through `Sealable`; every endpoint is protected, with public endpoints on a separate unsealed controller.
+- Controllers are public without `impl Sealable`. Attach one static `#[guard]` policy through `Sealable`, and use `#[seal(skip)]` for public endpoints within a sealed controller.
 - Rename conventional config/environment keys to `furnace.toml`/`FURNACE_*`, emit schema/protocol 2 endpoint reports, and generate six scaffold files.
 - Keep workspace version 0.9.2, edition 2024, Rust 1.94, and public feature gates unchanged. See [the migration guide](docs/importance/furnace-rs-migration.md).
 

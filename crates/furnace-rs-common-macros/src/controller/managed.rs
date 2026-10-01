@@ -130,7 +130,11 @@ pub(super) fn expand_controller_with_common(
                 concat!(module_path!(), "::", stringify!(#ident)),
                 || ::core::any::TypeId::of::<#ident>(),
                 #core::SourceLocation::new(file!(), line!(), column!()),
-                || <#ident as #common::Sealable>::seals().into_definition(),
+                || {
+                    use #common::__private::OptionalSeal as _;
+                    let probe = #common::__private::SealProbe::<#ident>::new();
+                    (&&probe).optional_seal()
+                },
             ).with_namespace(module_path!())
         }
     };
@@ -138,7 +142,7 @@ pub(super) fn expand_controller_with_common(
         quote! {
             #(#cfg_attrs)*
             impl #ident {
-                #[doc = "Starts a static declaration protecting all controller endpoints."]
+                #[doc = "Starts a static declaration protecting endpoints except explicit seal skips."]
                 #[track_caller]
                 pub fn seal<G: #common::GuardPolicy>() -> #common::SealRegistration<Self> {
                     #common::SealRegistration::new().seal::<G>()

@@ -572,9 +572,19 @@ impl UserController {
 }
 ```
 
-One static policy protects every endpoint of its controller. An empty
-`SealRegistration::new()` makes a controller public; use a separate public
-controller for login. Roles, permissions, and predicates are ANDed;
+Controllers are public by default without `impl Sealable`. An explicit empty
+`SealRegistration::new()` also makes a controller public. One static policy
+protects its controller's endpoints except methods marked `#[seal(skip)]`,
+which bypass authentication and policy checks. For example:
+
+```rust,ignore
+#[post("/login")]
+#[seal(skip)]
+fn login(&self) -> &'static str { "public login" }
+```
+
+Use this method inside the annotated controller implementation. Skipped methods
+do not receive an authenticated principal from the seal. Roles, permissions, and predicates are ANDed;
 `any`/`all` controls matching inside each clause. Every predicate must be a
 synchronous `fn(&UserPrincipal) -> bool`. A guard uses exactly one source.
 With `cookies`, select `source = cookie("refresh_token")`.

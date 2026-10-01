@@ -8,12 +8,6 @@ pub struct AppController {
     service: AppService,
 }
 
-impl Sealable for AppController {
-    fn seals() -> SealRegistration<Self> {
-        SealRegistration::new()
-    }
-}
-
 #[controller(route = "/")]
 impl AppController {
     #[get]

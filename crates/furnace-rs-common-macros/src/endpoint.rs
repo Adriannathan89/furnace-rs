@@ -229,10 +229,10 @@ impl HandlerAdapter<'_> {
                     let __furnace_handler_controller = __furnace_controller.clone();
                     __furnace_router = __furnace_router.route(
                         __furnace_path,
-                        #routing(move |#(#args: #types),*| {
+                        __furnace_routes.protect(__furnace_runtime, #routing(move |#(#args: #types),*| {
                             let __furnace_controller = __furnace_handler_controller.clone();
                             async move { #invocation }
-                        }) #guard_layer,
+                        }) #guard_layer)? ,
                     );
                 }
             }

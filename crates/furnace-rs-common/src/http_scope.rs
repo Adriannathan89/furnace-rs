@@ -108,17 +108,24 @@ impl ScopedController {
     }
 
     #[cfg(feature = "jwt")]
-    pub(crate) fn sealed_endpoint(&self) -> Option<RouteIdentity> {
-        self.seal
-            .and_then(|_| self.selected_routes.first().copied())
+    pub(crate) fn sealed_endpoint(&self, route: &RouteDescriptor) -> Option<RouteIdentity> {
+        self.guard_active(route)
+            .then(|| {
+                self.selected_routes
+                    .iter()
+                    .find(|identity| identity.matches(self.descriptor, route))
+                    .copied()
+            })
+            .flatten()
     }
-    pub(crate) fn guard_active(&self) -> bool {
+    pub(crate) fn guard_active(&self, route: &RouteDescriptor) -> bool {
         #[cfg(feature = "jwt")]
         {
-            self.seal.is_some()
+            self.seal.is_some() && !route.seal_skipped()
         }
         #[cfg(not(feature = "jwt"))]
         {
+            let _ = route;
             false
         }
     }
@@ -229,7 +236,12 @@ impl HttpApplicationScope {
                             policy_type_id: entry.guard_type_id(),
                             policy_type_name: entry.guard_type_name(),
                         };
-                        for occurrence in &controller.selected_routes {
+                        for occurrence in controller.selected_routes.iter().filter(|identity| {
+                            controller.descriptor.routes().any(|route| {
+                                identity.matches(controller.descriptor, route)
+                                    && !route.seal_skipped()
+                            })
+                        }) {
                             guards.push(ScopedGuard {
                                 guard: seal.guard,
                                 occurrence: Some(*occurrence),

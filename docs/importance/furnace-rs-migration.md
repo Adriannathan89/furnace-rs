@@ -77,13 +77,13 @@ impl UserController {
     fn list(&self) -> &'static str { self.service.list() }
     #[post]
     async fn create(&self) -> &'static str { "created" }
+    #[post("/login")]
+    #[seal(skip)]
+    fn login(&self) -> &'static str { "public login" }
 }
 
 #[controller]
 pub struct HealthController;
-impl Sealable for HealthController {
-    fn seals() -> SealRegistration<Self> { SealRegistration::new() }
-}
 #[controller(route = "/health")]
 impl HealthController {
     #[get]
@@ -106,9 +106,15 @@ async fn main() -> Result<(), HttpRuntimeError> {
 }
 ```
 
-The empty health seal is public. `UserGuard` protects GET `/users/{id}`, GET
-`/users`, and POST `/users`. A controller supports at most one seal, with no
-per-endpoint guard overrides or skips. Put public login on a separate controller.
+A controller without `impl Sealable` is public by default, as shown by
+`HealthController`. An explicit empty `SealRegistration::new()` also remains public.
+`UserGuard` protects GET `/users/{id}`, GET `/users`, and POST `/users`.
+POST `/users/login` uses `#[seal(skip)]` and bypasses authentication and policy
+checks, including when a caller sends an invalid token. A controller supports
+at most one seal. The marker accepts exactly `skip` on an HTTP endpoint; it does
+not replace the controller policy with another guard. Skipped endpoints do not
+receive an authenticated principal from the seal. A controller whose enabled
+endpoints all skip needs no JWT output or configuration for those endpoints.
 Policies are non-generic unit structs and do not participate in dependency
 construction. Role, permission, and synchronous predicate clauses are ANDed.
 Cookie policies additionally require `cookies` and select exactly one source.

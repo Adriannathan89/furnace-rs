@@ -60,7 +60,7 @@ not silently become FURNACE-managed routes.
 
 | Area | Main APIs |
 | --- | --- |
-| Routing | `controller`, `Sealable`, `get`/`post`/`put`/`patch`/`delete`, `build_router`, `configure_router`, `serve_router` |
+| Routing | `controller`, `Sealable`, `seal(skip)`, `get`/`post`/`put`/`patch`/`delete`, `build_router`, `configure_router`, `serve_router` |
 | Requests | Native Axum extractors plus `ValidatedJson`, `ValidatedQuery`, and `ValidatedPath` |
 | Errors | `BadRequest`, `Unauthorized`, `Forbidden`, `NotFound`, `Conflict`, `ValidationError`, `InternalError` |
 | Authentication | `JwtService`, `PassportStrategy`, `PassportPrincipal`, `Authenticated`, `PassportGuard` |
@@ -121,3 +121,8 @@ See the [architecture reference](../../docs/ARCHITECTURE.md), the
 [CLI contract](../../docs/CLI.md), and the
 [Passport example](../../docs/examples/passport_jwt.md) before changing a
 public integration contract.
+
+Controllers without `impl Sealable` are public. Implement the trait to attach
+one guard; `#[seal(skip)]` on an endpoint bypasses that guard's authentication
+and policy checks. Protection applies per HTTP method, including when public
+and protected methods share a path.

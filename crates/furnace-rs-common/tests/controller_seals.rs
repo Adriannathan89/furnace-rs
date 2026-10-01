@@ -70,6 +70,21 @@ impl Users {
         HANDLERS.fetch_add(1, Ordering::SeqCst);
         value
     }
+    #[get("/mixed")]
+    #[seal(skip)]
+    fn public_mixed(&self) -> &'static str {
+        "open"
+    }
+    #[post("/mixed")]
+    fn private_mixed(&self) -> &'static str {
+        "protected"
+    }
+    #[cfg(any())]
+    #[get("/mixed")]
+    #[seal(skip)]
+    fn disabled(&self) -> &'static str {
+        unreachable!()
+    }
 }
 #[controller]
 struct Public;
@@ -536,4 +551,104 @@ mod scoped {
         )
         .await;
     }
+}
+
+#[tokio::test]
+async fn skipped_endpoint_bypasses_authentication_and_policy_without_exposing_other_verbs() {
+    let _lock = TEST_LOCK.lock().await;
+    let app = application().await;
+    let router = build_router(&app).unwrap();
+    let denied = token(&app, false, false, false);
+    let allowed = token(&app, true, true, true);
+    for (method, credentials, status) in [
+        (Method::GET, None, StatusCode::OK),
+        (Method::GET, Some("malformed"), StatusCode::OK),
+        (Method::GET, Some(denied.as_str()), StatusCode::OK),
+        (Method::POST, None, StatusCode::UNAUTHORIZED),
+        (Method::POST, Some("malformed"), StatusCode::UNAUTHORIZED),
+        (Method::POST, Some(denied.as_str()), StatusCode::FORBIDDEN),
+        (Method::POST, Some(allowed.as_str()), StatusCode::OK),
+        (Method::DELETE, None, StatusCode::METHOD_NOT_ALLOWED),
+        (Method::HEAD, None, StatusCode::OK),
+    ] {
+        let mut request = Request::builder().method(method).uri("/users/mixed");
+        if let Some(value) = credentials {
+            request = request.header(AUTHORIZATION, format!("Bearer {value}"));
+        }
+        let response = router
+            .clone()
+            .oneshot(request.body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), status);
+    }
+    for (credential, status) in [
+        (None, StatusCode::UNAUTHORIZED),
+        (Some(allowed.as_str()), StatusCode::OK),
+    ] {
+        let response = request(&router, Method::HEAD, "/users", credential, None).await;
+        assert_eq!(response.status(), status);
+    }
+}
+
+#[controller]
+struct AllSkipped;
+impl Sealable for AllSkipped {
+    fn seals() -> SealRegistration<Self> {
+        Self::seal::<Policy>()
+    }
+}
+#[controller(route = "/all-public")]
+impl AllSkipped {
+    #[get]
+    #[seal(skip)]
+    fn index(&self) -> &'static str {
+        "public"
+    }
+    #[cfg(any())]
+    #[post]
+    fn disabled_protected(&self) {}
+}
+#[cauldron]
+struct AllSkippedRoot;
+impl Cauldron for AllSkippedRoot {
+    fn register(self) -> CauldronRegistration<Self> {
+        self.controller::<AllSkipped>()
+    }
+}
+#[tokio::test]
+async fn entirely_skipped_controller_needs_no_jwt_output_or_configuration() {
+    let mut builder = Furnace::builder();
+    builder.root::<AllSkippedRoot>().unwrap();
+    let app = builder.build().await.unwrap();
+    assert!(app.context().resolve::<JwtService>().is_err());
+    let response = build_router(&app)
+        .unwrap()
+        .oneshot(
+            Request::builder()
+                .uri("/all-public")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn focused_all_skipped_controller_needs_no_jwt_supply() {
+    let mut builder = Furnace::builder();
+    builder.__test_focus::<AllSkipped>().unwrap();
+    let app = builder.build().await.unwrap();
+    let router = furnace_rs_common::__private::build_test_router_for::<AllSkipped>(&app).unwrap();
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/all-public")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 }

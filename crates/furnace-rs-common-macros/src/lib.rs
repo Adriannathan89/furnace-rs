@@ -54,7 +54,8 @@ pub fn passport_strategy(arguments: TokenStream, item: TokenStream) -> TokenStre
 
 /// Declares a managed controller struct or its inherent endpoint implementation.
 ///
-/// Annotate the struct with bare `#[controller]` and implement `Sealable`.
+/// Annotate the struct with bare `#[controller]`; it is public by default.
+/// Implement `Sealable` to protect it, with `#[seal(skip)]` for public endpoints.
 /// Annotate exactly one inherent implementation with `#[controller]` or
 /// `#[controller(route = "/users")]`; its endpoint methods use HTTP verb
 /// attributes. Handlers may be synchronous or asynchronous with `&self` or
@@ -68,11 +69,18 @@ pub fn controller(arguments: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Declares a complete static Passport policy on a non-generic unit struct.
 ///
-/// A controller attaches it through `Sealable::seals`; every endpoint then
-/// shares its strategy, principal, source, role, permission, and predicate rules.
+/// A controller attaches it through `Sealable::seals`; protected endpoints
+/// share its strategy, principal, source, role, permission, and predicate rules.
+/// Endpoints marked `#[seal(skip)]` bypass that policy.
 #[proc_macro_attribute]
 pub fn guard(arguments: TokenStream, item: TokenStream) -> TokenStream {
     guard::outside_contract(arguments.into(), item.into()).into()
+}
+
+/// Marks one controller endpoint as public with `#[seal(skip)]`.
+#[proc_macro_attribute]
+pub fn seal(arguments: TokenStream, item: TokenStream) -> TokenStream {
+    verb::outside_contract("seal(skip)", arguments.into(), item.into()).into()
 }
 
 /// Marks a GET endpoint inside an inherent `#[controller]` implementation.

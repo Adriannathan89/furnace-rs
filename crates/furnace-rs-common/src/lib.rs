@@ -144,6 +144,10 @@ pub use logger::{ConsoleLoggerService, LogLevel, Logger, LoggerCauldron, LoggerS
 #[cfg(feature = "http")]
 pub use furnace_rs_common_macros::controller;
 
+/// Makes an endpoint public by bypassing its controller seal.
+#[cfg(feature = "http")]
+pub use furnace_rs_common_macros::seal;
+
 /// Declares a static unit-struct Passport policy attached by a controller seal.
 #[cfg(all(feature = "http", feature = "jwt"))]
 pub use furnace_rs_common_macros::guard;
@@ -240,6 +244,7 @@ pub mod __private {
         crate::passport::PassportStrategyCatalog::preflight_scoped(cauldron_graph, scope.guards())
     }
     pub use crate::route::{RouterBuildContext, ValidatedRouteIter, validate_descriptors};
+    pub use crate::seal::{OptionalSeal, SealProbe};
 
     #[doc(hidden)]
     pub use crate::inspection::{
