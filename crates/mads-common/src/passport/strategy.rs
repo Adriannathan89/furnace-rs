@@ -417,7 +417,7 @@ impl PassportStrategyCatalog {
     ///
     /// Rootless guards retain the complete-catalog duplicate and selection
     /// behavior. Rooted guards see custom strategies only from their own
-    /// module or a directly imported public provider module.
+    /// furnace, a direct import's explicit exports, or reachable global exports.
     #[allow(clippy::result_large_err)]
     pub(crate) fn preflight_scoped(
         module_graph: Option<&ModuleGraph>,
@@ -426,7 +426,13 @@ impl PassportStrategyCatalog {
         let guard_descriptors = guards.iter().map(ScopedGuard::guard).collect::<Vec<_>>();
         GuardCatalog::validate_descriptors(&guard_descriptors)?;
 
-        let strategies = Self::strategies();
+        let strategies = Self::strategies()
+            .into_iter()
+            .filter(|strategy| {
+                module_graph
+                    .is_none_or(|graph| graph.owner_of(strategy.provider_type_id()).is_some())
+            })
+            .collect::<Vec<_>>();
         if module_graph.is_none() {
             validate_strategy_catalog(&strategies)?;
         } else {
@@ -439,6 +445,25 @@ impl PassportStrategyCatalog {
 
         let mut bindings = Vec::with_capacity(ordered_guards.len());
         for scoped_guard in ordered_guards {
+            if let (Some(graph), Some(requester)) = (module_graph, scoped_guard.context_module())
+                && let Some(owner) = graph.owner_of(TypeId::of::<crate::JwtService>())
+                && !graph.can_access(requester, TypeId::of::<crate::JwtService>())
+            {
+                let requester = graph
+                    .modules()
+                    .iter()
+                    .find(|module| (*module).type_id() == requester)
+                    .expect("rooted guards have a reachable controller owner");
+                return Err(Error::new(Diagnostic::new(
+                    mads_core::MADS009,
+                    "inaccessible furnace JWT provider",
+                    format!("guard in furnace `{}` cannot access JwtService owned by `{}`; use an explicit export and direct import or a reachable global export",
+                        requester.type_name(), owner.type_name()),
+                ).with_subject(std::any::type_name::<crate::JwtService>())
+                    .with_location(scoped_guard.guard().location())
+                    .with_suggestion(format!("dependency path: {} -> JwtService",
+                        scoped_guard.guard().requirement_subject()))));
+            }
             let mut binding =
                 resolve_scoped_guard(scoped_guard, module_graph, &strategies, &providers)?;
             binding.context_module = scoped_guard.context_module();
