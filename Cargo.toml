@@ -9,6 +9,7 @@ members = [
     "crates/mads-common-macros",
     "crates/mads-cli",
     "crates/mads-extra",
+    "crates/mads-testing",
 ]
 
 [workspace.package]
@@ -28,6 +29,7 @@ cargo_metadata = "=0.19.2"
 cookie = { version = "=0.18.1", default-features = false, features = ["percent-encode"] }
 dotenvy = "=0.15.7"
 http-body = "1"
+futures-util = "0.3"
 inventory = "0.3"
 jsonwebtoken = { version = "=10.3.0", default-features = false, features = ["aws_lc_rs", "use_pem"] }
 notify = "=8.2.0"
