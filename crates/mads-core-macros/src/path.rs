@@ -20,6 +20,18 @@ pub(crate) fn core_path() -> syn::Result<Path> {
     ))
 }
 
+/// Resolves the fixture dev dependency, including renamed packages.
+pub(crate) fn testing_path() -> syn::Result<Path> {
+    match crate_name("mads-testing") {
+        Ok(FoundCrate::Itself) => Ok(parse_quote!(crate)),
+        Ok(FoundCrate::Name(name)) => named_path(&name, false),
+        Err(_) => Err(Error::new(
+            Span::call_site(),
+            "`#[mads::test]` requires `mads-testing` as a dev dependency",
+        )),
+    }
+}
+
 fn found_path(found: FoundCrate, facade: bool) -> syn::Result<Path> {
     match (found, facade) {
         (FoundCrate::Itself, false) => Ok(parse_quote!(crate)),

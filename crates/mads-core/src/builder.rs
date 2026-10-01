@@ -13,7 +13,7 @@ use crate::{
     ProviderContribution, ProviderDescriptor, ProviderRegistry, Result,
     graph::{
         SatisfiedProvider, analyze_catalog, analyze_descriptors, build_module_graph,
-        select_scoped_providers, validate_module_catalog,
+        select_focused_providers, select_scoped_providers, validate_module_catalog,
     },
 };
 
@@ -25,6 +25,8 @@ pub struct MadsBuilder {
     auto_configuration_inputs: AutoConfigurationInputs,
     lifecycle: LifecycleManager,
     root: Option<ModuleRoot>,
+    focus: Option<(TypeId, &'static str)>,
+    required_supplies: Vec<TypeId>,
 }
 
 impl MadsBuilder {
@@ -42,12 +44,20 @@ impl MadsBuilder {
             auto_configuration_inputs: AutoConfigurationInputs::default(),
             lifecycle: LifecycleManager::new(),
             root: None,
+            focus: None,
+            required_supplies: Vec::new(),
         }
     }
 
     /// Selects the root module for scoped analysis and construction.
     #[allow(clippy::result_large_err)]
     pub fn root<M: Module>(&mut self) -> Result<&mut Self> {
+        if let Some((_, name)) = self.focus {
+            return Err(root_already_selected_error(
+                name,
+                std::any::type_name::<M>(),
+            ));
+        }
         if let Some(root) = &self.root {
             return Err(root_already_selected_error(
                 root.type_name,
@@ -56,6 +66,33 @@ impl MadsBuilder {
         }
         self.root = Some(ModuleRoot::of::<M>());
         Ok(self)
+    }
+
+    /// Selects a registered dependency chain for an official test fixture.
+    #[doc(hidden)]
+    #[allow(clippy::result_large_err)]
+    pub fn __test_focus<T: Send + Sync + 'static>(&mut self) -> Result<&mut Self> {
+        if let Some(root) = &self.root {
+            return Err(root_already_selected_error(
+                root.type_name,
+                std::any::type_name::<T>(),
+            ));
+        }
+        if let Some((_, name)) = self.focus {
+            return Err(root_already_selected_error(
+                name,
+                std::any::type_name::<T>(),
+            ));
+        }
+        self.focus = Some((TypeId::of::<T>(), std::any::type_name::<T>()));
+        Ok(self)
+    }
+
+    /// Requires a fixture-owned value rather than a registered constructor.
+    #[doc(hidden)]
+    pub fn __test_require_provided<T: Send + Sync + 'static>(&mut self) -> &mut Self {
+        self.required_supplies.push(TypeId::of::<T>());
+        self
     }
 
     /// Provides a concrete application-scoped value.
@@ -172,6 +209,9 @@ impl MadsBuilder {
 
     fn analyze_builder(&self) -> BuilderAnalysis {
         let providers = Catalog::providers();
+        if let Some((target, name)) = self.focus {
+            return self.analyze_focused(target, name, &providers);
+        }
         let Some(root) = &self.root else {
             return self.analyze_complete_catalog(&providers);
         };
@@ -217,6 +257,72 @@ impl MadsBuilder {
             public,
             selected: auto_configuration.selected,
             failure: auto_configuration.failure,
+        }
+    }
+
+    fn analyze_focused(
+        &self,
+        target: TypeId,
+        name: &'static str,
+        providers: &[&'static ProviderDescriptor],
+    ) -> BuilderAnalysis {
+        let initial = select_focused_providers(
+            target,
+            name,
+            providers,
+            &self.satisfied,
+            &self.required_supplies,
+            &[],
+        );
+        let selected_providers = providers
+            .iter()
+            .copied()
+            .filter(|descriptor| {
+                initial
+                    .graph()
+                    .providers
+                    .iter()
+                    .any(|node| node.type_id == descriptor.type_id())
+            })
+            .collect::<Vec<_>>();
+        let automatic = auto_configuration::descriptors()
+            .into_iter()
+            .filter(|descriptor| {
+                let output = descriptor.output_type_id();
+                !self.required_supplies.contains(&output)
+                    && initial.graph().providers.iter().any(|node| {
+                        node.type_id == output
+                            || node
+                                .declared_dependencies
+                                .iter()
+                                .any(|dependency| dependency.type_id() == output)
+                    })
+            })
+            .collect::<Vec<_>>();
+        let automatic = auto_configuration::analyze_parts(
+            &automatic,
+            &selected_providers,
+            &self.satisfied,
+            &self.config,
+            &self.auto_configuration_inputs,
+            None,
+        );
+        let mut satisfied = self.satisfied.clone();
+        satisfied.extend(automatic.virtual_satisfied);
+        let mut public = select_focused_providers(
+            target,
+            name,
+            providers,
+            &satisfied,
+            &self.required_supplies,
+            &automatic.covered_missing,
+        );
+        public.append_diagnostics(automatic.diagnostics);
+        public.auto_configurations = automatic.reports;
+        BuilderAnalysis {
+            public,
+            selected: automatic.selected,
+            failure: automatic.failure,
         }
     }
 

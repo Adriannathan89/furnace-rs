@@ -2,7 +2,30 @@
 
 All notable changes to MADS.rs are documented in this file.
 
-## [Unreleased]
+## [0.9.2] - Unreleased
+
+### Added
+
+- `mads-testing` provides focused, module-free fixtures for registered services,
+  repositories, and controllers, constructing their dependency chains and
+  supporting supplied test values and private MADS providers.
+- `#[mads::test]` registers a zero-argument async function with `cargo test`
+  and creates its function-local `test_fixture()` helper. Tests use
+  `mads-testing` as a dev dependency without requiring a direct Tokio dependency.
+- Explicit SQLite-backed SeaORM `MockDatabase` fixtures supply native
+  `DatabaseConnection` dependencies with scripted in-memory results. Missing
+  mocks fail setup before a production database provider can run.
+- In-process controller requests support chainable status, JSON, text, and
+  header assertions while selecting only the controller's routes and guards.
+- Scoped fixture execution starts lifecycle hooks and awaits shutdown after
+  completion or an unwinding test-body panic, preserving startup rollback
+  and the original panic.
+
+### Changed
+
+- Stable and beta release workflows automatically publish `mads-testing` after
+  its dependencies and before `mads`. Release preparation and package-content
+  checks now include all nine workspace crates.
 
 ### Security
 

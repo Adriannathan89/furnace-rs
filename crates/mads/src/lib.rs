@@ -177,6 +177,9 @@ pub const FRAMEWORK_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Re-exports the asynchronous MADS.rs entry-point attribute.
 pub use mads_core::main;
 
+/// Registers an async Cargo test with a function-local fixture builder.
+pub use mads_core::test;
+
 /// Re-exports the application-module declaration attribute.
 pub use mads_core::module;
 

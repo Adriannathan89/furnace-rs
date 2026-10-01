@@ -75,7 +75,7 @@ pub use lifecycle::{
 };
 pub use registry::{ErasedProvider, ProviderRegistry};
 
-pub use mads_core_macros::{Configuration, main, module, provider, repository, service};
+pub use mads_core_macros::{Configuration, main, module, provider, repository, service, test};
 
 /// Implementation details used by MADS.rs procedural macro expansions.
 #[doc(hidden)]

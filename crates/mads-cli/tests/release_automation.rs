@@ -18,6 +18,7 @@ const PACKAGES: &[&str] = &[
     "mads-persistence",
     "mads-extra",
     "mads-common",
+    "mads-testing",
     "mads",
     "mads-cli",
 ];
@@ -28,6 +29,7 @@ const PUBLISH_ORDER: &[&str] = &[
     "mads-core",
     "mads-extra",
     "mads-common",
+    "mads-testing",
     "mads",
     "mads-persistence",
     "mads-cli",
@@ -124,6 +126,21 @@ fn release_updates_matching_nested_lockfiles() {
     assert_success(&output);
     let lock = fs::read_to_string(nested_lock).unwrap();
     assert!(lock.contains("name = \"mads\"\nversion = \"0.7.0\""));
+}
+
+#[cfg(unix)]
+#[test]
+fn release_preserves_sourced_versions_and_checksums_in_nested_lockfiles() {
+    let fixture = ReleaseFixture::new("0.7.0-beta.1");
+    let lockfile = fixture.root().join("fixtures/example/Cargo.lock");
+    let original = concat!(
+        "[[package]]\nname = \"mads\"\nversion = \"0.7.0-beta.1\"\nsource = \"registry+https://github.com/rust-lang/crates.io-index\"\nchecksum = \"first-registry-checksum\"\n",
+        "[[package]]\nname = \"mads\"\nversion = \"0.6.0\"\nsource = \"registry+https://github.com/rust-lang/crates.io-index\"\nchecksum = \"second-registry-checksum\"\n",
+        "[[package]]\nname = \"mads-core\"\nversion = \"0.6.0\"\nsource = \"git+https://example.com/mads#revision\"\n",
+    );
+    write(&lockfile, original);
+    assert_success(&fixture.run("release.sh", "0.9.2"));
+    assert_eq!(fs::read_to_string(lockfile).unwrap(), original);
 }
 
 #[cfg(unix)]
@@ -350,11 +367,14 @@ fn package_content_policy_checks_every_workspace_archive() {
         .output()
         .expect("package-content policy should start");
     assert_success(&output);
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("verified package contents for 9 crates")
+    );
 }
 
 #[test]
-fn all_packages_use_v091_pins_and_workspace_version() {
-    const VERSION: &str = "0.9.1";
+fn all_packages_use_v092_pins_and_workspace_version() {
+    const VERSION: &str = "0.9.2";
 
     let root = workspace_root();
     let workspace_manifest =
@@ -712,6 +732,10 @@ fn fixture_manifest(package: &str, version: &str) -> String {
             ("mads-common-macros", "../mads-common-macros"),
             ("mads-core", "../mads-core"),
         ],
+        "mads-testing" => vec![
+            ("mads-core", "../mads-core"),
+            ("mads-common", "../mads-common"),
+        ],
         "mads" => vec![
             ("mads-common", "../mads-common"),
             ("mads-core", "../mads-core"),
@@ -730,6 +754,9 @@ fn fixture_manifest(package: &str, version: &str) -> String {
                 "{dependency} = {{ path = \"{path}\", version = \"={version}\" }}\n"
             ));
         }
+    }
+    if package == "mads" {
+        manifest.push_str(&format!("\n[dev-dependencies]\nmads-testing = {{ path = \"../mads-testing\", version = \"={version}\" }}\n"));
     }
     manifest
 }

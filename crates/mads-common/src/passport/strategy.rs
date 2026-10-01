@@ -390,6 +390,29 @@ impl PassportStrategyCatalog {
         Ok(PassportStrategyPreflight { bindings })
     }
 
+    /// Validates only guards and strategy names used by a focused controller.
+    pub(crate) fn preflight_for_test(
+        guards: &[ScopedGuard],
+    ) -> Result<PassportStrategyPreflight<'static>> {
+        let mut guards = guards.iter().map(ScopedGuard::guard).collect::<Vec<_>>();
+        GuardCatalog::validate_descriptors(&guards)?;
+        let strategies = Self::strategies()
+            .into_iter()
+            .filter(|strategy| {
+                guards
+                    .iter()
+                    .any(|guard| guard.strategy() == strategy.name())
+            })
+            .collect::<Vec<_>>();
+        validate_strategy_catalog(&strategies)?;
+        guards.sort_by(guard_order);
+        let bindings = guards
+            .into_iter()
+            .map(|guard| resolve_guard(guard, &strategies))
+            .collect::<Result<Vec<_>>>()?;
+        Ok(PassportStrategyPreflight { bindings })
+    }
+
     /// Resolves strategies for guards selected from one optional module graph.
     ///
     /// Rootless guards retain the complete-catalog duplicate and selection

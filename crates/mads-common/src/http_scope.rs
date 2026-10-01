@@ -119,6 +119,62 @@ pub(crate) struct HttpApplicationScope {
 }
 
 impl HttpApplicationScope {
+    pub(crate) fn for_test_controller<T: Send + Sync + 'static>() -> Result<Self> {
+        let matches = RouteCatalog::controllers()
+            .into_iter()
+            .filter(|descriptor| descriptor.type_id() == TypeId::of::<T>())
+            .collect::<Vec<_>>();
+        let descriptor = match matches.as_slice() {
+            [descriptor] => *descriptor,
+            _ => {
+                return Err(mads_core::Error::new(
+                    mads_core::Diagnostic::new(
+                        mads_core::MADS030,
+                        "invalid test controller",
+                        if matches.is_empty() {
+                            "selected controller has no route metadata"
+                        } else {
+                            "selected controller has ambiguous route metadata"
+                        },
+                    )
+                    .with_subject(std::any::type_name::<T>()),
+                ));
+            }
+        };
+        let controllers = vec![ScopedController {
+            descriptor,
+            selected_routes: descriptor
+                .contracts()
+                .iter()
+                .flat_map(|contract| contract.routes())
+                .map(|route| RouteIdentity::new(descriptor, route))
+                .collect(),
+            context_module: None,
+        }];
+        #[cfg(feature = "jwt")]
+        let guards = controllers
+            .iter()
+            .flat_map(|controller| {
+                controller
+                    .descriptor()
+                    .contracts()
+                    .iter()
+                    .flat_map(|contract| contract.routes())
+                    .filter_map(|route| {
+                        route.guard().map(|guard| ScopedGuard {
+                            guard,
+                            context_module: None,
+                        })
+                    })
+            })
+            .collect();
+        Ok(Self {
+            controllers,
+            #[cfg(feature = "jwt")]
+            guards,
+        })
+    }
+
     pub(crate) fn for_application(application: &Mads) -> Result<Self> {
         Self::for_module_graph(application.module_graph())
     }

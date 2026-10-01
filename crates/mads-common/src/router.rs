@@ -47,10 +47,40 @@ pub fn build_router(application: &mads_core::Mads) -> mads_core::Result<axum::Ro
     #[cfg(feature = "jwt")]
     let passport =
         PassportStrategyCatalog::preflight_scoped(application.module_graph(), http_scope.guards())?;
+    register_scope(
+        application,
+        http_scope,
+        #[cfg(feature = "jwt")]
+        &passport,
+    )
+}
+
+/// Builds only one controller's routes for an official test fixture.
+#[doc(hidden)]
+#[allow(clippy::result_large_err)]
+pub fn build_test_router_for<T: Send + Sync + 'static>(
+    application: &mads_core::Mads,
+) -> mads_core::Result<axum::Router> {
+    let scope = HttpApplicationScope::for_test_controller::<T>()?;
+    #[cfg(feature = "jwt")]
+    let passport = PassportStrategyCatalog::preflight_for_test(scope.guards())?;
+    register_scope(
+        application,
+        scope,
+        #[cfg(feature = "jwt")]
+        &passport,
+    )
+}
+
+fn register_scope(
+    application: &mads_core::Mads,
+    http_scope: HttpApplicationScope,
+    #[cfg(feature = "jwt")] passport: &crate::PassportStrategyPreflight<'static>,
+) -> mads_core::Result<axum::Router> {
     let runtime = RouterBuildContext::new(
         application.context(),
         #[cfg(feature = "jwt")]
-        &passport,
+        passport,
     );
     let controllers = validate_scoped_descriptors(http_scope.controllers())?;
     let mut router = axum::Router::new();

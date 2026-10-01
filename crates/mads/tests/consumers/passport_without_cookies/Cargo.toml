@@ -6,8 +6,5 @@ rust-version = "1.94"
 
 [dependencies]
 mads = { path = "../../..", default-features = false, features = ["http", "jwt"] }
-# This standalone compile fixture intentionally has no checked-in lockfile.
-# Pin the transitive JWT time floor so this standalone fixture is reproducible.
-time = "=0.3.36"
 
 [workspace]

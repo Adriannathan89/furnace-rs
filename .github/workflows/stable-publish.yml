@@ -200,6 +200,7 @@ jobs:
             mads-core
             mads-extra
             mads-common
+            mads-testing
             mads
             mads-persistence
             mads-cli

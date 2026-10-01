@@ -12,6 +12,7 @@ mod managed;
 mod module_v2;
 mod path;
 mod provider;
+mod test_fn;
 
 /// Derives an explicit typed view over an already loaded configuration.
 ///
@@ -75,4 +76,12 @@ pub fn repository(arguments: TokenStream, item: TokenStream) -> TokenStream {
     )
     .unwrap_or_else(syn::Error::into_compile_error)
     .into()
+}
+
+/// Registers a zero-argument async Cargo test with a function-local fixture builder.
+#[proc_macro_attribute]
+pub fn test(arguments: TokenStream, item: TokenStream) -> TokenStream {
+    test_fn::expand(arguments.into(), item.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }

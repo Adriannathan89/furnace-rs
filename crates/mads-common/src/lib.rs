@@ -175,6 +175,7 @@ pub use route::{
 #[doc(hidden)]
 #[cfg(feature = "http")]
 pub mod __private {
+    pub use crate::router::build_test_router_for;
     pub use crate::validation::support as input_validation;
     /// Environment variable used by the development supervisor for graceful shutdown.
     #[doc(hidden)]

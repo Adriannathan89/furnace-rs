@@ -59,6 +59,7 @@ packages = (
     "mads-persistence",
     "mads-extra",
     "mads-common",
+    "mads-testing",
     "mads",
     "mads-cli",
 )
@@ -126,7 +127,20 @@ for lockfile in sorted(root.rglob("Cargo.lock")):
         pattern = re.compile(
             rf'(?m)(^\[\[package\]\]\nname = "{re.escape(package)}"\nversion = ")[^"]+("$)'
         )
-        updated_lock, count = pattern.subn(rf'\g<1>{package_version}\g<2>', updated_lock)
+        updated_records = []
+
+        def update_record(match):
+            end = updated_lock.find("\n[[package]]", match.end())
+            record = updated_lock[match.start():end if end != -1 else len(updated_lock)]
+            if tomllib.loads(record)["package"][0].get("source") is not None:
+                # Registry and Git entries describe published dependencies, not
+                # workspace packages; their version/checksum must stay paired.
+                return match.group(0)
+            updated_records.append(match.group(0))
+            return f"{match.group(1)}{package_version}{match.group(2)}"
+
+        updated_lock = pattern.sub(update_record, updated_lock)
+        count = len(updated_records)
         if count > 1 or (lockfile == root_lockfile and count != 1):
             raise SystemExit(
                 f"{lockfile} must contain exactly one package record for {package}."
