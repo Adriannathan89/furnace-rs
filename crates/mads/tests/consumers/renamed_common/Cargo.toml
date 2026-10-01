@@ -6,7 +6,5 @@ rust-version = "1.94"
 
 [dependencies]
 web = { package = "mads-common", path = "../../../../mads-common", features = ["jwt"] }
-# Pin the transitive JWT time floor so this standalone MSRV fixture is reproducible.
-time = "=0.3.36"
 
 [workspace]
