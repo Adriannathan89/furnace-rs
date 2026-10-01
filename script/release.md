@@ -13,11 +13,11 @@ stable MADS.rs release.
 ## Usage
 
 ```bash
-script/release.sh 0.9.1
+script/release.sh 0.9.2
 ```
 
-The script sets the workspace version to exactly `0.9.1`, updates every exact
-internal MADS crate dependency to `=0.9.1`, updates matching MADS package
+The script sets the workspace version to exactly `0.9.2`, updates every exact
+internal MADS crate dependency to `=0.9.2`, updates matching MADS package
 records in every `Cargo.lock`, then runs locked Cargo metadata and workspace
 checks.
 
@@ -29,7 +29,10 @@ Review the Cargo changes and complete the release documentation manually.
 
 After committing the prepared stable version, push it to `main`. The stable
 publication workflow runs all release gates, publishes missing crate versions
-to crates.io in dependency order, and creates the `v0.9.1` Git tag and stable
+to crates.io in dependency order, and creates the `v0.9.2` Git tag and stable
 GitHub Release. Configure `CRATES_IO_TOKEN` in the GitHub `stable` environment.
 
 The workflow publishes `mads-testing` after `mads-common` and before `mads`.
+
+Version updates apply to local workspace package records. Registry and Git
+dependency records retain their published versions and checksums.

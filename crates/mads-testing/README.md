@@ -9,10 +9,10 @@ Rust privacy still applies. Supplied values replace matching constructors.
 
 ```toml
 [dependencies]
-mads = "=0.9.1"
+mads = "=0.9.2"
 
 [dev-dependencies]
-mads-testing = "=0.9.1"
+mads-testing = "=0.9.2"
 ```
 
 Apply `#[mads::test]` to a zero-argument, nongeneric `async fn`. Cargo discovers

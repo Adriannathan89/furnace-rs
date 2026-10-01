@@ -10,12 +10,12 @@ readme = "README.md"
 description = "Modular Rust application framework with Axum and Passport integrations"
 
 [dependencies]
-mads-common = { path = "../mads-common", version = "=0.9.1", optional = true, default-features = false }
-mads-core = { path = "../mads-core", version = "=0.9.1" }
-mads-extra = { path = "../mads-extra", version = "=0.9.1", optional = true }
+mads-common = { path = "../mads-common", version = "=0.9.2", optional = true, default-features = false }
+mads-core = { path = "../mads-core", version = "=0.9.2" }
+mads-extra = { path = "../mads-extra", version = "=0.9.2", optional = true }
 
 [dev-dependencies]
-mads-testing = { path = "../mads-testing", version = "=0.9.1" }
+mads-testing = { path = "../mads-testing", version = "=0.9.2" }
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true

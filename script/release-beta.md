@@ -32,3 +32,6 @@ section, then push the commit to `beta` to use the existing beta publication
 workflow. Configure `CRATES_IO_TOKEN` in the GitHub `beta` environment.
 
 The workflow publishes `mads-testing` after `mads-common` and before `mads`.
+
+Version updates apply to local workspace package records. Registry and Git
+dependency records retain their published versions and checksums.
