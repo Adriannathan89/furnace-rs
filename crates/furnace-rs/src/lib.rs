@@ -202,6 +202,10 @@ pub use furnace_rs_common::{GuardPolicy, SealEntry};
 #[cfg(feature = "http")]
 pub use furnace_rs_common::{SealDefinition, SealRegistration, Sealable};
 
+/// Re-exports controller and endpoint discovery metadata.
+#[cfg(feature = "http")]
+pub use furnace_rs_common::{ControllerDescriptor, ControllerEndpointDescriptor, RouteCatalog};
+
 /// Re-exports explicit typed configuration, structured failures, and secret values.
 pub use furnace_rs_core::{
     Configuration, ConfigurationErrors, ConfigurationIssue, ConfigurationResult, Secret,

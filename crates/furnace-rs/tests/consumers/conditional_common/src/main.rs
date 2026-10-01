@@ -36,7 +36,7 @@ async fn main() -> furnace_rs::core::Result<()> {
     } else {
         (0, StatusCode::NOT_FOUND)
     };
-    let route_count = RouteCatalog::controllers()
+    let route_count = RouteCatalog::legacy_controllers()
         .into_iter()
         .flat_map(|controller| controller.contracts().iter())
         .flat_map(|contract| contract.routes().iter())

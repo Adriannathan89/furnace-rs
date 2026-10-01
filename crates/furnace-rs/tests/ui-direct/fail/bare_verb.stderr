@@ -1,0 +1,7 @@
+error: `#[get]` must be used on a method inside an inherent `#[controller]` implementation
+ --> tests/ui-direct/fail/bare_verb.rs:2:1
+  |
+2 | #[get]
+  | ^^^^^^
+  |
+  = note: this error originates in the attribute macro `get` (in Nightly builds, run with -Z macro-backtrace for more info)

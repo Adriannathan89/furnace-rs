@@ -9,7 +9,7 @@
 use std::collections::BTreeSet;
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::{
@@ -19,8 +19,14 @@ use syn::{
 
 use crate::guard::{self, GuardSpec, GuardTarget};
 
+#[cfg(test)]
+use crate::endpoint::known_body_consumer;
+
 const CONTRACT_MARKER: &str = "__FURNACE_ROUTE_CONTRACT";
-const VERBS: &[&str] = &["get", "post", "put", "patch", "delete"];
+use crate::endpoint::{
+    HttpVerb, cfg_attr_contains_route_verb, is_conditional_attribute, join_paths, route_verb,
+    validate_body_extractor_order,
+};
 
 struct RoutesArguments {
     prefix: Option<LitStr>,
@@ -395,116 +401,6 @@ fn validate_method_with_guard(
     })
 }
 
-/// Identifies body-consuming extractors whose crate path is known to FURNACE.
-///
-/// This intentionally inspects syntax only. A bare `Json` or an application
-/// extractor with a different path may resolve to any type, so its body
-/// behavior remains the native Axum/rustc contract.
-fn validate_body_extractor_order(
-    inputs: &Punctuated<FnArg, Token![,]>,
-    common: &syn::Path,
-) -> syn::Result<()> {
-    let arguments = inputs.iter().skip(1).collect::<Vec<_>>();
-    for (index, argument) in arguments.iter().enumerate() {
-        let FnArg::Typed(argument) = argument else {
-            continue;
-        };
-        if known_body_consumer(&argument.ty, common) && index + 1 != arguments.len() {
-            return Err(Error::new(
-                argument.ty.span(),
-                "known body extractors (`Json`, `ValidatedJson`, and `Request`) must be the final route parameter",
-            ));
-        }
-    }
-    Ok(())
-}
-
-fn known_body_consumer(ty: &Type, common: &syn::Path) -> bool {
-    let Type::Path(type_path) = ty else {
-        return false;
-    };
-    if type_path.qself.is_some() {
-        return false;
-    }
-
-    let path = &type_path.path;
-    if is_furnace_type(path, common, "Json") || is_axum_type(path, common, "Json") {
-        return true;
-    }
-    if is_furnace_type(path, common, "ValidatedJson") {
-        return true;
-    }
-    if is_furnace_type(path, common, "Request") || is_axum_type(path, common, "Request") {
-        return true;
-    }
-    false
-}
-
-fn is_furnace_type(path: &syn::Path, common: &syn::Path, name: &str) -> bool {
-    path_with_suffix_is(path, common, &[name]) || facade_path_with_suffix_is(path, common, &[name])
-}
-
-fn is_axum_type(path: &syn::Path, common: &syn::Path, name: &str) -> bool {
-    path_is(path, &["axum", name])
-        || path_is(path, &["axum", "extract", name])
-        || path_with_suffix_is(path, common, &["axum", name])
-        || path_with_suffix_is(path, common, &["axum", "extract", name])
-        || facade_path_with_suffix_is(path, common, &["axum", name])
-        || facade_path_with_suffix_is(path, common, &["axum", "extract", name])
-}
-
-fn facade_path_with_suffix_is(path: &syn::Path, common: &syn::Path, suffix: &[&str]) -> bool {
-    let Some(last) = common.segments.last() else {
-        return false;
-    };
-    if last.ident != "common" {
-        return false;
-    }
-
-    let prefix_len = common.segments.len() - 1;
-    let path_len = path.segments.len();
-    path_len == prefix_len + suffix.len()
-        && path
-            .segments
-            .iter()
-            .take(prefix_len)
-            .zip(common.segments.iter().take(prefix_len))
-            .all(|(actual, expected)| actual.ident == expected.ident)
-        && path
-            .segments
-            .iter()
-            .skip(prefix_len)
-            .zip(suffix)
-            .all(|(segment, expected)| segment.ident == *expected)
-}
-
-fn path_with_suffix_is(path: &syn::Path, prefix: &syn::Path, suffix: &[&str]) -> bool {
-    let prefix_len = prefix.segments.len();
-    let path_len = path.segments.len();
-    path_len == prefix_len + suffix.len()
-        && path
-            .segments
-            .iter()
-            .take(prefix_len)
-            .zip(prefix.segments.iter())
-            .all(|(actual, expected)| actual.ident == expected.ident)
-        && path
-            .segments
-            .iter()
-            .skip(prefix_len)
-            .zip(suffix)
-            .all(|(segment, expected)| segment.ident == *expected)
-}
-
-fn path_is(path: &syn::Path, expected: &[&str]) -> bool {
-    path.segments.len() == expected.len()
-        && path
-            .segments
-            .iter()
-            .zip(expected)
-            .all(|(segment, expected)| segment.ident == *expected)
-}
-
 struct RouteMetadata {
     method: HttpVerb,
     path: LitStr,
@@ -519,95 +415,21 @@ struct RouteMetadata {
 
 impl RouteMetadata {
     fn registration_tokens(&self, common: &syn::Path, trait_ident: &syn::Ident) -> TokenStream {
-        let method = self.method.tokens(common);
-        let routing = self.method.routing_tokens(common);
-        let handler = &self.handler;
         let handler_ident = &self.handler_ident;
-        let argument_types = &self.argument_types;
-        let conditional_attributes = &self.conditional_attributes;
-        let guard_layer = self.guard_ident.as_ref().map(|guard| {
-            quote! {
-                .route_layer(#common::__private::PassportGuardLayer::new(
-                    __furnace_runtime.passport_guard_state(
-                        &#guard,
-                        __furnace_routes.passport_context_cauldron(),
-                    )?,
-                ))
-            }
-        });
-        let arguments = argument_types
-            .iter()
-            .enumerate()
-            .map(|(index, _)| format_ident!("__furnace_argument_{index}"))
-            .collect::<Vec<_>>();
-
-        quote! {
-            #(#conditional_attributes)*
-            {
-                if let Some(__furnace_path) = __furnace_routes.next(#method, #handler)? {
-                    let __furnace_handler_controller = __furnace_controller.clone();
-                    __furnace_router = __furnace_router.route(
-                        __furnace_path,
-                        #routing(move |#(#arguments: #argument_types),*| {
-                            let __furnace_controller = __furnace_handler_controller.clone();
-                            async move {
-                                <Self as #trait_ident>::#handler_ident(
-                                    &__furnace_controller,
-                                    #(#arguments,)*
-                                ).await
-                            }
-                        })
-                        #guard_layer,
-                    );
-                }
-            }
-        }
-    }
-}
-
-fn is_conditional_attribute(attribute: &Attribute) -> bool {
-    attribute.path().is_ident("cfg") || attribute.path().is_ident("cfg_attr")
-}
-
-#[derive(Clone, Copy)]
-enum HttpVerb {
-    Get,
-    Post,
-    Put,
-    Patch,
-    Delete,
-}
-
-impl HttpVerb {
-    fn from_name(name: &str) -> Self {
-        match name {
-            "get" => Self::Get,
-            "post" => Self::Post,
-            "put" => Self::Put,
-            "patch" => Self::Patch,
-            "delete" => Self::Delete,
-            _ => unreachable!("validated route verbs are exhaustive"),
-        }
-    }
-
-    fn tokens(self, common: &syn::Path) -> proc_macro2::TokenStream {
-        match self {
-            Self::Get => quote!(#common::HttpMethod::Get),
-            Self::Post => quote!(#common::HttpMethod::Post),
-            Self::Put => quote!(#common::HttpMethod::Put),
-            Self::Patch => quote!(#common::HttpMethod::Patch),
-            Self::Delete => quote!(#common::HttpMethod::Delete),
-        }
-    }
-
-    fn routing_tokens(self, common: &syn::Path) -> proc_macro2::TokenStream {
-        match self {
-            Self::Get => quote!(#common::__private::get),
-            Self::Post => quote!(#common::__private::post),
-            Self::Put => quote!(#common::__private::put),
-            Self::Patch => quote!(#common::__private::patch),
-            Self::Delete => quote!(#common::__private::delete),
-        }
+        let args = crate::endpoint::argument_names(&self.argument_types);
+        let guard_layer = self.guard_ident.as_ref().map(|guard| quote! {
+            .route_layer(#common::__private::PassportGuardLayer::new(
+                __furnace_runtime.passport_guard_state(&#guard, __furnace_routes.passport_context_cauldron())?,
+            ))
+        }).unwrap_or_default();
+        crate::endpoint::HandlerAdapter {
+            verb: self.method,
+            handler: &self.handler,
+            argument_types: &self.argument_types,
+            conditional_attributes: &self.conditional_attributes,
+            invocation: quote!(<Self as #trait_ident>::#handler_ident(&__furnace_controller, #(#args,)*).await),
+            guard_layer,
+        }.tokens(common)
     }
 }
 
@@ -620,23 +442,6 @@ fn make_future_send(method: &mut TraitItemFn) {
     method.sig.output = parse_quote!(
         -> impl ::core::future::Future<Output = #output> + ::core::marker::Send
     );
-}
-
-fn route_verb(attribute: &Attribute) -> Option<&'static str> {
-    route_verb_path(attribute.path())
-}
-
-fn route_verb_path(path: &syn::Path) -> Option<&'static str> {
-    let ident = path.segments.last()?.ident.to_string();
-    VERBS.iter().copied().find(|verb| ident == *verb)
-}
-
-fn cfg_attr_contains_route_verb(attribute: &Attribute) -> syn::Result<bool> {
-    let nested = attribute.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
-    Ok(nested
-        .iter()
-        .skip(1)
-        .any(|meta| route_verb_path(meta.path()).is_some()))
 }
 
 fn parse_route_path(attribute: &Attribute) -> syn::Result<LitStr> {
@@ -660,19 +465,6 @@ fn parse_route_path(attribute: &Attribute) -> syn::Result<LitStr> {
             "route attributes require exactly one string path",
         )),
     }
-}
-
-fn join_paths(prefix: &LitStr, path: &LitStr) -> syn::Result<LitStr> {
-    let prefix = prefix.value();
-    let path_value = path.value();
-    let full_path = if prefix.is_empty() || prefix == "/" {
-        path_value
-    } else if path_value == "/" {
-        prefix
-    } else {
-        format!("{prefix}{path_value}")
-    };
-    Ok(LitStr::new(&full_path, path.span()))
 }
 
 fn validate_path(path: &LitStr, subject: &str, is_prefix: bool) -> syn::Result<()> {

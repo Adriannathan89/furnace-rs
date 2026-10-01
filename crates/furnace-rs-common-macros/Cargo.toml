@@ -11,7 +11,7 @@ description = "HTTP, controller, Passport, and route procedural macros for furna
 
 [features]
 passport = []
-cookies = ["passport"]
+cookies = []
 
 [dependencies]
 proc-macro-crate.workspace = true

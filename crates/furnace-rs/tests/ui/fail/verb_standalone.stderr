@@ -1,4 +1,4 @@
-error: `#[get]` must be used on a method inside a trait annotated with `#[routes]`
+error: `#[get]` must be used on a method inside an inherent `#[controller]` implementation
  --> tests/ui/fail/verb_standalone.rs:1:19
   |
 1 | #[furnace_rs::get("/")]

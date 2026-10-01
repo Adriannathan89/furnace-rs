@@ -181,8 +181,8 @@ pub use furnace_rs_common_macros::put;
 /// Static route and controller metadata types used by the contract catalog.
 #[cfg(feature = "http")]
 pub use route::{
-    ControllerRegistrar, ControllerRouteDescriptor, HttpMethod, RouteCatalog,
-    RouteContractDescriptor, RouteDescriptor,
+    ControllerDescriptor, ControllerEndpointDescriptor, ControllerRegistrar,
+    ControllerRouteDescriptor, HttpMethod, RouteCatalog, RouteContractDescriptor, RouteDescriptor,
 };
 
 /// Implementation details used by generated HTTP route adapters.

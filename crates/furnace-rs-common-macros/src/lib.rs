@@ -17,6 +17,7 @@
 use proc_macro::TokenStream;
 
 mod controller;
+mod endpoint;
 mod guard;
 mod input;
 mod passport_principal;

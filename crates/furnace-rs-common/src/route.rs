@@ -287,10 +287,12 @@ impl RouteContractDescriptor {
 /// therefore safe to inspect during bootstrap before dependency construction.
 pub struct ControllerRouteDescriptor {
     type_name: &'static str,
+    runtime_type_name: Option<fn() -> &'static str>,
     type_id: fn() -> TypeId,
     namespace: Option<&'static str>,
     contracts: &'static [RouteContractDescriptor],
     registrar: Option<ControllerRegistrar>,
+    endpoints: Option<&'static [RouteDescriptor]>,
 }
 
 impl ControllerRouteDescriptor {
@@ -308,10 +310,12 @@ impl ControllerRouteDescriptor {
     ) -> Self {
         Self {
             type_name,
+            runtime_type_name: None,
             type_id,
             namespace: None,
             contracts,
             registrar: None,
+            endpoints: None,
         }
     }
 
@@ -328,10 +332,12 @@ impl ControllerRouteDescriptor {
     ) -> Self {
         Self {
             type_name,
+            runtime_type_name: None,
             type_id,
             namespace: None,
             contracts,
             registrar: Some(registrar),
+            endpoints: None,
         }
     }
 
@@ -350,8 +356,8 @@ impl ControllerRouteDescriptor {
     }
 
     /// Returns the controller type name.
-    pub const fn type_name(&self) -> &'static str {
-        self.type_name
+    pub fn type_name(&self) -> &'static str {
+        self.runtime_type_name.map_or(self.type_name, |name| name())
     }
 
     /// Returns the controller type identifier.
@@ -364,10 +370,162 @@ impl ControllerRouteDescriptor {
         self.contracts
     }
 
+    pub(crate) fn routes(&self) -> impl Iterator<Item = &RouteDescriptor> {
+        self.contracts
+            .iter()
+            .flat_map(|contract| contract.routes())
+            .chain(self.endpoints.unwrap_or(&[]).iter())
+    }
+
+    const fn direct(
+        type_name: &'static str,
+        type_id: fn() -> TypeId,
+        endpoints: &'static [RouteDescriptor],
+        registrar: ControllerRegistrar,
+    ) -> Self {
+        Self {
+            type_name,
+            runtime_type_name: None,
+            type_id,
+            namespace: None,
+            contracts: &[],
+            registrar: Some(registrar),
+            endpoints: Some(endpoints),
+        }
+    }
+
     fn registrar(&self) -> Option<ControllerRegistrar> {
         self.registrar
     }
 }
+
+/// A managed controller's static declaration and seal callback.
+pub struct ControllerDescriptor {
+    type_name: &'static str,
+    type_id: fn() -> TypeId,
+    location: SourceLocation,
+    namespace: Option<&'static str>,
+    seals: fn() -> crate::SealDefinition,
+}
+impl ControllerDescriptor {
+    /// Records a controller declaration without invoking its seal callback.
+    pub const fn new(
+        type_name: &'static str,
+        type_id: fn() -> TypeId,
+        location: SourceLocation,
+        seals: fn() -> crate::SealDefinition,
+    ) -> Self {
+        Self {
+            type_name,
+            type_id,
+            location,
+            namespace: None,
+            seals,
+        }
+    }
+    /// Attaches the source namespace for inspection.
+    #[doc(hidden)]
+    pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
+        self.namespace = Some(namespace);
+        self
+    }
+    /// Returns the declared controller's stable Rust name.
+    pub const fn type_name(&self) -> &'static str {
+        self.type_name
+    }
+    /// Returns the controller's concrete identity.
+    pub fn type_id(&self) -> TypeId {
+        (self.type_id)()
+    }
+    /// Returns the controller declaration location.
+    pub const fn location(&self) -> SourceLocation {
+        self.location
+    }
+    /// Returns the source namespace when supplied.
+    pub const fn namespace(&self) -> Option<&'static str> {
+        self.namespace
+    }
+    /// Evaluates the static seal declaration during selected analysis.
+    #[doc(hidden)]
+    pub fn seals(&self) -> crate::SealDefinition {
+        (self.seals)()
+    }
+}
+
+/// One annotated inherent endpoint implementation, joined by controller identity.
+pub struct ControllerEndpointDescriptor {
+    view: ControllerRouteDescriptor,
+    location: SourceLocation,
+}
+impl ControllerEndpointDescriptor {
+    /// Records endpoints and their typed registrar without constructing a controller.
+    pub const fn new(
+        type_name: &'static str,
+        type_id: fn() -> TypeId,
+        location: SourceLocation,
+        endpoints: &'static [RouteDescriptor],
+        registrar: ControllerRegistrar,
+    ) -> Self {
+        Self {
+            view: ControllerRouteDescriptor::direct(type_name, type_id, endpoints, registrar),
+            location,
+        }
+    }
+    /// Attaches the implementation's source namespace for inspection.
+    #[doc(hidden)]
+    pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
+        self.view.namespace = Some(namespace);
+        self
+    }
+    /// Attaches the canonical concrete Rust name for qualified implementation paths.
+    #[doc(hidden)]
+    pub const fn with_runtime_type_name(mut self, name: fn() -> &'static str) -> Self {
+        self.view.runtime_type_name = Some(name);
+        self
+    }
+    /// Returns the controller's stable Rust name.
+    pub fn type_name(&self) -> &'static str {
+        self.view.type_name()
+    }
+    /// Returns the concrete controller identity.
+    pub fn type_id(&self) -> TypeId {
+        self.view.type_id()
+    }
+    /// Returns the implementation's source location.
+    pub const fn location(&self) -> SourceLocation {
+        self.location
+    }
+    /// Returns the declared endpoint metadata.
+    pub fn endpoints(&self) -> &'static [RouteDescriptor] {
+        self.view.endpoints.unwrap_or(&[])
+    }
+    /// Returns the typed controller registrar.
+    #[doc(hidden)]
+    pub fn registrar(&self) -> ControllerRegistrar {
+        self.view
+            .registrar
+            .expect("endpoint registrars are mandatory")
+    }
+    /// Returns the source namespace when supplied.
+    pub const fn namespace(&self) -> Option<&'static str> {
+        self.view.namespace
+    }
+}
+
+fn direct_metadata_error(controller: &ControllerDescriptor, message: &'static str) -> Error {
+    Error::new(
+        Diagnostic::new(
+            furnace_rs_core::FURNACE008,
+            "invalid controller metadata",
+            message,
+        )
+        .with_subject(controller.type_name())
+        .with_location(controller.location()),
+    )
+}
+
+furnace_rs_core::__private::inventory::collect!(ControllerDescriptor);
+furnace_rs_core::__private::inventory::collect!(ControllerEndpointDescriptor);
 
 /// Runtime state shared by generated controller and route registrars.
 #[doc(hidden)]
@@ -566,6 +724,62 @@ furnace_rs_core::__private::inventory::collect!(ControllerRouteDescriptor);
 pub struct RouteCatalog;
 
 impl RouteCatalog {
+    /// Returns managed controller declarations in deterministic type-name order.
+    pub fn controllers() -> Vec<&'static ControllerDescriptor> {
+        let mut entries: Vec<_> =
+            furnace_rs_core::__private::inventory::iter::<ControllerDescriptor>
+                .into_iter()
+                .collect();
+        entries.sort_by_key(|descriptor| descriptor.type_name());
+        entries
+    }
+
+    /// Returns inherent endpoint implementations in deterministic type-name order.
+    pub fn endpoint_sets() -> Vec<&'static ControllerEndpointDescriptor> {
+        let mut entries: Vec<_> =
+            furnace_rs_core::__private::inventory::iter::<ControllerEndpointDescriptor>
+                .into_iter()
+                .collect();
+        entries.sort_by_key(|descriptor| descriptor.type_name());
+        entries
+    }
+
+    pub(crate) fn route_controllers(
+        select: impl Fn(TypeId) -> bool,
+    ) -> Result<Vec<&'static ControllerRouteDescriptor>> {
+        let mut result: Vec<_> = Self::legacy_controllers()
+            .into_iter()
+            .filter(|descriptor| select(descriptor.type_id()))
+            .collect();
+        let endpoints = Self::endpoint_sets();
+        let mut seen = Vec::new();
+        for controller in Self::controllers()
+            .into_iter()
+            .filter(|descriptor| select(descriptor.type_id()))
+        {
+            if seen.contains(&controller.type_id()) {
+                return Err(direct_metadata_error(
+                    controller,
+                    "controller declarations have duplicate type identity",
+                ));
+            }
+            seen.push(controller.type_id());
+            let matched: Vec<_> = endpoints
+                .iter()
+                .filter(|descriptor| descriptor.type_id() == controller.type_id())
+                .collect();
+            let [endpoint] = matched.as_slice() else {
+                return Err(direct_metadata_error(
+                    controller,
+                    "each controller must have exactly one annotated inherent endpoint implementation",
+                ));
+            };
+            result.push(&endpoint.view);
+        }
+        result.sort_by_key(|descriptor| descriptor.type_name());
+        Ok(result)
+    }
+
     /// Returns registered controllers in deterministic type-name order.
     ///
     /// The returned vector contains references to static descriptors; cloning
@@ -581,7 +795,7 @@ impl RouteCatalog {
     /// let controllers = RouteCatalog::controllers();
     /// assert!(controllers.iter().all(|controller| !controller.type_name().is_empty()));
     /// ```
-    pub fn controllers() -> Vec<&'static ControllerRouteDescriptor> {
+    pub fn legacy_controllers() -> Vec<&'static ControllerRouteDescriptor> {
         controller_cache().clone()
     }
 
@@ -603,12 +817,10 @@ impl RouteCatalog {
     where
         T: Send + Sync + 'static,
     {
-        Self::controllers()
+        Self::route_controllers(|id| id == TypeId::of::<T>())
+            .unwrap_or_default()
             .into_iter()
-            .find(|controller| controller.type_id() == TypeId::of::<T>())
-            .into_iter()
-            .flat_map(|controller| controller.contracts().iter().copied())
-            .flat_map(|contract| contract.routes().iter().copied())
+            .flat_map(|controller| controller.routes().copied())
             .collect()
     }
 
@@ -636,7 +848,7 @@ impl RouteCatalog {
     where
         T: Send + Sync + 'static,
     {
-        let Some(controller) = Self::controllers()
+        let Some(controller) = Self::route_controllers(|id| id == TypeId::of::<T>())?
             .into_iter()
             .find(|controller| controller.type_id() == TypeId::of::<T>())
         else {
@@ -680,7 +892,7 @@ impl RouteCatalog {
     #[allow(clippy::result_large_err)]
     #[doc(hidden)]
     pub fn validated() -> Result<Vec<ValidatedController>> {
-        let controllers = Self::controllers();
+        let controllers = Self::route_controllers(|_| true)?;
         validate_descriptors(&controllers)
     }
 
@@ -765,6 +977,7 @@ fn validate_with_selection(
     controllers.sort_by(|left, right| controller_sort_key(left).cmp(&controller_sort_key(right)));
 
     let mut identities: Vec<&ControllerRouteDescriptor> = Vec::new();
+    let mut capture_routes = BTreeMap::new();
     let mut seen_routes: BTreeMap<(HttpMethod, String), (&str, RouteDescriptor)> = BTreeMap::new();
     let mut validated = Vec::with_capacity(controllers.len());
 
@@ -780,34 +993,38 @@ fn validate_with_selection(
         };
 
         let mut routes = Vec::new();
-        for contract in controller.contracts() {
-            for route in contract.routes() {
-                let selection = selection_for(controller, route);
-                let selected = selection.selected;
-                if selected {
-                    validate_route(route)?;
-                    let key = (route.method(), canonical_pattern(route.full_path()));
-                    if let Some((previous_controller, previous_route)) =
-                        seen_routes.insert(key, (controller.type_name(), *route))
-                    {
-                        return Err(conflicting_routes(
-                            controller.type_name(),
-                            *route,
-                            previous_controller,
-                            previous_route,
-                            "application",
-                        ));
-                    }
+        for route in controller.routes() {
+            let selection = selection_for(controller, route);
+            let selected = selection.selected;
+            if selected {
+                validate_route(route, controller.endpoints.is_some())?;
+                validate_capture_names(
+                    &mut capture_routes,
+                    controller.type_name(),
+                    *route,
+                    "application",
+                )?;
+                let key = (route.method(), canonical_pattern(route.full_path()));
+                if let Some((previous_controller, previous_route)) =
+                    seen_routes.insert(key, (controller.type_name(), *route))
+                {
+                    return Err(conflicting_routes(
+                        controller.type_name(),
+                        *route,
+                        previous_controller,
+                        previous_route,
+                        "application",
+                    ));
                 }
-                routes.push(ValidatedRoute {
-                    method: route.method(),
-                    handler: route.handler(),
-                    selected,
-                    axum_path: selected.then(|| to_axum_path(route.full_path())),
-                    #[cfg(feature = "jwt")]
-                    passport_context_cauldron: selection.passport_context_cauldron,
-                });
             }
+            routes.push(ValidatedRoute {
+                method: route.method(),
+                handler: route.handler(),
+                selected,
+                axum_path: selected.then(|| to_axum_path(route.full_path())),
+                #[cfg(feature = "jwt")]
+                passport_context_cauldron: selection.passport_context_cauldron,
+            });
         }
 
         identities.push(controller);
@@ -836,11 +1053,7 @@ fn controller_cache() -> &'static Vec<&'static ControllerRouteDescriptor> {
 fn routes_for_descriptor(
     controller: &'static ControllerRouteDescriptor,
 ) -> impl Iterator<Item = RouteDescriptor> {
-    controller
-        .contracts()
-        .iter()
-        .copied()
-        .flat_map(|contract| contract.routes().iter().copied())
+    controller.routes().copied()
 }
 
 fn validate_controller_identity(
@@ -875,6 +1088,9 @@ fn validate_controller_identity(
 }
 
 fn validate_contract(controller: &ControllerRouteDescriptor) -> Result<()> {
+    if controller.endpoints.is_some() {
+        return Ok(());
+    }
     if controller.contracts().is_empty() {
         return Err(metadata_error(
             controller.type_name(),
@@ -910,14 +1126,21 @@ fn validate_contract(controller: &ControllerRouteDescriptor) -> Result<()> {
     Ok(())
 }
 
-fn validate_route(route: &RouteDescriptor) -> Result<()> {
-    validate_path(route.prefix(), true, "route prefix", route.location())?;
-    validate_path(route.path(), false, "route path", route.location())?;
+fn validate_route(route: &RouteDescriptor, native: bool) -> Result<()> {
+    validate_path(
+        route.prefix(),
+        true,
+        "route prefix",
+        route.location(),
+        native,
+    )?;
+    validate_path(route.path(), false, "route path", route.location(), native)?;
     validate_path(
         route.full_path(),
         false,
         "route full path",
         route.location(),
+        native,
     )?;
     if canonical_join(route.prefix(), route.path()) != route.full_path() {
         return Err(metadata_error(
@@ -939,12 +1162,70 @@ fn canonical_join(prefix: &str, path: &str) -> String {
     }
 }
 
-fn validate_path(
+fn validate_native_path(
     value: &str,
     is_prefix: bool,
     subject: &str,
     location: SourceLocation,
 ) -> Result<()> {
+    let error = |message| metadata_error(subject, message, Some(location));
+    if is_prefix && value.is_empty() {
+        return Ok(());
+    }
+    if !value.starts_with('/')
+        || value.contains(['?', '#', '\\', '%'])
+        || value.chars().any(|c| c.is_control() || c.is_whitespace())
+    {
+        return Err(error("invalid canonical endpoint path"));
+    }
+    if value == "/" {
+        return Ok(());
+    }
+    let segments: Vec<_> = value.split('/').skip(1).collect();
+    let mut names = BTreeMap::new();
+    for (index, segment) in segments.iter().enumerate() {
+        if segment.is_empty() || matches!(*segment, "." | "..") {
+            return Err(error("endpoint path contains an empty or relative segment"));
+        }
+        if let Some(capture) = segment
+            .strip_prefix('{')
+            .and_then(|name| name.strip_suffix('}'))
+        {
+            let (name, wildcard) = capture
+                .strip_prefix('*')
+                .map_or((capture, false), |name| (name, true));
+            let mut chars = name.chars();
+            if is_prefix
+                || !chars
+                    .next()
+                    .is_some_and(|c| c == '_' || c.is_ascii_alphabetic())
+                || !chars.all(|c| c == '_' || c.is_ascii_alphanumeric())
+            {
+                return Err(error("invalid canonical capture name"));
+            }
+            if names.insert(name, ()).is_some() {
+                return Err(error("endpoint path repeats a capture name"));
+            }
+            if wildcard && index + 1 != segments.len() {
+                return Err(error("wildcards must be final path segments"));
+            }
+        } else if segment.contains([':', '{', '}', '*']) {
+            return Err(error("captures must occupy an entire path segment"));
+        }
+    }
+    Ok(())
+}
+
+fn validate_path(
+    value: &str,
+    is_prefix: bool,
+    subject: &str,
+    location: SourceLocation,
+    native: bool,
+) -> Result<()> {
+    if native {
+        return validate_native_path(value, is_prefix, subject, location);
+    }
     if is_prefix && value.is_empty() {
         return Ok(());
     }
@@ -1066,7 +1347,9 @@ fn validate_routes(
     routes: impl IntoIterator<Item = (&'static str, RouteDescriptor)>,
 ) -> Result<()> {
     let mut seen = BTreeMap::new();
+    let mut capture_routes = BTreeMap::new();
     for (controller, route) in routes {
+        validate_capture_names(&mut capture_routes, controller, route, scope)?;
         let key = (route.method(), canonical_pattern(route.full_path()));
         if let Some((previous_controller, previous_route)) = seen.insert(key, (controller, route)) {
             return Err(conflicting_routes(
@@ -1081,10 +1364,43 @@ fn validate_routes(
     Ok(())
 }
 
+// Axum shares a path tree across HTTP methods, so capture names must agree.
+fn validate_capture_names(
+    seen: &mut BTreeMap<String, (&'static str, RouteDescriptor)>,
+    controller: &'static str,
+    route: RouteDescriptor,
+    scope: &'static str,
+) -> Result<()> {
+    for (previous_controller, previous) in seen.values() {
+        let left = to_axum_path(previous.full_path());
+        let right = to_axum_path(route.full_path());
+        for (left, right) in left.split('/').zip(right.split('/')) {
+            if left == right {
+                continue;
+            }
+            if left.starts_with('{') && right.starts_with('{') {
+                return Err(conflicting_routes(
+                    controller,
+                    route,
+                    previous_controller,
+                    *previous,
+                    scope,
+                ));
+            }
+            // Different static branches or a static/capture pair can coexist.
+            break;
+        }
+    }
+    seen.insert(route.full_path().to_owned(), (controller, route));
+    Ok(())
+}
+
 fn canonical_pattern(path: &str) -> String {
     path.split('/')
         .map(|segment| {
-            if segment.starts_with(':') {
+            if segment.starts_with('{') && segment.starts_with("{*") {
+                "{*}"
+            } else if segment.starts_with(':') || segment.starts_with('{') {
                 ":*"
             } else {
                 segment
@@ -1120,10 +1436,7 @@ fn controller_sort_key(
 }
 
 fn controller_location(controller: &ControllerRouteDescriptor) -> Option<SourceLocation> {
-    controller
-        .contracts()
-        .iter()
-        .find_map(|contract| contract.routes().first().map(|route| route.location()))
+    controller.routes().next().map(|route| route.location())
 }
 
 fn duplicate_controller_identity(

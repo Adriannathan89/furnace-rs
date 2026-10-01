@@ -24,7 +24,9 @@ pub(crate) fn outside_contract(
     };
     let error = Error::new(
         span,
-        format!("`#[{verb}]` must be used on a method inside a trait annotated with `#[routes]`"),
+        format!(
+            "`#[{verb}]` must be used on a method inside an inherent `#[controller]` implementation"
+        ),
     )
     .into_compile_error();
 

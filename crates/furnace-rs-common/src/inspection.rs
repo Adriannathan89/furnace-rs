@@ -661,7 +661,9 @@ fn inspect_scope(
         .map(|(controller, contract, route)| RouteReport {
             method: route.method().as_str().to_owned(),
             path: route.full_path().to_owned(),
-            route_trait: contract.trait_name().to_owned(),
+            route_trait: contract
+                .map(|contract| contract.trait_name().to_owned())
+                .unwrap_or_default(),
             handler: route.handler().to_owned(),
             controller: controller.type_name().to_owned(),
             location: source_report(route.location()),

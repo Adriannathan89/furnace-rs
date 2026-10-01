@@ -1,0 +1,5 @@
+error: endpoints support only an immutable `&self` receiver or no receiver
+ --> tests/ui-direct/fail/consuming.rs:6:33
+  |
+6 | impl Controller { #[get] fn run(self) {} }
+  |                                 ^^^^

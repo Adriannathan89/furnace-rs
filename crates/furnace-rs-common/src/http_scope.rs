@@ -120,7 +120,7 @@ pub(crate) struct HttpApplicationScope {
 
 impl HttpApplicationScope {
     pub(crate) fn for_test_controller<T: Send + Sync + 'static>() -> Result<Self> {
-        let matches = RouteCatalog::controllers()
+        let matches = RouteCatalog::route_controllers(|id| id == TypeId::of::<T>())?
             .into_iter()
             .filter(|descriptor| descriptor.type_id() == TypeId::of::<T>())
             .collect::<Vec<_>>();
@@ -144,9 +144,7 @@ impl HttpApplicationScope {
         let controllers = vec![ScopedController {
             descriptor,
             selected_routes: descriptor
-                .contracts()
-                .iter()
-                .flat_map(|contract| contract.routes())
+                .routes()
                 .map(|route| RouteIdentity::new(descriptor, route))
                 .collect(),
             context_cauldron: None,
@@ -155,17 +153,12 @@ impl HttpApplicationScope {
         let guards = controllers
             .iter()
             .flat_map(|controller| {
-                controller
-                    .descriptor()
-                    .contracts()
-                    .iter()
-                    .flat_map(|contract| contract.routes())
-                    .filter_map(|route| {
-                        route.guard().map(|guard| ScopedGuard {
-                            guard,
-                            context_cauldron: None,
-                        })
+                controller.descriptor().routes().filter_map(|route| {
+                    route.guard().map(|guard| ScopedGuard {
+                        guard,
+                        context_cauldron: None,
                     })
+                })
             })
             .collect();
         Ok(Self {
@@ -182,7 +175,7 @@ impl HttpApplicationScope {
     pub(crate) fn for_cauldron_graph(cauldron_graph: Option<&CauldronGraph>) -> Result<Self> {
         if let Some(graph) = cauldron_graph {
             for output in graph.registered_controllers() {
-                if !RouteCatalog::controllers()
+                if !RouteCatalog::route_controllers(|id| id == output)?
                     .iter()
                     .any(|controller| controller.type_id() == output)
                 {
@@ -197,8 +190,8 @@ impl HttpApplicationScope {
             }
         }
         let controllers = match cauldron_graph {
-            None => Self::complete_controllers(),
-            Some(graph) => Self::rooted_controllers(graph),
+            None => Self::complete_controllers()?,
+            Some(graph) => Self::rooted_controllers(graph)?,
         };
 
         #[cfg(feature = "jwt")]
@@ -217,9 +210,10 @@ impl HttpApplicationScope {
     /// produces an empty scope so inspection cannot expose unrelated linked metadata.
     #[allow(dead_code)] // Used by the private inspection path added in the next task.
     pub(crate) fn for_rooted_inspection(cauldron_graph: Option<&CauldronGraph>) -> Result<Self> {
-        let controllers = cauldron_graph
-            .map(Self::rooted_controllers)
-            .unwrap_or_default();
+        let controllers = match cauldron_graph {
+            Some(graph) => Self::rooted_controllers(graph)?,
+            None => Vec::new(),
+        };
         #[cfg(feature = "jwt")]
         let guards = match cauldron_graph {
             Some(graph) => Self::selected_guards(Some(graph), &controllers),
@@ -247,21 +241,23 @@ impl HttpApplicationScope {
     ) -> impl Iterator<
         Item = (
             &ControllerRouteDescriptor,
-            &RouteContractDescriptor,
+            Option<&RouteContractDescriptor>,
             &RouteDescriptor,
         ),
     > {
         self.controllers.iter().flat_map(|controller| {
             controller
                 .descriptor()
-                .contracts()
-                .iter()
-                .flat_map(move |contract| {
-                    contract
-                        .routes()
-                        .iter()
-                        .filter(move |route| controller.selects(route))
-                        .map(move |route| (controller.descriptor(), contract, route))
+                .routes()
+                .filter(move |route| controller.selects(route))
+                .map(move |route| {
+                    let contract = controller.descriptor().contracts().iter().find(|contract| {
+                        contract
+                            .routes()
+                            .iter()
+                            .any(|candidate| std::ptr::eq(candidate, route))
+                    });
+                    (controller.descriptor(), contract, route)
                 })
         })
     }
@@ -271,48 +267,47 @@ impl HttpApplicationScope {
         &self.guards
     }
 
-    fn complete_controllers() -> Vec<ScopedController> {
-        RouteCatalog::controllers()
+    fn complete_controllers() -> Result<Vec<ScopedController>> {
+        Ok(RouteCatalog::route_controllers(|_| true)?
             .into_iter()
             .map(|descriptor| ScopedController {
                 descriptor,
                 selected_routes: descriptor
-                    .contracts()
-                    .iter()
-                    .flat_map(|contract| contract.routes())
+                    .routes()
                     .map(|route| RouteIdentity::new(descriptor, route))
                     .collect(),
                 context_cauldron: None,
             })
-            .collect()
+            .collect())
     }
 
-    fn rooted_controllers(graph: &CauldronGraph) -> Vec<ScopedController> {
-        RouteCatalog::controllers()
-            .into_iter()
-            .filter(|descriptor| graph.is_controller(descriptor.type_id()))
-            .map(|descriptor| {
-                let context_cauldron = graph
-                    .owner_of(descriptor.type_id())
-                    .map(|owner| owner.type_id());
-                let selected_routes = descriptor
-                    .contracts()
-                    .iter()
-                    .flat_map(|contract| contract.routes())
-                    .map(|route| {
-                        let identity = RouteIdentity::new(descriptor, route);
-                        #[cfg(feature = "jwt")]
-                        let identity = identity.with_passport_context_cauldron(context_cauldron);
-                        identity
-                    })
-                    .collect();
-                ScopedController {
-                    descriptor,
-                    selected_routes,
-                    context_cauldron,
-                }
-            })
-            .collect()
+    fn rooted_controllers(graph: &CauldronGraph) -> Result<Vec<ScopedController>> {
+        Ok(
+            RouteCatalog::route_controllers(|id| graph.is_controller(id))?
+                .into_iter()
+                .filter(|descriptor| graph.is_controller(descriptor.type_id()))
+                .map(|descriptor| {
+                    let context_cauldron = graph
+                        .owner_of(descriptor.type_id())
+                        .map(|owner| owner.type_id());
+                    let selected_routes = descriptor
+                        .routes()
+                        .map(|route| {
+                            let identity = RouteIdentity::new(descriptor, route);
+                            #[cfg(feature = "jwt")]
+                            let identity =
+                                identity.with_passport_context_cauldron(context_cauldron);
+                            identity
+                        })
+                        .collect();
+                    ScopedController {
+                        descriptor,
+                        selected_routes,
+                        context_cauldron,
+                    }
+                })
+                .collect(),
+        )
     }
 
     #[cfg(feature = "jwt")]
@@ -335,9 +330,7 @@ impl HttpApplicationScope {
             .flat_map(|controller| {
                 controller
                     .descriptor()
-                    .contracts()
-                    .iter()
-                    .flat_map(|contract| contract.routes())
+                    .routes()
                     .filter(move |route| controller.selects(route))
                     .filter_map(move |route| {
                         route.guard().map(|guard| ScopedGuard {
