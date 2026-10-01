@@ -1,11 +1,11 @@
 struct Resource;
 
-#[mads::provider(lifecycle)]
+#[mads::element(lifecycle)]
 async fn wrong_output() -> Resource {
     Resource
 }
 
-#[mads::provider(lifecycle)]
+#[mads::element(lifecycle)]
 async fn generic_resource<T>() -> mads::core::LifecycleResource<T> {
     todo!()
 }

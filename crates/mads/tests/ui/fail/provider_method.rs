@@ -3,7 +3,7 @@
 struct Factory;
 
 impl Factory {
-    #[mads::provider]
+    #[mads::element]
     fn value(&self) -> String {
         String::new()
     }

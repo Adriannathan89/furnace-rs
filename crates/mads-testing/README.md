@@ -26,12 +26,12 @@ are not a security boundary against deliberate use.
 ```rust
 use mads_testing::sea_orm::{DatabaseConnection, DbBackend, MockDatabase};
 
-#[mads::repository]
+#[mads::storage]
 struct UserRepository {
     database: DatabaseConnection,
 }
 
-#[mads::service]
+#[mads::burner]
 struct UserService {
     repository: UserRepository,
 }

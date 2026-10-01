@@ -16,7 +16,7 @@ configuration, provider, or lifecycle behavior.
 - The `Configuration` trait, `#[derive(Configuration)]` support, and the
   redacted `Secret<T>` wrapper.
 - Static provider and module descriptors collected through `inventory`.
-- Root-module selection, namespace ownership, direct module imports, and the
+- Root-module selection, explicit furnace ownership, exports, direct imports, and the
   retained `ModuleGraph`.
 - Concrete-type provider graph analysis, deterministic construction plans,
   duplicate/ambiguous/missing/cycle diagnostics, and provider state.
@@ -73,8 +73,8 @@ reflection.
   `root::<M>()` keeps the complete-catalog compatibility path.
 - A provider is selected by concrete output type. Exact duplicates, ambiguous
   outputs, missing dependencies, and cycles fail before construction.
-- Module imports are direct and namespace-aware. An import does not make every
-  transitive module visible.
+- Furnace imports expose explicit exports from direct imports. Reachable global
+  furnaces expose only their exports; Rust namespaces do not grant visibility.
 - Auto-configuration is conditional and explainable. It supplies a missing
   infrastructure type only when the linked integration, graph requirement, and
   configuration conditions all match; an explicit application provider wins.
@@ -90,7 +90,7 @@ reflection.
 | `Config`, `ConfigBuilder`, `ConfigSource` | Build and inspect source-attributed configuration values. |
 | `Configuration` and `Config::parse` | Parse a typed application view from the existing configuration document. |
 | `Secret<T>` | Make secret exposure explicit; ordinary formatting is redacted. |
-| `Module`, `MadsBuilder`, `Mads` | Select, analyze, construct, inspect, start, and shut down an application. |
+| `Furnace`, `FurnaceRegistration`, `MadsBuilder`, `Mads` | Select, analyze, construct, inspect, start, and shut down an application. |
 | `ProviderDescriptor` and `ModuleDescriptor` | Represent compile-time-generated provider/module metadata. |
 | `ApplicationGraph`, `ConstructionPlan`, `ModuleGraph` | Inspect selected ownership, dependency edges, and construction order. |
 | `AutoConfigurationReport` | Explain active, skipped, overridden, or failed official defaults. |

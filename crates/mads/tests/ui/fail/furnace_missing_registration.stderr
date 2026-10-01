@@ -1,0 +1,167 @@
+error[E0277]: the trait bound `AppModule: Furnace` is not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[mads::furnace]
+  | ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `Furnace` is not implemented for `AppModule`
+ --> tests/ui/fail/furnace_missing_registration.rs:2:1
+  |
+2 | struct AppModule;
+  | ^^^^^^^^^^^^^^^^
+help: the trait `Furnace` is implemented for `LoggerModule`
+ --> $WORKSPACE/crates/mads-common/src/logger/mod.rs
+  |
+  | impl crate::core::Furnace for LoggerModule {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `FurnaceRegistration`
+ --> $WORKSPACE/crates/mads-core/src/furnace.rs
+  |
+  | pub struct FurnaceRegistration<M: Furnace> {
+  |                                   ^^^^^^^ required by this bound in `FurnaceRegistration`
+  = note: this error originates in the attribute macro `mads::furnace` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `AppModule: Furnace` is not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[mads::furnace]
+  | ^^^^^^^^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `Furnace` is not implemented for `AppModule`
+ --> tests/ui/fail/furnace_missing_registration.rs:2:1
+  |
+2 | struct AppModule;
+  | ^^^^^^^^^^^^^^^^
+help: the trait `Furnace` is implemented for `LoggerModule`
+ --> $WORKSPACE/crates/mads-common/src/logger/mod.rs
+  |
+  | impl crate::core::Furnace for LoggerModule {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `FurnaceRegistration::<M>::new`
+ --> $WORKSPACE/crates/mads-core/src/furnace.rs
+  |
+  | impl<M: Furnace> FurnaceRegistration<M> {
+  |         ^^^^^^^ required by this bound in `FurnaceRegistration::<M>::new`
+  |     /// Starts an empty declaration. The unit value is not retained.
+  |     pub fn new(_module: M) -> Self {
+  |            --- required by a bound in this associated function
+  = note: this error originates in the attribute macro `mads::furnace` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `provide` exists for struct `FurnaceRegistration<AppModule>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[mads::furnace]
+  | ^^^^^^^^^^^^^^^^ method cannot be called on `FurnaceRegistration<AppModule>` due to unsatisfied trait bounds
+2 | struct AppModule;
+  | ---------------- doesn't satisfy `AppModule: Furnace`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppModule: Furnace`
+note: the trait `Furnace` must be implemented
+ --> $WORKSPACE/crates/mads-core/src/furnace.rs
+  |
+  | pub trait Furnace: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `mads::furnace` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `controller` exists for struct `FurnaceRegistration<AppModule>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[mads::furnace]
+  | ^^^^^^^^^^^^^^^^ method cannot be called on `FurnaceRegistration<AppModule>` due to unsatisfied trait bounds
+2 | struct AppModule;
+  | ---------------- doesn't satisfy `AppModule: Furnace`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppModule: Furnace`
+note: the trait `Furnace` must be implemented
+ --> $WORKSPACE/crates/mads-core/src/furnace.rs
+  |
+  | pub trait Furnace: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `mads::furnace` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `import` exists for struct `FurnaceRegistration<AppModule>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[mads::furnace]
+  | ^^^^^^^^^^^^^^^^ method cannot be called on `FurnaceRegistration<AppModule>` due to unsatisfied trait bounds
+2 | struct AppModule;
+  | ---------------- doesn't satisfy `AppModule: Furnace`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppModule: Furnace`
+note: the trait `Furnace` must be implemented
+ --> $WORKSPACE/crates/mads-core/src/furnace.rs
+  |
+  | pub trait Furnace: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `mads::furnace` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `export` exists for struct `FurnaceRegistration<AppModule>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[mads::furnace]
+  | ^^^^^^^^^^^^^^^^ method cannot be called on `FurnaceRegistration<AppModule>` due to unsatisfied trait bounds
+2 | struct AppModule;
+  | ---------------- doesn't satisfy `AppModule: Furnace`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppModule: Furnace`
+note: the trait `Furnace` must be implemented
+ --> $WORKSPACE/crates/mads-core/src/furnace.rs
+  |
+  | pub trait Furnace: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `mads::furnace` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `global` exists for struct `FurnaceRegistration<AppModule>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[mads::furnace]
+  | ^^^^^^^^^^^^^^^^ method cannot be called on `FurnaceRegistration<AppModule>` due to unsatisfied trait bounds
+2 | struct AppModule;
+  | ---------------- doesn't satisfy `AppModule: Furnace`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppModule: Furnace`
+note: the trait `Furnace` must be implemented
+ --> $WORKSPACE/crates/mads-core/src/furnace.rs
+  |
+  | pub trait Furnace: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `mads::furnace` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `AppModule: Furnace` is not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:2:8
+  |
+2 | struct AppModule;
+  |        ^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `Furnace` is not implemented for `AppModule`
+ --> tests/ui/fail/furnace_missing_registration.rs:2:1
+  |
+2 | struct AppModule;
+  | ^^^^^^^^^^^^^^^^
+help: the trait `Furnace` is implemented for `LoggerModule`
+ --> $WORKSPACE/crates/mads-common/src/logger/mod.rs
+  |
+  | impl crate::core::Furnace for LoggerModule {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: the method `into_definition` exists for struct `FurnaceRegistration<AppModule>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[mads::furnace]
+  | ^^^^^^^^^^^^^^^^ method cannot be called on `FurnaceRegistration<AppModule>` due to unsatisfied trait bounds
+2 | struct AppModule;
+  | ---------------- doesn't satisfy `AppModule: Furnace`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppModule: Furnace`
+note: the trait `Furnace` must be implemented
+ --> $WORKSPACE/crates/mads-core/src/furnace.rs
+  |
+  | pub trait Furnace: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `mads::furnace` (in Nightly builds, run with -Z macro-backtrace for more info)

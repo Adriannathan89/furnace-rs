@@ -1,6 +1,6 @@
 //! Confirms provider attributes reject inferred types nested in result output.
 
-#[mads::provider]
+#[mads::element]
 fn value() -> mads::core::Result<_> {
     Ok(String::new())
 }

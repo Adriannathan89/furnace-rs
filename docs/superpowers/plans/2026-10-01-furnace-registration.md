@@ -10,7 +10,7 @@
 
 **Spec:** [Furnace registration design](../specs/2026-10-01-furnace-registration-design.md)
 
-**Status:** Draft execution plan, pending review of both documents. Registration through a `register` method is confirmed; generic chaining, export rules, and final removal of old names still require design review. Do not implement merely because this plan exists.
+**Status:** Approved for implementation by the user on 2026-10-01, including generic chaining, explicit exports, and removal of the old names.
 
 ## Global Constraints
 

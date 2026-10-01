@@ -1,4 +1,4 @@
-error: `#[mads::provider]` requires an explicit concrete return type
+error: `#[mads::element]` requires an explicit concrete return type
  --> tests/ui/fail/provider_inferred_const_output.rs:4:20
   |
 4 | fn value() -> [u8; _] {

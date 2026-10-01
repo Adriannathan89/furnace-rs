@@ -11,10 +11,10 @@ crate is an implementation dependency, not a normal application dependency.
 
 | Macro | Generated contract |
 | --- | --- |
-| `#[module]` | Declares a module node, records its Rust namespace, and records direct module imports. |
-| `#[provider]` | Turns a provider function into a typed constructor and provider descriptor. |
-| `#[service]` | Declares an application-scoped managed service and its dependency metadata. |
-| `#[repository]` | Declares an application-scoped repository with the same concrete-type wiring model. |
+| `#[furnace]` | Declares a unit furnace and a callback to its authored `Furnace::register` chain. |
+| `#[element]` | Turns a provider function into a typed constructor and provider descriptor. |
+| `#[burner]` | Declares an application-scoped managed service and its dependency metadata. |
+| `#[storage]` | Declares an application-scoped repository with the same concrete-type wiring model. |
 | `#[derive(Configuration)]` | Generates a typed, prefix-aware view over the core `Config` document. |
 | `#[mads::main]` | Converts an async application entry point into a synchronous Tokio-backed entry point when the runtime feature is enabled. |
 
@@ -44,7 +44,7 @@ macros through `mads-core` re-exports.
 ## Source layout
 
 - `src/lib.rs` — macro exports and shared expansion helpers.
-- `src/module.rs` — module declarations and import metadata.
+- `src/furnace.rs` — furnace declarations and registration callbacks.
 - `src/managed.rs` and `src/provider.rs` — managed type/function expansion and
   dependency extraction.
 - `src/configuration/` — `Configuration` derive parsing and validation.

@@ -59,7 +59,7 @@ mads-persistence/sea-orm-postgres  native SeaORM PostgreSQL connector
 
 ## Startup, configuration, and secret boundary
 
-`Mads::run::<AppModule>()` retains the conventional process-current-directory
+`Mads::burn::<AppModule>()` retains the conventional process-current-directory
 loading sequence:
 
 ~~~text
@@ -142,11 +142,13 @@ automatic database-to-HTTP mapping. Applications choose a domain-specific
 
 ## Root scope and normal runtime
 
-`#[module(imports = [...])]` selects the root application and direct-import
-graph. A descriptor belongs to its nearest annotated Rust namespace. Across
-modules, dependencies require a directly imported module and ordinary `pub`
+`#[furnace]` declares a unit root type with an authored `Furnace::register`
+chain. Membership uses `.provide::<T>()` and `.controller::<T>()`; `.import(M)`
+collects reachable furnaces. Outputs have one owner in the selected graph.
+Across furnaces, dependencies require explicit exports and a direct import or a
+reachable global export. Rust namespace placement and `pub` do not grant DI
 visibility; imports are not transitive. A builder without `root::<AppModule>()`
-retains complete-catalog compatibility behavior.
+retains complete-catalog behavior.
 
 ~~~text
 conventional config (standard run only)

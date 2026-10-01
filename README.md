@@ -63,26 +63,39 @@ For repeatable HTTP load and failure checks, see the [benchmark suite](benchmark
 ```rust,no_run
 use mads::prelude::*;
 
-mod user {
-    use mads::prelude::*;
-
-    #[module]
-    pub struct UserHttpModule;
+#[routes]
+trait HelloRoutes {
+    #[get("/")]
+    async fn hello(&self) -> &'static str;
 }
-use user::UserHttpModule;
+#[controller(routes = [HelloRoutes])]
+struct HelloController;
+impl HelloRoutes for HelloController {
+    async fn hello(&self) -> &'static str { "Hello, world!" }
+}
 
-#[module(imports = [UserHttpModule])]
+#[furnace]
 struct AppModule;
+impl Furnace for AppModule {
+    fn register(self) -> FurnaceRegistration<Self> {
+        self.controller::<HelloController>()
+    }
+}
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<AppModule>().await
+    Mads::burn::<AppModule>().await
 }
 ```
 
-`Mads::run` is the recommended application entry point. The root module
-selects its direct imports and the providers, controllers, routes, guards,
-strategies, and official auto-configurations reachable through that graph.
+`Mads::burn` starts the root furnace and its imports. Register dependencies with
+`.provide::<T>()`, controllers with `.controller::<T>()`, and imported furnaces
+with `.import(OtherModule)`. Cross-furnace injection requires `.export::<T>()`;
+`.global()` exposes only those exports throughout the reachable application.
+Rust namespaces and `pub` visibility do not determine DI membership.
+
+See the [breaking-change migration guide](docs/importance/furnace-registration-migration.md)
+for the `furnace`, `burner`, `storage`, and `element` vocabulary and factory registration.
 
 ## Workspace crates
 
@@ -141,7 +154,7 @@ enables HTTP and logging with the Tokio runtime. For feature combinations, see t
 
 ## Conventional configuration and HTTP
 
-Only `Mads::run` loads conventional configuration. It reads the process
+Only `Mads::burn` loads conventional configuration. It reads the process
 current working directory in this order:
 
 1. optional `.env`, used only for interpolation;
@@ -326,7 +339,7 @@ struct AppConfig {
     api_key: Secret<String>,
 }
 
-#[provider]
+#[element]
 fn app_config(config: Config) -> mads::core::Result<AppConfig> {
     Ok(config.parse()?)
 }
@@ -388,10 +401,15 @@ mads-persistence = { version = "0.9.2", features = ["sea-orm-postgres"] }
 ```rust,ignore
 use mads_persistence::sea_orm::{DatabaseConnection, DatabaseModule};
 
-#[mads::module(imports = [DatabaseModule])]
+#[mads::furnace]
 struct AppModule;
+impl mads::Furnace for AppModule {
+    fn register(self) -> mads::FurnaceRegistration<Self> {
+        self.import(DatabaseModule).provide::<UserRepository>()
+    }
+}
 
-#[mads::provider]
+#[mads::element]
 fn repository(database: DatabaseConnection) -> UserRepository {
     UserRepository::new(database)
 }
@@ -421,7 +439,7 @@ routes.
 
 ## Passport configuration and JWT profiles
 
-`Mads::run` supplies the standard conventional source order; the low-level
+`Mads::burn` supplies the standard conventional source order; the low-level
 builder stays explicit. Dotenv sources provide interpolation values, and
 ordinary sources merge from first to last; a later scalar or string array
 replaces an earlier value at the same key completely. Process variables override
@@ -501,7 +519,7 @@ struct UserPrincipal {
     permissions: std::collections::BTreeSet<String>,
 }
 
-#[service]
+#[burner]
 struct AppJwtStrategy { users: UserService }
 
 #[passport_strategy(name = "jwt")]
@@ -618,12 +636,15 @@ impl UserRoutes for UserController {
     }
 }
 
-#[module]
+#[furnace]
 struct AppModule;
+impl Furnace for AppModule {
+    fn register(self) -> FurnaceRegistration<Self> { self.controller::<UserController>() }
+}
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<AppModule>().await
+    Mads::burn::<AppModule>().await
 }
 ```
 

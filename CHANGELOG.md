@@ -2,6 +2,13 @@
 
 All notable changes to MADS.rs are documented in this file.
 
+## Unreleased breaking registration change
+
+- Replace `module`, `service`, `repository`, and `provider` attributes with `furnace`, `burner`, `storage`, and `element`.
+- Register providers, controllers, imports, explicit exports, and global status in `Furnace::register`; Rust namespaces and `pub` no longer determine dependency visibility.
+- Start applications with `Mads::burn` and `MadsBurnExt`; remove legacy declaration and startup aliases.
+- Migrate official logger/database furnaces, application scaffolding, and examples. See [the migration guide](docs/importance/furnace-registration-migration.md).
+
 ## [0.9.2] - Unreleased
 
 ### Added

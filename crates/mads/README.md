@@ -70,8 +70,8 @@ versions are maintained in the workspace root `Cargo.toml`.
 
 The facade re-exports:
 
-- Core declarations: `module`, `provider`, `service`, `repository`,
-  `Configuration`, `Secret`, `Module`, and the builder/application types under
+- Core declarations: `furnace`, `element`, `burner`, `storage`,
+  `Configuration`, `Secret`, `Furnace`, `FurnaceRegistration`, and the builder/application types under
   `mads::core`.
 - Integration declarations: `routes`, HTTP verbs, `controller`, `guard`,
   `Input`, Passport derives, and strategy metadata when the required features
@@ -91,7 +91,7 @@ types.
 The recommended path is:
 
 ~~~text
-Mads::run::<AppModule>()
+Mads::burn::<AppModule>()
         │
         ├── loads .env/mads.toml/MADS_* from the current directory
         ├── selects the rooted module scope

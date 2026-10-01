@@ -247,7 +247,7 @@ mads dev -p api --bin server -- --log=debug
 ## Inspection commands
 
 `mads routes`, `mads graph`, and `mads doctor` compile the selected standard
-`Mads::run::<AppModule>()` application and obtain private inspection metadata
+`Mads::burn::<AppModule>()` application and obtain private inspection metadata
 without normal provider construction, lifecycle startup, database connection,
 migration, listener binding, or traffic serving. Human output remains the
 existing table/section/check rendering; JSON exposes only the public schema

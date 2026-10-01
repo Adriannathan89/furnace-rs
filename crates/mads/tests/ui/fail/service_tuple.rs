@@ -1,6 +1,6 @@
 //! Confirms tuple services receive a focused diagnostic.
 
-#[mads::service]
+#[mads::burner]
 struct TupleService(String);
 
 fn main() {}

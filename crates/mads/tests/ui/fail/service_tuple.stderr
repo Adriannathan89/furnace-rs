@@ -1,4 +1,4 @@
-error: `#[mads::service]` supports only non-generic named-field or unit structs, such as `#[mads::service] struct Managed { dependency: Dependency }` or `#[mads::service] struct Managed;`
+error: `#[mads::burner]` supports only non-generic named-field or unit structs, such as `#[mads::burner] struct Managed { dependency: Dependency }` or `#[mads::burner] struct Managed;`
  --> tests/ui/fail/service_tuple.rs:4:20
   |
 4 | struct TupleService(String);

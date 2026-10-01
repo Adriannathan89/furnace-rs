@@ -1,6 +1,6 @@
 # Explicit furnace registration and application vocabulary
 
-Status: Draft for user review. No implementation is authorized by this document alone.
+Status: Approved by the user on 2026-10-01; implementation authorized in the existing refactor branch.
 
 ## Intent and agreed vocabulary
 
@@ -21,7 +21,7 @@ User-authored type names such as `UserModule` and `UserService` may stay as they
 
 The user also confirmed registration inside `impl Furnace for AppModule` through a `register` method.
 
-## Proposed decisions requiring review
+## Approved design decisions
 
 The following fill gaps in the conversation rather than represent previously approved requirements:
 

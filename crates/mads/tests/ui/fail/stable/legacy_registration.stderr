@@ -1,0 +1,29 @@
+error[E0433]: cannot find `module` in `mads`
+ --> tests/ui/fail/stable/legacy_registration.rs:1:9
+  |
+1 | #[mads::module]
+  |         ^^^^^^ could not find `module` in `mads`
+
+error[E0433]: cannot find `service` in `mads`
+ --> tests/ui/fail/stable/legacy_registration.rs:3:9
+  |
+3 | #[mads::service]
+  |         ^^^^^^^ could not find `service` in `mads`
+
+error[E0433]: cannot find `repository` in `mads`
+ --> tests/ui/fail/stable/legacy_registration.rs:5:9
+  |
+5 | #[mads::repository]
+  |         ^^^^^^^^^^ could not find `repository` in `mads`
+
+error[E0433]: cannot find `provider` in `mads`
+ --> tests/ui/fail/stable/legacy_registration.rs:7:9
+  |
+7 | #[mads::provider]
+  |         ^^^^^^^^ could not find `provider` in `mads`
+
+error[E0599]: no associated function or constant named `run` found for struct `Mads` in the current scope
+  --> tests/ui/fail/stable/legacy_registration.rs:10:31
+   |
+10 |     let _ = mads::core::Mads::run::<LegacyModule>();
+   |                               ^^^ associated function or constant not found in `Mads`

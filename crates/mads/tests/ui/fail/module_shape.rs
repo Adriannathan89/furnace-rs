@@ -1,6 +1,6 @@
 //! Confirms non-unit modules receive a focused diagnostic.
 
-#[mads::module]
+#[mads::furnace]
 struct InvalidModule {
     enabled: bool,
 }

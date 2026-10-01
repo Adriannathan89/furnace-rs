@@ -1,6 +1,6 @@
 //! Confirms generic services receive a focused diagnostic.
 
-#[mads::service]
+#[mads::burner]
 struct GenericService<T> {
     value: T,
 }

@@ -1,6 +1,6 @@
 //! Confirms managed providers reject derives in v0.2.
 
-#[mads::service]
+#[mads::burner]
 #[derive(Clone)]
 struct DerivedService;
 

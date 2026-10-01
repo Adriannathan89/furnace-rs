@@ -1,6 +1,6 @@
-use mads::module;
+use mads::furnace;
 
-#[module(providers = [usize])]
+#[furnace(imports = [])]
 struct AppModule;
 
 fn main() {}

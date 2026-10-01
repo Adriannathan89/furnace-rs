@@ -13,14 +13,14 @@ struct NotCloneProvider;
 struct ProviderOutput;
 
 #[allow(dead_code)]
-#[mads::provider]
+#[mads::element]
 fn provide(_dependency: NotCloneProvider) -> ProviderOutput {
     ProviderOutput
 }
 
 struct NotCloneManaged;
 
-#[mads::service]
+#[mads::burner]
 struct Service {
     dependency: NotCloneManaged,
 }

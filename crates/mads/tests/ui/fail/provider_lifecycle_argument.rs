@@ -1,4 +1,4 @@
-#[mads::provider(other)]
+#[mads::element(other)]
 fn resource() -> i32 {
     1
 }

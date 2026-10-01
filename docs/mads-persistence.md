@@ -65,7 +65,7 @@ The first release must:
 - integrate with MADS dependency injection and module scoping;
 - support SeaORM with PostgreSQL;
 - register the native `sea_orm::DatabaseConnection` type;
-- support the conventional `Mads::run::<AppModule>()` startup path;
+- support the conventional `Mads::burn::<AppModule>()` startup path;
 - read connection settings from normal MADS configuration sources;
 - perform connection readiness before the HTTP listener binds;
 - explicitly close the SeaORM pool during graceful shutdown;
@@ -317,7 +317,7 @@ without creating one runtime enum for incompatible native database types.
 `DatabaseModule` is global:
 
 ```rust
-#[mads_core::module(global)]
+#[mads_core::furnace(global)]
 pub struct DatabaseModule;
 ```
 
@@ -341,7 +341,7 @@ mod users {
 
     use crate::entities::user;
 
-    #[repository]
+    #[storage]
     pub struct UserRepository {
         db: DatabaseConnection,
     }
@@ -354,18 +354,18 @@ mod users {
         }
     }
 
-    #[module]
+    #[furnace]
     pub struct UserModule;
 }
 
 use users::UserModule;
 
-#[module(imports = [DatabaseModule, UserModule])]
+#[furnace(imports = [DatabaseModule, UserModule])]
 struct AppModule;
 
 #[mads::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<AppModule>().await
+    Mads::burn::<AppModule>().await
 }
 ```
 
@@ -376,19 +376,19 @@ query closure, or adapter method is required.
 Conceptually, `DatabaseModule` contains these providers:
 
 ```rust
-#[provider]
+#[element]
 fn database_factory() -> DatabaseFactory {
     DatabaseFactory
 }
 
-#[provider]
+#[element]
 fn sea_orm_postgres_connector(
     config: Config,
 ) -> Result<SeaOrmPostgres, PersistenceError> {
     SeaOrmPostgres::from_config(&config)
 }
 
-#[provider(lifecycle)]
+#[element(lifecycle)]
 pub async fn sea_orm_database(
     factory: DatabaseFactory,
     connector: SeaOrmPostgres,
@@ -435,7 +435,7 @@ Using only a normal async provider would still close the pool eventually when
 the application context is dropped, but it would not make readiness and
 orderly shutdown explicit MADS lifecycle operations. A builder-only extension
 could register the hook, but it would not work with the standard
-`Mads::run::<AppModule>()` path requested by this design.
+`Mads::burn::<AppModule>()` path requested by this design.
 
 ### Provider contribution
 
@@ -449,7 +449,7 @@ pub(crate) struct ProviderContribution {
 ```
 
 `ProviderFuture` will return `Result<ProviderContribution>` internally.
-Existing `#[provider]`, `#[service]`, and `#[repository]` declarations continue
+Existing `#[element]`, `#[burner]`, and `#[storage]` declarations continue
 to return their current Rust values; generated code wraps them in a
 contribution with no lifecycle registrations. This is source-compatible for
 application code.
@@ -471,7 +471,7 @@ bound.
 Providers that create lifecycle-owned infrastructure use an explicit marker:
 
 ```rust
-#[provider(lifecycle)]
+#[element(lifecycle)]
 async fn resource(...) -> Result<LifecycleResource<T>, Error>;
 ```
 
@@ -678,7 +678,7 @@ Compatibility promises are:
 ### `mads-core`
 
 - ordinary providers still produce the same graph and registry values;
-- `#[provider(lifecycle)]` exposes `T`, not `LifecycleResource<T>`;
+- `#[element(lifecycle)]` exposes `T`, not `LifecycleResource<T>`;
 - malformed lifecycle provider signatures fail through `trybuild`;
 - contributed infrastructure hooks start before application hooks;
 - shutdown remains reverse order;
@@ -719,7 +719,7 @@ The design is complete when all of these behaviors are implemented and tested:
 
 1. A new application can depend on `mads-persistence` separately.
 2. `DatabaseModule` can be imported directly by a root `AppModule`.
-3. `Mads::run::<AppModule>()` constructs the configured PostgreSQL connection.
+3. `Mads::burn::<AppModule>()` constructs the configured PostgreSQL connection.
 4. A repository field of type `sea_orm::DatabaseConnection` resolves through
    ordinary MADS DI.
 5. Native SeaORM query and transaction APIs work without a MADS wrapper.

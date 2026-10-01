@@ -1,6 +1,6 @@
 //! Confirms provider attributes reject unsafe functions.
 
-#[mads::provider]
+#[mads::element]
 unsafe fn value() -> String {
     String::new()
 }

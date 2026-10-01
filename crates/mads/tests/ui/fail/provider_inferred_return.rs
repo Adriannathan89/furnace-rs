@@ -1,6 +1,6 @@
 //! Confirms provider attributes require a concrete return type.
 
-#[mads::provider]
+#[mads::element]
 fn value() -> _ {
     String::new()
 }

@@ -1,6 +1,6 @@
 //! Confirms provider attributes reject lifetime-generic functions.
 
-#[mads::provider]
+#[mads::element]
 fn value<'value>() -> String {
     String::new()
 }
