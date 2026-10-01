@@ -67,7 +67,9 @@ pub fn build_test_router_for<T: Send + Sync + 'static>(
 ) -> furnace_rs_core::Result<axum::Router> {
     let scope = HttpApplicationScope::for_test_controller::<T>()?;
     #[cfg(feature = "jwt")]
-    let passport = PassportStrategyCatalog::preflight_for_test(scope.guards())?;
+    let passport = PassportStrategyCatalog::preflight_for_test(scope.guards(), |type_id| {
+        application.context().has_output_type_id(type_id)
+    })?;
     register_scope(
         application,
         scope,
@@ -90,8 +92,15 @@ fn register_scope(
     let mut router = axum::Router::new();
     for controller in controllers {
         let mut routes = controller.routes();
-        router = (controller.registrar())(router, &runtime, &mut routes)?;
+        let controller_router =
+            (controller.registrar())(axum::Router::new(), &runtime, &mut routes)?;
         routes.finish()?;
+        #[cfg(feature = "jwt")]
+        let controller_router = match controller.guard_layer(&runtime)? {
+            Some(layer) => controller_router.route_layer(layer),
+            None => controller_router,
+        };
+        router = router.merge(controller_router);
     }
     Ok(router)
 }

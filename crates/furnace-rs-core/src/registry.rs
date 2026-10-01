@@ -100,6 +100,12 @@ impl ProviderRegistry {
         self.values.contains_key(&TypeId::of::<T>())
     }
 
+    /// Reports a dynamically selected integration output without resolving it.
+    #[doc(hidden)]
+    pub fn contains_type_id(&self, type_id: TypeId) -> bool {
+        self.values.contains_key(&type_id)
+    }
+
     /// Returns the number of registered providers.
     pub fn len(&self) -> usize {
         self.values.len()

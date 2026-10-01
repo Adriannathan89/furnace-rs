@@ -392,12 +392,17 @@ impl PassportStrategyCatalog {
 
     /// Validates only guards and strategy names used by a focused controller.
     pub(crate) fn preflight_for_test(
-        guards: &[ScopedGuard],
+        scoped_guards: &[ScopedGuard],
+        provider_available: impl Fn(TypeId) -> bool,
     ) -> Result<PassportStrategyPreflight<'static>> {
-        let mut guards = guards.iter().map(ScopedGuard::guard).collect::<Vec<_>>();
+        let guards = scoped_guards
+            .iter()
+            .map(ScopedGuard::guard)
+            .collect::<Vec<_>>();
         GuardCatalog::validate_descriptors(&guards)?;
         let strategies = Self::strategies()
             .into_iter()
+            .filter(|strategy| provider_available(strategy.provider_type_id()))
             .filter(|strategy| {
                 guards
                     .iter()
@@ -405,10 +410,15 @@ impl PassportStrategyCatalog {
             })
             .collect::<Vec<_>>();
         validate_strategy_catalog(&strategies)?;
-        guards.sort_by(guard_order);
-        let bindings = guards
+        let mut ordered_guards = scoped_guards.iter().collect::<Vec<_>>();
+        ordered_guards.sort_by(|left, right| guard_order(&left.guard(), &right.guard()));
+        let bindings = ordered_guards
             .into_iter()
-            .map(|guard| resolve_guard(guard, &strategies))
+            .map(|scoped| {
+                let mut binding = resolve_guard(scoped.guard(), &strategies)?;
+                binding.occurrence = scoped.occurrence();
+                Ok(binding)
+            })
             .collect::<Result<Vec<_>>>()?;
         Ok(PassportStrategyPreflight { bindings })
     }
@@ -468,6 +478,7 @@ impl PassportStrategyCatalog {
             let mut binding =
                 resolve_scoped_guard(scoped_guard, cauldron_graph, &strategies, &providers)?;
             binding.context_cauldron = scoped_guard.context_cauldron();
+            binding.occurrence = scoped_guard.occurrence();
             bindings.push(binding);
         }
         Ok(PassportStrategyPreflight { bindings })
@@ -479,6 +490,7 @@ impl PassportStrategyCatalog {
 /// This record contains no application-owned values. Its adapter obtains a
 /// managed strategy only after ordinary application construction has succeeded.
 pub struct PassportStrategyBinding<'a> {
+    occurrence: Option<crate::http_scope::RouteIdentity>,
     provider_type_id: Option<TypeId>,
     guard: &'a GuardDescriptor,
     context_cauldron: Option<TypeId>,
@@ -558,6 +570,14 @@ pub struct PassportStrategyPreflight<'a> {
 }
 
 impl<'a> PassportStrategyPreflight<'a> {
+    pub(crate) fn binding_for_endpoint(
+        &self,
+        occurrence: crate::http_scope::RouteIdentity,
+    ) -> Option<&PassportStrategyBinding<'a>> {
+        self.bindings
+            .iter()
+            .find(|binding| binding.occurrence == Some(occurrence))
+    }
     /// Returns every selected guard binding in deterministic route order.
     #[must_use]
     pub fn bindings(&self) -> &[PassportStrategyBinding<'a>] {
@@ -812,6 +832,7 @@ fn resolve_custom_strategy<'a>(
         ));
     }
     Ok(PassportStrategyBinding {
+        occurrence: None,
         provider_type_id: Some(strategy.provider_type_id()),
         guard,
         context_cauldron: None,
@@ -827,6 +848,7 @@ fn resolve_builtin_or_missing(guard: &GuardDescriptor) -> Result<PassportStrateg
         && let Some(adapter) = guard.builtin_adapter()
     {
         return Ok(PassportStrategyBinding {
+            occurrence: None,
             provider_type_id: None,
             guard,
             context_cauldron: None,

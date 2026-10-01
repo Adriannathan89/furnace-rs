@@ -56,6 +56,12 @@ impl ApplicationContext {
         self.registry.resolve()
     }
 
+    /// Reports an integration's available output without constructing or resolving it.
+    #[doc(hidden)]
+    pub fn has_output_type_id(&self, type_id: std::any::TypeId) -> bool {
+        self.registry.contains_type_id(type_id)
+    }
+
     /// Returns the immutable application configuration.
     pub fn config(&self) -> &Config {
         self.config.as_ref()

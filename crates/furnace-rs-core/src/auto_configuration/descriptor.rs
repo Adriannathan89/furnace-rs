@@ -190,6 +190,17 @@ impl<'a> AutoConfigurationContext<'a> {
             })
     }
 
+    /// Reports a selected provider or supplied output by runtime identity.
+    pub fn has_provider_type_id(&self, type_id: TypeId) -> bool {
+        self.satisfied
+            .iter()
+            .any(|provider| provider.type_id == type_id)
+            || self
+                .providers
+                .iter()
+                .any(|provider| provider.type_id() == type_id)
+    }
+
     /// Returns every direct catalog requirement for `T` in deterministic order.
     #[doc(hidden)]
     pub fn requirements<T>(&self) -> Vec<AutoConfigurationRequirement>

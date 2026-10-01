@@ -16,11 +16,15 @@ use crate::{GuardCatalog, GuardDescriptor};
 #[derive(Clone)]
 pub(crate) struct ScopedGuard {
     guard: &'static GuardDescriptor,
+    occurrence: Option<RouteIdentity>,
     context_cauldron: Option<TypeId>,
 }
 
 #[cfg(feature = "jwt")]
 impl ScopedGuard {
+    pub(crate) const fn occurrence(&self) -> Option<RouteIdentity> {
+        self.occurrence
+    }
     pub(crate) const fn guard(&self) -> &'static GuardDescriptor {
         self.guard
     }
@@ -105,6 +109,11 @@ impl ScopedController {
             .and_then(RouteIdentity::passport_context_cauldron)
     }
 
+    #[cfg(feature = "jwt")]
+    pub(crate) fn sealed_endpoint(&self) -> Option<RouteIdentity> {
+        self.seal
+            .and_then(|_| self.selected_routes.first().copied())
+    }
     fn has_routes(&self) -> bool {
         !self.selected_routes.is_empty()
     }
@@ -188,6 +197,7 @@ impl HttpApplicationScope {
                 .flat_map(|controller| {
                     controller.descriptor().routes().filter_map(|route| {
                         route.guard().map(|guard| ScopedGuard {
+                            occurrence: None,
                             guard,
                             context_cauldron: None,
                         })
@@ -226,9 +236,10 @@ impl HttpApplicationScope {
                             policy_type_id: entry.guard_type_id(),
                             policy_type_name: entry.guard_type_name(),
                         };
-                        if controller.has_routes() {
+                        for occurrence in &controller.selected_routes {
                             guards.push(ScopedGuard {
                                 guard: seal.guard,
+                                occurrence: Some(*occurrence),
                                 context_cauldron: controller.context_cauldron,
                             });
                         }
@@ -385,6 +396,7 @@ impl HttpApplicationScope {
             return GuardCatalog::guards()
                 .into_iter()
                 .map(|guard| ScopedGuard {
+                    occurrence: None,
                     guard,
                     context_cauldron: None,
                 })
@@ -400,6 +412,7 @@ impl HttpApplicationScope {
                     .filter(move |route| controller.selects(route))
                     .filter_map(move |route| {
                         route.guard().map(|guard| ScopedGuard {
+                            occurrence: None,
                             guard,
                             context_cauldron: controller.passport_context_cauldron(route),
                         })

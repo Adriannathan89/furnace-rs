@@ -536,6 +536,23 @@ pub struct RouterBuildContext<'a> {
 }
 
 impl<'a> RouterBuildContext<'a> {
+    #[cfg(feature = "jwt")]
+    pub(crate) fn endpoint_guard_state(
+        &self,
+        occurrence: crate::http_scope::RouteIdentity,
+    ) -> Result<PassportGuardState> {
+        let binding = self
+            .passport
+            .binding_for_endpoint(occurrence)
+            .ok_or_else(|| {
+                Error::new(Diagnostic::new(
+                    crate::FURNACE130,
+                    "missing endpoint Passport binding",
+                    "the selected sealed endpoint has no context-specific strategy binding",
+                ))
+            })?;
+        Ok(PassportGuardState::from_binding(self.application, binding))
+    }
     pub(crate) const fn new(
         application: &'a furnace_rs_core::ApplicationContext,
         #[cfg(feature = "jwt")] passport: &'a PassportStrategyPreflight<'static>,
@@ -601,11 +618,28 @@ pub type ControllerRegistrar = fn(
 #[doc(hidden)]
 #[derive(Debug)]
 pub struct ValidatedController {
+    #[cfg(feature = "jwt")]
+    controller_id: TypeId,
+    #[cfg(feature = "jwt")]
+    sealed_endpoint: Option<crate::http_scope::RouteIdentity>,
     registrar: ControllerRegistrar,
     routes: Vec<ValidatedRoute>,
 }
 
 impl ValidatedController {
+    #[cfg(feature = "jwt")]
+    pub(crate) fn guard_layer(
+        &self,
+        runtime: &RouterBuildContext<'_>,
+    ) -> Result<Option<crate::passport::PassportGuardLayer>> {
+        self.sealed_endpoint
+            .map(|occurrence| {
+                runtime
+                    .endpoint_guard_state(occurrence)
+                    .map(crate::passport::PassportGuardLayer::new)
+            })
+            .transpose()
+    }
     /// Returns the generated registrar for this controller.
     #[doc(hidden)]
     pub const fn registrar(&self) -> ControllerRegistrar {
@@ -951,7 +985,7 @@ pub(crate) fn validate_scoped_descriptors(
         .iter()
         .map(ScopedController::descriptor)
         .collect::<Vec<_>>();
-    validate_with_selection(&controllers, |controller, route| {
+    let mut validated = validate_with_selection(&controllers, |controller, route| {
         let Some(scoped) = descriptors
             .iter()
             .find(|scoped| std::ptr::eq(scoped.descriptor(), controller))
@@ -966,7 +1000,17 @@ pub(crate) fn validate_scoped_descriptors(
                 .then(|| scoped.passport_context_cauldron(route))
                 .flatten(),
         }
-    })
+    })?;
+    #[cfg(feature = "jwt")]
+    for controller in &mut validated {
+        controller.sealed_endpoint = descriptors
+            .iter()
+            .find(|scope| scope.descriptor().type_id() == controller.controller_id)
+            .and_then(ScopedController::sealed_endpoint);
+    }
+    #[cfg(not(feature = "jwt"))]
+    let _ = &mut validated;
+    Ok(validated)
 }
 
 fn validate_with_selection(
@@ -1030,7 +1074,14 @@ fn validate_with_selection(
             });
         }
 
-        validated.push(ValidatedController { registrar, routes });
+        validated.push(ValidatedController {
+            #[cfg(feature = "jwt")]
+            controller_id: controller.type_id(),
+            #[cfg(feature = "jwt")]
+            sealed_endpoint: None,
+            registrar,
+            routes,
+        });
     }
 
     Ok(validated)

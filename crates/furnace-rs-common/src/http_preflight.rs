@@ -38,7 +38,7 @@ pub fn preflight_http(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
         #[cfg(feature = "jwt")]
         {
             let strategies = if context.focus_type_id().is_some() {
-                crate::PassportStrategyCatalog::preflight_for_test(scope.guards())?
+                crate::PassportStrategyCatalog::preflight_for_test(scope.guards(), |type_id| context.has_output_type_id(type_id))?
             } else {
                 crate::PassportStrategyCatalog::preflight_scoped(context.cauldron_graph(), scope.guards())?
             };

@@ -103,7 +103,9 @@ fn guard_requirements(
         .memoize(|| SelectedHttpMetadata::select(context.cauldron_graph(), context.focus_type_id()))
         .scope()?;
     let preflight = if context.focus_type_id().is_some() {
-        PassportStrategyCatalog::preflight_for_test(http.guards())?
+        PassportStrategyCatalog::preflight_for_test(http.guards(), |type_id| {
+            context.has_provider_type_id(type_id)
+        })?
     } else {
         PassportStrategyCatalog::preflight_scoped(context.cauldron_graph(), http.guards())?
     };
