@@ -115,6 +115,7 @@ mads-cli
 | `mads-persistence` | Explicit native SeaORM PostgreSQL connector and lifecycle integration. | [crates/mads-persistence/README.md](crates/mads-persistence/README.md) |
 | `mads-common-macros` | Procedural macros for routes, controllers, validation, and Passport. | [crates/mads-common-macros/README.md](crates/mads-common-macros/README.md) |
 | `mads-cli` | Cargo-native execution, inspection, development loop, and scaffolding. | [crates/mads-cli/README.md](crates/mads-cli/README.md) |
+| `mads-testing` | Focused service and in-process controller fixtures with SeaORM SQLite mocks. | [crates/mads-testing/README.md](crates/mads-testing/README.md) |
 | `mads-extra` | Reserved boundary for future optional integrations. | [crates/mads-extra/README.md](crates/mads-extra/README.md) |
 
 The approach is type-driven and metadata-driven: macros emit static
@@ -706,3 +707,34 @@ PostgreSQL 16 database and use the commands in the [v0.5 requirements](docs/impo
 
 MADS.rs is licensed under either the [Apache License 2.0](LICENSE-APACHE) or
 the [MIT License](LICENSE-MIT), at your option.
+
+## Focused tests
+
+Add `mads-testing = "=0.9.1"` under `[dev-dependencies]`. Annotate an async,
+zero-argument test function with `#[mads::test]`; Cargo runs it without a separate
+Tokio dependency. The local `test_fixture()` builds one registered subject's
+dependency chain without module setup.
+
+```rust
+#[mads::test]
+async fn controller_returns_ok() {
+    test_fixture()
+        .mock_database(mads_testing::sea_orm::MockDatabase::new(
+            mads_testing::sea_orm::DbBackend::Sqlite,
+        ))
+        .controller::<UserController>()
+        .run(|client| async move {
+            client.get("/users").send().await.unwrap()
+                .assert_status(mads_testing::http_types::StatusCode::OK);
+        })
+        .await
+        .unwrap();
+}
+```
+
+Use `.subject::<UserService>()` and `context.resolve::<UserService>()` for direct
+service tests. Database dependencies require an explicit SQLite SeaORM
+`MockDatabase`; it queues scripted results and never opens a production
+connection. `run` awaits lifecycle shutdown on completion and unwinding assertion
+panics. See the [testing guide](crates/mads-testing/README.md) for complete service
+and controller examples, supplies, and response assertions.

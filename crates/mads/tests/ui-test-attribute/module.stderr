@@ -1,0 +1,5 @@
+error: `#[mads::test]` requires an async function
+ --> tests/ui-test-attribute/module.rs:2:1
+  |
+2 | mod tests {}
+  | ^^^

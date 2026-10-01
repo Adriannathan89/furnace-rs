@@ -64,8 +64,12 @@ mads_core::__private::inventory::submit! {
 mod unused_guard {
     pub struct UnusedPrincipal;
     impl mads_common::PassportPrincipal for UnusedPrincipal {
-        fn has_role(&self, _: &str) -> bool { false }
-        fn has_permission(&self, _: &str) -> bool { false }
+        fn has_role(&self, _: &str) -> bool {
+            false
+        }
+        fn has_permission(&self, _: &str) -> bool {
+            false
+        }
     }
     #[mads_common::routes]
     #[mads_common::guard(strategy = "missing", principal = UnusedPrincipal)]
