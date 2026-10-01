@@ -980,9 +980,12 @@ fn validate_with_selection(
     let mut capture_routes = BTreeMap::new();
     let mut seen_routes: BTreeMap<(HttpMethod, String), (&str, RouteDescriptor)> = BTreeMap::new();
     let mut validated = Vec::with_capacity(controllers.len());
+    for controller in &controllers {
+        validate_controller_identity(controller, &identities)?;
+        identities.push(controller);
+    }
 
     for controller in controllers {
-        validate_controller_identity(controller, &identities)?;
         validate_contract(controller)?;
         let Some(registrar) = controller.registrar() else {
             return Err(metadata_error(
@@ -1027,7 +1030,6 @@ fn validate_with_selection(
             });
         }
 
-        identities.push(controller);
         validated.push(ValidatedController { registrar, routes });
     }
 
@@ -1785,13 +1787,26 @@ mod tests {
 
     #[tokio::test]
     async fn unowned_guarded_contracts_keep_each_controller_context_and_direct_import_boundary() {
-        let combined = application_for::<roots::combined::CombinedRoot>().await;
-        let combined_scope = HttpApplicationScope::for_application(&combined).unwrap();
-        let preflight = PassportStrategyCatalog::preflight_scoped(
-            combined.cauldron_graph(),
-            combined_scope.guards(),
-        )
-        .unwrap();
+        let mut combined_builder = Furnace::builder_with_config(config());
+        combined_builder
+            .provide(JwtService::from_config(&config()).unwrap())
+            .unwrap();
+        combined_builder
+            .root::<roots::combined::CombinedRoot>()
+            .unwrap();
+        let combined = combined_builder.analyze();
+        // Shared legacy contracts collide when both controllers are selected.
+        assert!(
+            combined
+                .diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.code() == furnace_rs_core::FURNACE030)
+        );
+        let graph = combined.cauldron_graph().unwrap();
+        let combined_scope = HttpApplicationScope::for_cauldron_graph(Some(graph)).unwrap();
+        let preflight =
+            PassportStrategyCatalog::preflight_scoped(Some(graph), combined_scope.guards())
+                .unwrap();
 
         assert_eq!(preflight.bindings().len(), 2);
         assert!(!preflight.bindings()[0].is_builtin());
@@ -1799,9 +1814,9 @@ mod tests {
 
         let first = application_for::<roots::first::FirstRoot>().await;
         let second = application_for::<roots::second::SecondRoot>().await;
-        let first_router = router_for(&combined, &preflight, one_controller(&first));
-        let second_router = router_for(&combined, &preflight, one_controller(&second));
-        let jwt = combined.context().resolve::<JwtService>().unwrap();
+        let first_router = router_for(&first, &preflight, one_controller(&first));
+        let second_router = router_for(&second, &preflight, one_controller(&second));
+        let jwt = first.context().resolve::<JwtService>().unwrap();
         let first_token = jwt
             .sign(
                 SharedClaims { marker: 1 },

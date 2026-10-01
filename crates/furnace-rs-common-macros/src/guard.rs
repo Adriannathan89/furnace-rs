@@ -469,6 +469,23 @@ impl EffectiveGuard {
         handler: &Ident,
         conditional_attributes: &[Attribute],
     ) -> (Ident, TokenStream) {
+        self.static_tokens_with_registration(
+            common,
+            route_trait,
+            handler,
+            conditional_attributes,
+            true,
+        )
+    }
+
+    fn static_tokens_with_registration(
+        &self,
+        common: &syn::Path,
+        route_trait: &Ident,
+        handler: &Ident,
+        conditional_attributes: &[Attribute],
+        register: bool,
+    ) -> (Ident, TokenStream) {
         let static_ident = format_ident!("__furnace_guard_{}_{}", route_trait, handler);
         let type_id = format_ident!(
             "__furnace_guard_principal_type_id_{}_{}",
@@ -536,6 +553,12 @@ impl EffectiveGuard {
             conditional_attributes,
         );
 
+        let registration = register.then(|| {
+            quote! {
+                #(#conditional_attributes)*
+                #common::core::__private::inventory::submit! { &#static_ident }
+            }
+        });
         let tokens = quote! {
             #(#conditional_attributes)*
             #[doc(hidden)]
@@ -573,10 +596,7 @@ impl EffectiveGuard {
             .with_requirement_subject(concat!(stringify!(#route_trait), "::", stringify!(#handler)))
             .with_namespace(module_path!());
 
-            #(#conditional_attributes)*
-            #common::core::__private::inventory::submit! {
-                &#static_ident
-            }
+            #registration
         };
         (static_ident, tokens)
     }
@@ -735,11 +755,12 @@ fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result
         .filter(|attribute| attribute.path().is_ident("cfg"))
         .cloned()
         .collect();
-    let (descriptor, metadata) = effective.static_tokens(
+    let (descriptor, metadata) = effective.static_tokens_with_registration(
         &common,
         ident,
         &Ident::new("seal", ident.span()),
         &conditional_attributes,
+        false,
     );
     let principal = &effective.principal;
     Ok(quote! {

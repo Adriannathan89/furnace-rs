@@ -208,12 +208,31 @@ impl FurnaceBuilder {
     }
 
     fn analyze_builder(&self) -> BuilderAnalysis {
+        let memo = crate::preflight::AnalysisMemo::default();
+        let mut analysis = self.analyze_builder_parts(&memo);
+        // A failed rooted selection has no virtual scope for integrations to inspect.
+        if self.root.is_some() && analysis.public.cauldron_graph().is_none() {
+            return analysis;
+        }
+        let context = crate::preflight::PreflightContext::new(
+            &self.config,
+            &analysis.public,
+            self.focus.map(|(id, _)| id),
+            &memo,
+            &self.satisfied,
+        );
+        let diagnostics = crate::preflight::validate(&context);
+        analysis.public.append_diagnostics(diagnostics);
+        analysis
+    }
+
+    fn analyze_builder_parts(&self, memo: &crate::preflight::AnalysisMemo) -> BuilderAnalysis {
         let providers = Catalog::providers();
         if let Some((target, name)) = self.focus {
-            return self.analyze_focused(target, name, &providers);
+            return self.analyze_focused(target, name, &providers, memo);
         }
         let Some(root) = &self.root else {
-            return self.analyze_complete_catalog(&providers);
+            return self.analyze_complete_catalog(&providers, memo);
         };
 
         let cauldrons = Catalog::cauldrons();
@@ -228,13 +247,15 @@ impl FurnaceBuilder {
             }
         };
         let initial_scope = select_scoped_providers(&cauldron_graph, &providers, &self.satisfied);
-        let auto_configuration = auto_configuration::analyze_parts(
+        let auto_configuration = auto_configuration::analyze_parts_with_memo(
             &auto_configuration::descriptors(),
             &initial_scope.descriptors,
             &self.satisfied,
             &self.config,
             &self.auto_configuration_inputs,
             Some(&cauldron_graph),
+            memo,
+            None,
         );
         let mut satisfied = self.satisfied.clone();
         satisfied.extend(auto_configuration.virtual_satisfied);
@@ -265,6 +286,7 @@ impl FurnaceBuilder {
         target: TypeId,
         name: &'static str,
         providers: &[&'static ProviderDescriptor],
+        memo: &crate::preflight::AnalysisMemo,
     ) -> BuilderAnalysis {
         let initial = select_focused_providers(
             target,
@@ -290,22 +312,25 @@ impl FurnaceBuilder {
             .filter(|descriptor| {
                 let output = descriptor.output_type_id();
                 !self.required_supplies.contains(&output)
-                    && initial.graph().providers.iter().any(|node| {
-                        node.type_id == output
-                            || node
-                                .declared_dependencies
-                                .iter()
-                                .any(|dependency| dependency.type_id() == output)
-                    })
+                    && (descriptor.focused_requirements()
+                        || initial.graph().providers.iter().any(|node| {
+                            node.type_id == output
+                                || node
+                                    .declared_dependencies
+                                    .iter()
+                                    .any(|dependency| dependency.type_id() == output)
+                        }))
             })
             .collect::<Vec<_>>();
-        let automatic = auto_configuration::analyze_parts(
+        let automatic = auto_configuration::analyze_parts_with_memo(
             &automatic,
             &selected_providers,
             &self.satisfied,
             &self.config,
             &self.auto_configuration_inputs,
             None,
+            memo,
+            self.focus.map(|(id, _)| id),
         );
         let mut satisfied = self.satisfied.clone();
         satisfied.extend(automatic.virtual_satisfied);
@@ -357,14 +382,17 @@ impl FurnaceBuilder {
     fn analyze_complete_catalog(
         &self,
         providers: &[&'static crate::ProviderDescriptor],
+        memo: &crate::preflight::AnalysisMemo,
     ) -> BuilderAnalysis {
-        let auto_configuration = auto_configuration::analyze_parts(
+        let auto_configuration = auto_configuration::analyze_parts_with_memo(
             &auto_configuration::descriptors(),
             providers,
             &self.satisfied,
             &self.config,
             &self.auto_configuration_inputs,
             None,
+            memo,
+            self.focus.map(|(id, _)| id),
         );
         let mut satisfied = self.satisfied.clone();
         satisfied.extend(auto_configuration.virtual_satisfied);

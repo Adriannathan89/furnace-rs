@@ -6,7 +6,7 @@ mod report;
 
 use std::cmp::Ordering;
 
-pub(crate) use analysis::analyze_parts;
+pub(crate) use analysis::analyze_parts_with_memo;
 pub(crate) use descriptor::AutoConfigurationInputs;
 pub use descriptor::{
     AutoConfigurationApplyContext, AutoConfigurationContext, AutoConfigurationContribution,

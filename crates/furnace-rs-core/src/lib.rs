@@ -32,6 +32,7 @@ mod descriptor;
 mod diagnostic;
 mod graph;
 mod lifecycle;
+mod preflight;
 mod registry;
 #[cfg(feature = "runtime-tokio")]
 pub mod runtime;
@@ -94,6 +95,7 @@ pub mod __private {
         AutoConfigurationApplyContext, AutoConfigurationContext, AutoConfigurationContribution,
         AutoConfigurationDescriptor, AutoConfigurationEvaluation,
     };
+    pub use crate::preflight::{PreflightContext, PreflightDescriptor, PreflightValidator};
     pub use inventory;
 
     /// Builds a rooted module graph for integration coverage and downstream framework crates.

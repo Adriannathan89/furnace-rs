@@ -122,8 +122,10 @@ async fn builds_only_selected_controller_routes_and_ignores_invalid_unselected_m
 async fn error_for<T: Send + Sync + 'static>() -> furnace_rs_core::Error {
     let mut builder = Furnace::builder();
     builder.__test_focus::<T>().unwrap();
-    let app = builder.build().await.unwrap();
-    furnace_rs_common::__private::build_test_router_for::<T>(&app).unwrap_err()
+    match builder.build().await {
+        Ok(app) => furnace_rs_common::__private::build_test_router_for::<T>(&app).unwrap_err(),
+        Err(error) => error,
+    }
 }
 #[tokio::test]
 async fn rejects_absent_controller_metadata() {
@@ -137,7 +139,7 @@ async fn rejects_invalid_selected_metadata() {
 async fn rejects_ambiguous_selected_controller_metadata() {
     let error = error_for::<Ambiguous>().await;
     assert_eq!(error.code(), FURNACE030);
-    assert!(error.to_string().contains("ambiguous"));
+    assert!(error.to_string().contains("controller type identifier"));
 }
 
 #[cfg(feature = "jwt")]

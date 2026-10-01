@@ -426,6 +426,7 @@ pub(crate) struct AutoConfigurationAnalysis {
     pub(crate) selected: Vec<&'static AutoConfigurationDescriptor>,
 }
 
+#[cfg(test)]
 pub(crate) fn analyze_parts(
     descriptors: &[&'static AutoConfigurationDescriptor],
     providers: &[&'static ProviderDescriptor],
@@ -433,6 +434,30 @@ pub(crate) fn analyze_parts(
     config: &Config,
     inputs: &AutoConfigurationInputs,
     cauldron_graph: Option<&CauldronGraph>,
+) -> AutoConfigurationAnalysis {
+    let memo = crate::preflight::AnalysisMemo::default();
+    analyze_parts_with_memo(
+        descriptors,
+        providers,
+        satisfied,
+        config,
+        inputs,
+        cauldron_graph,
+        &memo,
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn analyze_parts_with_memo(
+    descriptors: &[&'static AutoConfigurationDescriptor],
+    providers: &[&'static ProviderDescriptor],
+    satisfied: &[SatisfiedProvider],
+    config: &Config,
+    inputs: &AutoConfigurationInputs,
+    cauldron_graph: Option<&CauldronGraph>,
+    memo: &crate::preflight::AnalysisMemo,
+    focus: Option<std::any::TypeId>,
 ) -> AutoConfigurationAnalysis {
     let mut descriptors = descriptors.to_vec();
     descriptors.sort_by(|left, right| {
@@ -476,7 +501,8 @@ pub(crate) fn analyze_parts(
                 satisfied,
                 inputs,
                 cauldron_graph,
-            );
+            )
+            .with_analysis(memo, focus);
             let evaluation = (descriptor.evaluator())(&context);
             decisions.push(Decision {
                 descriptor,

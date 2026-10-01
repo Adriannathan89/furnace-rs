@@ -59,7 +59,7 @@ impl<C: Sealable> Default for SealRegistration<C> {
 
 /// Erased protection metadata consumed by selected-controller analysis.
 #[doc(hidden)]
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct SealDefinition {
     #[cfg(feature = "jwt")]
     entries: Vec<SealEntry>,

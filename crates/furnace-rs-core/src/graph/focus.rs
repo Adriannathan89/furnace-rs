@@ -34,7 +34,9 @@ pub(crate) fn select_focused_providers(
     }
     let supplied = supplied
         .iter()
-        .filter(|value| visited.contains(&value.type_id))
+        .filter(|value| {
+            visited.contains(&value.type_id) || value.state == crate::ProviderState::AutoConfigured
+        })
         .cloned()
         .collect::<Vec<_>>();
     let mut analysis = analyze_descriptors(&selected, &supplied, covered_missing);

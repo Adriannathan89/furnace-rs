@@ -13,6 +13,7 @@ use crate::{GuardCatalog, GuardDescriptor};
 
 /// A selected Passport guard and the module context that selected it.
 #[cfg(feature = "jwt")]
+#[derive(Clone)]
 pub(crate) struct ScopedGuard {
     guard: &'static GuardDescriptor,
     context_cauldron: Option<TypeId>,
@@ -76,7 +77,10 @@ impl RouteIdentity {
 }
 
 /// A controller selected for one HTTP application, including its selected routes.
+#[derive(Clone)]
 pub(crate) struct ScopedController {
+    #[cfg(feature = "jwt")]
+    seal: Option<ControllerSeal>,
     descriptor: &'static ControllerRouteDescriptor,
     selected_routes: Vec<RouteIdentity>,
     context_cauldron: Option<TypeId>,
@@ -112,6 +116,7 @@ impl ScopedController {
 }
 
 /// The HTTP controller, route, and guard metadata selected for one application.
+#[derive(Clone)]
 pub(crate) struct HttpApplicationScope {
     controllers: Vec<ScopedController>,
     #[cfg(feature = "jwt")]
@@ -142,6 +147,8 @@ impl HttpApplicationScope {
             }
         };
         let controllers = vec![ScopedController {
+            #[cfg(feature = "jwt")]
+            seal: None,
             descriptor,
             selected_routes: descriptor
                 .routes()
@@ -149,18 +156,89 @@ impl HttpApplicationScope {
                 .collect(),
             context_cauldron: None,
         }];
-        #[cfg(feature = "jwt")]
-        let guards = controllers
-            .iter()
-            .flat_map(|controller| {
-                controller.descriptor().routes().filter_map(|route| {
-                    route.guard().map(|guard| ScopedGuard {
-                        guard,
-                        context_cauldron: None,
-                    })
-                })
+        Self::finish(controllers, None, true)
+    }
+
+    pub(crate) fn for_focus(target: TypeId) -> Result<Self> {
+        let controllers = RouteCatalog::route_controllers(|id| id == target)?
+            .into_iter()
+            .map(|descriptor| ScopedController {
+                #[cfg(feature = "jwt")]
+                seal: None,
+                descriptor,
+                selected_routes: descriptor
+                    .routes()
+                    .map(|route| RouteIdentity::new(descriptor, route))
+                    .collect(),
+                context_cauldron: None,
             })
             .collect();
+        Self::finish(controllers, None, true)
+    }
+
+    fn finish(
+        mut controllers: Vec<ScopedController>,
+        graph: Option<&CauldronGraph>,
+        focused: bool,
+    ) -> Result<Self> {
+        #[cfg(feature = "jwt")]
+        let mut guards = if focused {
+            controllers
+                .iter()
+                .flat_map(|controller| {
+                    controller.descriptor().routes().filter_map(|route| {
+                        route.guard().map(|guard| ScopedGuard {
+                            guard,
+                            context_cauldron: None,
+                        })
+                    })
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Self::selected_guards(graph, &controllers)
+        };
+        #[cfg(not(feature = "jwt"))]
+        let _ = (graph, focused);
+        let declarations = RouteCatalog::controllers();
+        for controller in &mut controllers {
+            if let Some(declaration) = declarations
+                .iter()
+                .find(|entry| entry.type_id() == controller.descriptor.type_id())
+            {
+                let definition = declaration.seals();
+                #[cfg(feature = "jwt")]
+                {
+                    if definition.entries().len() > 1 {
+                        return Err(furnace_rs_core::Error::new(
+                            furnace_rs_core::Diagnostic::new(
+                                furnace_rs_core::FURNACE008,
+                                "multiple controller seals",
+                                "a controller can declare at most one guard policy",
+                            )
+                            .with_subject(declaration.type_name())
+                            .with_location(definition.entries()[1].location()),
+                        ));
+                    }
+                    if let Some(entry) = definition.entries().first() {
+                        let seal = ControllerSeal {
+                            guard: entry.descriptor(),
+                            location: entry.location(),
+                            policy_type_id: entry.guard_type_id(),
+                            policy_type_name: entry.guard_type_name(),
+                        };
+                        if controller.has_routes() {
+                            guards.push(ScopedGuard {
+                                guard: seal.guard,
+                                context_cauldron: controller.context_cauldron,
+                            });
+                        }
+                        controller.seal = Some(seal);
+                    }
+                }
+                #[cfg(not(feature = "jwt"))]
+                let _ = definition;
+            }
+        }
         Ok(Self {
             controllers,
             #[cfg(feature = "jwt")]
@@ -194,14 +272,7 @@ impl HttpApplicationScope {
             Some(graph) => Self::rooted_controllers(graph)?,
         };
 
-        #[cfg(feature = "jwt")]
-        let guards = Self::selected_guards(cauldron_graph, &controllers);
-
-        Ok(Self {
-            controllers,
-            #[cfg(feature = "jwt")]
-            guards,
-        })
+        Self::finish(controllers, cauldron_graph, false)
     }
 
     /// Creates an inspection-only scope rooted in a successfully analyzed module graph.
@@ -214,16 +285,7 @@ impl HttpApplicationScope {
             Some(graph) => Self::rooted_controllers(graph)?,
             None => Vec::new(),
         };
-        #[cfg(feature = "jwt")]
-        let guards = match cauldron_graph {
-            Some(graph) => Self::selected_guards(Some(graph), &controllers),
-            None => Vec::new(),
-        };
-        Ok(Self {
-            controllers,
-            #[cfg(feature = "jwt")]
-            guards,
-        })
+        Self::finish(controllers, cauldron_graph, false)
     }
 
     pub(crate) fn controllers(&self) -> &[ScopedController] {
@@ -271,6 +333,8 @@ impl HttpApplicationScope {
         Ok(RouteCatalog::route_controllers(|_| true)?
             .into_iter()
             .map(|descriptor| ScopedController {
+                #[cfg(feature = "jwt")]
+                seal: None,
                 descriptor,
                 selected_routes: descriptor
                     .routes()
@@ -301,6 +365,8 @@ impl HttpApplicationScope {
                         })
                         .collect();
                     ScopedController {
+                        #[cfg(feature = "jwt")]
+                        seal: None,
                         descriptor,
                         selected_routes,
                         context_cauldron,
@@ -341,4 +407,15 @@ impl HttpApplicationScope {
             })
             .collect()
     }
+}
+
+/// Static policy metadata belongs to an occurrence in its controller's context.
+#[cfg(feature = "jwt")]
+#[derive(Clone, Copy)]
+#[allow(dead_code)] // Fields are consumed by endpoint middleware/inspection in the following tasks.
+pub(crate) struct ControllerSeal {
+    pub(crate) guard: &'static GuardDescriptor,
+    pub(crate) location: furnace_rs_core::SourceLocation,
+    pub(crate) policy_type_id: TypeId,
+    pub(crate) policy_type_name: &'static str,
 }

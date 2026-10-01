@@ -409,16 +409,20 @@ async fn rooted_router_rejects_conflicting_routes_within_selected_modules() {
     builder
         .root::<applications::conflicting::ConflictingApplication>()
         .unwrap();
-    let application = builder.build().await.unwrap();
-
-    let error = build_router(&application).expect_err("selected route conflicts must be rejected");
+    let error = builder
+        .build()
+        .await
+        .err()
+        .expect("selected route conflicts must fail before construction");
     assert_eq!(error.code(), FURNACE030);
 }
 
 #[tokio::test]
 async fn rootless_router_retains_complete_route_catalog_validation() {
-    let application = Furnace::builder().build().await.unwrap();
-
-    let error = build_router(&application).expect_err("rootless builds validate every route");
+    let error = Furnace::builder()
+        .build()
+        .await
+        .err()
+        .expect("rootless builds validate every route before construction");
     assert_eq!(error.code(), FURNACE030);
 }

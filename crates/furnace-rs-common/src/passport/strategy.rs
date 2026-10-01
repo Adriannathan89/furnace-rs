@@ -479,6 +479,7 @@ impl PassportStrategyCatalog {
 /// This record contains no application-owned values. Its adapter obtains a
 /// managed strategy only after ordinary application construction has succeeded.
 pub struct PassportStrategyBinding<'a> {
+    provider_type_id: Option<TypeId>,
     guard: &'a GuardDescriptor,
     context_cauldron: Option<TypeId>,
     strategy: &'static str,
@@ -488,6 +489,11 @@ pub struct PassportStrategyBinding<'a> {
 }
 
 impl<'a> PassportStrategyBinding<'a> {
+    /// Returns the custom managed output required by this binding.
+    #[doc(hidden)]
+    pub const fn provider_type_id(&self) -> Option<TypeId> {
+        self.provider_type_id
+    }
     /// Returns the effective static guard.
     #[doc(hidden)]
     #[must_use]
@@ -806,6 +812,7 @@ fn resolve_custom_strategy<'a>(
         ));
     }
     Ok(PassportStrategyBinding {
+        provider_type_id: Some(strategy.provider_type_id()),
         guard,
         context_cauldron: None,
         strategy: strategy.name(),
@@ -820,6 +827,7 @@ fn resolve_builtin_or_missing(guard: &GuardDescriptor) -> Result<PassportStrateg
         && let Some(adapter) = guard.builtin_adapter()
     {
         return Ok(PassportStrategyBinding {
+            provider_type_id: None,
             guard,
             context_cauldron: None,
             strategy: "jwt",

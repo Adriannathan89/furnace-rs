@@ -97,11 +97,16 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
 fn guard_requirements(
     context: &AutoConfigurationContext<'_>,
 ) -> Result<Vec<AutoConfigurationRequirement>> {
-    use crate::{http_scope::HttpApplicationScope, passport::PassportStrategyCatalog};
+    use crate::{http_preflight::SelectedHttpMetadata, passport::PassportStrategyCatalog};
 
-    let http = HttpApplicationScope::for_cauldron_graph(context.cauldron_graph())?;
-    let preflight =
-        PassportStrategyCatalog::preflight_scoped(context.cauldron_graph(), http.guards())?;
+    let http = context
+        .memoize(|| SelectedHttpMetadata::select(context.cauldron_graph(), context.focus_type_id()))
+        .scope()?;
+    let preflight = if context.focus_type_id().is_some() {
+        PassportStrategyCatalog::preflight_for_test(http.guards())?
+    } else {
+        PassportStrategyCatalog::preflight_scoped(context.cauldron_graph(), http.guards())?
+    };
     Ok(preflight
         .bindings()
         .iter()
@@ -225,5 +230,5 @@ furnace_rs_core::__private::inventory::submit! {
         SourceLocation::new(file!(), line!(), column!()),
         evaluate,
         apply,
-    )
+    ).with_focused_requirements()
 }

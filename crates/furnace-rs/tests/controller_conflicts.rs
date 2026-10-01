@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use furnace_rs::common::__private::RouterBuildContext;
 use furnace_rs::common::{
     ControllerRouteDescriptor, HttpMethod, RouteCatalog, RouteContractDescriptor, RouteDescriptor,
-    build_router,
 };
 use furnace_rs::core::{Furnace, Result, SourceLocation};
 
@@ -119,8 +118,11 @@ impl DuplicateAdminRoutes for DuplicateRouteController {
 #[tokio::test]
 async fn router_validation_rejects_conflicts_before_any_registration() {
     REGISTRATIONS.store(0, Ordering::SeqCst);
-    let application = Furnace::builder().build().await.unwrap();
-    let error = build_router(&application).expect_err("conflicting routes must fail bootstrap");
+    let error = Furnace::builder()
+        .build()
+        .await
+        .err()
+        .expect("conflicting routes must fail before construction or registration");
 
     assert_eq!(error.code(), furnace_rs::core::FURNACE030);
     assert!(error.to_string().contains("GET /duplicate"));

@@ -32,6 +32,7 @@ pub struct AutoConfigurationDescriptor {
     location: SourceLocation,
     evaluator: AutoConfigurationEvaluator,
     applier: AutoConfigurationApplier,
+    focused_requirements: bool,
 }
 
 impl AutoConfigurationDescriptor {
@@ -54,7 +55,17 @@ impl AutoConfigurationDescriptor {
             location,
             evaluator,
             applier,
+            focused_requirements: false,
         }
+    }
+
+    /// Allows this integration to discover requirements in focused metadata without a DI edge.
+    pub const fn with_focused_requirements(mut self) -> Self {
+        self.focused_requirements = true;
+        self
+    }
+    pub(crate) const fn focused_requirements(&self) -> bool {
+        self.focused_requirements
     }
 
     /// Returns the stable official integration identifier.
@@ -99,6 +110,8 @@ impl AutoConfigurationDescriptor {
 /// This document-hidden contract is reserved for official integrations.
 #[doc(hidden)]
 pub struct AutoConfigurationContext<'a> {
+    memo: Option<&'a crate::preflight::AnalysisMemo>,
+    focus: Option<TypeId>,
     identifier: &'static str,
     config: &'a Config,
     providers: &'a [&'static ProviderDescriptor],
@@ -117,12 +130,35 @@ impl<'a> AutoConfigurationContext<'a> {
         cauldron_graph: Option<&'a CauldronGraph>,
     ) -> Self {
         Self {
+            memo: None,
+            focus: None,
             identifier,
             config,
             providers,
             satisfied,
             inputs,
             cauldron_graph,
+        }
+    }
+
+    pub(crate) fn with_analysis(
+        mut self,
+        memo: &'a crate::preflight::AnalysisMemo,
+        focus: Option<TypeId>,
+    ) -> Self {
+        self.memo = Some(memo);
+        self.focus = focus;
+        self
+    }
+    /// Returns the exact focused fixture target, when one was selected.
+    pub const fn focus_type_id(&self) -> Option<TypeId> {
+        self.focus
+    }
+    /// Shares immutable integration metadata within this analysis only.
+    pub fn memoize<T: Clone + 'static>(&self, build: impl FnOnce() -> T) -> T {
+        match self.memo {
+            Some(memo) => memo.get_or_insert(build),
+            None => build(),
         }
     }
 

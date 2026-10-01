@@ -15,6 +15,8 @@ mod cors;
 #[cfg(feature = "http")]
 mod extract;
 #[cfg(feature = "http")]
+mod http_preflight;
+#[cfg(feature = "http")]
 mod http_scope;
 #[cfg(feature = "http")]
 mod inspection;
@@ -189,6 +191,7 @@ pub use route::{
 #[doc(hidden)]
 #[cfg(feature = "http")]
 pub mod __private {
+    pub use crate::http_preflight::preflight_http;
     pub use crate::router::build_test_router_for;
     pub use crate::validation::support as input_validation;
     /// Environment variable used by the development supervisor for graceful shutdown.
