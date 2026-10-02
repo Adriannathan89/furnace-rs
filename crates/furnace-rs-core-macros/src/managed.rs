@@ -152,7 +152,7 @@ fn expand_managed_with_core(
                 let resolutions = normalized_fields.iter().map(|(field, dependency_span)| {
                     let ident = field.ident.as_ref().expect("named fields have identifiers");
                     quote_spanned! {*dependency_span=>
-                        #ident: #ident
+                        #ident
                     }
                 });
                 let descriptors = normalized_fields.iter().map(|(field, _)| {

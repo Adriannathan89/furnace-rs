@@ -1,0 +1,20 @@
+error[E0277]: the trait bound `NotClone: Clone` is not satisfied
+  --> tests/ui/fail/rust-1.99/controller_dependency.rs:12:1
+   |
+12 | #[furnace_rs::controller]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `NotClone`
+   |
+   = help: the following other types implement trait `InjectionDependencies`:
+             (T₁, T₂, …, Tₙ) up to tuples of arity 16
+   = note: required for `(NotClone,)` to implement `InjectionDependencies`
+note: required by a bound in `furnace_rs::Injector::Dependencies`
+  --> $WORKSPACE/crates/furnace-rs-core/src/injector.rs
+   |
+   |     type Dependencies: InjectionDependencies;
+   |                        ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Injector::Dependencies`
+   = note: this error originates in the attribute macro `furnace_rs::controller` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider annotating `NotClone` with `#[derive(Clone)]`
+   |
+10 + #[derive(Clone)]
+11 | struct NotClone;
+   |

@@ -1,8 +1,15 @@
-error[E0277]: the trait bound `NotClone: Clone` is not satisfied
-  --> tests/ui/fail/controller_dependency.rs:12:1
+error[E0277]: the trait bound `(u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8): InjectionDependencies` is not satisfied
+  --> tests/ui/fail/pre-1.99/injector_too_many_dependencies.rs:4:25
    |
-12 | #[furnace_rs::controller]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `NotClone`
+ 4 |       type Dependencies = (
+   |  _________________________^
+ 5 | |         u8,
+ 6 | |         u8,
+ 7 | |         u8,
+...  |
+21 | |         u8,
+22 | |     );
+   | |_____^ the trait `InjectionDependencies` is not implemented for `(u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)`
    |
    = help: the following other types implement trait `InjectionDependencies`:
              ()
@@ -14,15 +21,8 @@ error[E0277]: the trait bound `NotClone: Clone` is not satisfied
              (A, B, C, D, E, F, G)
              (A, B, C, D, E, F, G, H)
            and $N others
-   = note: required for `(NotClone,)` to implement `InjectionDependencies`
 note: required by a bound in `furnace_rs::Injector::Dependencies`
   --> $WORKSPACE/crates/furnace-rs-core/src/injector.rs
    |
    |     type Dependencies: InjectionDependencies;
    |                        ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Injector::Dependencies`
-   = note: this error originates in the attribute macro `furnace_rs::controller` (in Nightly builds, run with -Z macro-backtrace for more info)
-help: consider annotating `NotClone` with `#[derive(Clone)]`
-   |
-10 + #[derive(Clone)]
-11 | struct NotClone;
-   |

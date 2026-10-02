@@ -137,6 +137,8 @@ fn config() -> Config {
         .unwrap()
 }
 
+// Atomic::try_update was introduced after the Rust 1.94 MSRV.
+#[allow(deprecated)]
 fn record(event: usize) {
     EVENTS
         .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {

@@ -1,8 +1,8 @@
-error[E0277]: the trait bound `NotCloneManaged: Clone` is not satisfied
- --> tests/ui/fail/managed_dependency.rs:3:1
+error[E0277]: the trait bound `Dependency: Clone` is not satisfied
+ --> tests/ui/fail/pre-1.99/injector_non_clone_dependency.rs:5:25
   |
-3 | #[furnace_rs::burner]
-  | ^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `NotCloneManaged`
+5 |     type Dependencies = (Dependency,);
+  |                         ^^^^^^^^^^^^^ the trait `Clone` is not implemented for `Dependency`
   |
   = help: the following other types implement trait `InjectionDependencies`:
             ()
@@ -14,15 +14,14 @@ error[E0277]: the trait bound `NotCloneManaged: Clone` is not satisfied
             (A, B, C, D, E, F, G)
             (A, B, C, D, E, F, G, H)
           and $N others
-  = note: required for `(NotCloneManaged,)` to implement `InjectionDependencies`
+  = note: required for `(Dependency,)` to implement `InjectionDependencies`
 note: required by a bound in `furnace_rs::Injector::Dependencies`
  --> $WORKSPACE/crates/furnace-rs-core/src/injector.rs
   |
   |     type Dependencies: InjectionDependencies;
   |                        ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Injector::Dependencies`
-  = note: this error originates in the attribute macro `furnace_rs::burner` (in Nightly builds, run with -Z macro-backtrace for more info)
-help: consider annotating `NotCloneManaged` with `#[derive(Clone)]`
+help: consider annotating `Dependency` with `#[derive(Clone)]`
   |
 2 + #[derive(Clone)]
-3 | struct NotCloneManaged;
+3 | struct Dependency;
   |
