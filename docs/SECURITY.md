@@ -1,7 +1,7 @@
 # Security policy
 
-This repository is preparing furnace-rs **1.0.0**. The version has not been
-published by the release-preparation change. Security fixes described in the
+This repository is preparing furnace-rs **1.0.0**. The version has been
+published at 2026-10-3. Security fixes described in the
 [audit](SECURITY_AUDIT.md) are included in the prepared source.
 
 ## Reporting a vulnerability
