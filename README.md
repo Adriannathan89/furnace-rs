@@ -11,6 +11,8 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 
 ## 1.0.0 release preparation
 
+**Release date: 2026-10-03.**
+
 The workspace and local examples target **1.0.0**. This is a prepared release,
 not a statement that the packages or `v1.0.0` tag have been published. Until
 publication, build the CLI from this checkout with
@@ -19,7 +21,7 @@ publication, build the CLI from this checkout with
 See the [changelog](CHANGELOG.md),
 [migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
 [release readiness guide](docs/releases/1.0.0.md),
-[security policy](SECURITY.md), and [security audit](SECURITY_AUDIT.md).
+[security policy](docs/SECURITY.md), and [security audit](docs/SECURITY_AUDIT.md).
 The release includes strict Bearer parsing, safe core error formatting, checked
 database timeouts, protected connection tracing, and owner-only Unix CLI
 control directories. The audit documents reproduction, fixes, benchmark

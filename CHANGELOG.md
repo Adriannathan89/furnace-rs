@@ -48,7 +48,7 @@ upgrading an application from MADS 0.x.
   an unwinding test panic, preserving rollback and the original panic.
 - Reproducible HTTP authentication, core/database, and CLI filesystem security
   workloads with failure-sensitive JSON reports and source/binary fingerprints.
-- A [security policy](SECURITY.md), [combined security audit](SECURITY_AUDIT.md),
+- A [security policy](docs/SECURITY.md), [combined security audit](docs/SECURITY_AUDIT.md),
   and [1.0.0 release readiness guide](docs/releases/1.0.0.md).
 
 ### Security

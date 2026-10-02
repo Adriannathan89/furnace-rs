@@ -9,21 +9,21 @@ changing their historical evidence.
 
 All nine workspace crates were reviewed: facade, core, both procedural-macro
 crates, common/HTTP/authentication, persistence, CLI, testing, and extra.
-The [all-crate report](benchmark/ALL_CRATES_SECURITY_AUDIT.md) records the per-crate
+The [all-crate report](../benchmark/ALL_CRATES_SECURITY_AUDIT.md) records the per-crate
 coverage, source inventory, threat boundaries, dependency scan and limitations.
 The release candidate retains Rust edition 2024, MSRV 1.94 and SeaORM minimum
 2.0.0; public APIs change from the MADS 0.x family as described in the
-[migration guide](docs/importance/furnace-rs-migration.md).
+[migration guide](importance/furnace-rs-migration.md).
 
 ## Findings included in 1.0.0
 
 | Finding | Reproduction and impact | Patch and evidence |
 | --- | --- | --- |
-| Permissive Bearer separators | Internal tabs with a valid signed access JWT reached a protected handler. Potential gateway/parser differential; no signature forgery or gateway exploit established. | Enforce ASCII-space Bearer grammar before strategy/handler execution; reject malformed/duplicate credentials. [Auth review](benchmark/SECURITY.md), commit `6edc43f`. |
-| Core error source disclosure | Derived `Debug` recursively rendered a retained native source containing a database password. | Custom source-free ordinary debug formatting; explicit typed source access retained. [Infrastructure review](benchmark/INFRASTRUCTURE_SECURITY.md), commit `16413c6`. |
-| Unrepresentable database deadlines | Configurable `u64::MAX`/native `Duration::MAX` caused a SQLx `Instant` overflow panic before connection. Requires control of config/options. | Check typed and native deadlines before connecting; safe typed rejection. [Infrastructure review](benchmark/INFRASTRUCTURE_SECURITY.md), commit `16413c6`. |
-| Native connection trace disclosure | SeaORM's connection span recorded complete options, including URL credentials, with tracing enabled. | Scope `NoSubscriber` to polls of the native establishment future; restore surrounding tracing. [Infrastructure review](benchmark/INFRASTRUCTURE_SECURITY.md), commit `16413c6`. |
-| Unix CLI control-directory access | Directory modes inherited umasks; other local users could read or, with group/world write access, tamper with transport/control contents. Executable replacement races were source-derived, not executed end to end. | Apply owner-only `0700` during directory creation; isolate umask tests in children. [All-crate review](benchmark/ALL_CRATES_SECURITY_AUDIT.md), commit `a847743`. |
+| Permissive Bearer separators | Internal tabs with a valid signed access JWT reached a protected handler. Potential gateway/parser differential; no signature forgery or gateway exploit established. | Enforce ASCII-space Bearer grammar before strategy/handler execution; reject malformed/duplicate credentials. [Auth review](../benchmark/SECURITY.md), commit `6edc43f`. |
+| Core error source disclosure | Derived `Debug` recursively rendered a retained native source containing a database password. | Custom source-free ordinary debug formatting; explicit typed source access retained. [Infrastructure review](../benchmark/INFRASTRUCTURE_SECURITY.md), commit `16413c6`. |
+| Unrepresentable database deadlines | Configurable `u64::MAX`/native `Duration::MAX` caused a SQLx `Instant` overflow panic before connection. Requires control of config/options. | Check typed and native deadlines before connecting; safe typed rejection. [Infrastructure review](../benchmark/INFRASTRUCTURE_SECURITY.md), commit `16413c6`. |
+| Native connection trace disclosure | SeaORM's connection span recorded complete options, including URL credentials, with tracing enabled. | Scope `NoSubscriber` to polls of the native establishment future; restore surrounding tracing. [Infrastructure review](../benchmark/INFRASTRUCTURE_SECURITY.md), commit `16413c6`. |
+| Unix CLI control-directory access | Directory modes inherited umasks; other local users could read or, with group/world write access, tamper with transport/control contents. Executable replacement races were source-derived, not executed end to end. | Apply owner-only `0700` during directory creation; isolate umask tests in children. [All-crate review](../benchmark/ALL_CRATES_SECURITY_AUDIT.md), commit `a847743`. |
 
 No CVE assignment or independent certification is claimed. These are targeted
 confirmed implementation issues and explicitly qualified impact assessments.
@@ -51,14 +51,14 @@ confirmed implementation issues and explicitly qualified impact assessments.
 
 These counts describe their recorded pre-release source snapshots, not newly
 executed 1.0.0 checks. Current release validation is recorded separately in
-[the readiness guide](docs/releases/1.0.0.md) and its linked evidence.
+[the readiness guide](releases/1.0.0.md) and its linked evidence.
 
-Primary evidence: [auth stress](benchmark/results/2026-10-02-security-stress.json),
-[infrastructure stress](benchmark/results/2026-10-02-infrastructure-security-stress.json),
-[CLI stress](benchmark/results/2026-10-02-cli-security-stress.json),
-[PostgreSQL validation](benchmark/results/2026-10-02-infrastructure-postgres-validation.json),
-[all-crate verification](benchmark/results/2026-10-02-all-crates-verification.json),
-and [dependency audit](benchmark/results/2026-10-02-all-crates-dependency-audit.json).
+Primary evidence: [auth stress](../benchmark/results/2026-10-02-security-stress.json),
+[infrastructure stress](../benchmark/results/2026-10-02-infrastructure-security-stress.json),
+[CLI stress](../benchmark/results/2026-10-02-cli-security-stress.json),
+[PostgreSQL validation](../benchmark/results/2026-10-02-infrastructure-postgres-validation.json),
+[all-crate verification](../benchmark/results/2026-10-02-all-crates-verification.json),
+and [dependency audit](../benchmark/results/2026-10-02-all-crates-dependency-audit.json).
 
 ## Verification of the prepared 1.0.0 tree
 
@@ -78,7 +78,7 @@ its recorded snapshot; registry yank status was excluded.
 
 These new results supplement the preserved stress reports above. They do not
 claim a fresh 1.0.0 HTTP stress run or completed remote platform/coverage gates.
-The [release guide](docs/releases/1.0.0.md#local-verification) links the five new
+The [release guide](releases/1.0.0.md#local-verification) links the five new
 JSON evidence files, including source/configuration fingerprints and exact
 local commands. Publication and published-dependency resolution remain pending.
 
