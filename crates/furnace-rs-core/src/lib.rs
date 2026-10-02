@@ -31,6 +31,7 @@ mod context;
 mod descriptor;
 mod diagnostic;
 mod graph;
+mod injector;
 mod lifecycle;
 mod preflight;
 mod registry;
@@ -76,6 +77,9 @@ pub use graph::{
     CauldronInspectionSnapshot, DependencyInspectionSnapshot, GraphInspectionSnapshot,
     OwnedSourceLocation, ProviderInspectionSnapshot,
 };
+#[doc(hidden)]
+pub use injector::injector_descriptor;
+pub use injector::{InjectionDependencies, Injector};
 pub use lifecycle::{
     LifecycleFuture, LifecycleHook, LifecycleManager, LifecycleResource, LifecycleState,
 };

@@ -50,11 +50,11 @@
 - Produce doc-hidden `injector_descriptor<T, I>() -> &'static ProviderDescriptor`, with `T: Send + Sync + 'static`, `I: Injector<T>`. Add a doc-hidden overridable `Injector::descriptor()` defaulting to this bridge so managed and integration providers can reuse their richer descriptor metadata.
 - Extend `DependencyDescriptor` with an optional runtime-name callback while retaining its existing constructor API for low-level consumers.
 
-- [ ] Write `injector.rs` tests: zero dependencies, `(Config,)`, a two-handle tuple, sixteen dependencies, async error propagation, and a lifecycle attachment counter. Assert exact output type identity and typed dependency names.
-- [ ] Run `cargo test --locked --offline -p furnace-rs-core --test injector`; confirm missing API failures before implementation.
-- [ ] Implement tuple resolution and generic associated-constant descriptors, including ordinary and lifecycle constructor adapters. Static descriptors must not leak allocations; generated function pointers may refer to generic type parameters.
-- [ ] Run the new test on stable and `cargo +1.94.0 test --locked --offline -p furnace-rs-core --test injector`; include repeated descriptor identity checks and assert no construction during descriptor access. Run existing descriptor tests.
-- [ ] Commit: `feat(core): add typed asynchronous Injector construction`.
+- [x] Write `injector.rs` tests: zero dependencies, `(Config,)`, a two-handle tuple, sixteen dependencies, async error propagation, and a lifecycle attachment counter. Assert exact output type identity and typed dependency names.
+- [x] Run `cargo test --locked --offline -p furnace-rs-core --test injector`; confirm missing API failures before implementation.
+- [x] Implement tuple resolution and generic associated-constant descriptors, including ordinary and lifecycle constructor adapters. Static descriptors must not leak allocations; generated function pointers may refer to generic type parameters.
+- [x] Run the new test on stable and `cargo +1.94.0 test --locked --offline -p furnace-rs-core --test injector`; include repeated descriptor identity checks and assert no construction during descriptor access. Run existing descriptor tests.
+- [x] Commit: `feat(core): add typed asynchronous Injector construction`.
 
 ### Task 2: Authoritative cauldron injector registrations
 

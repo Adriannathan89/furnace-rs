@@ -112,17 +112,29 @@ pub type LifecycleProviderConstructor =
 pub struct DependencyDescriptor {
     type_name: &'static str,
     type_id: fn() -> TypeId,
+    runtime_type_name: Option<fn() -> &'static str>,
 }
 
 impl DependencyDescriptor {
     /// Creates a dependency descriptor from a stable type name and identifier factory.
     pub const fn new(type_name: &'static str, type_id: fn() -> TypeId) -> Self {
-        Self { type_name, type_id }
+        Self {
+            type_name,
+            type_id,
+            runtime_type_name: None,
+        }
+    }
+
+    /// Attaches a concrete name resolver for generic dependency metadata.
+    #[doc(hidden)]
+    pub const fn with_runtime_type_name(mut self, name: fn() -> &'static str) -> Self {
+        self.runtime_type_name = Some(name);
+        self
     }
 
     /// Returns the dependency's stable type name.
-    pub const fn type_name(&self) -> &'static str {
-        self.type_name
+    pub fn type_name(&self) -> &'static str {
+        self.runtime_type_name.map_or(self.type_name, |name| name())
     }
 
     /// Returns the dependency's runtime type identifier.
@@ -138,6 +150,7 @@ pub struct ProviderDescriptor {
     type_name: &'static str,
     type_id: fn() -> TypeId,
     runtime_type_name: Option<fn() -> &'static str>,
+    resolved_type_name: Option<fn() -> &'static str>,
     namespace: Option<&'static str>,
     dependencies: &'static [DependencyDescriptor],
     visibility: ProviderVisibility,
@@ -163,6 +176,7 @@ impl ProviderDescriptor {
             type_name,
             type_id,
             runtime_type_name: None,
+            resolved_type_name: None,
             namespace: None,
             dependencies,
             visibility,
@@ -221,8 +235,16 @@ impl ProviderDescriptor {
     }
 
     /// Returns the provider's stable output type name.
-    pub const fn type_name(&self) -> &'static str {
-        self.type_name
+    pub fn type_name(&self) -> &'static str {
+        self.resolved_type_name
+            .map_or(self.type_name, |name| name())
+    }
+
+    /// Resolves generic output names without changing authored macro names.
+    #[doc(hidden)]
+    pub const fn with_resolved_type_name(mut self, name: fn() -> &'static str) -> Self {
+        self.resolved_type_name = Some(name);
+        self
     }
 
     /// Returns the provider's runtime output type identifier.
