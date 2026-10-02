@@ -1,0 +1,15 @@
+// src/app/mod.rs
+mod controller;
+mod service;
+
+use furnace::prelude::*;
+
+#[cauldron]
+pub struct AppCauldron;
+
+impl Cauldron for AppCauldron {
+    fn register(self) -> CauldronRegistration<Self> {
+        self.provide::<service::AppService>()
+            .controller::<controller::AppController>()
+    }
+}

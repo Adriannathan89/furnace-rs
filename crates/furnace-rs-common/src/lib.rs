@@ -1,0 +1,257 @@
+//! Standard integration contracts for furnace-rs.
+//!
+//! Enable the `http`, `jwt`, `cookies`, or `logger` feature to select only
+//! the integration contracts an application needs. The framework-neutral core
+//! boundary is always available through [`core`].
+#![cfg_attr(
+    feature = "http",
+    doc = "\nThe `http` feature provides managed controllers and inherent endpoints and the Axum runtime. [`build_router`] validates every controller selected for the application before it resolves a controller or invokes a typed registrar; [`serve`] performs that same validation before lifecycle startup or socket binding. Use [`serve_router`] to run a complete raw router after merging generated and native routes; it applies final application-wide router configuration before lifecycle startup. Use [`controller`] on a struct and exactly one inherent implementation to declare endpoints, and [`Sealable`] for their protection. The resulting descriptors can be inspected through [`RouteCatalog`] before the HTTP runtime installs handlers. [`axum`] is deliberately re-exported for native extractors, response types, routers, middleware, and Tower composition."
+)]
+#![deny(missing_docs)]
+#![forbid(unsafe_code)]
+
+#[cfg(feature = "http")]
+mod cors;
+#[cfg(feature = "http")]
+mod extract;
+#[cfg(feature = "http")]
+mod http_preflight;
+#[cfg(feature = "http")]
+mod http_scope;
+#[cfg(feature = "http")]
+mod inspection;
+#[cfg(feature = "http")]
+mod response;
+#[cfg(feature = "http")]
+mod route;
+#[cfg(feature = "http")]
+mod router;
+#[cfg(feature = "http")]
+mod seal;
+#[cfg(feature = "http")]
+mod server;
+#[cfg(feature = "http")]
+mod server_config;
+#[cfg(feature = "http")]
+mod validation;
+
+/// Application logging contracts and the default console logger.
+#[cfg(feature = "logger")]
+pub mod logger;
+
+extern crate self as furnace_rs_common;
+
+/// Derives input validation with built-in, nested, and custom checks.
+#[cfg(feature = "http")]
+pub use furnace_rs_common_macros::Input;
+
+/// Re-exports transport-independent input validation contracts.
+#[cfg(feature = "http")]
+pub use validation::{
+    Input, SourcedValidationIssue, ValidatedJson, ValidatedPath, ValidatedQuery, ValidationErrors,
+    ValidationIssue, ValidationPathSegment, ValidationResult, ValidationSource,
+};
+
+/// Strict cookie extraction, response composition, and established cookie types.
+#[cfg(feature = "cookies")]
+pub mod cookie;
+
+/// Typed JSON Web Token contracts and services.
+#[cfg(feature = "jwt")]
+pub mod jwt;
+
+/// Typed Passport principals, request context, and normalized failures.
+#[cfg(all(feature = "http", feature = "jwt"))]
+pub mod passport;
+
+/// Static policy metadata implemented by the guard declaration macro.
+#[cfg(all(feature = "http", feature = "jwt"))]
+#[doc(hidden)]
+pub use passport::GuardPolicy;
+/// Erased static policy declarations used by startup analysis.
+#[cfg(all(feature = "http", feature = "jwt"))]
+#[doc(hidden)]
+pub use seal::SealEntry;
+/// Static controller protection declarations.
+#[cfg(feature = "http")]
+pub use seal::{SealDefinition, SealRegistration, Sealable};
+
+/// Re-exports Axum for native runtime integration.
+#[cfg(feature = "http")]
+pub use axum;
+
+/// Typed JWT claims, service, options, errors, and diagnostics.
+#[cfg(feature = "jwt")]
+pub use jwt::{
+    FURNACE120, FURNACE121, JwtAlgorithm, JwtClaims, JwtError, JwtErrorKind, JwtHeader, JwtResult,
+    JwtService, JwtSignOptions, JwtTokenKind, JwtValidation, PassportConfig, RegisteredJwtClaims,
+    VerifiedJwt,
+};
+
+/// Typed Passport principals, guarded extractors, context, errors, and diagnostics.
+#[cfg(all(feature = "http", feature = "jwt"))]
+pub use passport::{
+    Authenticated, BuiltinGuardAdapter, ClaimsPrincipal, ErasedAuthentication, FURNACE130,
+    FURNACE131, GuardCatalog, GuardDescriptor, GuardPredicate, GuardPredicateAdapter,
+    PassportContext, PassportError, PassportErrorKind, PassportGuard, PassportGuardBuilder,
+    PassportPrincipal, PassportRejection, PassportResult, PassportStrategy,
+    PassportStrategyAdapter, PassportStrategyBinding, PassportStrategyCatalog,
+    PassportStrategyDescriptor, PassportStrategyFuture, PassportStrategyPreflight, PolicyClause,
+    PolicyMode, TokenSource, VerifiedToken,
+};
+
+/// Safe parsed-cookie metadata available to cookie-authenticated Passport strategies.
+#[cfg(all(feature = "http", feature = "jwt", feature = "cookies"))]
+pub use passport::PassportCookies;
+
+/// Strict cookie extraction, normalized errors, and established cookie types.
+#[cfg(feature = "cookies")]
+pub use cookie::{
+    Cookie, CookieError, CookieErrorKind, CookieJar, CookieRejection, CookieResult, Expiration,
+    FURNACE110, SameSite,
+};
+
+/// Standard Axum-compatible HTTP request extractors.
+#[cfg(feature = "http")]
+pub use extract::{Header, Json, Path, Query, Request, headers};
+
+/// Standard Axum-compatible HTTP response types.
+#[cfg(feature = "http")]
+pub use response::{
+    BadRequest, Conflict, Created, Forbidden, HttpError, HttpResult, InternalError, NoContent,
+    NotFound, Unauthorized, ValidationError,
+};
+
+/// Builds a raw Axum router from the application's validated controllers.
+#[cfg(feature = "http")]
+pub use router::{build_router, configure_router};
+
+/// Invalid or failed private application-inspection request.
+#[cfg(feature = "http")]
+pub use inspection::FURNACE032;
+/// Runs validated applications and raw composed routers on the Axum HTTP runtime.
+#[cfg(feature = "http")]
+pub use server::{FURNACE031, FurnaceBurnExt, HttpRuntimeError, serve, serve_router};
+
+/// Exposes the framework-neutral core boundary to future integrations.
+pub use furnace_rs_core as core;
+
+/// Logging levels, contracts, and the default console logger.
+#[cfg(feature = "logger")]
+pub use logger::{ConsoleLoggerService, LogLevel, Logger, LoggerCauldron, LoggerService};
+
+/// Declares a managed controller struct or its inherent HTTP endpoints.
+#[cfg(feature = "http")]
+pub use furnace_rs_common_macros::controller;
+
+/// Makes an endpoint public by bypassing its controller seal.
+#[cfg(feature = "http")]
+pub use furnace_rs_common_macros::seal;
+
+/// Declares a static unit-struct Passport policy attached by a controller seal.
+#[cfg(all(feature = "http", feature = "jwt"))]
+pub use furnace_rs_common_macros::guard;
+
+/// Derives role and permission membership for a named Passport principal.
+#[cfg(all(feature = "http", feature = "jwt"))]
+pub use furnace_rs_common_macros::PassportPrincipal;
+
+/// Registers a managed, typed Passport JWT strategy.
+#[cfg(all(feature = "http", feature = "jwt"))]
+pub use furnace_rs_common_macros::passport_strategy;
+
+/// Marks a DELETE route inside a route-contract trait.
+#[cfg(feature = "http")]
+pub use furnace_rs_common_macros::delete;
+
+/// Marks a GET route inside a route-contract trait.
+#[cfg(feature = "http")]
+pub use furnace_rs_common_macros::get;
+
+/// Marks a PATCH route inside a route-contract trait.
+#[cfg(feature = "http")]
+pub use furnace_rs_common_macros::patch;
+
+/// Marks a POST route inside a route-contract trait.
+#[cfg(feature = "http")]
+pub use furnace_rs_common_macros::post;
+
+/// Marks a PUT route inside a route-contract trait.
+#[cfg(feature = "http")]
+pub use furnace_rs_common_macros::put;
+
+/// Static route and controller metadata types used by the contract catalog.
+#[cfg(feature = "http")]
+pub use route::{
+    ControllerDescriptor, ControllerEndpointDescriptor, ControllerRegistrar, HttpMethod,
+    RouteCatalog, RouteDescriptor,
+};
+
+/// Implementation details used by generated HTTP route adapters.
+#[doc(hidden)]
+#[cfg(feature = "http")]
+pub mod __private {
+    pub use crate::http_preflight::preflight_http;
+    pub use crate::router::build_test_router_for;
+    pub use crate::validation::support as input_validation;
+    /// Environment variable used by the development supervisor for graceful shutdown.
+    #[doc(hidden)]
+    pub const DEV_SHUTDOWN_ENV: &str = "FURNACE_INTERNAL_DEV_SHUTDOWN_PATH";
+
+    pub use axum::Router;
+    pub use axum::routing::{delete, get, patch, post, put};
+
+    /// Loads conventional sources with an injected environment source for tests.
+    #[cfg(feature = "http")]
+    #[allow(clippy::result_large_err)]
+    pub fn load_standard_config_from_for_test(
+        root: &std::path::Path,
+        environment: furnace_rs_core::EnvSource,
+    ) -> furnace_rs_core::Result<furnace_rs_core::Config> {
+        crate::server_config::load_standard_config_from_with_environment(root, environment)
+    }
+
+    /// Enables the private automatic HTTP server mode for integration tests.
+    pub fn enable_automatic_server_for_test(builder: &mut furnace_rs_core::FurnaceBuilder) -> bool {
+        crate::server_config::enable_automatic_server(builder)
+    }
+
+    /// Enables the private automatic CORS mode for integration tests.
+    pub fn enable_automatic_cors_for_test(builder: &mut furnace_rs_core::FurnaceBuilder) -> bool {
+        crate::cors::enable_automatic_cors(builder)
+    }
+
+    /// Returns the automatic server binding as an owned address tuple for integration tests.
+    #[allow(clippy::result_large_err)]
+    pub fn server_binding_address_for_test(
+        application: &furnace_rs_core::Furnace,
+    ) -> furnace_rs_core::Result<(String, u16)> {
+        let binding = application
+            .context()
+            .resolve::<crate::server_config::ServerBinding>()?;
+        let (host, port) = binding.address();
+        Ok((host.to_owned(), port))
+    }
+
+    #[cfg(feature = "jwt")]
+    pub use crate::passport::{PassportGuardLayer, PassportGuardState};
+    #[cfg(feature = "jwt")]
+    #[allow(clippy::result_large_err)]
+    pub fn preflight_scoped(
+        cauldron_graph: Option<&furnace_rs_core::CauldronGraph>,
+    ) -> furnace_rs_core::Result<crate::passport::PassportStrategyPreflight<'static>> {
+        let scope = crate::http_scope::HttpApplicationScope::for_cauldron_graph(cauldron_graph)?;
+        crate::passport::PassportStrategyCatalog::preflight_scoped(cauldron_graph, scope.guards())
+    }
+    pub use crate::route::{RouterBuildContext, ValidatedRouteIter, validate_descriptors};
+    pub use crate::seal::{OptionalSeal, SealProbe};
+
+    #[doc(hidden)]
+    pub use crate::inspection::{
+        AutoConfigurationReport, CauldronImportReport, CauldronReport, ConfigurationEvidenceReport,
+        DependencyReport, DiagnosticReport, DoctorCheck, DoctorStatus, FURNACE032, GraphReport,
+        INSPECTION_ACK_ENV, INSPECTION_KIND_ENV, INSPECTION_PROTOCOL_VERSION,
+        INSPECTION_RESPONSE_ENV, INSPECTION_TOKEN_ENV, INSPECTION_VERSION_ENV, InspectionEnvelope,
+        InspectionKind, InspectionReport, ProviderReport, RouteReport, SourceReport,
+    };
+}

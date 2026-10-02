@@ -1,0 +1,5 @@
+error: a complete guard requires `principal = Type`
+ --> tests/ui-seal/fail/missing_principal.rs:4:9
+  |
+4 | #[guard(strategy = "custom")]
+  |         ^^^^^^^^

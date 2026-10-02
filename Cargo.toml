@@ -1,22 +1,23 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/mads",
-    "crates/mads-core",
-    "crates/mads-core-macros",
-    "crates/mads-persistence",
-    "crates/mads-common",
-    "crates/mads-common-macros",
-    "crates/mads-cli",
-    "crates/mads-extra",
+    "crates/furnace-rs",
+    "crates/furnace-rs-core",
+    "crates/furnace-rs-core-macros",
+    "crates/furnace-rs-persistence",
+    "crates/furnace-rs-common",
+    "crates/furnace-rs-common-macros",
+    "crates/furnace-rs-cli",
+    "crates/furnace-rs-extra",
+    "crates/furnace-rs-testing",
 ]
 
 [workspace.package]
-version = "0.9.1"
+version = "0.9.2"
 edition = "2024"
 rust-version = "1.94"
-authors = ["MADS.rs contributors"]
-repository = "https://github.com/Adriannathan89/mads"
+authors = ["furnace-rs contributors"]
+repository = "https://github.com/Adriannathan89/furnace-rs"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 
@@ -28,8 +29,9 @@ cargo_metadata = "=0.19.2"
 cookie = { version = "=0.18.1", default-features = false, features = ["percent-encode"] }
 dotenvy = "=0.15.7"
 http-body = "1"
+futures-util = "0.3"
 inventory = "0.3"
-jsonwebtoken = { version = "=10.3.0", default-features = false, features = ["rust_crypto", "use_pem"] }
+jsonwebtoken = { version = "=10.3.0", default-features = false, features = ["aws_lc_rs", "use_pem"] }
 notify = "=8.2.0"
 proc-macro-crate = "3"
 proc-macro2 = "1"

@@ -1,46 +1,45 @@
-# MADS CLI
+# FURNACE CLI
 
-MADS v0.9.1 provides Cargo-native execution, inspection, a minimal-project
+FURNACE v0.9.2 provides Cargo-native execution, inspection, a minimal-project
 generator, and a versioned JSON result
-for finite MADS-owned commands. Human-readable output remains the default.
+for finite FURNACE-owned commands. Human-readable output remains the default.
 
 ## Start a minimal HTTP application
 
 Create an application outside an existing Cargo project:
 
 ```bash
-mads new my-app
+furnace new my-app
 cd my-app
-mads dev
+furnace dev
 ```
 
-`mads new <name>` creates `./<name>` relative to the invocation directory. A
+`furnace new <name>` creates `./<name>` relative to the invocation directory. A
 name starts with lowercase ASCII; its remaining characters may be lowercase
 ASCII, digits, `-`, or `_`. Rust 2024 keywords and Cargo-reserved package names
-are rejected. MADS preserves the supplied directory and package spelling.
+are rejected. FURNACE preserves the supplied directory and package spelling.
 
-The generated project contains exactly these seven files:
+The generated project contains exactly these six files:
 
 ```text
 <name>/
 ├── Cargo.toml
-├── mads.toml
+├── furnace.toml
 └── src/
     ├── main.rs
     └── app/
         ├── mod.rs
-        ├── routes.rs
         ├── controller.rs
         └── service.rs
 ```
 
 The manifest starts the application at version `0.1.0`, uses edition 2024 and
-Rust 1.94, and pins the installed MADS CLI version exactly. Its MADS dependency
+Rust 1.94, and pins the installed FURNACE CLI version exactly. Its FURNACE dependency
 uses `default-features = false` with only `http` and `runtime-tokio`; it has no
 database, JWT, cookie, schema, migration, or authentication dependency. The
 starter's `GET /` response is plain `Hello World!`.
 
-`mads.toml` contains:
+`furnace.toml` contains:
 
 ```toml
 [server]
@@ -48,8 +47,8 @@ host = "127.0.0.1"
 port = 3000
 ```
 
-The normal runtime overrides remain available: `MADS_SERVER__HOST` maps to
-`server.host` and `MADS_SERVER__PORT` maps to `server.port`.
+The normal runtime overrides remain available: `FURNACE_SERVER__HOST` maps to
+`server.host` and `FURNACE_SERVER__PORT` maps to `server.port`.
 
 Generation validates arguments before writing, renders all files into a private
 sibling staging directory, and publishes them with one atomic rename. An
@@ -57,7 +56,7 @@ existing destination, including an empty directory, is never changed. The
 command does not download dependencies, run Cargo, initialize Git, select a
 remote template, or ask an interactive question. It offers no template,
 database, JWT, VCS, or target-directory option in v0.9. A successful human
-result identifies the relative path and prints only `cd <name>` and `mads dev`.
+result identifies the relative path and prints only `cd <name>` and `furnace dev`.
 
 ## Project and target selection
 
@@ -67,11 +66,11 @@ With one eligible package and binary, selectors are unnecessary. Use
 ambiguous:
 
 ```text
-mads run [--package <package>] [--bin <binary>] [-- <app-args>...]
-mads dev [--package <package>] [--bin <binary>] [-- <app-args>...]
-mads routes [--package <package>] [--bin <binary>]
-mads graph [--package <package>] [--bin <binary>]
-mads doctor [--package <package>] [--bin <binary>]
+furnace run [--package <package>] [--bin <binary>] [-- <app-args>...]
+furnace dev [--package <package>] [--bin <binary>] [-- <app-args>...]
+furnace routes [--package <package>] [--bin <binary>]
+furnace graph [--package <package>] [--bin <binary>]
+furnace doctor [--package <package>] [--bin <binary>]
 ```
 
 Cargo's ordinary single-package, `default-run`, and ambiguity behavior remains
@@ -83,26 +82,26 @@ inspection commands reject them.
 The following finite commands accept `--format human|json`:
 
 ```text
-mads new <name>
-mads routes
-mads graph
-mads doctor
+furnace new <name>
+furnace routes
+furnace graph
+furnace doctor
 ```
 
 The option may appear once, before or after the command path. Both examples
 are equivalent:
 
 ```bash
-mads --format json routes
-mads routes --format json
+furnace --format json routes
+furnace routes --format json
 ```
 
 `human` is the default. `run`, `dev`, help, and version reject
 `--format` because they are human/streaming interfaces. A duplicate, missing,
-or unknown format value is CLI syntax failure `MADS204`.
+or unknown format value is CLI syntax failure `FURNACE204`.
 
 In JSON mode stdout contains exactly one JSON document followed by one newline;
-MADS writes no rendered warning or error text there. Cargo and rustc output
+FURNACE writes no rendered warning or error text there. Cargo and rustc output
 required to build inspection targets still passes through stderr. JSON paths use
 `/` and are package-relative when possible.
 
@@ -110,7 +109,7 @@ Every document has this version-1 envelope:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "command": "routes",
   "ok": true,
   "data": {},
@@ -120,14 +119,14 @@ Every document has this version-1 envelope:
 
 `command` is the canonical spelling (`new`, `routes`, `graph`, `doctor`, `db
 generate`, `db migrate`, `db rollback`, or `db status`) and is `null` only when
-syntax cannot identify a command. `ok` is true only for exit-zero MADS-owned
+syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
 completion. `data` is the command object, safe partial inspection data, or
-`null`. `diagnostics` is an ordered list of MADS-owned records:
+`null`. `diagnostics` is an ordered list of FURNACE-owned records:
 
 ```json
 {
   "severity": "error",
-  "code": "MADS204",
+  "code": "FURNACE204",
   "title": "invalid command",
   "message": "...",
   "subject": null,
@@ -137,16 +136,15 @@ completion. `data` is the command object, safe partial inspection data, or
 ```
 
 Severity is always `error` or `warning`; nullable `subject` and `location` are
-intentional. Schema version 1 may add fields, and consumers must ignore unknown
+intentional. Schema version 2 may add fields, and consumers must ignore unknown
 object fields. Removing, renaming, changing the type of, or changing the
 meaning of an existing field requires a new `schema_version`.
 
-The finite schema owners are `new`, `routes`, `graph`, `doctor`, `db generate`,
-`db migrate`, `db rollback`, and `db status`. A non-null source location has
+The finite schema owners are `new`, `routes`, `graph`, and `doctor`. A non-null source location has
 one-based line and column numbers:
 
 ```json
-{"file":"src/app/routes.rs","line":6,"column":5}
+{"file":"src/app/controller.rs","line":6,"column":5}
 ```
 
 ### JSON command data
@@ -159,10 +157,9 @@ one-based line and column numbers:
   "path": "my-app",
   "files": [
     "Cargo.toml",
-    "mads.toml",
+    "furnace.toml",
     "src/main.rs",
     "src/app/mod.rs",
-    "src/app/routes.rs",
     "src/app/controller.rs",
     "src/app/service.rs"
   ]
@@ -170,10 +167,10 @@ one-based line and column numbers:
 ```
 
 `routes` returns `{ "routes": [...] }`; every route record has `method`,
-`path`, `route_trait`, `handler`, `controller`, `location`, and
-`guard_active`. Route order remains method, path, controller, route trait, and
-handler order. `graph` returns `root_module`, `modules`, `imports`,
-`providers`, `dependencies`, and nullable `construction_order`. Module records
+`path`, `handler`, `controller`, `location`, and
+`guard_active`. Route order remains method, path, controller, and
+handler order. `graph` returns `root_cauldron`, `cauldrons`, `imports`,
+`providers`, `dependencies`, and nullable `construction_order`. Cauldron records
 contain `type_name`, `namespace`, and `location`; import records contain
 `importer` and `imported`; providers retain `type_name`,
 nullable owner and location, origin, visibility, and state; dependencies carry
@@ -185,10 +182,9 @@ construction plan exists.
   "routes": [{
     "method": "GET",
     "path": "/",
-    "route_trait": "AppRoutes",
     "handler": "hello",
     "controller": "AppController",
-    "location": {"file":"src/app/routes.rs","line":6,"column":5},
+    "location": {"file":"src/app/controller.rs","line":6,"column":5},
     "guard_active": false
   }]
 }
@@ -196,9 +192,9 @@ construction plan exists.
 
 ```json
 {
-  "root_module": "AppModule",
-  "modules": [{
-    "type_name": "AppModule",
+  "root_cauldron": "AppCauldron",
+  "cauldrons": [{
+    "type_name": "AppCauldron",
     "namespace": "crate::app",
     "location": {"file":"src/app/mod.rs","line":8,"column":1}
   }],
@@ -227,27 +223,27 @@ Invalid route or graph inspection retains every trustworthy record in `data`,
 adds ordered error diagnostics, sets `ok` false, and exits 1. A failure before a
 report exists or scaffold publication failure
 uses `data: null`. JSON syntax failure requested through a recognized format
-uses `MADS204`, `ok: false`, `data: null`, and exit 2.
+uses `FURNACE204`, `ok: false`, `data: null`, and exit 2.
 
-## `mads run` and `mads dev`
+## `furnace run` and `furnace dev`
 
-`mads run` builds the selected binary and forwards arguments after `--`. It
-preserves an ordinary application exit status. `mads dev` builds, supervises,
+`furnace run` builds the selected binary and forwards arguments after `--`. It
+preserves an ordinary application exit status. `furnace dev` builds, supervises,
 and watches the selected application's reachable workspace inputs. Changes are
 debounced; a failed rebuild keeps the last good process when one is running.
 Neither command wraps Cargo, rustc, or arbitrary application streams in JSON.
 
 ```bash
-mads run -- --seed-data
-mads run -p api --bin server -- --port 4000
-mads dev
-mads dev -p api --bin server -- --log=debug
+furnace run -- --seed-data
+furnace run -p api --bin server -- --port 4000
+furnace dev
+furnace dev -p api --bin server -- --log=debug
 ```
 
 ## Inspection commands
 
-`mads routes`, `mads graph`, and `mads doctor` compile the selected standard
-`Mads::run::<AppModule>()` application and obtain private inspection metadata
+`furnace routes`, `furnace graph`, and `furnace doctor` compile the selected standard
+`Furnace::burn::<AppCauldron>()` application and obtain private inspection metadata
 without normal provider construction, lifecycle startup, database connection,
 migration, listener binding, or traffic serving. Human output remains the
 existing table/section/check rendering; JSON exposes only the public schema
@@ -256,8 +252,8 @@ described above, never the private inspection protocol or its tokens.
 ## Persistence
 
 The CLI does not manage database migrations. Applications can import
-`mads_persistence::sea_orm::DatabaseModule` explicitly and use SeaORM's native
-query and migration tools. See [persistence](mads-persistence.md).
+`furnace_rs_persistence::sea_orm::DatabaseCauldron` explicitly and use SeaORM's native
+query and migration tools. See [persistence](furnace-rs-persistence.md).
 
 ## Diagnostics and exit codes
 
@@ -265,9 +261,9 @@ query and migration tools. See [persistence](mads-persistence.md).
 | --- | --- |
 | 0 | Command completed successfully. |
 | 1 | Build, Cargo resolution, inspection, scaffold filesystem, watcher, or other operational failure. |
-| 2 | Invalid MADS CLI syntax, output-format selection, project name, or unsupported argument. |
+| 2 | Invalid FURNACE CLI syntax, output-format selection, project name, or unsupported argument. |
 
-`MADS204` identifies syntax or output-format failures. `MADS230` identifies
+`FURNACE204` identifies syntax or output-format failures. `FURNACE230` identifies
 project-name, template rendering, staging, or publication failures. Existing
 diagnostic families retain their meanings.
 

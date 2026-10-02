@@ -1,0 +1,8 @@
+[package]
+name = "{{project_name}}"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+
+[dependencies]
+furnace = { package = "furnace-rs", version = "={{furnace_version}}", default-features = false, features = ["http", "runtime-tokio"] }

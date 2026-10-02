@@ -1,0 +1,20 @@
+error[E0277]: the trait bound `(u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8): InjectionDependencies` is not satisfied
+  --> tests/ui/fail/rust-1.99/injector_too_many_dependencies.rs:4:25
+   |
+ 4 |       type Dependencies = (
+   |  _________________________^
+ 5 | |         u8,
+ 6 | |         u8,
+ 7 | |         u8,
+...  |
+21 | |         u8,
+22 | |     );
+   | |_____^ the trait `InjectionDependencies` is not implemented for `(u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)`
+   |
+   = help: the following other types implement trait `InjectionDependencies`:
+             (T₁, T₂, …, Tₙ) up to tuples of arity 16
+note: required by a bound in `furnace_rs::Injector::Dependencies`
+  --> $WORKSPACE/crates/furnace-rs-core/src/injector.rs
+   |
+   |     type Dependencies: InjectionDependencies;
+   |                        ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Injector::Dependencies`

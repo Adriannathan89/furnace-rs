@@ -1,0 +1,184 @@
+error[E0277]: the trait bound `AppCauldron: Cauldron` is not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[furnace_rs::cauldron]
+  | ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `Cauldron` is not implemented for `AppCauldron`
+ --> tests/ui/fail/furnace_missing_registration.rs:2:1
+  |
+2 | struct AppCauldron;
+  | ^^^^^^^^^^^^^^^^^^
+help: the trait `Cauldron` is implemented for `LoggerCauldron`
+ --> $WORKSPACE/crates/furnace-rs-common/src/logger/mod.rs
+  |
+  | impl crate::core::Cauldron for LoggerCauldron {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `CauldronRegistration`
+ --> $WORKSPACE/crates/furnace-rs-core/src/cauldron.rs
+  |
+  | pub struct CauldronRegistration<M: Cauldron> {
+  |                                    ^^^^^^^^ required by this bound in `CauldronRegistration`
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `AppCauldron: Cauldron` is not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[furnace_rs::cauldron]
+  | ^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `Cauldron` is not implemented for `AppCauldron`
+ --> tests/ui/fail/furnace_missing_registration.rs:2:1
+  |
+2 | struct AppCauldron;
+  | ^^^^^^^^^^^^^^^^^^
+help: the trait `Cauldron` is implemented for `LoggerCauldron`
+ --> $WORKSPACE/crates/furnace-rs-common/src/logger/mod.rs
+  |
+  | impl crate::core::Cauldron for LoggerCauldron {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `CauldronRegistration::<M>::new`
+ --> $WORKSPACE/crates/furnace-rs-core/src/cauldron.rs
+  |
+  | impl<M: Cauldron> CauldronRegistration<M> {
+  |         ^^^^^^^^ required by this bound in `CauldronRegistration::<M>::new`
+  |     /// Starts an empty declaration. The unit value is not retained.
+  |     pub fn new(_module: M) -> Self {
+  |            --- required by a bound in this associated function
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `provide` exists for struct `CauldronRegistration<AppCauldron>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[furnace_rs::cauldron]
+  | ^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `CauldronRegistration<AppCauldron>` due to unsatisfied trait bounds
+2 | struct AppCauldron;
+  | ------------------ doesn't satisfy `AppCauldron: Cauldron`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppCauldron: Cauldron`
+note: the trait `Cauldron` must be implemented
+ --> $WORKSPACE/crates/furnace-rs-core/src/cauldron.rs
+  |
+  | pub trait Cauldron: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `provide_with` exists for struct `CauldronRegistration<AppCauldron>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[furnace_rs::cauldron]
+  | ^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `CauldronRegistration<AppCauldron>` due to unsatisfied trait bounds
+2 | struct AppCauldron;
+  | ------------------ doesn't satisfy `AppCauldron: Cauldron`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppCauldron: Cauldron`
+note: the trait `Cauldron` must be implemented
+ --> $WORKSPACE/crates/furnace-rs-core/src/cauldron.rs
+  |
+  | pub trait Cauldron: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `controller` exists for struct `CauldronRegistration<AppCauldron>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[furnace_rs::cauldron]
+  | ^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `CauldronRegistration<AppCauldron>` due to unsatisfied trait bounds
+2 | struct AppCauldron;
+  | ------------------ doesn't satisfy `AppCauldron: Cauldron`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppCauldron: Cauldron`
+note: the trait `Cauldron` must be implemented
+ --> $WORKSPACE/crates/furnace-rs-core/src/cauldron.rs
+  |
+  | pub trait Cauldron: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `import` exists for struct `CauldronRegistration<AppCauldron>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[furnace_rs::cauldron]
+  | ^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `CauldronRegistration<AppCauldron>` due to unsatisfied trait bounds
+2 | struct AppCauldron;
+  | ------------------ doesn't satisfy `AppCauldron: Cauldron`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppCauldron: Cauldron`
+note: the trait `Cauldron` must be implemented
+ --> $WORKSPACE/crates/furnace-rs-core/src/cauldron.rs
+  |
+  | pub trait Cauldron: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `export` exists for struct `CauldronRegistration<AppCauldron>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[furnace_rs::cauldron]
+  | ^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `CauldronRegistration<AppCauldron>` due to unsatisfied trait bounds
+2 | struct AppCauldron;
+  | ------------------ doesn't satisfy `AppCauldron: Cauldron`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppCauldron: Cauldron`
+note: the trait `Cauldron` must be implemented
+ --> $WORKSPACE/crates/furnace-rs-core/src/cauldron.rs
+  |
+  | pub trait Cauldron: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: the method `global` exists for struct `CauldronRegistration<AppCauldron>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[furnace_rs::cauldron]
+  | ^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `CauldronRegistration<AppCauldron>` due to unsatisfied trait bounds
+2 | struct AppCauldron;
+  | ------------------ doesn't satisfy `AppCauldron: Cauldron`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppCauldron: Cauldron`
+note: the trait `Cauldron` must be implemented
+ --> $WORKSPACE/crates/furnace-rs-core/src/cauldron.rs
+  |
+  | pub trait Cauldron: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `AppCauldron: Cauldron` is not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:2:8
+  |
+2 | struct AppCauldron;
+  |        ^^^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `Cauldron` is not implemented for `AppCauldron`
+ --> tests/ui/fail/furnace_missing_registration.rs:2:1
+  |
+2 | struct AppCauldron;
+  | ^^^^^^^^^^^^^^^^^^
+help: the trait `Cauldron` is implemented for `LoggerCauldron`
+ --> $WORKSPACE/crates/furnace-rs-common/src/logger/mod.rs
+  |
+  | impl crate::core::Cauldron for LoggerCauldron {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: the method `into_definition` exists for struct `CauldronRegistration<AppCauldron>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/furnace_missing_registration.rs:1:1
+  |
+1 | #[furnace_rs::cauldron]
+  | ^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `CauldronRegistration<AppCauldron>` due to unsatisfied trait bounds
+2 | struct AppCauldron;
+  | ------------------ doesn't satisfy `AppCauldron: Cauldron`
+  |
+  = note: the following trait bounds were not satisfied:
+          `AppCauldron: Cauldron`
+note: the trait `Cauldron` must be implemented
+ --> $WORKSPACE/crates/furnace-rs-core/src/cauldron.rs
+  |
+  | pub trait Cauldron: Send + Sync + Sized + 'static {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

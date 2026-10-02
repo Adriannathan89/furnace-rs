@@ -1,0 +1,5 @@
+error: `#[seal(skip)]` requires an HTTP endpoint
+ --> tests/ui-direct/fail/seal_on_helper.rs:8:8
+  |
+8 |     fn endpoint(&self) {}
+  |        ^^^^^^^^

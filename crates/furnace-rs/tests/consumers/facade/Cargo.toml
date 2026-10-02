@@ -1,0 +1,10 @@
+[package]
+name = "furnace-rs-macro-facade-consumer"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.94"
+
+[dependencies]
+furnace-rs = { path = "../../..", default-features = false, features = ["common"] }
+
+[workspace]

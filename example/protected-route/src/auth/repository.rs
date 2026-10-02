@@ -1,4 +1,4 @@
-use mads::prelude::Secret;
+use furnace_rs::prelude::Secret;
 
 use super::{model::User, traits::UserRepository};
 

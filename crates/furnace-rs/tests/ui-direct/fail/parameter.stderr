@@ -1,0 +1,5 @@
+error: capture names must use `[A-Za-z_][A-Za-z0-9_]*`
+ --> tests/ui-direct/fail/parameter.rs:6:25
+  |
+6 | impl Controller { #[get("/{bad-name}")] fn run(&self) {} }
+  |                         ^^^^^^^^^^^^^

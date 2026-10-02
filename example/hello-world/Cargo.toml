@@ -1,5 +1,5 @@
 [package]
-name = "mads-example-hello-world"
+name = "furnace-rs-example-hello-world"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.94"
@@ -8,4 +8,4 @@ publish = false
 [workspace]
 
 [dependencies]
-mads = { version = "=0.9.1", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs = { path = "../../crates/furnace-rs", version = "=0.9.2", default-features = false, features = ["http", "runtime-tokio"] }

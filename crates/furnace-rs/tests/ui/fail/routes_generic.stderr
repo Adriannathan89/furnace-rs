@@ -1,0 +1,5 @@
+error: endpoint controllers require a non-generic inherent implementation
+ --> tests/ui/fail/routes_generic.rs:8:1
+  |
+8 | impl<T> Routes<T> {
+  | ^^^^

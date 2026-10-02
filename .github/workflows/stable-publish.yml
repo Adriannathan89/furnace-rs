@@ -55,14 +55,14 @@ jobs:
         run: cargo doc --locked --workspace --all-features --no-deps
       - name: Verify v0.9 feature boundaries and package contents
         run: |
-          cargo check -p mads-core --no-default-features
-          cargo check -p mads-persistence --no-default-features
-          cargo check -p mads-persistence --no-default-features --features sea-orm-postgres
-          cargo check -p mads-common --no-default-features --features http
-          cargo check -p mads-common --no-default-features --features jwt
-          cargo check -p mads-common --no-default-features --features cookies
-          cargo check -p mads --no-default-features
-          cargo check -p mads --no-default-features --features http,runtime-tokio
+          cargo check -p furnace-rs-core --no-default-features
+          cargo check -p furnace-rs-persistence --no-default-features
+          cargo check -p furnace-rs-persistence --no-default-features --features sea-orm-postgres
+          cargo check -p furnace-rs-common --no-default-features --features http
+          cargo check -p furnace-rs-common --no-default-features --features jwt
+          cargo check -p furnace-rs-common --no-default-features --features cookies
+          cargo check -p furnace-rs --no-default-features
+          cargo check -p furnace-rs --no-default-features --features http,runtime-tokio
           bash script/verify-package-contents.sh
       - name: Build distributable crate archives
         run: cargo package --locked --workspace --no-verify
@@ -80,13 +80,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Test CLI parser, JSON, paths, scaffold, and processes
         run: |
-          cargo test -p mads-cli --lib command::tests -- --test-threads=1
-          cargo test -p mads-cli --test json_cli -- --test-threads=1
-          cargo test -p mads-cli --test json_cli model_serializes_nullable_diagnostics_and_normalized_locations -- --test-threads=1
-          cargo test -p mads-cli --test scaffold_cli -- --test-threads=1
-          cargo test -p mads-cli --lib scaffold::publish::tests::destination_race_preserves_the_competing_directory_and_cleans_staging -- --test-threads=1
-          cargo test -p mads-cli --test inspection_cli a_binary_without_standard_run_is_killed_and_diagnosed -- --test-threads=1
-          cargo test -p mads-cli --test dev_cli real_dev_loop -- --test-threads=1
+          cargo test -p furnace-rs-cli --lib command::tests -- --test-threads=1
+          cargo test -p furnace-rs-cli --test json_cli -- --test-threads=1
+          cargo test -p furnace-rs-cli --test json_cli model_serializes_nullable_diagnostics_and_normalized_locations -- --test-threads=1
+          cargo test -p furnace-rs-cli --test scaffold_cli -- --test-threads=1
+          cargo test -p furnace-rs-cli --lib scaffold::publish::tests::destination_race_preserves_the_competing_directory_and_cleans_staging -- --test-threads=1
+          cargo test -p furnace-rs-cli --test inspection_cli a_binary_without_standard_run_is_killed_and_diagnosed -- --test-threads=1
+          cargo test -p furnace-rs-cli --test dev_cli real_dev_loop -- --test-threads=1
 
   msrv:
     name: Verify Rust 1.94.0
@@ -108,7 +108,7 @@ jobs:
       - name: Resolve and test minimum SeaORM version
         run: |
           cargo update -p sea-orm --precise 2.0.0
-          cargo test -p mads-persistence --features sea-orm-postgres
+          cargo test -p furnace-rs-persistence --features sea-orm-postgres
 
   postgres:
     name: Verify PostgreSQL integration
@@ -119,21 +119,21 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: mads_test
+          POSTGRES_DB: furnace_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d mads_test"
+          --health-cmd "pg_isready -U postgres -d furnace_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      MADS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/mads_test
+      FURNACE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/furnace_test
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --locked -p mads-persistence --features sea-orm-postgres --test postgres -- --ignored --test-threads=1
+      - run: cargo test --locked -p furnace-rs-persistence --features sea-orm-postgres --test postgres -- --ignored --test-threads=1
 
   coverage:
     name: Verify coverage
@@ -144,16 +144,16 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: mads_test
+          POSTGRES_DB: furnace_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d mads_test"
+          --health-cmd "pg_isready -U postgres -d furnace_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      MADS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/mads_test
+      FURNACE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/furnace_test
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -195,14 +195,15 @@ jobs:
 
           version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1)"
           packages=(
-            mads-core-macros
-            mads-common-macros
-            mads-core
-            mads-extra
-            mads-common
-            mads
-            mads-persistence
-            mads-cli
+            furnace-rs-core-macros
+            furnace-rs-common-macros
+            furnace-rs-core
+            furnace-rs-extra
+            furnace-rs-common
+            furnace-rs-testing
+            furnace-rs
+            furnace-rs-persistence
+            furnace-rs-cli
           )
 
           publication_status() {
@@ -215,7 +216,7 @@ jobs:
                 --retry 3 --retry-all-errors \
                 --connect-timeout 10 --max-time 30 \
                 --output /dev/null --write-out '%{http_code}' \
-                --user-agent "mads-stable-publish/${version} (${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY})" \
+                --user-agent "furnace-rs-stable-publish/${version} (${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY})" \
                 "$endpoint"
             )"; then
               echo "Failed to check ${package} ${version} on crates.io." >&2
@@ -298,6 +299,6 @@ jobs:
           fi
           gh release create "$tag" \
             --target "$GITHUB_SHA" \
-            --title "MADS.rs ${version}" \
+            --title "furnace-rs ${version}" \
             --latest \
             --notes-file "$notes_file"

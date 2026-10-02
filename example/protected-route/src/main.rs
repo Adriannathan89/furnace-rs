@@ -1,12 +1,18 @@
 mod auth;
 
-use auth::AuthModule;
-use mads::prelude::*;
+use auth::AuthCauldron;
+use furnace_rs::prelude::*;
 
-#[module(imports = [LoggerModule, AuthModule])]
-struct AppModule;
+#[cauldron]
+struct AppCauldron;
 
-#[mads::main]
+impl furnace_rs::core::Cauldron for AppCauldron {
+    fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
+        self.import(LoggerCauldron).import(AuthCauldron)
+    }
+}
+
+#[furnace_rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<AppModule>().await
+    Furnace::burn::<AppCauldron>().await
 }

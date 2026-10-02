@@ -1,0 +1,17 @@
+// src/app/controller.rs
+use furnace::prelude::*;
+
+use super::service::AppService;
+
+#[controller]
+pub struct AppController {
+    service: AppService,
+}
+
+#[controller(route = "/")]
+impl AppController {
+    #[get]
+    async fn hello(&self) -> &'static str {
+        self.service.hello()
+    }
+}

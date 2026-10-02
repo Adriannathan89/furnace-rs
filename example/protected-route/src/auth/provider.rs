@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
 use super::{
     repository::DemoUserRepository,
@@ -15,17 +15,22 @@ struct DemoConfig {
     password: Secret<String>,
 }
 
-// Provider: binds each trait to the implementation used by this application.
-#[provider]
-pub fn user_repository(config: Config) -> mads::core::Result<Arc<dyn UserRepository>> {
-    let settings: DemoConfig = config.parse()?;
-    Ok(Arc::new(DemoUserRepository::new(
-        settings.username,
-        settings.password,
-    )))
+// Each implementer constructs the trait output selected by its cauldron.
+impl Injector<Arc<dyn UserRepository>> for DemoUserRepository {
+    type Dependencies = (Config,);
+    async fn inject(
+        (config,): Self::Dependencies,
+    ) -> furnace_rs::core::Result<Arc<dyn UserRepository>> {
+        let settings: DemoConfig = config.parse()?;
+        Ok(Arc::new(Self::new(settings.username, settings.password)))
+    }
 }
 
-#[provider]
-pub fn auth_service(service: AuthServiceImpl) -> Arc<dyn AuthService> {
-    Arc::new(service)
+impl Injector<Arc<dyn AuthService>> for AuthServiceImpl {
+    type Dependencies = (AuthServiceImpl,);
+    async fn inject(
+        (service,): <Self as Injector<Arc<dyn AuthService>>>::Dependencies,
+    ) -> furnace_rs::core::Result<Arc<dyn AuthService>> {
+        Ok(Arc::new(service))
+    }
 }

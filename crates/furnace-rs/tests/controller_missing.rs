@@ -1,0 +1,52 @@
+//! Integration test for an unresolved generated controller.
+
+use std::any::TypeId;
+
+use furnace_rs::common::__private::RouterBuildContext;
+use furnace_rs::common::{ControllerEndpointDescriptor, HttpMethod, RouteDescriptor, build_router};
+use furnace_rs::core::{FURNACE003, Furnace, Result, SourceLocation};
+
+struct MissingManualController;
+
+fn missing_manual_type_id() -> TypeId {
+    TypeId::of::<MissingManualController>()
+}
+
+fn missing_controller_registrar(
+    router: furnace_rs::common::axum::Router,
+    context: &RouterBuildContext<'_>,
+    _: &mut furnace_rs::common::__private::ValidatedRouteIter<'_>,
+) -> Result<furnace_rs::common::axum::Router> {
+    let _ = context.application().resolve::<MissingManualController>()?;
+    Ok(router)
+}
+
+const MISSING_MANUAL_ROUTE: RouteDescriptor = RouteDescriptor::new(
+    HttpMethod::Get,
+    "",
+    "/missing",
+    "/missing",
+    "missing",
+    SourceLocation::new("tests/missing_controller.rs", 3, 1),
+);
+const MISSING_MANUAL_CONTRACTS: &[RouteDescriptor] = &[MISSING_MANUAL_ROUTE];
+
+furnace_rs::core::__private::inventory::submit! {
+    furnace_rs::common::ControllerDescriptor::new("test::MissingManualController", missing_manual_type_id, SourceLocation::new(file!(), line!(), column!()), furnace_rs::common::SealDefinition::default)
+}
+
+furnace_rs::core::__private::inventory::submit! {
+    ControllerEndpointDescriptor::new("test::MissingManualController", missing_manual_type_id, SourceLocation::new(file!(), line!(), column!()),
+        MISSING_MANUAL_CONTRACTS,
+        missing_controller_registrar,
+    )
+}
+
+#[tokio::test]
+async fn missing_controller_resolution_returns_core_diagnostic() {
+    let application = Furnace::builder().build().await.unwrap();
+    let error = build_router(&application)
+        .expect_err("a missing controller must return its resolution diagnostic");
+
+    assert_eq!(error.code(), FURNACE003);
+}

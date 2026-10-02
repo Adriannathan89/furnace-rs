@@ -2,7 +2,7 @@
 
 > **Superseded for MADS 0.9.** This historical 0.8 example uses removed Diesel
 > APIs and migration commands. Use
-> [docs/mads-persistence.md](../mads-persistence.md) and
+> [docs/furnace-rs-persistence.md](../mads-persistence.md) and
 > [docs/CLI.md](../CLI.md) for current guidance.
 
 This example keeps a PostgreSQL repository explicit while using the current

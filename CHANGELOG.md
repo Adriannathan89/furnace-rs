@@ -1,6 +1,52 @@
 # Changelog
 
-All notable changes to MADS.rs are documented in this file.
+All notable changes to furnace-rs are documented in this file.
+
+## Unreleased breaking furnace-rs migration
+
+- Rename all nine packages to the `furnace-rs` family and the CLI executable to `furnace`.
+- Replace module/service/repository attributes with `cauldron`, `burner`, and `storage`; replace provider/element factories with typed `Injector` construction and `.provide_with::<Output, Implementer>()` bindings.
+- Register dependencies, controllers, imports, explicit exports, and global status in `Cauldron::register`; Rust `pub` controls Rust name visibility only.
+- Start applications with `Furnace::burn` and `FurnaceBurnExt`.
+- Declare endpoints directly in an inherent `#[controller(route = "/users")]` implementation; remove `#[routes]` and `controller(routes = ...)`.
+- Controllers are public without `impl Sealable`. Attach one static `#[guard]` policy through `Sealable`, and use `#[seal(skip)]` for public endpoints within a sealed controller.
+- Rename conventional config/environment keys to `furnace.toml`/`FURNACE_*`, emit schema/protocol 2 endpoint reports, and generate six scaffold files.
+- Keep workspace version 0.9.2, edition 2024, Rust 1.94, and public feature gates unchanged. See [the migration guide](docs/importance/furnace-rs-migration.md).
+
+## [0.9.2] - Unreleased
+
+### Added
+
+- `mads-testing` provides focused, module-free fixtures for registered services,
+  repositories, and controllers, constructing their dependency chains and
+  supporting supplied test values and private MADS providers.
+- `#[mads::test]` registers a zero-argument async function with `cargo test`
+  and creates its function-local `test_fixture()` helper. Tests use
+  `mads-testing` as a dev dependency without requiring a direct Tokio dependency.
+- Explicit SQLite-backed SeaORM `MockDatabase` fixtures supply native
+  `DatabaseConnection` dependencies with scripted in-memory results. Missing
+  mocks fail setup before a production database provider can run.
+- In-process controller requests support chainable status, JSON, text, and
+  header assertions while selecting only the controller's routes and guards.
+- Scoped fixture execution starts lifecycle hooks and awaits shutdown after
+  completion or an unwinding test-body panic, preserving startup rollback
+  and the original panic.
+
+### Changed
+
+- Stable and beta release workflows automatically publish `mads-testing` after
+  its dependencies and before `mads`. Release preparation and package-content
+  checks now include all nine workspace crates.
+
+### Security
+
+- Update the workspace lockfile to `time 0.3.47`, resolving the
+  `RUSTSEC-2026-0009` dependency advisory.
+- Switch `jsonwebtoken` from RustCrypto to its `aws_lc_rs` backend and
+  explicitly pin MADS JWT signing, verification, and key validation to
+  AWS-LC. This removes the RustCrypto `rsa` crate from the dependency graph
+  and makes MADS JWT operations independent of the process-wide provider
+  selection.
 
 ## [0.9.1] - 2026-09-25
 

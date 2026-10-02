@@ -1,4 +1,4 @@
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]

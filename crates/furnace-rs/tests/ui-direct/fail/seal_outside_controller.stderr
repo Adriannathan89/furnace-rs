@@ -1,0 +1,5 @@
+error: `#[seal(skip)]` must be used on a method inside an inherent `#[controller]` implementation
+ --> tests/ui-direct/fail/seal_outside_controller.rs:1:20
+  |
+1 | #[furnace_rs::seal(skip)]
+  |                    ^^^^

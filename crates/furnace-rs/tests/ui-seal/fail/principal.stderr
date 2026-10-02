@@ -1,0 +1,24 @@
+error[E0277]: the trait bound `u32: PassportPrincipal` is not satisfied
+ --> tests/ui-seal/fail/principal.rs:4:42
+  |
+4 | #[guard(strategy = "custom", principal = u32)]
+  |                                          ^^^ the trait `PassportPrincipal` is not implemented for `u32`
+  |
+help: the following other types implement trait `PassportPrincipal`
+ --> tests/ui-seal/fail/principal.rs:2:10
+  |
+2 |   #[derive(PassportPrincipal)]
+  |            ^^^^^^^^^^^^^^^^^ `Principal`
+  |
+ ::: $WORKSPACE/crates/furnace-rs-common/src/passport/principal.rs
+  |
+  | / impl<C> PassportPrincipal for ClaimsPrincipal<C>
+  | | where
+  | |     C: PassportPrincipal,
+  | |_________________________^ `ClaimsPrincipal<C>`
+note: required by a bound in `__furnace_assert_principal`
+ --> tests/ui-seal/fail/principal.rs:4:1
+  |
+4 | #[guard(strategy = "custom", principal = u32)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `__furnace_assert_principal`
+  = note: this error originates in the derive macro `PassportPrincipal` which comes from the expansion of the attribute macro `guard` (in Nightly builds, run with -Z macro-backtrace for more info)
