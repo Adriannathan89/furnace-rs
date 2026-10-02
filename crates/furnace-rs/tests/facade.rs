@@ -315,7 +315,6 @@ impl FacadeController {
 }
 
 #[allow(clippy::result_large_err, unused_parens)]
-
 fn grouped_fallible_provider() -> (furnace_rs::core::Result<GroupedFallibleProvider>) {
     Ok(GroupedFallibleProvider)
 }

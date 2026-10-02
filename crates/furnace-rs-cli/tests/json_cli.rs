@@ -215,7 +215,7 @@ fn inspection_routes_json_is_ordered_public_schema_data() {
                         "path": "/users/{id}",
                         "handler": "get_user",
                         "controller": "inspection_standard_fixture::UserController",
-                        "location": {"file": "src/main.rs", "line": 25, "column": 1},
+                        "location": {"file": "src/main.rs", "line": 46, "column": 1},
                         "guard_active": false
                     },
                     {
@@ -223,7 +223,7 @@ fn inspection_routes_json_is_ordered_public_schema_data() {
                         "path": "/users",
                         "handler": "create_user",
                         "controller": "inspection_standard_fixture::UserController",
-                        "location": {"file": "src/main.rs", "line": 25, "column": 1},
+                        "location": {"file": "src/main.rs", "line": 46, "column": 1},
                         "guard_active": false
                     }
                 ]
@@ -251,7 +251,7 @@ fn inspection_graph_json_keeps_only_ordered_public_graph_fields() {
         json!([{
             "type_name": "inspection_standard_fixture::AppCauldron",
             "namespace": "inspection_standard_fixture",
-            "location": {"file": "src/main.rs", "line": 37, "column": 1}
+            "location": {"file": "src/main.rs", "line": 58, "column": 1}
         }])
     );
     assert_eq!(document["data"]["imports"], json!([]));
