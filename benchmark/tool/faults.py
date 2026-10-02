@@ -27,13 +27,13 @@ class PostgresTableLock:
             assert self.process.stdout is not None
             self.process.stdin.write(
                 "BEGIN;\nLOCK TABLE posts IN ACCESS EXCLUSIVE MODE;\n"
-                "SELECT 'mads-lock-ready';\n"
+                "SELECT 'furnace-rs-lock-ready';\n"
             )
             self.process.stdin.flush()
             deadline = time.monotonic() + 5
             while time.monotonic() < deadline and self.process.poll() is None:
                 if select.select([self.process.stdout], [], [], 0.1)[0]:
-                    if self.process.stdout.readline().strip() == "mads-lock-ready":
+                    if self.process.stdout.readline().strip() == "furnace-rs-lock-ready":
                         return self
                     break
             raise RuntimeError("could not acquire the benchmark posts-table lock")

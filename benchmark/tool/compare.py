@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run equivalent MADS, Axum, and Fiber HTTP workloads sequentially."""
+"""Run equivalent FURNACE, Axum, and Fiber HTTP workloads sequentially."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ import statistics
 import subprocess
 import tempfile
 import time
+import tomllib
 
 from run import (
     Client, Measurements, ROOT, DEMO_USERNAME, DEMO_PASSWORD, DEMO_SECRET,
@@ -40,25 +41,25 @@ def warmup_size(operations: int, concurrency: int) -> tuple[int, int]:
 
 
 SCENARIOS = ("hello", "posts", "auth")
-FRAMEWORKS = ("mads", "axum", "fiber")
+FRAMEWORKS = ("furnace-rs", "axum", "fiber")
 PORTS = {"hello": 3000, "posts": 3001, "auth": 3002}
-MADS_BINARIES = {
-    "hello": ("hello-world", "mads-example-hello-world"),
-    "posts": ("posts-crud", "mads-example-posts-crud"),
-    "auth": ("protected-route", "mads-example-protected-route"),
+FURNACE_BINARIES = {
+    "hello": ("hello-world", "furnace-rs-example-hello-world"),
+    "posts": ("posts-crud", "furnace-rs-example-posts-crud"),
+    "auth": ("protected-route", "furnace-rs-example-protected-route"),
 }
 
 
 def target_command(framework: str, scenario: str) -> tuple[list[str], Path]:
-    if framework == "mads":
-        directory, binary = MADS_BINARIES[scenario]
+    if framework == "furnace-rs":
+        directory, binary = FURNACE_BINARIES[scenario]
         project = ROOT / "example" / directory
-        return [str(ROOT / "benchmark" / "targets" / "mads" / "target" / "release" / binary)], project
+        return [str(ROOT / "benchmark" / "targets" / "furnace-rs" / "target" / "release" / binary)], project
     if framework == "axum":
         project = ROOT / "benchmark" / "targets" / "axum"
-        return [str(project / "target" / "release" / "mads-bench-axum")], project
+        return [str(project / "target" / "release" / "furnace-rs-bench-axum")], project
     project = ROOT / "benchmark" / "targets" / "fiber"
-    return [str(project / "bin" / "mads-bench-fiber")], project
+    return [str(project / "bin" / "furnace-rs-bench-fiber")], project
 
 
 @contextmanager
@@ -289,7 +290,7 @@ def main() -> int:
         "rustc": subprocess.run(["rustc", "--version"], check=True, capture_output=True, text=True).stdout.strip(),
         "go": subprocess.run(["go", "version"], check=True, capture_output=True, text=True).stdout.strip(),
         "versions": {
-            "mads": "0.9.1 (local source)", "axum": "0.8.9", "fiber": "2.52.15",
+            "furnace-rs": tomllib.loads((ROOT / "Cargo.toml").read_text())["workspace"]["package"]["version"] + " (local source)", "axum": "0.8.9", "fiber": "2.52.15",
             "postgres": os.environ.get("BENCH_POSTGRES_VERSION", "not captured"),
         },
         "profile": args.profile, "measured_runs": args.runs, "results": [],

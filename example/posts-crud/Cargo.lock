@@ -478,6 +478,83 @@ dependencies = [
 ]
 
 [[package]]
+name = "furnace-rs"
+version = "1.0.0"
+dependencies = [
+ "furnace-rs-common",
+ "furnace-rs-core",
+]
+
+[[package]]
+name = "furnace-rs-common"
+version = "1.0.0"
+dependencies = [
+ "axum",
+ "axum-extra",
+ "furnace-rs-common-macros",
+ "furnace-rs-core",
+ "rustix",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "serde_urlencoded",
+ "tokio",
+ "tower",
+ "tower-http",
+]
+
+[[package]]
+name = "furnace-rs-common-macros"
+version = "1.0.0"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "furnace-rs-core"
+version = "1.0.0"
+dependencies = [
+ "dotenvy",
+ "furnace-rs-core-macros",
+ "inventory",
+ "tokio",
+ "toml",
+ "toml_edit 0.22.27",
+]
+
+[[package]]
+name = "furnace-rs-core-macros"
+version = "1.0.0"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "furnace-rs-example-posts-crud"
+version = "0.1.0"
+dependencies = [
+ "furnace-rs",
+ "furnace-rs-persistence",
+ "sea-orm",
+ "serde",
+]
+
+[[package]]
+name = "furnace-rs-persistence"
+version = "1.0.0"
+dependencies = [
+ "furnace-rs-core",
+ "sea-orm",
+ "tracing",
+]
+
+[[package]]
 name = "futures-channel"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -932,94 +1009,6 @@ name = "log"
 version = "0.4.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
-
-[[package]]
-name = "mads"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b133edc3181da467732abc37d8ca073ae841a67044eed318426e8f10016ae794"
-dependencies = [
- "mads-common",
- "mads-core",
-]
-
-[[package]]
-name = "mads-common"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac4e162a486d0a7efcde14b73baf15684df9d7185522094b616d82a01e8c487d"
-dependencies = [
- "axum",
- "axum-extra",
- "mads-common-macros",
- "mads-core",
- "rustix",
- "serde",
- "serde_json",
- "serde_path_to_error",
- "serde_urlencoded",
- "tokio",
- "tower",
- "tower-http",
-]
-
-[[package]]
-name = "mads-common-macros"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfcfea7c90c0956ae60295b863a4dc72306ada369185793660159d1c10f6f9b"
-dependencies = [
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
-name = "mads-core"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d894710da4ccee605119c407d42204340e7ce2f45fcfda19fc2954954ad4bfe"
-dependencies = [
- "dotenvy",
- "inventory",
- "mads-core-macros",
- "tokio",
- "toml",
- "toml_edit 0.22.27",
-]
-
-[[package]]
-name = "mads-core-macros"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9099fa40accf4d3133de6e57b2a58ef76dedbf4c155aa15af0e4be34a2487e06"
-dependencies = [
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
-name = "mads-example-posts-crud"
-version = "0.1.0"
-dependencies = [
- "mads",
- "mads-persistence",
- "sea-orm",
- "serde",
-]
-
-[[package]]
-name = "mads-persistence"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbcc4daa6e91e68fc3c82c773196b76f6fa7074e5078130f0e21c192fcb3aeae"
-dependencies = [
- "mads-core",
- "sea-orm",
-]
 
 [[package]]
 name = "matchit"

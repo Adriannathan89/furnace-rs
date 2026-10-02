@@ -1,79 +1,79 @@
-# MADS.rs 0.9.2 Architecture
+# furnace-rs 1.0.0 Architecture (Unreleased)
 
-MADS separates framework-neutral construction and configuration from Axum HTTP
+FURNACE separates framework-neutral construction and configuration from Axum HTTP
 delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
-Version 0.9.2 retains the validation, REST-error, typed configuration,
+The 1.0.0 preparation retains the validation, REST-error, typed configuration,
 compiler-diagnostic, machine-output, and minimal-scaffolding surface while
 removing the former Diesel and CLI migration integrations.
 
 ~~~text
-application modules, providers, route traits, controllers
+application cauldrons, typed injectors, providers, inherent endpoints, controllers
                  |
                  v
-     mads-core macros       mads-common macros
+     furnace-rs-core macros       furnace-rs-common macros
                  |                 |
                  v                 v
- mads-core: graph, Config, Configuration, Secret, lifecycle, diagnostics
+ furnace-rs-core: graph, Config, Configuration, Secret, lifecycle, diagnostics
                  ^                 |
                  |                 v
- mads-common: Input, validated extractors, HTTP errors, Axum, Passport
+ furnace-rs-common: Input, validated extractors, HTTP errors, Axum, Passport
                  \                 /
-                  \--- mads facade ---/ ---- mads-cli
+                  \--- furnace-rs facade ---/ ---- furnace-rs-cli
 
- mads-persistence: explicit SeaORM PostgreSQL connector -> mads-core
+ furnace-rs-persistence: explicit SeaORM PostgreSQL connector -> furnace-rs-core
 ~~~
 
 ## Crate and feature boundaries
 
-`mads-core` owns module/provider graphs, lifecycle, diagnostics, the existing
+`furnace-rs-core` owns module/provider graphs, lifecycle, diagnostics, the existing
 source-attributed `Config`, `#[derive(Configuration)]`, `Config::parse`,
 configuration issues, and `Secret<T>`. It has no Axum, SeaORM, JWT, cookie, or
 Serde dependency. Typed configuration is a view over an already loaded Config;
 it does not replace loading or discover types globally.
 
-`mads-common` owns the `http` boundary: route registration, `Input` and
+`furnace-rs-common` owns the `http` boundary: route registration, `Input` and
 `#[derive(Input)]`, `ValidatedJson`, `ValidatedQuery`, `ValidatedPath`, standard
 REST errors, and the Axum adapter. It also owns Passport/JWT, logger, and
 cookie integrations. The validation/error family requires `http`. JWT-only
 builds do not acquire an HTTP dependency.
 
-`mads` is the stable facade and prelude. It re-exports matching traits and
+`furnace-rs` is the stable facade and prelude. It re-exports matching traits and
 derives, so `Input`, `Configuration`, `Secret`, validated extractors, REST
 errors use their documented feature gates. The default `common` aggregate is
 HTTP plus logger; it does not enable Passport or persistence automatically.
 
-`mads-persistence` is a separate opt-in crate. Its `sea-orm-postgres` feature
-exposes a global `DatabaseModule` providing native `DatabaseConnection`; the
+`furnace-rs-persistence` is a separate opt-in crate. Its `sea-orm-postgres` feature
+exposes a global `DatabaseCauldron` providing native `DatabaseConnection`; the
 connector retains typed `PersistenceError` causes while redacting public
 formatting. It checks readiness before serving and closes on graceful shutdown.
 
 ~~~text
 core                         no HTTP/database/JWT/cookie/Serde
 http                         Axum + validation + standard REST errors
-logger                       tracing-based logging
+logger                       application logging and console backend
 jwt                          JWT service/configuration, no Axum
 cookies                      HTTP cookie support
 http + jwt (+ cookies)       Passport Bearer (and cookie) guards
-mads-persistence/sea-orm-postgres  native SeaORM PostgreSQL connector
+furnace-rs-persistence/sea-orm-postgres  native SeaORM PostgreSQL connector
 ~~~
 
 ## Startup, configuration, and secret boundary
 
-`Mads::run::<AppModule>()` retains the conventional process-current-directory
+`Furnace::burn::<AppCauldron>()` retains the conventional process-current-directory
 loading sequence:
 
 ~~~text
 optional .env interpolation map
-  -> optional mads.toml document
-  -> final scalar MADS_* environment overrides
+  -> optional furnace.toml document
+  -> final scalar FURNACE_* environment overrides
   -> application code explicitly requests typed views
 ~~~
 
 Only an entire scalar or string-array element equal to `${NAME}` interpolates.
 Process values win during interpolation; dotenv never changes the process
 environment and is not a configuration source. No parent-directory or
-`CARGO_MANIFEST_DIR` search is added. `MADS_SERVER__HOST` and
-`MADS_SERVER__PORT` continue to map to `server.host` and `server.port`.
+`CARGO_MANIFEST_DIR` search is added. `FURNACE_SERVER__HOST` and
+`FURNACE_SERVER__PORT` continue to map to `server.host` and `server.port`.
 
 The low-level builder remains explicit and performs no source loading. A
 derived type is parsed only when code calls `Config::parse::<T>()`; a selected
@@ -114,16 +114,16 @@ wire field names, issue codes, and fixed built-in messages are deliberate public
 contracts; rejected values are never copied into a built-in issue.
 
 Native `Json<T>`, `Query<T>`, and `Path<T>` are still the ordinary Axum
-extractors. A native `Json` handler performs no MADS `Input` validation, which
+extractors. A native `Json` handler performs no FURNACE `Input` validation, which
 is the compatibility escape hatch for application-owned extraction, routing,
-middleware, and validation policies. Native Axum rejections outside MADS
+middleware, and validation policies. Native Axum rejections outside FURNACE
 wrappers remain native.
 
 ## HTTP error and delivery-policy boundary
 
 The `http` feature exposes `BadRequest`, `Unauthorized`, `Forbidden`,
 `NotFound`, `Conflict`, `ValidationError`, and `InternalError`. All
-MADS-owned errors serialize as one safe JSON envelope. Validation adds only the
+FURNACE-owned errors serialize as one safe JSON envelope. Validation adds only the
 ordered source-aware issue array and returns 422; unsupported validated JSON
 content type remains 415 and configured payload overflow remains 413. Internal
 failure is fixed to code `internal` and message `internal server error`, while
@@ -131,7 +131,7 @@ its source remains server-side only.
 
 Passport rejection maps to a normalized 401 with `WWW-Authenticate: Bearer`;
 Passport forbidden maps to 403; malformed cookie requests map to 400; and
-MADS-owned internal failures map to redacted 500 responses. User-created
+FURNACE-owned internal failures map to redacted 500 responses. User-created
 `Unauthorized` does not claim a Bearer scheme, and ordinary native responses
 are not normalized.
 
@@ -142,11 +142,16 @@ automatic database-to-HTTP mapping. Applications choose a domain-specific
 
 ## Root scope and normal runtime
 
-`#[module(imports = [...])]` selects the root application and direct-import
-graph. A descriptor belongs to its nearest annotated Rust namespace. Across
-modules, dependencies require a directly imported module and ordinary `pub`
-visibility; imports are not transitive. A builder without `root::<AppModule>()`
-retains complete-catalog compatibility behavior.
+`#[cauldron]` declares a unit root type with an authored `Cauldron::register`
+chain. Membership uses `.provide::<T>()` and `.controller::<T>()`; `.import(M)`
+collects reachable cauldrons. `.provide_with::<T, I>()` selects an explicit
+`I: Injector<T>` for native outputs or trait objects such as `Arc<dyn Trait>`;
+exports name the output type. `Injector::lifecycle` attaches hooks to a
+constructed native value. Outputs have one owner in the selected graph.
+Across cauldrons, dependencies require explicit exports and a direct import or a
+reachable global export. Rust namespace placement and `pub` do not grant DI
+visibility; imports are not transitive. A builder without `root::<AppCauldron>()`
+retains complete-catalog behavior.
 
 ~~~text
 conventional config (standard run only)
@@ -164,21 +169,21 @@ outermost layer.
 
 ## CLI, inspection, and scaffolding boundary
 
-`mads run` and `mads dev` stream Cargo, rustc, and application output unchanged
-and do not accept JSON wrapping. `mads routes`, `mads graph`, and `mads doctor`
+`furnace run` and `furnace dev` stream Cargo, rustc, and application output unchanged
+and do not accept JSON wrapping. `furnace routes`, `furnace graph`, and `furnace doctor`
 compile the standard entry point and receive private child inspection metadata
 before normal application construction. The child protocol remains private;
-the CLI converts it to a public human report or schema-version-1 JSON result.
+the CLI converts it to a public human report or schema-version-2 JSON result.
 Invalid route/graph reports preserve safe partial public data with diagnostics.
 
 Finite commands (`new`, `routes`, `graph`, and `doctor`) accept
 `--format human|json` before or
 after their command path. JSON stdout has exactly one newline-terminated
-document with `schema_version: 1`, a canonical command, `ok`, command-specific
-data or null, and ordered warning/error diagnostics. Schema version 1 permits
+document with `schema_version: 2`, a canonical command, `ok`, command-specific
+data or null, and ordered warning/error diagnostics. Schema version 2 permits
 additive fields only; breaking field changes require a new version.
 
-`mads new <name>` bundles the fixed seven-file starter and validates all input
+`furnace new <name>` bundles the fixed six-file starter and validates all input
 before private sibling staging. One atomic rename publishes the destination;
 pre-existing paths and failed staging remain untouched. It is offline and does
 not run Cargo, install dependencies, initialise Git, select a template, or
@@ -186,12 +191,28 @@ generate database/JWT/cookie/migration code.
 
 ## Deliberate non-goals
 
-v0.9 does not add automatic validation to native extractors, asynchronous or
+1.0.0 does not add automatic validation to native extractors, asynchronous or
 database-backed derive validation, full-RFC or DNS email validation, automatic
 persistence-to-HTTP conversion, new configuration sources or arbitrary TOML
 shapes, global configuration discovery, generic compiler-diagnostic rewriting,
 JSON wrapping for run/dev streams, additional generators, or starter database,
-JWT, cookie, migration, and Git setup. Trait/interface bindings, login,
+JWT, cookie, migration, and Git setup. Login,
 credential validation, password hashing, CSRF, remote JWKS, JWE, MySQL/SQLite,
 multiple listeners, TLS, and HTTP/2-specific configuration remain
 application-owned or later work.
+
+## Static controller protection
+
+A managed controller struct optionally implements `Sealable::seals` and has
+exactly one annotated inherent endpoint implementation. Generated metadata uses
+concrete-type autoref dispatch to select an explicit implementation, falling back
+to public metadata when the trait is absent; no blanket implementation conflicts
+with user-defined seals. Selection joins their static
+metadata by `TypeId`. Seals are memoized within one analysis, validated against
+selected virtual outputs, and never construct a controller. Empty seals are
+public; one guard protects endpoints except those marked `#[seal(skip)]`;
+multiple seals fail preconstruction. Only protected occurrences contribute
+JWT/strategy requirements or receive Passport bindings.
+Each endpoint binding retains its controller, method, canonical path, handler,
+and owning cauldron context. The Passport layer wraps each protected method router before methods are merged, preserving native extractor behavior and local strategy visibility.
+See [the breaking migration guide](importance/furnace-rs-migration.md).

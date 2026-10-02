@@ -1,0 +1,28 @@
+{
+  "git_head": "6edc43f095ca2c7dcc8c392c46689e4efef5251d",
+  "stage": "core-and-timeouts-before",
+  "build_profile": "debug",
+  "profile": "smoke",
+  "note": "Reproduction against working tree before the indicated fixes; other fixes may already be present.",
+  "result": {
+    "rounds": 2,
+    "elapsed_ms": 2.905,
+    "core_source_redaction": {
+      "checks": 2,
+      "failures": 2
+    },
+    "database_config_timeouts": {
+      "checks": 8,
+      "failures": 8
+    },
+    "database_native_timeout": {
+      "checks": 2,
+      "failures": 2
+    },
+    "valid_config_controls": {
+      "checks": 8,
+      "failures": 0
+    },
+    "passed": false
+  }
+}

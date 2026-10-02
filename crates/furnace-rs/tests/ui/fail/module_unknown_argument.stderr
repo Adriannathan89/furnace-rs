@@ -1,0 +1,5 @@
+error: `#[furnace_rs::cauldron]` supports only non-generic unit structs with no arguments; declare imports and global status in `Cauldron::register`
+ --> tests/ui/fail/module_unknown_argument.rs:3:12
+  |
+3 | #[cauldron(imports = [])]
+  |            ^^^^^^^^^^^^

@@ -1,24 +1,26 @@
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
-#[routes]
-trait HelloRoutes {
-    #[get("/")]
-    async fn hello(&self) -> &'static str;
-}
-
-#[controller(routes = [HelloRoutes])]
+#[controller]
 struct HelloController;
 
-impl HelloRoutes for HelloController {
+#[controller(route = "/")]
+impl HelloController {
+    #[get]
     async fn hello(&self) -> &'static str {
         "Hello, world!"
     }
 }
 
-#[module]
-struct AppModule;
+#[cauldron]
+struct AppCauldron;
 
-#[mads::main]
+impl furnace_rs::core::Cauldron for AppCauldron {
+    fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
+        self.controller::<HelloController>()
+    }
+}
+
+#[furnace_rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {
-    Mads::run::<AppModule>().await
+    Furnace::burn::<AppCauldron>().await
 }

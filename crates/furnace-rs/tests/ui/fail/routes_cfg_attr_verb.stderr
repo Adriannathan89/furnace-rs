@@ -1,0 +1,5 @@
+error: endpoint verbs must be direct attributes; gate the method with `cfg`
+  --> tests/ui/fail/routes_cfg_attr_verb.rs:11:5
+   |
+11 |     #[cfg_attr(feature = "conditional-route", furnace_rs::get("/conditional"))]
+   |     ^

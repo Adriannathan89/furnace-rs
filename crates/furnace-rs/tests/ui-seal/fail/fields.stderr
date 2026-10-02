@@ -1,0 +1,5 @@
+error: guard policies must be non-generic unit structs
+ --> tests/ui-seal/fail/fields.rs:5:15
+  |
+5 | struct Policy { field: u8 }
+  |               ^^^^^^^^^^^^^

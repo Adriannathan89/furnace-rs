@@ -1,0 +1,5 @@
+error: an endpoint can declare `#[seal(skip)]` only once
+ --> tests/ui-direct/fail/seal_duplicate.rs:8:5
+  |
+8 |     #[seal(skip)]
+  |     ^

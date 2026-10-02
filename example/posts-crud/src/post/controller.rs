@@ -1,35 +1,18 @@
-use mads::prelude::*;
+use furnace_rs::prelude::*;
 
 use super::{
     model::{Post, PostInput},
     service::PostService,
 };
 
-#[routes(prefix = "/posts")]
-pub trait PostRoutes {
-    #[post("/")]
-    async fn create(&self, body: ValidatedJson<PostInput>) -> HttpResult<Created<Json<Post>>>;
-
-    #[get("/")]
-    async fn list(&self) -> HttpResult<Json<Vec<Post>>>;
-
-    #[get("/:id")]
-    async fn find(&self, id: Path<i32>) -> HttpResult<Json<Post>>;
-
-    #[put("/:id")]
-    async fn update(&self, id: Path<i32>, body: ValidatedJson<PostInput>)
-    -> HttpResult<Json<Post>>;
-
-    #[delete("/:id")]
-    async fn delete(&self, id: Path<i32>) -> HttpResult<NoContent>;
-}
-
-#[controller(routes = [PostRoutes])]
+#[controller]
 pub struct PostController {
     service: PostService,
 }
 
-impl PostRoutes for PostController {
+#[controller(route = "/posts")]
+impl PostController {
+    #[post]
     async fn create(
         &self,
         ValidatedJson(body): ValidatedJson<PostInput>,
@@ -42,10 +25,12 @@ impl PostRoutes for PostController {
         Ok(Created(Json(post)))
     }
 
+    #[get]
     async fn list(&self) -> HttpResult<Json<Vec<Post>>> {
         Ok(Json(self.service.list().await.map_err(InternalError::new)?))
     }
 
+    #[get("/:id")]
     async fn find(&self, Path(id): Path<i32>) -> HttpResult<Json<Post>> {
         self.service
             .find(id)
@@ -55,6 +40,7 @@ impl PostRoutes for PostController {
             .ok_or_else(|| NotFound::new("post not found").into())
     }
 
+    #[put("/:id")]
     async fn update(
         &self,
         Path(id): Path<i32>,
@@ -68,6 +54,7 @@ impl PostRoutes for PostController {
             .ok_or_else(|| NotFound::new("post not found").into())
     }
 
+    #[delete("/:id")]
     async fn delete(&self, Path(id): Path<i32>) -> HttpResult<NoContent> {
         if self.service.delete(id).await.map_err(InternalError::new)? {
             Ok(NoContent)

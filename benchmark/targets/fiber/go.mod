@@ -1,4 +1,4 @@
-module mads-bench-fiber
+module furnace-rs-bench-fiber
 
 go 1.22
 

@@ -2,7 +2,7 @@
 
 > **Superseded for the 0.9 database and CLI boundaries.** This historical v1
 > proposal retains Diesel and migration-command examples that no longer work.
-> For current usage, see [docs/mads-persistence.md](mads-persistence.md) and
+> For current usage, see [docs/furnace-rs-persistence.md](mads-persistence.md) and
 > [docs/CLI.md](CLI.md).
 
 ## Modular Application Development System for Rust

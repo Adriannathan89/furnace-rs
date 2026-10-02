@@ -1,0 +1,58 @@
+{
+  "timestamp_utc": "2026-10-02T16:08:36.635878+00:00",
+  "git_head": "97dad450d309866a0f1ea979def236acdb03f06b",
+  "profile": "stress",
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "framework": "furnace-rs",
+  "binary_profile": "release",
+  "binary": "/home/ryynn/Desktop/Mads.rs/benchmark/targets/furnace-rs/target/release/furnace-rs-example-protected-route",
+  "build_command": "python3 benchmark/tool/build_furnace.py --offline --example protected-route",
+  "binary_sha256": "0fc94d13e786b3d819b95621cb84c4be82b06898e0c244694042f0adb64f7ffe",
+  "cases": [
+    {
+      "case": "security-auth",
+      "operations": 4600,
+      "concurrency": 16,
+      "http_responses": 9200,
+      "status_counts": {
+        "200": 5200,
+        "401": 4000
+      },
+      "duration_seconds": 3.466,
+      "responses_per_second": 2654.7,
+      "p50_ms": 4.618,
+      "p95_ms": 14.966,
+      "p99_ms": 24.293,
+      "error_count": 0,
+      "error_examples": [],
+      "passed": true,
+      "probe_counts": {
+        "valid Bearer": 200,
+        "lowercase scheme": 200,
+        "mixed case and multiple spaces": 200,
+        "tab separator": 200,
+        "space then tab separator": 200,
+        "tab then space separator": 200,
+        "duplicate valid then invalid": 200,
+        "duplicate invalid then valid": 200,
+        "duplicate valid credentials": 200,
+        "comma combined credentials": 200,
+        "extra credential": 200,
+        "wrong scheme": 200,
+        "missing credentials": 200,
+        "empty credential": 200,
+        "forged signature": 200,
+        "unsigned token": 200,
+        "algorithm mismatch": 200,
+        "expired token": 200,
+        "future not before": 200,
+        "refresh token on access route": 200,
+        "missing expiration": 200,
+        "duplicate expiration": 200,
+        "oversized token": 200
+      },
+      "expected_rejections": 4000
+    }
+  ],
+  "passed": true
+}

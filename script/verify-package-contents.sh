@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Verifies the exact tracked source payload of every distributable MADS crate.
+# Verifies the exact tracked source payload of every distributable FURNACE crate.
 # Cargo adds the root manifest, lockfile, and VCS record to each archive; every
 # other member must come from the corresponding tracked crate directory.
 
@@ -11,15 +11,15 @@ temporary_directory="$(mktemp -d)"
 trap 'rm -rf "$temporary_directory"' EXIT
 
 packages=(
-  mads-core-macros
-  mads-common-macros
-  mads-core
-  mads-persistence
-  mads-extra
-  mads-common
-  mads-testing
-  mads
-  mads-cli
+  furnace-rs-core-macros
+  furnace-rs-common-macros
+  furnace-rs-core
+  furnace-rs-persistence
+  furnace-rs-extra
+  furnace-rs-common
+  furnace-rs-testing
+  furnace-rs
+  furnace-rs-cli
 )
 
 fail() {
@@ -66,7 +66,7 @@ reject_generated_artifacts() {
       target | target/* | */target | */target/*)
         fail "$package archive contains a build target artifact: $path"
         ;;
-      .mads-new-* | .mads-staging-* | */.mads-new-* | */.mads-new-*/* | */.mads-staging-* | */.mads-staging-*/*)
+      .furnace-rs-new-* | .furnace-rs-staging-* | */.furnace-rs-new-* | */.furnace-rs-new-*/* | */.furnace-rs-staging-* | */.furnace-rs-staging-*/*)
         fail "$package archive contains a scaffold staging artifact: $path"
         ;;
       tests/consumers/*)
@@ -120,30 +120,29 @@ require_package_specific_content() {
   require_file "$package" "$actual" "src/lib.rs"
 
   case "$package" in
-    mads-persistence)
+    furnace-rs-persistence)
       for source in src/sea_orm/mod.rs src/sea_orm/config.rs src/sea_orm/connector.rs src/sea_orm/lifecycle.rs; do
         require_file "$package" "$actual" "$source"
       done
       ;;
-    mads-testing)
+    furnace-rs-testing)
       for source in src/error.rs src/fixture.rs src/http.rs src/response.rs tests/subject_fixture.rs tests/http_fixture.rs; do
         require_file "$package" "$actual" "$source"
       done
       ;;
-    mads)
+    furnace-rs)
       for prefix in tests/ui/ tests/ui-configuration/ tests/ui-input/ tests/ui-passport/ tests/ui-test-attribute/; do
         require_prefix "$package" "$actual" "$prefix"
       done
       ;;
-    mads-cli)
+    furnace-rs-cli)
       require_file "$package" "$actual" "src/main.rs"
       for template in \
         Cargo.toml.txt \
         app_mod.rs.txt \
         controller.rs.txt \
-        mads.toml.txt \
+        furnace.toml.txt \
         main.rs.txt \
-        routes.rs.txt \
         service.rs.txt; do
         require_file "$package" "$actual" "src/scaffold/templates/$template"
       done

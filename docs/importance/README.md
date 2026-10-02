@@ -21,3 +21,5 @@ Status dalam dokumen:
 - **Required**: harus selesai sebelum milestone dapat dianggap complete.
 - **Deferred**: sengaja tidak dikerjakan sekarang karena membutuhkan boundary
   milestone lain; bukan backlog tanpa owner.
+
+Current breaking API: [furnace-rs migration](furnace-rs-migration.md). Versioned entries above preserve their historical APIs.

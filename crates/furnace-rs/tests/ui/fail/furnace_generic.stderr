@@ -1,0 +1,5 @@
+error: `#[furnace_rs::cauldron]` supports only non-generic unit structs with no arguments; declare imports and global status in `Cauldron::register`
+ --> tests/ui/fail/furnace_generic.rs:2:19
+  |
+2 | struct AppCauldron<T>;
+  |                   ^^^

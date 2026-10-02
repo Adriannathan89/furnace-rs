@@ -1,0 +1,5 @@
+error: each endpoint requires exactly one HTTP verb
+  --> tests/ui/fail/routes_multiple_verbs.rs:11:14
+   |
+11 |     async fn index(&self) {}
+   |              ^^^^^

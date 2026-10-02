@@ -1,5 +1,0 @@
-error: `#[mads::test]` does not accept arguments
- --> tests/ui-test-attribute/macro_arguments.rs:1:14
-  |
-1 | #[mads::test(anything)]
-  |              ^^^^^^^^

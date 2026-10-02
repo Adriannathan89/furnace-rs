@@ -1,14 +1,16 @@
-# Contributing to MADS.rs
+# Contributing to furnace-rs
 
-Thank you for contributing to MADS.rs. Contributions are made through a local
+Thank you for contributing to furnace-rs. Contributions are made through a local
 clone and submitted as pull requests to `develop`. Do not work directly on
 `main`, `beta`, or `develop`. The `beta` and `main` branches are managed only by
 the maintainers.
 
 ## Before you start
 
+All participants are expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
+
 Read the project documentation before changing code. This is important because
-MADS.rs has deliberate crate boundaries, feature relationships, startup rules,
+furnace-rs has deliberate crate boundaries, feature relationships, startup rules,
 and compatibility requirements that may not be obvious from one source file.
 
 Start with:
@@ -16,7 +18,7 @@ Start with:
 - [`README.md`](README.md) for the public API, supported features, and usage;
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for crate boundaries and
   framework design;
-- [`docs/mads-persistence.md`](docs/mads-persistence.md) and
+- [`docs/furnace-rs-persistence.md`](docs/furnace-rs-persistence.md) and
   [`docs/CLI.md`](docs/CLI.md) for current persistence and CLI guidance;
 - the relevant files under [`docs/`](docs/) for examples, release decisions,
   historical context, and acceptance requirements;
@@ -32,17 +34,17 @@ confirm present behavior.
 For a small change, you may clone the repository directly:
 
 ```sh
-git clone https://github.com/Adriannathan89/mads.git
-cd mads
+git clone https://github.com/Adriannathan89/furnace-rs.git
+cd furnace-rs
 ```
 
 If you do not have permission to push branches to the repository, fork it on
 GitHub first and clone your fork instead:
 
 ```sh
-git clone https://github.com/<your-username>/mads.git
-cd mads
-git remote add upstream https://github.com/Adriannathan89/mads.git
+git clone https://github.com/<your-username>/furnace-rs.git
+cd furnace-rs
+git remote add upstream https://github.com/Adriannathan89/furnace-rs.git
 ```
 
 For a fork, keep your local base branch current before starting work:
@@ -70,11 +72,11 @@ Use a descriptive prefix such as `feature/`, `fix/`, `docs/`, `test/`, or
 
 ## Make the change
 
-MADS.rs is a Rust 2024 workspace with a minimum supported Rust version of
+furnace-rs is a Rust 2024 workspace with a minimum supported Rust version of
 1.94. Follow standard `rustfmt` output and these repository conventions:
 
 - use four-space indentation;
-- use `snake_case` for modules and functions, `UpperCamelCase` for types and
+- use `snake_case` for cauldrons and functions, `UpperCamelCase` for types and
   traits, and `SCREAMING_SNAKE_CASE` for constants;
 - do not introduce unsafe code;
 - document public APIs;
@@ -87,15 +89,15 @@ MADS.rs is a Rust 2024 workspace with a minimum supported Rust version of
 
 The main workspace responsibilities are:
 
-- `crates/mads-core`: framework-neutral construction, configuration, provider
+- `crates/furnace-rs-core`: framework-neutral construction, configuration, provider
   graph, lifecycle, diagnostics, and auto-configuration decisions;
-- `crates/mads-core-macros`: core procedural macros;
-- `crates/mads-common`: HTTP, routes, Passport/JWT, cookies, CORS, and logging;
-- `crates/mads-persistence`: opt-in native SeaORM PostgreSQL integration;
-- `crates/mads-common-macros`: shared route-related procedural macros;
-- `crates/mads`: stable public facade;
-- `crates/mads-cli`: command-line interface;
-- `crates/mads-extra`: reserved extension boundary.
+- `crates/furnace-rs-core-macros`: core procedural macros;
+- `crates/furnace-rs-common`: HTTP, routes, Passport/JWT, cookies, CORS, and logging;
+- `crates/furnace-rs-persistence`: opt-in native SeaORM PostgreSQL integration;
+- `crates/furnace-rs-common-macros`: shared route-related procedural macros;
+- `crates/furnace-rs`: stable public facade;
+- `crates/furnace-rs-cli`: command-line interface;
+- `crates/furnace-rs-extra`: reserved extension boundary.
 
 ## Validate the change
 
@@ -126,7 +128,7 @@ cargo llvm-cov --workspace --all-features \
 ```
 
 PostgreSQL integration tests require a running PostgreSQL instance and the
-`MADS_TEST_DATABASE_URL` environment variable. These tests are ignored during
+`FURNACE_TEST_DATABASE_URL` environment variable. These tests are ignored during
 ordinary local runs and executed separately by CI. Never commit `.env` files,
 credentials, private keys, tokens, or database URLs.
 

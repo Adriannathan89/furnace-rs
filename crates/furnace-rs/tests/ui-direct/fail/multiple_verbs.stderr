@@ -1,0 +1,5 @@
+error: each endpoint requires exactly one HTTP verb
+ --> tests/ui-direct/fail/multiple_verbs.rs:6:37
+  |
+6 | impl Controller { #[get] #[post] fn run(&self) {} }
+  |                                     ^^^

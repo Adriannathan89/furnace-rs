@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Repeatable HTTP load and correctness checks for the MADS 0.9 examples."""
+"""Repeatable HTTP load and correctness checks for the FURNACE 0.9 examples."""
 
 from __future__ import annotations
 
@@ -34,9 +34,9 @@ DEMO_PASSWORD = "correct-horse-battery-staple"
 DEMO_SECRET = "benchmark-only-signing-key-change-me-2026"
 
 PROJECTS = {
-    "hello": ("hello-world", "mads-example-hello-world", 3000, "/", 200),
-    "auth": ("protected-route", "mads-example-protected-route", 3002, "/auth/me", 401),
-    "posts": ("posts-crud", "mads-example-posts-crud", 3001, "/posts", 200),
+    "hello": ("hello-world", "furnace-rs-example-hello-world", 3000, "/", 200),
+    "auth": ("protected-route", "furnace-rs-example-protected-route", 3002, "/auth/me", 401),
+    "posts": ("posts-crud", "furnace-rs-example-posts-crud", 3001, "/posts", 200),
 }
 
 PROFILES = {
@@ -190,7 +190,7 @@ class ManagedServer:
             raise RuntimeError(f"missing binary {self.binary}; build it as described in benchmark/README.md")
         if port_is_open(self.port):
             raise RuntimeError(f"port {self.port} is already in use; stop that server before benchmarking")
-        self.log_file = tempfile.NamedTemporaryFile(prefix="mads-benchmark-", suffix=".log", delete=False)
+        self.log_file = tempfile.NamedTemporaryFile(prefix="furnace-rs-benchmark-", suffix=".log", delete=False)
         self.process = subprocess.Popen(
             [str(self.binary)],
             cwd=self.directory,
@@ -579,9 +579,9 @@ def database_tcp_stall_recovery_case(binary_profile: str, database_url: str) -> 
     with StallablePostgresProxy(parsed.hostname, parsed.port or 5432) as proxy:
         environment = os.environ.copy()
         environment["DATABASE_URL"] = proxy_database_url(database_url, proxy.port)
-        environment["MADS_PERSISTENCE__SEAORM__MIN_CONNECTIONS"] = "1"
-        environment["MADS_PERSISTENCE__SEAORM__MAX_CONNECTIONS"] = "1"
-        environment["MADS_PERSISTENCE__SEAORM__ACQUIRE_TIMEOUT_SECONDS"] = "2"
+        environment["FURNACE_PERSISTENCE__SEAORM__MIN_CONNECTIONS"] = "1"
+        environment["FURNACE_PERSISTENCE__SEAORM__MAX_CONNECTIONS"] = "1"
+        environment["FURNACE_PERSISTENCE__SEAORM__ACQUIRE_TIMEOUT_SECONDS"] = "2"
         stats = Measurements()
         start = time.perf_counter()
         with ManagedServer("posts", binary_profile, environment) as server:
@@ -695,8 +695,8 @@ def database_failure_case(binary_profile: str) -> dict[str, object]:
     secret_marker = "benchmark-secret-should-not-leak"
     environment = os.environ.copy()
     environment["DATABASE_URL"] = f"postgres://bench:{secret_marker}@127.0.0.1:1/unavailable"
-    environment["MADS_PERSISTENCE__SEAORM__CONNECT_TIMEOUT_SECONDS"] = "2"
-    log = tempfile.NamedTemporaryFile(prefix="mads-benchmark-fault-", suffix=".log", delete=False)
+    environment["FURNACE_PERSISTENCE__SEAORM__CONNECT_TIMEOUT_SECONDS"] = "2"
+    log = tempfile.NamedTemporaryFile(prefix="furnace-rs-benchmark-fault-", suffix=".log", delete=False)
     start = time.perf_counter()
     process = subprocess.Popen(
         [str(binary)], cwd=project, env=environment, stdout=log, stderr=subprocess.STDOUT
@@ -726,8 +726,8 @@ def database_failure_case(binary_profile: str) -> dict[str, object]:
         errors.append("HTTP listener bound before database readiness succeeded")
     if process.returncode == 0:
         errors.append("database failure exited successfully instead of rejecting startup")
-    if "MADS140" not in contents or "kind: Connection" not in contents:
-        errors.append("startup did not report a MADS persistence connection failure")
+    if "FURNACE140" not in contents or "kind: Connection" not in contents:
+        errors.append("startup did not report a FURNACE persistence connection failure")
     if secret_marker in contents:
         errors.append("database credential appeared in the startup log")
     result: dict[str, object] = {
@@ -756,12 +756,12 @@ def database_connect_timeout_case(binary_profile: str) -> dict[str, object]:
         raise RuntimeError(f"port {port} is already in use; stop that server before benchmarking")
     secret_marker = "benchmark-timeout-secret-should-not-leak"
     environment = os.environ.copy()
-    environment["MADS_PERSISTENCE__SEAORM__CONNECT_TIMEOUT_SECONDS"] = "2"
+    environment["FURNACE_PERSISTENCE__SEAORM__CONNECT_TIMEOUT_SECONDS"] = "2"
     with StalledPostgres() as database:
         environment["DATABASE_URL"] = (
             f"postgres://bench:{secret_marker}@127.0.0.1:{database.port}/stalled"
         )
-        log = tempfile.NamedTemporaryFile(prefix="mads-benchmark-timeout-", suffix=".log", delete=False)
+        log = tempfile.NamedTemporaryFile(prefix="furnace-rs-benchmark-timeout-", suffix=".log", delete=False)
         start = time.perf_counter()
         process = subprocess.Popen(
             [str(binary)], cwd=project, env=environment, stdout=log, stderr=subprocess.STDOUT
@@ -795,8 +795,8 @@ def database_connect_timeout_case(binary_profile: str) -> dict[str, object]:
         errors.append("HTTP listener bound before database readiness succeeded")
     if process.returncode == 0:
         errors.append("database timeout exited successfully instead of rejecting startup")
-    if "MADS140" not in contents or "kind: Connection" not in contents:
-        errors.append("startup did not report a MADS persistence connection failure")
+    if "FURNACE140" not in contents or "kind: Connection" not in contents:
+        errors.append("startup did not report a FURNACE persistence connection failure")
     if secret_marker in contents:
         errors.append("database credential appeared in the startup log")
     result: dict[str, object] = {

@@ -1,0 +1,42 @@
+//! Confirms bare custom extractor names remain outside route syntax checks.
+
+#![deny(missing_docs)]
+
+use furnace_rs::prelude::*;
+
+/// Application-defined extractor which intentionally shares Axum's short name.
+struct Json;
+
+impl<S> furnace_rs::common::axum::extract::FromRequestParts<S> for Json
+where
+    S: Send + Sync,
+{
+    type Rejection = furnace_rs::common::axum::http::StatusCode;
+
+    async fn from_request_parts(
+        _parts: &mut furnace_rs::common::axum::http::request::Parts,
+        _state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(Self)
+    }
+}
+
+#[furnace_rs::controller]
+struct CustomExtractorRoutesController;
+
+impl ::furnace_rs::Sealable for CustomExtractorRoutesController {
+    fn seals() -> ::furnace_rs::SealRegistration<Self> {
+        ::furnace_rs::SealRegistration::new()
+    }
+}
+
+#[furnace_rs::controller]
+impl CustomExtractorRoutesController {
+    #[post("/")]
+
+    async fn create(&self, body: Json, id: furnace_rs::common::Path<u64>) {
+        unreachable!("metadata-only endpoint")
+    }
+}
+
+fn main() {}

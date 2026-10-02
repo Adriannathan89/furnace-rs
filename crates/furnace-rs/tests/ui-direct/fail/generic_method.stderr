@@ -1,0 +1,5 @@
+error: endpoints cannot be const, unsafe, extern, variadic, or generic
+ --> tests/ui-direct/fail/generic_method.rs:6:26
+  |
+6 | impl Controller { #[get] fn run<T>(&self) {} }
+  |                          ^^

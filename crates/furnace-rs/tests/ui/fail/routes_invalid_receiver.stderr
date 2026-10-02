@@ -1,0 +1,5 @@
+error: endpoints support only an immutable `&self` receiver or no receiver
+  --> tests/ui/fail/routes_invalid_receiver.rs:10:20
+   |
+10 |     async fn index(&mut self) {}
+   |                    ^

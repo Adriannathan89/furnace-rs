@@ -1,0 +1,70 @@
+{
+  "postgres_version": "postgres (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+  "transport": "isolated localhost TCP with SCRAM-SHA-256 password authentication",
+  "git_head": "a055683758df49f2841ab3e9b8d3004e4a180da5",
+  "working_tree": true,
+  "checks": [
+    {
+      "name": "initdb",
+      "exit_code": 0,
+      "elapsed_seconds": 1.17
+    },
+    {
+      "name": "start",
+      "exit_code": 0,
+      "elapsed_seconds": 0.11
+    },
+    {
+      "name": "create_furnace_persistence_security",
+      "exit_code": 0,
+      "elapsed_seconds": 0.13
+    },
+    {
+      "name": "create_furnace_benchmark_security",
+      "exit_code": 0,
+      "elapsed_seconds": 0.07
+    },
+    {
+      "name": "postgres_integration",
+      "exit_code": 0,
+      "elapsed_seconds": 48.14
+    },
+    {
+      "name": "security_regressions",
+      "exit_code": 0,
+      "elapsed_seconds": 17.97
+    },
+    {
+      "name": "migration",
+      "exit_code": 0,
+      "elapsed_seconds": 0.05
+    },
+    {
+      "name": "build_posts_crud",
+      "exit_code": 0,
+      "elapsed_seconds": 37.99
+    },
+    {
+      "name": "benchmark_python",
+      "exit_code": 0,
+      "elapsed_seconds": 85.54
+    }
+  ],
+  "success": true,
+  "postgres_stopped": true,
+  "temporary_directory_removed": true,
+  "integration_tests": {
+    "passed": 4,
+    "nested_filtered_fixture_passed": 0,
+    "ignored": 0,
+    "result_lines": 1,
+    "log_sha256": "6f07298c399c91dd849499ba4c485a7be59c7fa0b71dc12e19adb5ebd5cf49d1"
+  },
+  "python_tests": {
+    "run": 38,
+    "passed": 38,
+    "skipped": 0,
+    "log_sha256": "b438e496f300c12a7e830b972fbfb024400925745eba9d69961c8e984a97962b"
+  },
+  "dependency_notes": "Native integration uses workspace SeaORM 2.0.3; staged CRUD uses exact SeaORM 2.0.0 and a newly resolved offline lock. All three original example locks were separately checked with --locked."
+}

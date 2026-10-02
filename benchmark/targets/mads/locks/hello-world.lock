@@ -370,21 +370,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
-name = "mads"
+name = "furnace-rs"
 version = "0.9.1"
 dependencies = [
- "mads-common",
- "mads-core",
+ "furnace-rs-common",
+ "furnace-rs-core",
 ]
 
 [[package]]
-name = "mads-common"
+name = "furnace-rs-common"
 version = "0.9.1"
 dependencies = [
  "axum",
  "axum-extra",
- "mads-common-macros",
- "mads-core",
+ "furnace-rs-common-macros",
+ "furnace-rs-core",
  "rustix",
  "serde",
  "serde_json",
@@ -396,7 +396,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mads-common-macros"
+name = "furnace-rs-common-macros"
 version = "0.9.1"
 dependencies = [
  "proc-macro-crate",
@@ -406,19 +406,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "mads-core"
+name = "furnace-rs-core"
 version = "0.9.1"
 dependencies = [
  "dotenvy",
  "inventory",
- "mads-core-macros",
+ "furnace-rs-core-macros",
  "tokio",
  "toml",
  "toml_edit 0.22.27",
 ]
 
 [[package]]
-name = "mads-core-macros"
+name = "furnace-rs-core-macros"
 version = "0.9.1"
 dependencies = [
  "proc-macro-crate",
@@ -428,10 +428,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "mads-example-hello-world"
+name = "furnace-rs-example-hello-world"
 version = "0.1.0"
 dependencies = [
- "mads",
+ "furnace-rs",
 ]
 
 [[package]]

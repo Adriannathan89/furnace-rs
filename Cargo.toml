@@ -1,23 +1,23 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/mads",
-    "crates/mads-core",
-    "crates/mads-core-macros",
-    "crates/mads-persistence",
-    "crates/mads-common",
-    "crates/mads-common-macros",
-    "crates/mads-cli",
-    "crates/mads-extra",
-    "crates/mads-testing",
+    "crates/furnace-rs",
+    "crates/furnace-rs-core",
+    "crates/furnace-rs-core-macros",
+    "crates/furnace-rs-persistence",
+    "crates/furnace-rs-common",
+    "crates/furnace-rs-common-macros",
+    "crates/furnace-rs-cli",
+    "crates/furnace-rs-extra",
+    "crates/furnace-rs-testing",
 ]
 
 [workspace.package]
-version = "0.9.2"
+version = "1.0.0"
 edition = "2024"
 rust-version = "1.94"
-authors = ["MADS.rs contributors"]
-repository = "https://github.com/Adriannathan89/mads"
+authors = ["furnace-rs contributors"]
+repository = "https://github.com/Adriannathan89/furnace-rs"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 
@@ -49,6 +49,7 @@ toml = "=0.8.23"
 toml_edit = "=0.22.27"
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors"] }
+tracing = "0.1"
 trybuild = "1"
 
 [workspace.lints.rust]

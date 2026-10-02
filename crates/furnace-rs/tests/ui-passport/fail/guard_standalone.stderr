@@ -1,0 +1,5 @@
+error: `#[guard]` requires a unit policy struct; attach it with the controller seal
+ --> tests/ui-passport/fail/guard_standalone.rs:1:29
+  |
+1 | #[furnace_rs::common::guard(strategy = "jwt", principal = UserPrincipal)]
+  |                             ^^^^^^^^
