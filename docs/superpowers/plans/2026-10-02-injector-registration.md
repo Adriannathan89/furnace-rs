@@ -1,6 +1,6 @@
 # Injector Registration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace `#[element]` factories with typed asynchronous injectors and explicit cauldron output bindings without weakening DI validation or lifecycle cleanup.
 
@@ -124,13 +124,13 @@
 
 **Interfaces:** No additional public API. Produce reviewable evidence for the complete change and document any remaining limitations.
 
-- [ ] Finish all source edits before CLI watcher/full-suite tests. Run `cargo fmt --all -- --check`, `git diff --check`, and `cargo clippy --locked --offline --workspace --all-targets --all-features -- -D warnings`; require exit zero.
-- [ ] Run stable and MSRV workspace suites sequentially: `cargo test --locked --offline --workspace --all-features` and `cargo +1.94.0 test --locked --offline --workspace --all-features`. Preserve logs and report actual failures/ignored database cases rather than assuming counts from prior runs.
-- [ ] Run strict docs with `RUSTDOCFLAGS='-D warnings' cargo doc --locked --offline --workspace --all-features --no-deps`, `cargo test --locked --offline --workspace --all-features --doc`, and feature checks listed below. Repeat standalone example/package payload gates only if later changes invalidate Task 5's evidence.
-- [ ] Run four live PostgreSQL tests on both stable and MSRV with `--features sea-orm-postgres --test postgres -- --ignored --test-threads=1`. Reuse the documented temporary-cluster procedure from `docs/superpowers/reports/2026-10-02-postgres-verification.md`; preserve logs, stop the cluster, and remove only its owned temporary directory.
-- [ ] Run `python3 -m unittest discover -s benchmark/tool -p 'test_*.py'` with the documented dedicated database and local posts-crud app environment; require the database recovery cases to run rather than skip. Stop all resources created for verification.
-- [ ] Request one fresh whole-branch review of the implementation against the spec and plan. For native execution, follow executing-plans requirements for reviewer dispatch, model selection, rulings, and scratch cleanup. Fix accepted findings, rerun affected checks, and record every finding's disposition.
-- [ ] Update the verification report and completion status, commit `docs: record Injector migration verification`, and report final commits, checks, limitations, review rulings, and working-tree state. Do not merge or push.
+- [x] Finish all source edits before CLI watcher/full-suite tests. Run `cargo fmt --all -- --check`, `git diff --check`, and `cargo clippy --locked --offline --workspace --all-targets --all-features -- -D warnings`; require exit zero.
+- [x] Run stable and MSRV workspace suites sequentially: `cargo test --locked --offline --workspace --all-features` and `cargo +1.94.0 test --locked --offline --workspace --all-features`. Preserve logs and report actual failures/ignored database cases rather than assuming counts from prior runs.
+- [x] Run strict docs with `RUSTDOCFLAGS='-D warnings' cargo doc --locked --offline --workspace --all-features --no-deps`, `cargo test --locked --offline --workspace --all-features --doc`, and feature checks listed below. Repeat standalone example/package payload gates only if later changes invalidate Task 5's evidence.
+- [x] Run four live PostgreSQL tests on both stable and MSRV with `--features sea-orm-postgres --test postgres -- --ignored --test-threads=1`. Reuse the documented temporary-cluster procedure from `docs/superpowers/reports/2026-10-02-postgres-verification.md`; preserve logs, stop the cluster, and remove only its owned temporary directory.
+- [x] Run `python3 -m unittest discover -s benchmark/tool -p 'test_*.py'` with the documented dedicated database and local posts-crud app environment; require the database recovery cases to run rather than skip. Stop all resources created for verification.
+- [x] Request one fresh whole-branch review of the implementation against the spec and plan. For native execution, follow executing-plans requirements for reviewer dispatch, model selection, rulings, and scratch cleanup. Fix accepted findings, rerun affected checks, and record every finding's disposition.
+- [x] Update the verification report and completion status, commit `docs: record Injector migration verification`, and report final commits, checks, limitations, review rulings, and working-tree state. Do not merge or push.
 
 ## Execution handoff
 
@@ -150,4 +150,4 @@ cargo check --locked --offline -p furnace-rs --no-default-features --features co
 
 Recommended method: native execution in this session, with one fresh final reviewer. These six tasks depend on the same constructor/descriptor interfaces; a single implementer can keep that contract consistent while migrating consumers incrementally.
 
-The written plan requires user review before implementation. No product code has been changed in this planning stage.
+The user approved this plan before implementation. All six tasks are complete; verification and review dispositions are recorded in `docs/superpowers/reports/2026-10-02-injector-registration-verification.md`. Work remains on the assigned local branch.

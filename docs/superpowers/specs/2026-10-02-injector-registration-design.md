@@ -1,7 +1,7 @@
 # Injector construction and explicit provider bindings
 
 Date: 2026-10-02
-Status: Written specification awaiting user review; implementation has not started.
+Status: Approved, implemented, and verified on stable Rust and Rust 1.94; see the Injector registration verification report.
 Branch: `refactor/furnance-injector`
 
 ## Intent and agreed API
