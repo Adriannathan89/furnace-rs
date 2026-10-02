@@ -763,6 +763,11 @@ CI also provisions PostgreSQL 16 and runs the ignored database suites plus the
 PostgreSQL 16 database and use the commands in the
 [1.0.0 release readiness guide](docs/releases/1.0.0.md).
 
+## Community
+
+Read the [contribution guide](CONTRIBUTING.md) before submitting changes.
+All participants are expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
 furnace-rs is licensed under either the [Apache License 2.0](LICENSE-APACHE) or

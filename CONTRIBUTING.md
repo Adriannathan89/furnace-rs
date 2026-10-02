@@ -7,6 +7,8 @@ the maintainers.
 
 ## Before you start
 
+All participants are expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
+
 Read the project documentation before changing code. This is important because
 furnace-rs has deliberate crate boundaries, feature relationships, startup rules,
 and compatibility requirements that may not be obvious from one source file.
