@@ -1,5 +1,5 @@
 error[E0433]: cannot find `element` in `furnace_rs`
- --> tests/ui/fail/injector_removed_element.rs:1:15
+ --> tests/ui/fail/stable/injector_removed_element.rs:1:15
   |
 1 | #[furnace_rs::element]
   |               ^^^^^^^ could not find `element` in `furnace_rs`

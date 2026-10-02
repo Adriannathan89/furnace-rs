@@ -864,6 +864,9 @@ fn furnace_migration_guide_documents_the_complete_breaking_surface() {
         ".global()",
         "FURNACE_SERVER__PORT",
         "schema 2",
+        "E0446",
+        "public associated type",
+        "Rust visibility does not export a dependency from its cauldron",
     ] {
         assert!(
             guide.contains(required),

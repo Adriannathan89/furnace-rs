@@ -145,6 +145,28 @@ a tuple of one through sixteen `Clone + Send + Sync + 'static` types. A single
 dependency needs a trailing comma. The framework records those types for missing
 dependency, cycle, and visibility checks before calling the constructor.
 
+`Dependencies` is a public associated type. Rust therefore requires dependency
+types to be sufficiently visible wherever their injector implementation is public.
+This also applies to fields of public `#[burner]`, `#[storage]`, and `#[controller]`
+structs: the macros expose their field types through `Injector::Dependencies`.
+A public managed struct with a private dependency now fails with **E0446**.
+Make the dependency type public, or reduce the managed struct's visibility when
+it need not be public. For example:
+
+```rust
+#[derive(Clone)]
+pub struct UserDependency; // Previously private; required by the public injector.
+
+#[burner]
+pub struct UserService {
+    dependency: UserDependency, // The field itself can remain private.
+}
+```
+
+Rust visibility does not export a dependency from its cauldron. Making
+`UserDependency` public only satisfies Rust's type visibility rules; it remains
+private to its owning cauldron until explicitly exported with `.export::<T>()`.
+
 ```rust
 use furnace::prelude::*;
 use std::sync::Arc;
