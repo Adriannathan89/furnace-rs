@@ -217,3 +217,108 @@ async fn guarded_bearer_route_rejects_missing_credentials_with_json_and_bearer_c
     );
     assert_eq!(HANDLER_CALLS.load(Ordering::SeqCst), 0);
 }
+
+#[tokio::test]
+async fn guarded_bearer_route_rejects_ambiguous_credentials_before_strategy_and_handler() {
+    let _guard = TEST_GUARD.lock().await;
+    let application = Furnace::builder_with_config(config())
+        .build()
+        .await
+        .unwrap();
+    let token = application
+        .context()
+        .resolve::<JwtService>()
+        .unwrap()
+        .sign(
+            UserClaims { user_id: 7 },
+            JwtSignOptions::access(Duration::from_secs(60)),
+        )
+        .unwrap();
+    let router = build_router(&application).unwrap();
+
+    for value in [
+        format!("Bearer\t{token}"),
+        format!("Bearer \t{token}"),
+        format!("Bearer\t {token}"),
+        format!("Bearer {token}\textra"),
+        format!("Bearer {token},Bearer {token}"),
+        format!("Basic {token}"),
+        "Bearer ".to_owned(),
+    ] {
+        HANDLER_CALLS.store(0, Ordering::SeqCst);
+        *STRATEGY_CONTEXT
+            .get_or_init(|| Mutex::new(None))
+            .lock()
+            .unwrap() = None;
+        let response = router
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/users/profile")
+                    .header(AUTHORIZATION, &value)
+                    .header("x-request-id", "rejected-request")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::UNAUTHORIZED,
+            "malformed Bearer syntax accepted"
+        );
+        assert_eq!(response.headers()[WWW_AUTHENTICATE], "Bearer");
+        assert_eq!(
+            to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap()
+                .as_ref(),
+            b"{\"error\":{\"code\":\"unauthorized\",\"message\":\"authentication was rejected\"}}"
+        );
+        assert_eq!(HANDLER_CALLS.load(Ordering::SeqCst), 0);
+        assert!(STRATEGY_CONTEXT.get().unwrap().lock().unwrap().is_none());
+    }
+}
+
+#[tokio::test]
+async fn guarded_bearer_route_accepts_multiple_spaces_and_case_insensitive_scheme() {
+    let _guard = TEST_GUARD.lock().await;
+    HANDLER_CALLS.store(0, Ordering::SeqCst);
+    let application = Furnace::builder_with_config(config())
+        .build()
+        .await
+        .unwrap();
+    let token = application
+        .context()
+        .resolve::<JwtService>()
+        .unwrap()
+        .sign(
+            UserClaims { user_id: 7 },
+            JwtSignOptions::access(Duration::from_secs(60)),
+        )
+        .unwrap();
+    let router = build_router(&application).unwrap();
+    for scheme in ["Bearer", "bearer", "bEaReR"] {
+        let response = router
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/users/profile")
+                    .header(AUTHORIZATION, format!("{scheme}   {token}"))
+                    .header("x-request-id", "valid-request")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap()
+                .as_ref(),
+            b"user:7"
+        );
+    }
+    assert_eq!(HANDLER_CALLS.load(Ordering::SeqCst), 3);
+}

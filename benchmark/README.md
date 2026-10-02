@@ -1,5 +1,43 @@
 # FURNACE HTTP stress benchmark
 
+## Security regression workload (local source)
+
+The auth security workload builds and runs the implementation in this checkout.
+It uses the staged release binary from `build_furnace.py`, rather than the old
+stress runner's example target directories. Rebuild before each verification
+to ensure the binary contains your current changes:
+
+```sh
+python3 benchmark/tool/build_furnace.py --offline --example protected-route
+python3 benchmark/tool/security.py --profile smoke --output /tmp/furnace-security-smoke.json
+python3 benchmark/tool/security.py --profile stress --output /tmp/furnace-security-stress.json
+python3 -m unittest discover -s benchmark/tool -p 'test_*.py'
+```
+
+Omit `--offline` if the Cargo dependencies are not cached. No database is
+needed; port 3002 must be free. The runner supplies benchmark-only credentials
+and stops its server when finished. Never use its signing key in a deployment.
+
+Each of 23 probes runs twice in `smoke`, 200 times in `stress`, and 1,000
+times in `extended`, using 4/16/32 clients. Three probes check valid Bearer
+syntax, including case-insensitive schemes and multiple spaces. Twenty check
+tabs inside credentials, duplicate Authorization fields in both orders,
+combined/extra credentials, missing credentials, forged signatures, unsigned
+JWTs, algorithm mismatch, expired/future/refresh tokens, missing or duplicate
+expiration claims, and the 8 KiB JWT limit. Duplicate fields are sent as
+separate HTTP headers. Signed adversarial JWT fixtures use the benchmark key
+so claim rejections exercise validation after signature verification.
+
+Every rejection must be exactly the generic Passport 401 JSON response with
+`WWW-Authenticate: Bearer`. Every probe is followed by a valid authenticated
+request on the client's connection to check recovery. Transport failures,
+unexpected authentication, altered errors, or failed positive controls make
+the benchmark exit nonzero. JSON records per-probe operation counts, expected
+rejections, status totals, latency percentiles, throughput, and the tested
+binary's SHA-256. These measurements include client and application overhead;
+they do not establish a performance threshold or prove the absence of other
+vulnerabilities. See [the security finding and before/after evidence](SECURITY.md).
+
 This suite drives the three [FURNACE 0.9.1 example applications](../example/) over
 real loopback HTTP. It checks response content and status under load, then
 reports throughput and client-observed p50/p95/p99 latency. The applications
