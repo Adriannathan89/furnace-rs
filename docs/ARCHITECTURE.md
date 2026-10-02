@@ -1,8 +1,8 @@
-# furnace-rs 0.9.2 Architecture
+# furnace-rs 1.0.0 Architecture (Unreleased)
 
 FURNACE separates framework-neutral construction and configuration from Axum HTTP
 delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
-Version 0.9.2 retains the validation, REST-error, typed configuration,
+The 1.0.0 preparation retains the validation, REST-error, typed configuration,
 compiler-diagnostic, machine-output, and minimal-scaffolding surface while
 removing the former Diesel and CLI migration integrations.
 
@@ -50,7 +50,7 @@ formatting. It checks readiness before serving and closes on graceful shutdown.
 ~~~text
 core                         no HTTP/database/JWT/cookie/Serde
 http                         Axum + validation + standard REST errors
-logger                       tracing-based logging
+logger                       application logging and console backend
 jwt                          JWT service/configuration, no Axum
 cookies                      HTTP cookie support
 http + jwt (+ cookies)       Passport Bearer (and cookie) guards
@@ -144,7 +144,10 @@ automatic database-to-HTTP mapping. Applications choose a domain-specific
 
 `#[cauldron]` declares a unit root type with an authored `Cauldron::register`
 chain. Membership uses `.provide::<T>()` and `.controller::<T>()`; `.import(M)`
-collects reachable cauldrons. Outputs have one owner in the selected graph.
+collects reachable cauldrons. `.provide_with::<T, I>()` selects an explicit
+`I: Injector<T>` for native outputs or trait objects such as `Arc<dyn Trait>`;
+exports name the output type. `Injector::lifecycle` attaches hooks to a
+constructed native value. Outputs have one owner in the selected graph.
 Across cauldrons, dependencies require explicit exports and a direct import or a
 reachable global export. Rust namespace placement and `pub` do not grant DI
 visibility; imports are not transitive. A builder without `root::<AppCauldron>()`
@@ -188,12 +191,12 @@ generate database/JWT/cookie/migration code.
 
 ## Deliberate non-goals
 
-v0.9 does not add automatic validation to native extractors, asynchronous or
+1.0.0 does not add automatic validation to native extractors, asynchronous or
 database-backed derive validation, full-RFC or DNS email validation, automatic
 persistence-to-HTTP conversion, new configuration sources or arbitrary TOML
 shapes, global configuration discovery, generic compiler-diagnostic rewriting,
 JSON wrapping for run/dev streams, additional generators, or starter database,
-JWT, cookie, migration, and Git setup. Trait/interface bindings, login,
+JWT, cookie, migration, and Git setup. Login,
 credential validation, password hashing, CSRF, remote JWKS, JWE, MySQL/SQLite,
 multiple listeners, TLS, and HTTP/2-specific configuration remain
 application-owned or later work.

@@ -43,7 +43,7 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --locked --workspace --all-features --no-deps
-      - name: Verify v0.9 feature boundaries and package contents
+      - name: Verify release feature boundaries and package contents
         run: |
           cargo check -p furnace-rs-core --no-default-features
           cargo check -p furnace-rs-persistence --no-default-features
@@ -56,6 +56,32 @@ jobs:
           bash script/verify-package-contents.sh
       - name: Build distributable crate archives
         run: cargo package --locked --workspace --no-verify
+
+  security:
+    name: Verify security regressions and advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@cargo-audit
+      - name: Fetch locked dependencies for offline regression runners
+        run: cargo fetch --locked
+      - name: Check known dependency vulnerabilities
+        run: cargo audit --no-yanked --file Cargo.lock
+      - name: Verify security report integrity
+        run: python3 -m unittest discover -s benchmark/tool -p 'test_*security.py'
+      - name: Run core and database security contracts
+        run: python3 benchmark/tool/infrastructure_security.py --profile smoke --output /tmp/infrastructure-security.json
+      - name: Run Unix CLI isolation contracts
+        run: python3 benchmark/tool/cli_security.py --profile smoke --output /tmp/cli-security.json
+      - name: Preserve security evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-regression-results
+          path: /tmp/*-security.json
+          if-no-files-found: ignore
 
   cli-platform:
     name: Verify CLI platform (${{ matrix.os }})
@@ -157,6 +183,7 @@ jobs:
   publish:
     name: Publish crates to crates.io
     needs:
+      - security
       - verify
       - cli-platform
       - msrv

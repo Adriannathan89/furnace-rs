@@ -1,4 +1,4 @@
-# FURNACE 0.9 examples
+# FURNACE 1.0 examples
 
 These are three independent Rust projects. Run each command from its example
 directory so `Furnace::burn` loads that project's `furnace.toml` and optional `.env`.
@@ -20,4 +20,4 @@ defines Trait–Provider–Repository–Service: traits express application cont
 providers bind them to implementations, repositories handle data access, and
 services implement use cases. Controllers are the HTTP boundary. The JWT
 example follows that pattern with an in-memory repository. The reference uses
-FURNACE 0.8 APIs, so these projects use the current 0.9 crate boundaries.
+FURNACE 0.8 APIs, so these projects use the current 1.0 crate boundaries.

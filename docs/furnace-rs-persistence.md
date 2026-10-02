@@ -1,15 +1,25 @@
 # FURNACE Persistence Connector Design
 
 Status: original connector design record. The 0.9 database/CLI boundary is
-superseded by the [approved removal design](superpowers/specs/2026-09-23-furnace-rs-0.9-database-surface-removal-design.md).
+superseded by the [approved removal design](superpowers/specs/2026-09-23-mads-0.9-database-surface-removal-design.md).
 
-In 0.9, applications add `furnace-rs-persistence = { version = "0.9.2", features =
-["sea-orm-postgres"] }` explicitly and import
-`furnace_rs_persistence::sea_orm::DatabaseCauldron`. `DatabaseFactory::provide` returns
-the native `DatabaseConnection` or typed `PersistenceError`; database support
-is not a `furnace-rs`/`furnace-rs-common` feature, and the CLI has no database commands.
-SeaORM owns migrations. The original proposal below is retained for context;
-its statements about retaining Diesel do not describe the shipped 0.9 API.
+For the unreleased 1.0.0 preparation, applications add
+`furnace-rs-persistence = { version = "=1.0.0", features = ["sea-orm-postgres"] }`
+explicitly and import `furnace_rs_persistence::sea_orm::DatabaseCauldron`.
+`DatabaseFactory::provide` returns the native `DatabaseConnection` or typed
+`PersistenceError`; database support is not a `furnace-rs`/`furnace-rs-common`
+feature, and the CLI has no database commands. SeaORM owns migrations.
+The workspace currently aligns all nine packages at 1.0.0 with exact internal
+pins. Rust edition 2024, MSRV 1.94, and the minimum SeaORM 2.0.0 dependency
+remain the release baseline.
+
+Current custom construction uses `.provide_with::<T, I>()` with `I: Injector<T>`
+and `Injector::lifecycle` for native resource hooks. Follow the
+[migration guide](importance/furnace-rs-migration.md) and
+[release preparation guide](releases/1.0.0.md) for the current API.
+The original proposal below is retained as historical context: its version
+examples, `#[element]` forms, independent versioning proposal, and statements
+about retaining Diesel do not describe the 1.0.0 API.
 
 ## Summary
 

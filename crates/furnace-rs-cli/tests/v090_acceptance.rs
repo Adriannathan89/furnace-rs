@@ -221,7 +221,7 @@ fn cargo_command(project: &Path) -> Command {
 fn registry_manifest(name: &str) -> String {
     format!(
         "[package]\nname = \"{name}\"\nversion = \"0.1.0\"\nedition = \"2024\"\nrust-version = \"1.94\"\n\n[dependencies]\nfurnace = {{ package = \"furnace-rs\", version = \"={}\", default-features = false, features = [\"http\", \"runtime-tokio\"] }}\n",
-        "0.9.2"
+        env!("CARGO_PKG_VERSION")
     )
 }
 
@@ -233,11 +233,11 @@ fn substitute_local_furnace(manifest_path: &Path, registry_manifest: &str) {
     let local_path = local_furnace.to_string_lossy().replace('\\', "\\\\");
     let registry_dependency = format!(
         "furnace = {{ package = \"furnace-rs\", version = \"={}\", default-features = false, features = [\"http\", \"runtime-tokio\"] }}",
-        "0.9.2"
+        env!("CARGO_PKG_VERSION")
     );
     let local_dependency = format!(
         "furnace = {{ package = \"furnace-rs\", path = \"{local_path}\", version = \"={}\", default-features = false, features = [\"http\", \"runtime-tokio\"] }}",
-        "0.9.2"
+        env!("CARGO_PKG_VERSION")
     );
     let substituted = registry_manifest.replacen(&registry_dependency, &local_dependency, 1);
     assert_ne!(

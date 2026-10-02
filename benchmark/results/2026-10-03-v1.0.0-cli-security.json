@@ -1,0 +1,23 @@
+{
+  "timestamp_utc": "2026-10-02T17:24:02.266363+00:00",
+  "git_head": "a055683758df49f2841ab3e9b8d3004e4a180da5",
+  "source_sha256": "2b37a51b964fc4a151129c733b6e1da07b1006fd5a4de069d50636017aa0b8d0",
+  "profile": "smoke",
+  "umasks": [
+    "000",
+    "002",
+    "022",
+    "077"
+  ],
+  "build_profile": "debug",
+  "database_required": false,
+  "elapsed_seconds_including_build": 49.35528,
+  "cargo_exit_code": 0,
+  "result": {
+    "rounds": 2,
+    "checks": 8,
+    "failures": 0,
+    "passed": true
+  },
+  "passed": true
+}

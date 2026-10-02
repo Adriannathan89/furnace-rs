@@ -3,11 +3,27 @@
 [![Latest release](https://img.shields.io/github/v/release/Adriannathan89/furnace-rs?display_name=tag&sort=semver)](https://github.com/Adriannathan89/furnace-rs/releases/latest)
 [![CI](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml)
 
-furnace-rs 0.9.2 is a Rust application framework with a framework-neutral
+furnace-rs 1.0.0 is a Rust application framework with a framework-neutral
 core, a scoped Axum HTTP runtime, source-aware typed configuration, safe REST
 errors, request validation, and opt-in native SeaORM persistence. A root
 module selects one application; startup validates its scoped graph and routes
 before it starts lifecycle hooks, checks a database, or binds a socket.
+
+## 1.0.0 release preparation
+
+The workspace and local examples target **1.0.0**. This is a prepared release,
+not a statement that the packages or `v1.0.0` tag have been published. Until
+publication, build the CLI from this checkout with
+`cargo install --path crates/furnace-rs-cli --locked`.
+
+See the [changelog](CHANGELOG.md),
+[migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
+[release readiness guide](docs/releases/1.0.0.md),
+[security policy](SECURITY.md), and [security audit](SECURITY_AUDIT.md).
+The release includes strict Bearer parsing, safe core error formatting, checked
+database timeouts, protected connection tracing, and owner-only Unix CLI
+control directories. The audit documents reproduction, fixes, benchmark
+evidence, prior real PostgreSQL validation, and the limits of the review.
 
 ## What is furnace-rs?
 
@@ -53,7 +69,7 @@ See the [authoritative CLI reference](docs/CLI.md) for target selectors,
 forwarded application arguments, diagnostics, watcher behavior, inspection
 limits.
 
-For runnable FURNACE 0.9 walkthroughs, see the [three example projects](example/):
+For runnable FURNACE 1.0 walkthroughs, see the [three example projects](example/):
 Hello World, PostgreSQL posts CRUD, and a JWT-protected route with validation
 and logging.
 For repeatable HTTP load and failure checks, see the [benchmark suite](benchmark/).
@@ -133,7 +149,7 @@ furnace-rs-cli
 | `furnace-rs-persistence` | Explicit native SeaORM PostgreSQL connector and lifecycle integration. | [crates/furnace-rs-persistence/README.md](crates/furnace-rs-persistence/README.md) |
 | `furnace-rs-common-macros` | Procedural macros for routes, controllers, validation, and Passport. | [crates/furnace-rs-common-macros/README.md](crates/furnace-rs-common-macros/README.md) |
 | `furnace-rs-cli` | Cargo-native execution, inspection, development loop, and scaffolding. | [crates/furnace-rs-cli/README.md](crates/furnace-rs-cli/README.md) |
-| `furnace-rs-testing` | Focused service and in-process controller fixtures with SeaORM SQLite mocks. | [crates/furnace-rs-testing/README.md](crates/furnace-rs-testing/README.md) |
+| `furnace-rs-testing` | Focused service and in-process controller fixtures with scripted SeaORM mocks. | [crates/furnace-rs-testing/README.md](crates/furnace-rs-testing/README.md) |
 | `furnace-rs-extra` | Reserved boundary for future optional integrations. | [crates/furnace-rs-extra/README.md](crates/furnace-rs-extra/README.md) |
 
 The approach is type-driven and metadata-driven: macros emit static
@@ -146,7 +162,7 @@ guides for dependencies, source layout, and change ownership.
 
 ~~~toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=0.9.2" }
+furnace = { package = "furnace-rs", version = "=1.0.0" }
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
@@ -408,7 +424,7 @@ Database support is not a `furnace-rs` or `furnace-rs-common` feature. Add the c
 explicitly and import its global module in your application root:
 
 ```toml
-furnace-rs-persistence = { version = "0.9.2", features = ["sea-orm-postgres"] }
+furnace-rs-persistence = { version = "1.0.0", features = ["sea-orm-postgres"] }
 ```
 
 ```rust,ignore
@@ -701,21 +717,23 @@ equivalent PostgreSQL readiness check. In the exploratory throughput suite,
 every native Axum/FURNACE saturation range overlaps, while both sustain the fixed
 1,000 requests/second target with closely grouped latency.
 
-See [BENCHMARK.md](BENCHMARK.md) for the complete results, methodology,
+See [the benchmark guide](benchmark/README.md) for the complete results, methodology,
 limitations, resource measurements, and interpretation guidance.
 
 ## Current scope
 
-Version 0.9.0 includes rooted module scope, conventional startup, CORS,
+Version 1.0.0 includes rooted module scope, conventional startup, CORS,
 native router composition, typed input validation, the seven REST errors,
 explicit typed configuration and redacted secrets, focused FURNACE macro
 diagnostics, Cargo-native run/dev, compiled route/graph/doctor inspection,
-version-1 finite-command JSON, opt-in native SeaORM persistence, and the
+schema-version-2 finite-command JSON, opt-in native SeaORM persistence, and the
 offline atomic minimal-project generator. It preserves the low-level builder,
 the complete-catalog rootless compatibility path, native Axum extractors and
 responses, ordinary human CLI output, and application-owned database policy.
 
-It does **not** implement trait or interface bindings, `Inject<dyn Trait>`,
+Application-authored `Injector<Output>` bindings support native shared trait
+objects through `.provide_with::<Output, Implementer>()`.
+It does **not** implement `Inject<dyn Trait>`,
 asynchronous or database-backed derive validators, automatic validation for
 native extractors, full-RFC/DNS email validation, login or credential
 validation, refresh endpoints or persistence/rotation/revocation, password
@@ -740,7 +758,8 @@ cargo +1.94.0 test --locked --workspace --all-features
 
 CI also provisions PostgreSQL 16 and runs the ignored database suites plus the
 85% line-coverage gate. To run those locally, set `FURNACE_TEST_DATABASE_URL` to a
-PostgreSQL 16 database and use the commands in the [v0.5 requirements](docs/importance/version_0.5/auto-configuration.md).
+PostgreSQL 16 database and use the commands in the
+[1.0.0 release readiness guide](docs/releases/1.0.0.md).
 
 ## License
 
@@ -749,7 +768,7 @@ the [MIT License](LICENSE-MIT), at your option.
 
 ## Focused tests
 
-Add `furnace-rs-testing = "=0.9.2"` under `[dev-dependencies]`. Annotate an async,
+Add `furnace-rs-testing = "=1.0.0"` under `[dev-dependencies]`. Annotate an async,
 zero-argument test function with `#[furnace::test]`; Cargo runs it without a separate
 Tokio dependency. The local `test_fixture()` builds one registered subject's
 dependency chain without module setup.
@@ -772,8 +791,8 @@ async fn controller_returns_ok() {
 ```
 
 Use `.subject::<UserService>()` and `context.resolve::<UserService>()` for direct
-service tests. Database dependencies require an explicit SQLite SeaORM
-`MockDatabase`; it queues scripted results and never opens a production
+service tests. Database dependencies require an explicit SeaORM
+`MockDatabase` configured with `DbBackend::Sqlite`; it queues scripted results and never opens a production
 connection. `run` awaits lifecycle shutdown on completion and unwinding assertion
 panics. See the [testing guide](crates/furnace-rs-testing/README.md) for complete service
 and controller examples, supplies, and response assertions.

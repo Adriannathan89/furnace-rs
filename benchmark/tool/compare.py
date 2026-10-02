@@ -15,6 +15,7 @@ import statistics
 import subprocess
 import tempfile
 import time
+import tomllib
 
 from run import (
     Client, Measurements, ROOT, DEMO_USERNAME, DEMO_PASSWORD, DEMO_SECRET,
@@ -289,7 +290,7 @@ def main() -> int:
         "rustc": subprocess.run(["rustc", "--version"], check=True, capture_output=True, text=True).stdout.strip(),
         "go": subprocess.run(["go", "version"], check=True, capture_output=True, text=True).stdout.strip(),
         "versions": {
-            "furnace-rs": "0.9.1 (local source)", "axum": "0.8.9", "fiber": "2.52.15",
+            "furnace-rs": tomllib.loads((ROOT / "Cargo.toml").read_text())["workspace"]["package"]["version"] + " (local source)", "axum": "0.8.9", "fiber": "2.52.15",
             "postgres": os.environ.get("BENCH_POSTGRES_VERSION", "not captured"),
         },
         "profile": args.profile, "measured_runs": args.runs, "results": [],

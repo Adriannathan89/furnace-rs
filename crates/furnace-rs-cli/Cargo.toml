@@ -11,8 +11,8 @@ description = "Command-line tools for furnace-rs applications"
 
 [dependencies]
 cargo_metadata.workspace = true
-furnace = { package = "furnace-rs", path = "../furnace-rs", version = "=0.9.2" }
-furnace-rs-common = { path = "../furnace-rs-common", version = "=0.9.2", default-features = false, features = ["http"] }
+furnace = { package = "furnace-rs", path = "../furnace-rs", version = "=1.0.0" }
+furnace-rs-common = { path = "../furnace-rs-common", version = "=1.0.0", default-features = false, features = ["http"] }
 notify.workspace = true
 semver.workspace = true
 serde.workspace = true

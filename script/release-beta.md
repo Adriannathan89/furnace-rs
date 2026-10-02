@@ -12,12 +12,13 @@ documentation or publishing anything.
 ## Usage
 
 ```bash
-script/release-beta.sh 0.9.0
+script/release-beta.sh 1.0.0
 ```
 
-If the current workspace version is `0.9.0-beta.1`, the result is
-`0.9.0-beta.2`. If the current version has another base, the result starts at
-`0.9.0-beta.1`.
+If the current workspace version is `1.0.0-beta.1`, the result is
+`1.0.0-beta.2`. If the current version has another base, the result starts at
+`1.0.0-beta.1`. This example describes beta preparation, not a published
+1.0.0 prerelease or a required step for the stable preparation.
 
 The script updates `[workspace.package].version`, every exact internal FURNACE
 dependency pin, and all nine workspace package records in `Cargo.lock`. It

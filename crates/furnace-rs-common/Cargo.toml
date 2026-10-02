@@ -40,8 +40,8 @@ axum-extra = { workspace = true, optional = true }
 base64 = { workspace = true, optional = true }
 cookie = { workspace = true, optional = true }
 jsonwebtoken = { workspace = true, optional = true }
-furnace-rs-common-macros = { path = "../furnace-rs-common-macros", version = "=0.9.2", optional = true }
-furnace-rs-core = { path = "../furnace-rs-core", version = "=0.9.2" }
+furnace-rs-common-macros = { path = "../furnace-rs-common-macros", version = "=1.0.0", optional = true }
+furnace-rs-core = { path = "../furnace-rs-core", version = "=1.0.0" }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde_path_to_error = { workspace = true, optional = true }

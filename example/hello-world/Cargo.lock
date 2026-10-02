@@ -175,7 +175,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs"
-version = "0.9.2"
+version = "1.0.0"
 dependencies = [
  "furnace-rs-common",
  "furnace-rs-core",
@@ -183,7 +183,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common"
-version = "0.9.2"
+version = "1.0.0"
 dependencies = [
  "axum",
  "axum-extra",
@@ -201,7 +201,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common-macros"
-version = "0.9.2"
+version = "1.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -211,7 +211,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core"
-version = "0.9.2"
+version = "1.0.0"
 dependencies = [
  "dotenvy",
  "furnace-rs-core-macros",
@@ -223,7 +223,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core-macros"
-version = "0.9.2"
+version = "1.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",

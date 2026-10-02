@@ -373,8 +373,8 @@ fn package_content_policy_checks_every_workspace_archive() {
 }
 
 #[test]
-fn all_packages_use_v092_pins_and_workspace_version() {
-    const VERSION: &str = "0.9.2";
+fn all_packages_use_v100_pins_and_workspace_version() {
+    const VERSION: &str = "1.0.0";
 
     let root = workspace_root();
     let workspace_manifest =
@@ -426,6 +426,31 @@ fn all_packages_use_v092_pins_and_workspace_version() {
     assert!(lockfile.contains(&format!(
         "name = \"furnace-rs-cli\"\nversion = \"{VERSION}\""
     )));
+}
+
+#[test]
+fn stable_and_beta_publication_require_security_verification() {
+    let root = workspace_root();
+    for path in ["stable-publish.yml", "beta-publish.yml"] {
+        let workflow = fs::read_to_string(root.join(".github/workflows").join(path)).unwrap();
+        let security = workflow_job(&workflow, "security");
+        for required in [
+            "cargo fetch --locked",
+            "cargo audit --no-yanked --file Cargo.lock",
+            "benchmark/tool/infrastructure_security.py --profile smoke",
+            "benchmark/tool/cli_security.py --profile smoke",
+            "test_*security.py",
+        ] {
+            assert!(
+                security.contains(required),
+                "{path} security gate missing {required}"
+            );
+        }
+        assert!(
+            workflow_job(&workflow, "publish").contains("      - security"),
+            "{path} publication must wait for security verification"
+        );
+    }
 }
 
 #[test]

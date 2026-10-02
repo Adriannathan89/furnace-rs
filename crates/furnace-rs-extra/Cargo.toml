@@ -10,7 +10,7 @@ readme = "README.md"
 description = "Extension boundary for optional furnace-rs framework capabilities"
 
 [dependencies]
-furnace-rs-core = { path = "../furnace-rs-core", version = "=0.9.2" }
+furnace-rs-core = { path = "../furnace-rs-core", version = "=1.0.0" }
 
 [lints]
 workspace = true

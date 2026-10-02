@@ -1,6 +1,6 @@
 # FURNACE CLI
 
-FURNACE v0.9.2 provides Cargo-native execution, inspection, a minimal-project
+FURNACE 1.0.0 (unreleased) provides Cargo-native execution, inspection, a minimal-project
 generator, and a versioned JSON result
 for finite FURNACE-owned commands. Human-readable output remains the default.
 
@@ -55,7 +55,7 @@ sibling staging directory, and publishes them with one atomic rename. An
 existing destination, including an empty directory, is never changed. The
 command does not download dependencies, run Cargo, initialize Git, select a
 remote template, or ask an interactive question. It offers no template,
-database, JWT, VCS, or target-directory option in v0.9. A successful human
+database, JWT, VCS, or target-directory option in 1.0.0. A successful human
 result identifies the relative path and prints only `cd <name>` and `furnace dev`.
 
 ## Project and target selection
@@ -105,7 +105,7 @@ FURNACE writes no rendered warning or error text there. Cargo and rustc output
 required to build inspection targets still passes through stderr. JSON paths use
 `/` and are package-relative when possible.
 
-Every document has this version-1 envelope:
+Every document has this version-2 envelope:
 
 ```json
 {
@@ -117,9 +117,8 @@ Every document has this version-1 envelope:
 }
 ```
 
-`command` is the canonical spelling (`new`, `routes`, `graph`, `doctor`, `db
-generate`, `db migrate`, `db rollback`, or `db status`) and is `null` only when
-syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
+`command` is the canonical spelling (`new`, `routes`, `graph`, or `doctor`)
+and is `null` only when syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
 completion. `data` is the command object, safe partial inspection data, or
 `null`. `diagnostics` is an ordered list of FURNACE-owned records:
 

@@ -66,11 +66,11 @@ fn substitute_local_furnace(project: &Path) {
     let local_path = local_furnace.to_string_lossy().replace('\\', "\\\\");
     let registry_dependency = format!(
         "furnace = {{ package = \"furnace-rs\", version = \"={}\", default-features = false, features = [\"http\", \"runtime-tokio\"] }}",
-        "0.9.2"
+        env!("CARGO_PKG_VERSION")
     );
     let local_dependency = format!(
         "furnace = {{ package = \"furnace-rs\", path = \"{local_path}\", version = \"={}\", default-features = false, features = [\"http\", \"runtime-tokio\"] }}",
-        "0.9.2"
+        env!("CARGO_PKG_VERSION")
     );
     let substituted = manifest.replacen(&registry_dependency, &local_dependency, 1);
     assert_ne!(

@@ -1,52 +1,96 @@
 # Changelog
 
-All notable changes to furnace-rs are documented in this file.
+All notable changes to furnace-rs are documented in this file. Published MADS
+release history is retained below; the pending 0.9.2 work and furnace-rs API
+migration are consolidated into the first 1.0.0 release.
 
-## Unreleased breaking furnace-rs migration
+## [1.0.0] - 2026-10-03
 
-- Rename all nine packages to the `furnace-rs` family and the CLI executable to `furnace`.
-- Replace module/service/repository attributes with `cauldron`, `burner`, and `storage`; replace provider/element factories with typed `Injector` construction and `.provide_with::<Output, Implementer>()` bindings.
-- Register dependencies, controllers, imports, explicit exports, and global status in `Cauldron::register`; Rust `pub` controls Rust name visibility only.
-- Start applications with `Furnace::burn` and `FurnaceBurnExt`.
-- Declare endpoints directly in an inherent `#[controller(route = "/users")]` implementation; remove `#[routes]` and `controller(routes = ...)`.
-- Controllers are public without `impl Sealable`. Attach one static `#[guard]` policy through `Sealable`, and use `#[seal(skip)]` for public endpoints within a sealed controller.
-- Rename conventional config/environment keys to `furnace.toml`/`FURNACE_*`, emit schema/protocol 2 endpoint reports, and generate six scaffold files.
-- Keep workspace version 0.9.2, edition 2024, Rust 1.94, and public feature gates unchanged. See [the migration guide](docs/importance/furnace-rs-migration.md).
+The workspace is prepared for the first stable furnace-rs release on 2026-10-03. Publication,
+the `v1.0.0` tag, and the GitHub release still require the release workflow.
 
-## [0.9.2] - Unreleased
+### Breaking changes and migration
+
+- Rename all nine packages from the MADS family to `furnace-rs` and
+  `furnace-rs-*`; rename the CLI executable to `furnace` and diagnostics to
+  the `FURNACE` family. No aliases preserve the retired declarations.
+- Replace module/service/repository attributes with `#[cauldron]`, `#[burner]`,
+  and `#[storage]`. Replace provider/element factories with typed `Injector`
+  construction and explicit `.provide_with::<Output, Implementer>()` bindings,
+  including application-authored shared trait-object outputs.
+- Declare members, controllers, imports, exports, and global status in
+  `Cauldron::register`. Rust `pub` controls Rust visibility; cauldron exports
+  control dependency access, and explicit guards control HTTP authorization.
+- Start conventional applications with `Furnace::burn` and `FurnaceBurnExt`.
+- Declare endpoints in inherent `#[controller(route = "/users")]`
+  implementations; remove `#[routes]` and `controller(routes = ...)`.
+  Controllers are public without `impl Sealable`; a static `#[guard]` policy
+  attached through `Sealable` protects endpoints, with `#[seal(skip)]` for
+  intentionally public exceptions.
+- Rename conventional files/environment keys to `furnace.toml` and `FURNACE_*`.
+  Finite CLI reports and private inspection use schema/protocol 2. The offline
+  generator creates six direct-controller application files.
+
+See [the migration guide](docs/importance/furnace-rs-migration.md) before
+upgrading an application from MADS 0.x.
 
 ### Added
 
-- `mads-testing` provides focused, module-free fixtures for registered services,
-  repositories, and controllers, constructing their dependency chains and
-  supporting supplied test values and private MADS providers.
-- `#[mads::test]` registers a zero-argument async function with `cargo test`
-  and creates its function-local `test_fixture()` helper. Tests use
-  `mads-testing` as a dev dependency without requiring a direct Tokio dependency.
-- Explicit SQLite-backed SeaORM `MockDatabase` fixtures supply native
-  `DatabaseConnection` dependencies with scripted in-memory results. Missing
-  mocks fail setup before a production database provider can run.
-- In-process controller requests support chainable status, JSON, text, and
-  header assertions while selecting only the controller's routes and guards.
-- Scoped fixture execution starts lifecycle hooks and awaits shutdown after
-  completion or an unwinding test-body panic, preserving startup rollback
-  and the original panic.
-
-### Changed
-
-- Stable and beta release workflows automatically publish `mads-testing` after
-  its dependencies and before `mads`. Release preparation and package-content
-  checks now include all nine workspace crates.
+- `furnace-rs-testing` supplies focused, module-free fixtures for registered
+  providers, services, repositories, and controllers; supplied native mocks
+  prevent production database construction during test setup.
+- `#[furnace::test]` registers a zero-argument async test and creates a local
+  `test_fixture()` helper without requiring a direct Tokio dev dependency.
+- Scripted SeaORM `MockDatabase` values can supply native `DatabaseConnection`
+  dependencies. In-process requests support status, JSON, text, and header
+  assertions for only the selected controller's routes and guards.
+- Scoped fixtures start lifecycle hooks and await shutdown after completion or
+  an unwinding test panic, preserving rollback and the original panic.
+- Reproducible HTTP authentication, core/database, and CLI filesystem security
+  workloads with failure-sensitive JSON reports and source/binary fingerprints.
+- A [security policy](SECURITY.md), [combined security audit](SECURITY_AUDIT.md),
+  and [1.0.0 release readiness guide](docs/releases/1.0.0.md).
 
 ### Security
 
-- Update the workspace lockfile to `time 0.3.47`, resolving the
-  `RUSTSEC-2026-0009` dependency advisory.
-- Switch `jsonwebtoken` from RustCrypto to its `aws_lc_rs` backend and
-  explicitly pin MADS JWT signing, verification, and key validation to
-  AWS-LC. This removes the RustCrypto `rsa` crate from the dependency graph
-  and makes MADS JWT operations independent of the process-wide provider
-  selection.
+- Enforce strict Bearer credential syntax before authentication adapters or
+  handlers execute. Internal tab separators, duplicate/combined credentials,
+  and invalid token characters reject with the generic 401/Bearer response;
+  case-insensitive schemes and multiple ASCII spaces remain accepted. The
+  reproduced parser differential required a valid signed JWT, not a forged one.
+- Redact retained causes from ordinary core `Error` debug formatting, including
+  nested native errors that can contain database credentials. Typed causes
+  remain available through explicit `source()` access.
+- Reject unrepresentable typed and native database timeout deadlines before
+  SQLx can panic on `Instant` arithmetic; preserve valid and disabled policies.
+- Suppress credential-bearing SeaORM connection-establishment tracing with a
+  future-scoped dispatcher. Surrounding application tracing is restored;
+  native handshake telemetry and inline callback tracing are suppressed.
+- Create Unix CLI inspection/control directories with atomic owner-only `0700`
+  permissions, preventing other local users from tampering under permissive
+  umasks. The check covers actual permissions and owner access in isolated
+  child processes; executable replacement races were not reproduced end to end.
+- Retain the `time` advisory fix and the explicitly selected AWS-LC JWT backend,
+  keeping the RustCrypto RSA implementation out of the normal workspace graph.
+  A consumer enabling both crypto backends is covered separately.
+- The all-crate audit scanned all nine workspace crates and seven checked-in
+  lockfiles, with no known advisory matches at its recorded RustSec snapshot.
+  Historical reports keep their original versions, commits, and limitations.
+  The prepared 1.0.0 tree also passed a refreshed eight-lockfile advisory scan,
+  security smoke contracts, and authenticated live PostgreSQL validation; see
+  the [release verification](docs/releases/1.0.0.md#local-verification).
+
+### Compatibility and release tooling
+
+- Align all nine workspace packages, including CLI and testing, at `1.0.0` with
+  exact internal pins. Keep Rust edition 2024, MSRV 1.94, current public feature
+  boundaries, Axum 0.8, and native SeaORM PostgreSQL integration (minimum 2.0.0).
+- Stable and beta publication retain dependency-ordered publishing and now
+  require advisory and security-regression verification before publication.
+- Update active examples, installation snippets, migration/architecture/CLI
+  documentation and version-sensitive generated-project acceptance tests.
+- Correct benchmark version reporting to read the actual workspace version
+  rather than labeling new local-source runs with a historical release number.
 
 ## [0.9.1] - 2026-09-25
 
@@ -259,3 +303,5 @@ First public beta of the MADS.rs HTTP application foundation.
 [0.6.0-beta.1]: https://github.com/Adriannathan89/mads/releases/tag/v0.6.0-beta.1
 [0.7.0]: https://github.com/Adriannathan89/mads/releases/tag/v0.7.0
 [0.7.0-beta.1]: https://github.com/Adriannathan89/mads/releases/tag/v0.7.0-beta.1
+
+[1.0.0]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.0

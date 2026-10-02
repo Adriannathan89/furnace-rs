@@ -74,11 +74,12 @@ binary's SHA-256. These measurements include client and application overhead;
 they do not establish a performance threshold or prove the absence of other
 vulnerabilities. See [the security finding and before/after evidence](SECURITY.md).
 
-This suite drives the three [FURNACE 0.9.1 example applications](../example/) over
+This suite drives the three [FURNACE 1.0.0 example applications](../example/) over
 real loopback HTTP. It checks response content and status under load, then
 reports throughput and client-observed p50/p95/p99 latency. The applications
-target FURNACE 0.9.1 packages, as pinned in their `Cargo.lock` files.
-Python 3's standard library generates the traffic; no load-test package is
+use local FURNACE 1.0.0 path dependencies, as pinned in their `Cargo.lock` files.
+Historical reports retain the versions they actually measured.
+Python 3.11 or newer's standard library generates the traffic; no load-test package is
 required.
 
 ## Workloads
@@ -209,7 +210,7 @@ does not edit the examples or their lockfiles. The reproducible local-source
 lockfiles are stored in `benchmark/targets/furnace-rs/locks/`; on a warm cache,
 `build_furnace.py --offline` avoids network access. The helper uses an existing
 lock from that directory with `--locked`, or saves the resolved lock after the
-first successful build. Results from this command measure **local FURNACE 0.9.2
+first successful build. Results from this command measure **local FURNACE 1.0.0
 source**, not the published crate archive.
 
 For CRUD, provision three isolated PostgreSQL databases, apply the same
