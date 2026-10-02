@@ -31,3 +31,62 @@ fn connector_debug_never_discloses_url() {
     let from_options = SeaOrmPostgres::from_options(ConnectOptions::new(url));
     assert!(!format!("{from_options:?}").contains("furnace_rs-secret"));
 }
+
+#[tokio::test]
+async fn unrepresentable_pool_deadline_is_rejected_without_panicking() {
+    let mut options =
+        ConnectOptions::new("postgres://test-user:timeout-secret-password@127.0.0.1:1/db");
+    options.acquire_timeout(std::time::Duration::MAX);
+    let result = tokio::spawn(async move {
+        DatabaseFactory
+            .provide(SeaOrmPostgres::from_options(options))
+            .await
+    })
+    .await
+    .expect("invalid duration must return a typed error, not panic");
+    let error = result.expect_err("unrepresentable deadline must fail before connecting");
+    assert_eq!(error.kind(), PersistenceErrorKind::InvalidConfiguration);
+    assert!(!format!("{error:?} {error}").contains("timeout-secret-password"));
+}
+
+#[tokio::test]
+async fn native_options_reject_all_overflowing_deadlines_even_with_lazy_connections() {
+    for field in ["connect", "acquire", "idle", "lifetime"] {
+        let mut connector = SeaOrmPostgres::new("postgres://localhost/db");
+        let options = connector.options_mut();
+        options.connect_lazy(true);
+        match field {
+            "connect" => {
+                options.connect_timeout(std::time::Duration::MAX);
+            }
+            "acquire" => {
+                options.acquire_timeout(std::time::Duration::MAX);
+            }
+            "idle" => {
+                options.idle_timeout(std::time::Duration::MAX);
+            }
+            "lifetime" => {
+                options.max_lifetime(std::time::Duration::MAX);
+            }
+            _ => unreachable!(),
+        }
+        assert_eq!(
+            DatabaseFactory.provide(connector).await.unwrap_err().kind(),
+            PersistenceErrorKind::InvalidConfiguration
+        );
+    }
+}
+
+#[tokio::test]
+async fn valid_native_timeouts_and_disabled_reaping_preserve_lazy_connections() {
+    let mut connector = SeaOrmPostgres::new("postgres://localhost/db");
+    connector
+        .options_mut()
+        .connect_lazy(true)
+        .connect_timeout(std::time::Duration::from_secs(2))
+        .acquire_timeout(std::time::Duration::from_secs(2))
+        .idle_timeout(None)
+        .max_lifetime(None);
+    let connection = DatabaseFactory.provide(connector).await.unwrap();
+    connection.close_by_ref().await.unwrap();
+}

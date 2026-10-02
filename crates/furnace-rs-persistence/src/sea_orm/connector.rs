@@ -2,12 +2,17 @@ use std::fmt;
 
 use ::sea_orm::{ConnectOptions, DatabaseConnection, SqlxPostgresConnector};
 use furnace_rs_core::Config;
+use tracing::instrument::WithSubscriber;
 
 use crate::{DatabaseConnector, PersistenceError, PersistenceErrorKind, PersistenceResult};
 
-use super::config::SeaOrmConfig;
+use super::config::{SeaOrmConfig, deadline_is_representable};
 
 /// A connector that returns SeaORM's native PostgreSQL database connection.
+///
+/// Native connection-establishment tracing is suppressed because SeaORM records
+/// credential-bearing options in its connection span. Application tracing and
+/// statement logging on the returned connection retain their configured behavior.
 #[derive(Clone)]
 pub struct SeaOrmPostgres {
     options: ConnectOptions,
@@ -58,7 +63,28 @@ impl DatabaseConnector for SeaOrmPostgres {
 
     async fn connect(self) -> PersistenceResult<Self::Database> {
         validate_postgres_scheme(self.options.get_url())?;
+        // SQLx adds pool timeouts to an Instant without checking overflow.
+        // Validate native options too, including options changed after parsing.
+        for duration in [
+            self.options.get_connect_timeout(),
+            self.options.get_acquire_timeout(),
+            self.options.get_idle_timeout().flatten(),
+            self.options.get_max_lifetime().flatten(),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            if !deadline_is_representable(duration) {
+                return Err(PersistenceError::new(
+                    PersistenceErrorKind::InvalidConfiguration,
+                    "configure",
+                ));
+            }
+        }
         SqlxPostgresConnector::connect(self.options)
+            // SeaORM's connection span records the full URL in ConnectOptions.
+            // Scope the dispatcher to each poll of this future, never globally.
+            .with_subscriber(tracing::subscriber::NoSubscriber::default())
             .await
             .map_err(|source| {
                 PersistenceError::with_source(PersistenceErrorKind::Connection, "connect", source)

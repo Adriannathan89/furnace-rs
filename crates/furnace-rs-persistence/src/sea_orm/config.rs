@@ -27,6 +27,27 @@ struct PersistenceConfig {
 impl SeaOrmConfig {
     pub(super) fn parse(config: &Config) -> Result<Self, ConfigurationErrors> {
         let parsed = config.parse::<PersistenceConfig>()?.seaorm;
+        for (field, seconds) in [
+            ("connect_timeout_seconds", parsed.connect_timeout_seconds),
+            ("acquire_timeout_seconds", parsed.acquire_timeout_seconds),
+            ("idle_timeout_seconds", parsed.idle_timeout_seconds),
+            ("max_lifetime_seconds", parsed.max_lifetime_seconds),
+        ] {
+            if let Some(seconds) = seconds
+                && !deadline_is_representable(Duration::from_secs(seconds))
+            {
+                let key = format!("persistence.seaorm.{field}");
+                let mut issue = ConfigurationIssue::new(
+                    &key,
+                    "out_of_range",
+                    "duration exceeds the supported deadline range",
+                );
+                if let Some(source) = config.source_of(&key) {
+                    issue = issue.with_source(source);
+                }
+                return Err(ConfigurationErrors::from_issue(issue));
+            }
+        }
         if let (Some(min), Some(max)) = (parsed.min_connections, parsed.max_connections)
             && min > max
         {
@@ -66,6 +87,10 @@ impl SeaOrmConfig {
             options.sqlx_logging(value);
         }
     }
+}
+
+pub(super) fn deadline_is_representable(duration: Duration) -> bool {
+    std::time::Instant::now().checked_add(duration).is_some()
 }
 
 #[cfg(test)]
@@ -157,6 +182,30 @@ mod tests {
             .unwrap_err();
             assert_eq!(errors.issues()[0].key(), key);
             assert_eq!(errors.issues()[0].code(), "too_small");
+        }
+    }
+
+    #[test]
+    fn overflowing_timeout_seconds_are_rejected_with_safe_key_and_source() {
+        for key in [
+            "persistence.seaorm.connect_timeout_seconds",
+            "persistence.seaorm.acquire_timeout_seconds",
+            "persistence.seaorm.idle_timeout_seconds",
+            "persistence.seaorm.max_lifetime_seconds",
+        ] {
+            let settings = config([
+                (
+                    "persistence.seaorm.url",
+                    "postgres://user:timeout-secret-password@localhost/db",
+                ),
+                (key, "18446744073709551615"),
+            ]);
+            let errors = SeaOrmConfig::parse(&settings).unwrap_err();
+            assert_eq!(errors.issues()[0].key(), key);
+            assert_eq!(errors.issues()[0].source(), Some("fixture"));
+            assert_eq!(errors.issues()[0].code(), "out_of_range");
+            assert!(!format!("{errors:?} {errors}").contains("timeout-secret-password"));
+            assert!(!format!("{errors:?} {errors}").contains("18446744073709551615"));
         }
     }
 

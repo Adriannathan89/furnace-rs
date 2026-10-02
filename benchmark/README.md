@@ -2,6 +2,26 @@
 
 ## Security regression workload (local source)
 
+For core and PostgreSQL connector security contracts, run:
+
+```sh
+python3 benchmark/tool/infrastructure_security.py --profile smoke \
+  --output /tmp/furnace-infrastructure-smoke.json
+python3 benchmark/tool/infrastructure_security.py --profile stress \
+  --output /tmp/furnace-infrastructure-stress.json
+```
+
+This tool compiles and runs the persistence crate's `tests/security_benchmark.rs` against
+the local core and persistence crates using Cargo's locked, offline test build.
+No database is needed. Its 2/200/1,000 rounds check ordinary error-source
+redaction, overflowing typed/native database timeouts, connection trace
+redaction, preserved surrounding application tracing, and valid configuration
+controls. The JSON includes source hashes and per-case failures. Missing cases,
+failed Rust assertions, and nonzero Cargo exits cannot be reported as success.
+The reported elapsed time covers contract checks, excluding compilation; it is
+a correctness workload, not a database-throughput measurement. See
+[the infrastructure findings](INFRASTRUCTURE_SECURITY.md).
+
 The auth security workload builds and runs the implementation in this checkout.
 It uses the staged release binary from `build_furnace.py`, rather than the old
 stress runner's example target directories. Rebuild before each verification

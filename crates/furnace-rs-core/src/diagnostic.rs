@@ -176,10 +176,23 @@ impl fmt::Display for Diagnostic {
 }
 
 /// A framework error containing a structured diagnostic and optional cause.
-#[derive(Debug)]
+///
+/// Ordinary formatting renders diagnostics without exposing the retained cause.
+/// Diagnostic authors must keep their messages safe; access to an underlying
+/// cause requires an explicit call to [`std::error::Error::source`].
 pub struct Error {
     diagnostics: Vec<Diagnostic>,
     source: Option<Box<dyn std::error::Error + Send + Sync>>,
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("Error")
+            .field("diagnostics", &self.diagnostics)
+            .field("has_source", &self.source.is_some())
+            .finish()
+    }
 }
 
 impl Error {

@@ -774,6 +774,7 @@ dependencies = [
  "furnace-rs-core",
  "sea-orm",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

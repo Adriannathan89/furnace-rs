@@ -89,6 +89,42 @@ fn retains_a_source_error() {
 }
 
 #[test]
+fn ordinary_error_formatting_redacts_retained_sources_at_every_depth() {
+    let secret = "postgres://test-user:diagnostic-secret-password@localhost/db";
+    let cause = Error::with_source(
+        Diagnostic::new(FURNACE006, "connection failed", "database unavailable"),
+        std::io::Error::other(secret),
+    );
+    let error = Error::with_source(
+        Diagnostic::new(FURNACE006, "provider failed", "construction aborted"),
+        cause,
+    );
+    for rendered in [
+        format!("{error}"),
+        format!("{error:?}"),
+        format!("{error:#?}"),
+    ] {
+        assert!(
+            !rendered.contains(secret),
+            "retained source leaked into ordinary formatting"
+        );
+        assert!(rendered.contains("provider failed"));
+    }
+    let cause = std::error::Error::source(&error)
+        .unwrap()
+        .downcast_ref::<Error>()
+        .unwrap();
+    assert_eq!(
+        std::error::Error::source(cause)
+            .unwrap()
+            .downcast_ref::<std::io::Error>()
+            .unwrap()
+            .to_string(),
+        secret
+    );
+}
+
+#[test]
 fn renders_multiple_suggestions_in_insertion_order() {
     let diagnostic = Diagnostic::new(
         FURNACE001,
