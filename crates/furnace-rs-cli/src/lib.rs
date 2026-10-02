@@ -18,6 +18,7 @@ mod diagnostic;
 mod inspection;
 /// Versioned finite-command output records and serializers.
 pub mod output;
+mod private_temp_dir;
 mod process;
 #[allow(dead_code)]
 mod project;

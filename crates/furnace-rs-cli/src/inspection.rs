@@ -272,7 +272,7 @@ async fn inspect_application_with_timeouts_and_streams(
 ) -> Result<InspectionReport, CliError> {
     ensure_supported_furnace_version(built)?;
 
-    let directory = tempfile::tempdir().map_err(|error| {
+    let directory = crate::private_temp_dir::create().map_err(|error| {
         inspection_error("could not prepare private inspection transport").with_source(error)
     })?;
     let token = inspection_token()?;

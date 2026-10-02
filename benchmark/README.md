@@ -2,6 +2,22 @@
 
 ## Security regression workload (local source)
 
+For CLI inspection and development control directory isolation on Unix, run:
+
+```sh
+python3 benchmark/tool/cli_security.py --profile smoke
+python3 benchmark/tool/cli_security.py --profile stress \
+  --output /tmp/furnace-cli-security.json
+```
+
+Each round creates directories in separate children under umasks `000`, `002`,
+`022`, and `077`, checks owner-only `0700` permissions and owner read/write
+access, and requires proof that each child check executed. Smoke/stress/extended
+run 2/200/1,000 rounds. The runner uses locked offline Cargo tests and records a
+source hash; incomplete checks or nonzero exits fail. This is a filesystem
+correctness workload, not an HTTP performance measurement. See the
+[all-crate audit](ALL_CRATES_SECURITY_AUDIT.md).
+
 For core and PostgreSQL connector security contracts, run:
 
 ```sh

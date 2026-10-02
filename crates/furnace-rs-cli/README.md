@@ -57,6 +57,12 @@ changes can restart the process without a rebuild; compile failures preserve
 the last good process. Shutdown and replacement use the standard FURNACE private
 protocol so the behavior remains cross-platform.
 
+On Unix, inspection transport and development control directories are created
+with owner-only `0700` permissions, independent of a permissive user umask.
+This protects reports, shutdown markers, and the development executable copy
+from access by other local users. The directory permissions are applied during
+creation, before any control files are written.
+
 The scaffold renderer validates and renders in memory, stages beside the
 destination, and publishes a complete project
 atomically.
@@ -92,6 +98,7 @@ on application internals.
 - `src/process.rs`, `src/dev.rs`, `src/dev_state.rs`, and `src/watch.rs` —
   process lifecycle and development supervision.
 - `src/inspection.rs` — private child protocol and report acquisition.
+- `src/private_temp_dir.rs` — owner-only Unix transport/control directories.
 - `src/output/` and `src/render.rs` — human output, JSON v2 records, paths,
   routes, graph, and doctor rendering.
 - `src/scaffold/` — names, templates, validation, staging, and publication.

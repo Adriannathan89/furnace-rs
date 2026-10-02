@@ -45,7 +45,7 @@ async fn spawn_dev_application_from_parts(
     package_root: &Path,
     arguments: &[OsString],
 ) -> Result<ApplicationProcess, CliError> {
-    let control_directory = tempfile::tempdir().map_err(|error| {
+    let control_directory = crate::private_temp_dir::create().map_err(|error| {
         process_error(
             "could not create application process control directory",
             error,
