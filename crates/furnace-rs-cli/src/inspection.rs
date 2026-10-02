@@ -60,8 +60,10 @@ impl InspectionTimeouts {
     #[cfg(test)]
     const fn for_test() -> Self {
         Self {
-            handshake: Duration::from_millis(100),
-            report: Duration::from_millis(100),
+            // Launching a real child needs the normal startup/report budgets,
+            // including when coverage or other tests contend for CPU time.
+            handshake: HANDSHAKE_TIMEOUT,
+            report: REPORT_TIMEOUT,
             poll: Duration::from_millis(5),
         }
     }
@@ -514,41 +516,62 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn accepts_valid_protocol_after_delayed_acknowledgement_and_report() {
+        let application = fixture_application("delayed_success").await;
+        let report = inspect_application_with_timeouts(
+            &application,
+            InspectionKind::Routes,
+            InspectionTimeouts::for_test(),
+        )
+        .await
+        .expect("valid delayed protocol fixture should succeed");
+
+        assert_eq!(report.kind, InspectionKind::Routes);
+    }
+
+    #[tokio::test]
     async fn rejects_a_wrong_acknowledgement_token() {
-        assert_protocol_failure("wrong_token").await;
+        assert_protocol_failure("wrong_token", "invalid inspection acknowledgement").await;
     }
 
     #[tokio::test]
     async fn rejects_a_wrong_protocol_version() {
-        assert_protocol_failure("wrong_version").await;
+        assert_protocol_failure("wrong_version", "invalid inspection report").await;
     }
 
     #[tokio::test]
     async fn rejects_malformed_report_data() {
-        assert_protocol_failure("malformed").await;
+        assert_protocol_failure("malformed", "malformed private inspection output").await;
     }
 
     #[tokio::test]
     async fn rejects_a_child_that_exits_before_acknowledging() {
-        assert_protocol_failure("early_exit").await;
+        assert_protocol_failure("early_exit", "exited before completing private inspection").await;
     }
 
     #[tokio::test]
     async fn terminates_a_child_that_acknowledges_without_reporting() {
-        assert_protocol_failure("timeout").await;
+        assert_protocol_failure("timeout", "did not return an inspection report in time").await;
     }
 
-    async fn assert_protocol_failure(binary: &str) {
+    async fn assert_protocol_failure(binary: &str, expected_message: &str) {
         let application = fixture_application(binary).await;
-        let error = inspect_application_with_timeouts(
-            &application,
-            InspectionKind::Doctor,
-            InspectionTimeouts::for_test(),
-        )
-        .await
-        .expect_err("invalid protocol fixture should fail");
+        let mut timeouts = InspectionTimeouts::for_test();
+        if binary == "timeout" {
+            // This fixture intentionally withholds a report; only its report
+            // deadline should be short, not the child startup deadline.
+            timeouts.report = std::time::Duration::from_millis(100);
+        }
+        let error =
+            inspect_application_with_timeouts(&application, InspectionKind::Doctor, timeouts)
+                .await
+                .expect_err("invalid protocol fixture should fail");
 
         assert_eq!(error.code(), FURNACE203);
+        assert!(
+            error.message().contains(expected_message),
+            "expected {expected_message:?}, got {error:?}"
+        );
     }
 
     async fn fixture_application(binary: &str) -> crate::cargo::BuiltApplication {

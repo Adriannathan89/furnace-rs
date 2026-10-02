@@ -12,6 +12,9 @@ pub fn run(mode: &str) {
     if mode == "early_exit" {
         return;
     }
+    if mode == "delayed_success" {
+        thread::sleep(Duration::from_millis(250));
+    }
 
     let token = env::var(INSPECTION_TOKEN_ENV).expect("token should be set");
     let ack_path = env::var(INSPECTION_ACK_ENV).expect("ack path should be set");
@@ -22,7 +25,11 @@ pub fn run(mode: &str) {
         INSPECTION_PROTOCOL_VERSION.to_string()
     );
 
-    let ack_token = if mode == "wrong_token" { "incorrect-token" } else { &token };
+    let ack_token = if mode == "wrong_token" {
+        "incorrect-token"
+    } else {
+        &token
+    };
     fs::write(
         ack_path,
         format!(
@@ -31,6 +38,10 @@ pub fn run(mode: &str) {
         ),
     )
     .expect("ack should be written");
+
+    if mode == "delayed_success" {
+        thread::sleep(Duration::from_millis(250));
+    }
 
     if mode == "timeout" {
         thread::sleep(Duration::from_secs(30));
@@ -42,7 +53,11 @@ pub fn run(mode: &str) {
         return;
     }
 
-    let response_token = if mode == "wrong_token" { "incorrect-token" } else { &token };
+    let response_token = if mode == "wrong_token" {
+        "incorrect-token"
+    } else {
+        &token
+    };
     let version = if mode == "wrong_version" {
         INSPECTION_PROTOCOL_VERSION + 1
     } else {
@@ -54,9 +69,7 @@ pub fn run(mode: &str) {
     );
     fs::write(
         response_path,
-        format!(
-            r#"{{"protocol_version":{version},"token":"{response_token}","report":{report}}}"#
-        ),
+        format!(r#"{{"protocol_version":{version},"token":"{response_token}","report":{report}}}"#),
     )
     .expect("response should be written");
 }
