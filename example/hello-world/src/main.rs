@@ -3,11 +3,6 @@ use furnace_rs::prelude::*;
 #[controller]
 struct HelloController;
 
-impl Sealable for HelloController {
-    fn seals() -> SealRegistration<Self> {
-        SealRegistration::new()
-    }
-}
 #[controller(route = "/")]
 impl HelloController {
     #[get]

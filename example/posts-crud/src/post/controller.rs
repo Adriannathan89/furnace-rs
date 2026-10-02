@@ -10,11 +10,6 @@ pub struct PostController {
     service: PostService,
 }
 
-impl Sealable for PostController {
-    fn seals() -> SealRegistration<Self> {
-        SealRegistration::new()
-    }
-}
 #[controller(route = "/posts")]
 impl PostController {
     #[post]
