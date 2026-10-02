@@ -4,6 +4,33 @@
 use furnace_rs_core::{Config, FURNACE008, FURNACE009, Furnace, LifecycleResource};
 use furnace_rs_persistence::sea_orm::{DatabaseCauldron, DatabaseConnection};
 
+#[test]
+fn native_database_injector_declares_inputs_and_lifecycle_without_io() {
+    use furnace_rs_core::Injector;
+    use furnace_rs_persistence::{
+        DatabaseFactory,
+        sea_orm::{SeaOrmDatabaseInjector, SeaOrmPostgres},
+    };
+    let descriptor = SeaOrmDatabaseInjector::descriptor();
+    assert_eq!(
+        descriptor.type_id(),
+        std::any::TypeId::of::<DatabaseConnection>()
+    );
+    assert_eq!(
+        descriptor.dependencies()[0].type_id(),
+        std::any::TypeId::of::<DatabaseFactory>()
+    );
+    assert_eq!(
+        descriptor.dependencies()[1].type_id(),
+        std::any::TypeId::of::<SeaOrmPostgres>()
+    );
+    assert!(descriptor.lifecycle_constructor().is_some());
+    assert_eq!(
+        descriptor.visibility(),
+        furnace_rs_core::ProviderVisibility::Public
+    );
+}
+
 mod imported {
     use super::*;
 

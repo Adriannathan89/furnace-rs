@@ -247,6 +247,28 @@ impl ProviderDescriptor {
         self
     }
 
+    /// Retains an authored integration name instead of a generic resolved name.
+    #[doc(hidden)]
+    pub const fn with_authored_type_name(mut self, name: &'static str) -> Self {
+        self.type_name = name;
+        self.resolved_type_name = None;
+        self
+    }
+
+    /// Records the declaration that supplies generic integration metadata.
+    #[doc(hidden)]
+    pub const fn with_location(mut self, location: SourceLocation) -> Self {
+        self.location = location;
+        self
+    }
+
+    /// Retains an integration's authored visibility for catalog inspection.
+    #[doc(hidden)]
+    pub const fn with_visibility(mut self, visibility: ProviderVisibility) -> Self {
+        self.visibility = visibility;
+        self
+    }
+
     /// Returns the provider's runtime output type identifier.
     pub fn type_id(&self) -> TypeId {
         (self.type_id)()

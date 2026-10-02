@@ -99,6 +99,7 @@ pub mod __private {
         AutoConfigurationApplyContext, AutoConfigurationContext, AutoConfigurationContribution,
         AutoConfigurationDescriptor, AutoConfigurationEvaluation,
     };
+    pub use crate::injector::InjectorMetadata;
     pub use crate::preflight::{PreflightContext, PreflightDescriptor, PreflightValidator};
     pub use inventory;
 

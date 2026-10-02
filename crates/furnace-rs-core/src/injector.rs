@@ -125,9 +125,12 @@ where
     })
 }
 
-struct Metadata<T, I>(PhantomData<fn() -> (T, I)>);
-impl<T: Send + Sync + 'static, I: Injector<T>> Metadata<T, I> {
-    const DESCRIPTOR: ProviderDescriptor = ProviderDescriptor::new(
+/// Static descriptor bridge for deliberately discoverable native integrations.
+#[doc(hidden)]
+pub struct InjectorMetadata<T, I>(PhantomData<fn() -> (T, I)>);
+impl<T: Send + Sync + 'static, I: Injector<T>> InjectorMetadata<T, I> {
+    /// Constructor metadata suitable for an inventory submission.
+    pub const DESCRIPTOR: ProviderDescriptor = ProviderDescriptor::new(
         ProviderKind::Provider,
         "injector output",
         TypeId::of::<T>,
@@ -145,5 +148,5 @@ impl<T: Send + Sync + 'static, I: Injector<T>> Metadata<T, I> {
 #[doc(hidden)]
 pub fn injector_descriptor<T: Send + Sync + 'static, I: Injector<T>>() -> &'static ProviderDescriptor
 {
-    &Metadata::<T, I>::DESCRIPTOR
+    &InjectorMetadata::<T, I>::DESCRIPTOR
 }

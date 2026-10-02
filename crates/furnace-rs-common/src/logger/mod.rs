@@ -28,10 +28,31 @@ pub use logger_service::{LogLevel, Logger, LoggerService};
 pub struct LoggerCauldron;
 
 /// Provides the default console-backed [`Logger`].
-#[crate::core::element]
 pub fn logger() -> Logger {
     Logger::default()
 }
+
+impl crate::core::Injector for Logger {
+    type Dependencies = ();
+    async fn inject((): ()) -> crate::core::Result<Self> {
+        Ok(logger())
+    }
+    fn descriptor() -> &'static crate::core::ProviderDescriptor {
+        &LOGGER_DESCRIPTOR
+    }
+}
+
+const LOGGER_DESCRIPTOR: crate::core::ProviderDescriptor =
+    crate::core::__private::InjectorMetadata::<Logger, Logger>::DESCRIPTOR
+        .with_authored_type_name("Logger")
+        .with_visibility(crate::core::ProviderVisibility::Public)
+        .with_namespace(module_path!())
+        .with_location(crate::core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+crate::core::__private::inventory::submit! { LOGGER_DESCRIPTOR }
 
 impl crate::core::Cauldron for LoggerCauldron {
     fn register(self) -> crate::core::CauldronRegistration<Self> {

@@ -97,11 +97,11 @@
 - A local SeaORM constructor declares `(DatabaseFactory, SeaOrmPostgres)` and returns the native `DatabaseConnection`; its lifecycle override contributes the existing `SeaOrmLifecycle` infrastructure hook.
 - Official discoverable provider descriptors delegate to injectors and preserve conditional/focused integration requirements. Keep ordinary helper functions when existing direct callers need them.
 
-- [ ] Add lifecycle event assertions: inject once, attach once, infrastructure before application hooks, reverse shutdown, cleanup after a later construction failure, rollback after startup failure, and skip when overridden.
-- [ ] Run the lifecycle test and relevant persistence tests before migration; capture missing/new contract failures.
-- [ ] Migrate logger and persistence constructors, bindings, and catalog bridges without changing native output identities or activation rules. Retain current redaction and hook ownership strings.
-- [ ] Run core lifecycle/construction-failure and persistence factory/connector/module tests, common auto-configuration/focused/scoped tests. Assert native resource values resolve under their existing output types.
-- [ ] Commit: `refactor(integrations): construct native resources through Injector`.
+- [x] Add lifecycle event assertions: inject once, attach once, infrastructure before application hooks, reverse shutdown, cleanup after a later construction failure, rollback after startup failure, and skip when overridden.
+- [x] Run the lifecycle test and relevant persistence tests before migration; capture missing/new contract failures.
+- [x] Migrate logger and persistence constructors, bindings, and catalog bridges without changing native output identities or activation rules. Retain current redaction and hook ownership strings.
+- [x] Run core lifecycle/construction-failure and persistence factory/connector/module tests, common auto-configuration/focused/scoped tests. Assert native resource values resolve under their existing output types.
+- [x] Commit: `refactor(integrations): construct native resources through Injector`.
 
 ### Task 5: Remove element and migrate public consumers
 
