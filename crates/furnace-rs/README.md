@@ -70,7 +70,7 @@ versions are maintained in the workspace root `Cargo.toml`.
 
 The facade re-exports:
 
-- Core declarations: `cauldron`, `element`, `burner`, `storage`,
+- Core declarations: `cauldron`, `burner`, `storage`, and typed `Injector` construction,
   `Configuration`, `Secret`, `Cauldron`, `CauldronRegistration`, and the builder/application types under
   `furnace_rs::core`.
 - Integration declarations: HTTP verbs, `controller`, `guard`,

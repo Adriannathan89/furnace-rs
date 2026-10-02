@@ -192,7 +192,7 @@ pub use furnace_rs_core::test;
 /// Re-exports explicit cauldron registration and dependency declarations.
 pub use furnace_rs_core::{
     Cauldron, CauldronRegistration, Furnace, FurnaceBuilder, InjectionDependencies, Injector,
-    burner, cauldron, element, storage,
+    burner, cauldron, storage,
 };
 
 /// Static guard policy metadata used by generated controller registration.
@@ -333,8 +333,7 @@ pub mod prelude {
     pub use furnace_rs_common::{SealRegistration, Sealable};
     /// Re-exports explicit cauldron registration and dependency declarations.
     pub use furnace_rs_core::{
-        Cauldron, CauldronRegistration, InjectionDependencies, Injector, burner, cauldron, element,
-        storage,
+        Cauldron, CauldronRegistration, InjectionDependencies, Injector, burner, cauldron, storage,
     };
 
     /// Re-exports the asynchronous furnace-rs entry-point attribute.

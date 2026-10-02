@@ -237,6 +237,23 @@ impl JwtService {
     }
 }
 
+impl furnace_rs_core::Injector for JwtService {
+    type Dependencies = (furnace_rs_core::Config,);
+
+    async fn inject((config,): Self::Dependencies) -> furnace_rs_core::Result<Self> {
+        Self::from_config(&config).map_err(|_| {
+            furnace_rs_core::Error::new(
+                furnace_rs_core::Diagnostic::new(
+                    super::FURNACE121,
+                    "JWT injection failed",
+                    "Passport JWT configuration or key provisioning failed",
+                )
+                .with_subject("passport"),
+            )
+        })
+    }
+}
+
 fn unix_now() -> JwtResult<u64> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

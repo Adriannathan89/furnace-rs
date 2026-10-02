@@ -10,7 +10,7 @@
                     .unwrap()
                     .to_token_stream()
                     .to_string(),
-                "crate"
+                ":: furnace_rs_core"
             );
             assert_eq!(
                 found_path(FoundCrate::Itself, true)

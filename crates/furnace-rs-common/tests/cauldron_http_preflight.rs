@@ -7,7 +7,7 @@ use furnace_rs_common::core::__private::{
 };
 use furnace_rs_common::core::{
     AutoConfigurationReasonCode, Cauldron, CauldronRegistration, FURNACE008, FURNACE030, Furnace,
-    SourceLocation, cauldron, element,
+    SourceLocation, cauldron,
 };
 use furnace_rs_common::{SealRegistration, Sealable, controller};
 use std::any::TypeId;
@@ -20,11 +20,34 @@ static TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 struct Resource;
 #[derive(Clone)]
 struct DefaultResource;
-#[element]
+
 fn resource() -> Resource {
     PROVIDERS.fetch_add(1, Ordering::SeqCst);
     Resource
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct ResourceInjector;
+impl furnace_rs_core::Injector<Resource> for ResourceInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Resource> {
+        Ok(resource())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_RESOURCE
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_RESOURCE: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Resource, ResourceInjector>::DESCRIPTOR
+        .with_authored_type_name("Resource")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_RESOURCE }
+
 fn evaluate(_: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluation {
     AutoConfigurationEvaluation::active(
         AutoConfigurationReasonCode::new("fixture"),
@@ -64,7 +87,8 @@ impl Conflict {
 struct ConflictRoot;
 impl Cauldron for ConflictRoot {
     fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Resource>().controller::<Conflict>()
+        self.provide_with::<Resource, ResourceInjector>()
+            .controller::<Conflict>()
     }
 }
 #[controller]
@@ -249,30 +273,56 @@ mod security {
     fn supplied_jwt() -> JwtService {
         JwtService::from_passport_config(PassportConfig::from_config(&config()).unwrap()).unwrap()
     }
-    #[element]
+
     fn jwt() -> JwtService {
         PROVIDERS.fetch_add(1, Ordering::SeqCst);
         supplied_jwt()
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    struct JwtInjector;
+    impl furnace_rs_core::Injector<JwtService> for JwtInjector {
+        type Dependencies = ();
+        async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<JwtService> {
+            Ok(jwt())
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_JWT
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_JWT: furnace_rs_core::ProviderDescriptor =
+        furnace_rs_core::__private::InjectorMetadata::<JwtService, JwtInjector>::DESCRIPTOR
+            .with_authored_type_name("JwtService")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_JWT }
+
     #[cauldron]
     struct PrivateJwt;
     impl Cauldron for PrivateJwt {
         fn register(self) -> CauldronRegistration<Self> {
-            self.provide::<JwtService>()
+            self.provide_with::<JwtService, JwtInjector>()
         }
     }
     #[cauldron]
     struct ExportedJwt;
     impl Cauldron for ExportedJwt {
         fn register(self) -> CauldronRegistration<Self> {
-            self.provide::<JwtService>().export::<JwtService>()
+            self.provide_with::<JwtService, JwtInjector>()
+                .export::<JwtService>()
         }
     }
     #[cauldron]
     struct GlobalJwt;
     impl Cauldron for GlobalJwt {
         fn register(self) -> CauldronRegistration<Self> {
-            self.provide::<JwtService>().export::<JwtService>().global()
+            self.provide_with::<JwtService, JwtInjector>()
+                .export::<JwtService>()
+                .global()
         }
     }
     #[cauldron]
@@ -293,7 +343,8 @@ mod security {
     struct LocalRoot;
     impl Cauldron for LocalRoot {
         fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<Protected>().provide::<JwtService>()
+            self.controller::<Protected>()
+                .provide_with::<JwtService, JwtInjector>()
         }
     }
     #[cauldron]
@@ -474,14 +525,15 @@ mod security {
     struct PrivateStrategy;
     impl Cauldron for PrivateStrategy {
         fn register(self) -> CauldronRegistration<Self> {
-            self.provide::<Resource>().provide::<Strategy>()
+            self.provide_with::<Resource, super::ResourceInjector>()
+                .provide::<Strategy>()
         }
     }
     #[cauldron]
     struct ExportedStrategy;
     impl Cauldron for ExportedStrategy {
         fn register(self) -> CauldronRegistration<Self> {
-            self.provide::<Resource>()
+            self.provide_with::<Resource, super::ResourceInjector>()
                 .provide::<Strategy>()
                 .export::<Strategy>()
         }
@@ -490,7 +542,7 @@ mod security {
     struct GlobalStrategy;
     impl Cauldron for GlobalStrategy {
         fn register(self) -> CauldronRegistration<Self> {
-            self.provide::<Resource>()
+            self.provide_with::<Resource, super::ResourceInjector>()
                 .provide::<Strategy>()
                 .export::<Strategy>()
                 .global()
@@ -516,7 +568,7 @@ mod security {
     impl Cauldron for CustomLocal {
         fn register(self) -> CauldronRegistration<Self> {
             self.controller::<CustomController>()
-                .provide::<Resource>()
+                .provide_with::<Resource, super::ResourceInjector>()
                 .provide::<Strategy>()
         }
     }
@@ -536,6 +588,12 @@ mod security {
         }
     }
     struct UnmanagedStrategy;
+    impl furnace_rs_core::Injector for UnmanagedStrategy {
+        type Dependencies = ();
+        async fn inject((): ()) -> furnace_rs_core::Result<Self> {
+            unreachable!("invalid strategy metadata must fail before construction")
+        }
+    }
     #[furnace_rs_common::passport_strategy(name = "unregistered_bad")]
     impl furnace_rs_common::PassportStrategy for UnmanagedStrategy {
         type Claims = Claims;

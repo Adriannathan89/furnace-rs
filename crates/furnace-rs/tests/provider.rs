@@ -16,7 +16,6 @@ struct CombinedValue {
 /// Output type for the public provider visibility fixture.
 pub struct PublicProviderValue;
 
-#[furnace_rs::element]
 fn configured_value(config: Config) -> ConfiguredValue {
     ConfiguredValue(
         config
@@ -25,8 +24,22 @@ fn configured_value(config: Config) -> ConfiguredValue {
             .to_owned(),
     )
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct ConfiguredValueInjector;
+impl furnace_rs::core::Injector<ConfiguredValue> for ConfiguredValueInjector {
+    type Dependencies = (Config,);
+    async fn inject(
+        (dependency_0,): Self::Dependencies,
+    ) -> furnace_rs::core::Result<ConfiguredValue> {
+        Ok(configured_value(dependency_0))
+    }
+    fn descriptor() -> &'static furnace_rs::core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_CONFIGURED_VALUE
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_CONFIGURED_VALUE : furnace_rs :: core :: ProviderDescriptor = furnace_rs :: core :: __private :: InjectorMetadata :: < ConfiguredValue , ConfiguredValueInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (ConfiguredValue)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs :: core :: ProviderVisibility :: Private) . with_location (furnace_rs :: core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+furnace_rs::core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_CONFIGURED_VALUE }
 
-#[furnace_rs::element]
 async fn combined_value(
     config: Config,
     configured: ConfiguredValue,
@@ -36,12 +49,39 @@ async fn combined_value(
         entries: config.len(),
     })
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct CombinedValueInjector;
+impl furnace_rs::core::Injector<CombinedValue> for CombinedValueInjector {
+    type Dependencies = (Config, ConfiguredValue);
+    async fn inject(
+        (dependency_0, dependency_1): Self::Dependencies,
+    ) -> furnace_rs::core::Result<CombinedValue> {
+        combined_value(dependency_0, dependency_1).await
+    }
+    fn descriptor() -> &'static furnace_rs::core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_COMBINED_VALUE
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_COMBINED_VALUE : furnace_rs :: core :: ProviderDescriptor = furnace_rs :: core :: __private :: InjectorMetadata :: < CombinedValue , CombinedValueInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (CombinedValue)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs :: core :: ProviderVisibility :: Private) . with_location (furnace_rs :: core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+furnace_rs::core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_COMBINED_VALUE }
 
-#[furnace_rs::element]
 /// Public provider used to verify visibility metadata.
 pub fn public_provider() -> PublicProviderValue {
     PublicProviderValue
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+pub struct PublicProviderInjector;
+impl furnace_rs::core::Injector<PublicProviderValue> for PublicProviderInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs::core::Result<PublicProviderValue> {
+        Ok(public_provider())
+    }
+    fn descriptor() -> &'static furnace_rs::core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_PUBLIC_PROVIDER
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_PUBLIC_PROVIDER : furnace_rs :: core :: ProviderDescriptor = furnace_rs :: core :: __private :: InjectorMetadata :: < PublicProviderValue , PublicProviderInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (PublicProviderValue)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs :: core :: ProviderVisibility :: Public) . with_location (furnace_rs :: core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+furnace_rs::core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_PUBLIC_PROVIDER }
 
 fn test_config() -> Config {
     ConfigBuilder::new()
@@ -63,7 +103,13 @@ fn provider_dependencies_follow_parameter_order() {
         .map(|dependency| dependency.type_name())
         .collect();
 
-    assert_eq!(dependency_names, ["Config", "ConfiguredValue"]);
+    assert_eq!(
+        dependency_names,
+        [
+            "furnace_rs_core::config::Config",
+            "provider::ConfiguredValue"
+        ]
+    );
 }
 
 #[test]

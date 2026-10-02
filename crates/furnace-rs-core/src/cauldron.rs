@@ -54,15 +54,15 @@ impl<M: Cauldron> CauldronRegistration<M> {
         }
     }
 
-    /// Registers the output type of a burner, storage, or element factory.
+    /// Registers a managed provider or a plain service implementing `Injector`.
     #[track_caller]
-    pub fn provide<T: Send + Sync + 'static>(mut self) -> Self {
+    pub fn provide<T: crate::Injector>(mut self) -> Self {
         self.definition.members.push(CauldronMember {
             type_id: TypeId::of::<T>(),
             type_name: std::any::type_name::<T>(),
             controller: false,
             location: location(),
-            descriptor: None,
+            descriptor: Some(T::descriptor()),
         });
         self
     }

@@ -41,10 +41,23 @@ struct Service {
 #[furnace_rs_core::burner]
 struct Unrelated;
 // Calling a registered production connector is a test failure.
-#[furnace_rs_core::element]
+
 fn production_database() -> DatabaseConnection {
     panic!("production connector ran")
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct ProductionDatabaseInjector;
+impl furnace_rs_core::Injector<DatabaseConnection> for ProductionDatabaseInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<DatabaseConnection> {
+        Ok(production_database())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_PRODUCTION_DATABASE
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_PRODUCTION_DATABASE : furnace_rs_core :: ProviderDescriptor = furnace_rs_core :: __private :: InjectorMetadata :: < DatabaseConnection , ProductionDatabaseInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (DatabaseConnection)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs_core :: ProviderVisibility :: Private) . with_location (furnace_rs_core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_PRODUCTION_DATABASE }
 
 #[tokio::test]
 async fn service_uses_mock_database_and_private_chain() {
@@ -169,27 +182,40 @@ impl LifecycleHook for Hook {
         })
     }
 }
-struct Managed;
-#[furnace_rs_core::element(lifecycle)]
-async fn managed(events: Events, mode: Mode) -> LifecycleResource<Managed> {
-    LifecycleResource::new(Managed)
-        .with_infrastructure_hook(
-            "test.first",
-            Hook {
-                events: events.clone(),
-                mode: Mode {
-                    fail_start: false,
-                    fail_stop: false,
+struct Managed(Events, Mode);
+impl furnace_rs_core::Injector for Managed {
+    type Dependencies = (Events, Mode);
+    async fn inject((events, mode): Self::Dependencies) -> furnace_rs_core::Result<Self> {
+        Ok(Self(events, mode))
+    }
+    fn lifecycle(value: Self) -> LifecycleResource<Self> {
+        let events = value.0.clone();
+        let mode = value.1.clone();
+        LifecycleResource::new(value)
+            .with_infrastructure_hook(
+                "test.first",
+                Hook {
+                    events: events.clone(),
+                    mode: Mode {
+                        fail_start: false,
+                        fail_stop: false,
+                    },
+                    name: "first",
                 },
-                name: "first",
-            },
-        )
-        .with_application_hook(Hook {
-            events,
-            mode,
-            name: "last",
-        })
+            )
+            .with_application_hook(Hook {
+                events,
+                mode,
+                name: "last",
+            })
+    }
 }
+furnace_rs_core::__private::inventory::submit! {
+    furnace_rs_core::__private::InjectorMetadata::<Managed, Managed>::DESCRIPTOR
+        .with_authored_type_name("Managed").with_namespace(module_path!())
+        .with_location(furnace_rs_core::SourceLocation::new(file!(),line!(),column!()))
+}
+
 fn managed_fixture(
     events: Events,
     fail_start: bool,

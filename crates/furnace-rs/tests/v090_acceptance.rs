@@ -49,16 +49,30 @@ mod application {
 
     impl furnace_rs::core::Cauldron for AcceptanceCauldron {
         fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-            self.provide::<AcceptanceConfig>()
+            self.provide_with::<AcceptanceConfig, AcceptanceConfigInjector>()
                 .provide::<AcceptanceService>()
                 .controller::<AcceptanceController>()
         }
     }
 
-    #[element]
     fn acceptance_config(config: Config) -> furnace_rs::core::Result<AcceptanceConfig> {
         Ok(config.parse()?)
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    struct AcceptanceConfigInjector;
+    impl furnace_rs_core::Injector<AcceptanceConfig> for AcceptanceConfigInjector {
+        type Dependencies = (Config,);
+        async fn inject(
+            (dependency_0,): Self::Dependencies,
+        ) -> furnace_rs_core::Result<AcceptanceConfig> {
+            acceptance_config(dependency_0)
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_ACCEPTANCE_CONFIG
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_ACCEPTANCE_CONFIG : furnace_rs_core :: ProviderDescriptor = furnace_rs_core :: __private :: InjectorMetadata :: < AcceptanceConfig , AcceptanceConfigInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (AcceptanceConfig)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs_core :: ProviderVisibility :: Private) . with_location (furnace_rs_core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_ACCEPTANCE_CONFIG }
 
     #[burner]
     pub(super) struct AcceptanceService;

@@ -85,7 +85,7 @@ pub use lifecycle::{
 };
 pub use registry::{ErasedProvider, ProviderRegistry};
 
-pub use furnace_rs_core_macros::{Configuration, burner, cauldron, element, main, storage, test};
+pub use furnace_rs_core_macros::{Configuration, burner, cauldron, main, storage, test};
 
 /// Implementation details used by furnace-rs procedural macro expansions.
 #[doc(hidden)]

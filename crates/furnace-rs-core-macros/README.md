@@ -12,13 +12,12 @@ crate is an implementation dependency, not a normal application dependency.
 | Macro | Generated contract |
 | --- | --- |
 | `#[cauldron]` | Declares a unit cauldron and a callback to its authored `Cauldron::register` chain. |
-| `#[element]` | Turns a provider function into a typed constructor and provider descriptor. |
-| `#[burner]` | Declares an application-scoped managed service and its dependency metadata. |
-| `#[storage]` | Declares an application-scoped repository with the same concrete-type wiring model. |
+| `#[burner]` | Generates `Injector` construction, a managed service handle, and dependency metadata. |
+| `#[storage]` | Generates `Injector` construction and a managed repository handle. |
 | `#[derive(Configuration)]` | Generates a typed, prefix-aware view over the core `Config` document. |
 | `#[furnace_rs::main]` | Converts an async application entry point into a synchronous Tokio-backed entry point when the runtime feature is enabled. |
 
-Provider, service, and repository arguments become concrete dependency edges.
+Managed service and repository fields become declared `Injector` tuple dependencies.
 Managed handles are required to be cloneable and shareable so the constructed
 application can retain cheap, safe references. The generated code submits
 descriptors to the core catalog and keeps source locations available for

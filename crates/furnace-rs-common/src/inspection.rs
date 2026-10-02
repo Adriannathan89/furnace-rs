@@ -967,18 +967,39 @@ mod tests {
 
     struct Marker;
 
-    #[furnace_rs_core::element]
     fn marker_provider() -> Marker {
         CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
         Marker
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    struct MarkerProviderInjector;
+    impl furnace_rs_core::Injector<Marker> for MarkerProviderInjector {
+        type Dependencies = ();
+        async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Marker> {
+            Ok(marker_provider())
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_MARKER_PROVIDER
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_MARKER_PROVIDER: furnace_rs_core::ProviderDescriptor =
+        furnace_rs_core::__private::InjectorMetadata::<Marker, MarkerProviderInjector>::DESCRIPTOR
+            .with_authored_type_name("Marker")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_MARKER_PROVIDER }
 
     #[furnace_rs_core::cauldron]
     struct AppCauldron;
 
     impl furnace_rs_core::Cauldron for AppCauldron {
         fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<Marker>()
+            self.provide_with::<Marker, MarkerProviderInjector>()
                 .controller::<InspectionController>()
         }
     }

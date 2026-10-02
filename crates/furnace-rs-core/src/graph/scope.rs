@@ -8,6 +8,7 @@ pub(crate) struct ScopedProviderCatalog {
     pub(crate) ownership: Vec<ProviderOwnership>,
     pub(crate) diagnostics: Vec<Diagnostic>,
     pub(crate) covered_missing: Vec<TypeId>,
+    pub(crate) locations: Vec<(TypeId, crate::SourceLocation)>,
 }
 
 pub(crate) fn select_scoped_providers(
@@ -19,6 +20,7 @@ pub(crate) fn select_scoped_providers(
     let mut diagnostics = Vec::new();
     let mut ownership = Vec::new();
     let mut covered_missing = Vec::new();
+    let mut locations = Vec::new();
     for supplied in satisfied {
         if supplied.type_id != TypeId::of::<crate::Config>()
             && supplied.state != crate::ProviderState::AutoConfigured
@@ -77,6 +79,11 @@ pub(crate) fn select_scoped_providers(
         if overridden {
             continue;
         }
+        for descriptor in &matching {
+            if descriptor.location() == crate::injector::DEFAULT_INJECTOR_LOCATION {
+                locations.push((member.type_id, member.location));
+            }
+        }
         selected.extend(matching.iter().copied());
         for descriptor in matching {
             for dependency in descriptor.dependencies() {
@@ -96,7 +103,7 @@ pub(crate) fn select_scoped_providers(
                     diagnostics.push(Diagnostic::new(FURNACE009, "inaccessible cauldron provider",
                             format!("requester `{}` cannot access `{}` owned by `{}`; use an explicit export and direct import or a reachable global export",
                                 owner.type_name(), dependency.type_name(), target_owner.type_name()))
-                            .with_subject(dependency.type_name()).with_location(descriptor.location())
+                            .with_subject(dependency.type_name()).with_location(member.location)
                             .with_suggestion(format!("dependency path: {} -> {}", descriptor.type_name(), dependency.type_name())));
                     covered_missing.push(target);
                 }
@@ -109,5 +116,6 @@ pub(crate) fn select_scoped_providers(
         ownership,
         diagnostics,
         covered_missing,
+        locations,
     }
 }

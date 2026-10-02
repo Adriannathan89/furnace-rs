@@ -80,10 +80,33 @@ async fn only_registered_controllers_install_routes() {
 
 #[derive(Clone)]
 struct Ordinary;
-#[furnace_rs_core::element]
+
 fn ordinary() -> Ordinary {
     Ordinary
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct OrdinaryInjector;
+impl furnace_rs_core::Injector<Ordinary> for OrdinaryInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Ordinary> {
+        Ok(ordinary())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_ORDINARY
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_ORDINARY: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Ordinary, OrdinaryInjector>::DESCRIPTOR
+        .with_authored_type_name("Ordinary")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_ORDINARY }
+
 #[furnace_rs_core::cauldron]
 struct WrongController;
 impl Cauldron for WrongController {

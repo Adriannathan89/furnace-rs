@@ -112,11 +112,11 @@
 - Public `element` no longer exists. Manual factories are local constructor structs implementing `Injector<Output>`; managed providers use their generated injector.
 - Document manual rooted discovery, tuple arities, trait output conversion, async construction, external native types, lifecycle overrides, and preserved public/sealed controller behavior.
 
-- [ ] Create UI failures for wrong bound output, seventeen manual dependencies, non-clone dependencies, non-Send futures, and removed `element`. Add pass cases for plain services, async trait bindings, one dependency, and lifecycle overrides.
-- [ ] Run UI cases to establish expected new failures; migrate obsolete element-specific fixtures instead of retaining tests for removed behavior. Preserve compile coverage for concrete outputs and constructor errors.
-- [ ] Switch ordinary registrations to the typed contract; migrate all product/test/example factory consumers, remove the macro exports and implementation, and update external-alias consumers. Ensure non-registration helper functions remain callable where needed.
-- [ ] Run full facade UI/provider tests, CLI scaffold-consumer tests, external aliases, and three standalone examples. Search active Rust source/docs for leftover macro usages; exclude historical records and unrelated serde sequence elements.
-- [ ] Stage new package files, then run `bash script/verify-package-contents.sh`. Commit: `refactor!: replace element factories with Injector registrations`.
+- [x] Create UI failures for wrong bound output, seventeen manual dependencies, non-clone dependencies, non-Send futures, and removed `element`. Add pass cases for plain services, async trait bindings, one dependency, and lifecycle overrides.
+- [x] Run UI cases to establish expected new failures; migrate obsolete element-specific fixtures instead of retaining tests for removed behavior. Preserve compile coverage for concrete outputs and constructor errors.
+- [x] Switch ordinary registrations to the typed contract; migrate all product/test/example factory consumers, remove the macro exports and implementation, and update external-alias consumers. Ensure non-registration helper functions remain callable where needed.
+- [x] Run full facade UI/provider tests, CLI scaffold-consumer tests, external aliases, and three standalone examples. Search active Rust source/docs for leftover macro usages; exclude historical records and unrelated serde sequence elements.
+- [x] Stage new package files, then run `bash script/verify-package-contents.sh`. Commit: `refactor!: replace element factories with Injector registrations`.
 
 ### Task 6: Full verification, live database checks, and branch review
 

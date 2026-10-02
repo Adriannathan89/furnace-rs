@@ -50,23 +50,66 @@ mod selected {
 
     impl furnace_rs::core::Cauldron for AppCauldron {
         fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-            self.provide::<AppConfig>().provide::<Consumer>()
+            self.provide_with::<AppConfig, AppConfigInjector>()
+                .provide_with::<Consumer, ConsumerInjector>()
         }
     }
 
-    #[element]
     fn app_config(config: Config) -> furnace_rs::core::Result<AppConfig> {
         Ok(config.parse()?)
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    struct AppConfigInjector;
+    impl furnace_rs_core::Injector<AppConfig> for AppConfigInjector {
+        type Dependencies = (Config,);
+        async fn inject((dependency_0,): Self::Dependencies) -> furnace_rs_core::Result<AppConfig> {
+            app_config(dependency_0)
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_APP_CONFIG
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_APP_CONFIG: furnace_rs_core::ProviderDescriptor =
+        furnace_rs_core::__private::InjectorMetadata::<AppConfig, AppConfigInjector>::DESCRIPTOR
+            .with_authored_type_name("AppConfig")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_APP_CONFIG }
 
     pub struct Consumer;
 
-    #[element]
     fn consumer(config: AppConfig) -> Consumer {
         let _ = config.api_key.expose();
         CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
         Consumer
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    struct ConsumerInjector;
+    impl furnace_rs_core::Injector<Consumer> for ConsumerInjector {
+        type Dependencies = (AppConfig,);
+        async fn inject((dependency_0,): Self::Dependencies) -> furnace_rs_core::Result<Consumer> {
+            Ok(consumer(dependency_0))
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_CONSUMER
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_CONSUMER: furnace_rs_core::ProviderDescriptor =
+        furnace_rs_core::__private::InjectorMetadata::<Consumer, ConsumerInjector>::DESCRIPTOR
+            .with_authored_type_name("Consumer")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_CONSUMER }
 }
 
 #[tokio::test]

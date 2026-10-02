@@ -39,7 +39,7 @@ mod imported {
 
     impl furnace_rs_core::Cauldron for Root {
         fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<Repository>()
+            self.provide_with::<Repository, RepositoryInjector>()
                 .import(DatabaseCauldron)
                 .export::<Repository>()
         }
@@ -47,10 +47,33 @@ mod imported {
 
     pub struct Repository;
 
-    #[furnace_rs_core::element]
     pub fn repository(_database: DatabaseConnection) -> Repository {
         Repository
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    pub struct RepositoryInjector;
+    impl furnace_rs_core::Injector<Repository> for RepositoryInjector {
+        type Dependencies = (DatabaseConnection,);
+        async fn inject(
+            (dependency_0,): Self::Dependencies,
+        ) -> furnace_rs_core::Result<Repository> {
+            Ok(repository(dependency_0))
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_REPOSITORY
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_REPOSITORY: furnace_rs_core::ProviderDescriptor =
+        furnace_rs_core::__private::InjectorMetadata::<Repository, RepositoryInjector>::DESCRIPTOR
+            .with_authored_type_name("Repository")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Public)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_REPOSITORY }
 }
 
 mod unimported {
@@ -106,7 +129,7 @@ mod duplicate {
 
         impl furnace_rs_core::Cauldron for OtherCauldron {
             fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide::<DatabaseConnection>()
+                self.provide_with::<DatabaseConnection, furnace_rs_persistence::sea_orm::SeaOrmDatabaseInjector>()
                     .export::<DatabaseConnection>()
             }
         }

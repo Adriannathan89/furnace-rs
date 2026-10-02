@@ -5,7 +5,7 @@ All notable changes to furnace-rs are documented in this file.
 ## Unreleased breaking furnace-rs migration
 
 - Rename all nine packages to the `furnace-rs` family and the CLI executable to `furnace`.
-- Replace module/service/repository/provider attributes with `cauldron`, `burner`, `storage`, and `element`.
+- Replace module/service/repository attributes with `cauldron`, `burner`, and `storage`; replace provider/element factories with typed `Injector` construction and `.provide_with::<Output, Implementer>()` bindings.
 - Register dependencies, controllers, imports, explicit exports, and global status in `Cauldron::register`; Rust `pub` controls Rust name visibility only.
 - Start applications with `Furnace::burn` and `FurnaceBurnExt`.
 - Declare endpoints directly in an inherent `#[controller(route = "/users")]` implementation; remove `#[routes]` and `controller(routes = ...)`.

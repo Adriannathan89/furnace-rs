@@ -51,10 +51,23 @@ impl Injector<Arc<dyn Service>> for Alternative {
         Ok(Arc::new(Self))
     }
 }
-#[furnace_rs_core::element]
+
 fn competing_linked_factory() -> Arc<dyn Service> {
     Arc::new(Alternative)
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct CompetingLinkedFactoryInjector;
+impl furnace_rs_core::Injector<Arc<dyn Service>> for CompetingLinkedFactoryInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Arc<dyn Service>> {
+        Ok(competing_linked_factory())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_COMPETING_LINKED_FACTORY
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_COMPETING_LINKED_FACTORY : furnace_rs_core :: ProviderDescriptor = furnace_rs_core :: __private :: InjectorMetadata :: < Arc < dyn Service > , CompetingLinkedFactoryInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (Arc < dyn Service >)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs_core :: ProviderVisibility :: Private) . with_location (furnace_rs_core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_COMPETING_LINKED_FACTORY }
 
 macro_rules! cauldron {
     ($name:ident, $body:expr) => {
@@ -207,6 +220,30 @@ fn duplicate_bindings_and_owners_fail_and_unrelated_broken_roots_are_isolated() 
         );
     }
     assert!(analyze::<Local>().is_valid()); // Missing/Cyclic/Hidden remain linked but unreachable
+}
+
+#[test]
+fn manual_injector_diagnostics_point_to_the_authored_registration() {
+    for (analysis, code) in [
+        (analyze::<Missing>(), FURNACE003),
+        (analyze::<Hidden>(), FURNACE009),
+        (analyze::<Cyclic>(), FURNACE005),
+    ] {
+        let diagnostic = analysis
+            .diagnostics()
+            .iter()
+            .find(|d| d.code() == code)
+            .unwrap();
+        assert!(
+            diagnostic
+                .location()
+                .unwrap()
+                .file
+                .ends_with("injector_registration.rs"),
+            "unexpected location: {:?}",
+            diagnostic.location()
+        );
+    }
 }
 
 #[tokio::test]

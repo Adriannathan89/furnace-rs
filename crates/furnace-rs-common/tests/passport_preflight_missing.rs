@@ -47,11 +47,23 @@ static LIFECYCLE_STARTS: AtomicUsize = AtomicUsize::new(0);
 
 struct OrdinaryProvider;
 
-#[furnace_rs_core::element]
 fn ordinary_provider() -> OrdinaryProvider {
     ORDINARY_CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
     OrdinaryProvider
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct OrdinaryProviderInjector;
+impl furnace_rs_core::Injector<OrdinaryProvider> for OrdinaryProviderInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<OrdinaryProvider> {
+        Ok(ordinary_provider())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_ORDINARY_PROVIDER
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_ORDINARY_PROVIDER : furnace_rs_core :: ProviderDescriptor = furnace_rs_core :: __private :: InjectorMetadata :: < OrdinaryProvider , OrdinaryProviderInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (OrdinaryProvider)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs_core :: ProviderVisibility :: Private) . with_location (furnace_rs_core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_ORDINARY_PROVIDER }
 
 struct CountingHook;
 

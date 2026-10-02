@@ -25,25 +25,58 @@ struct UserService {
     _repository: UserRepository,
 }
 
-#[furnace_rs_core::element]
 fn user_repository() -> UserRepository {
     UserRepository
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct UserRepositoryInjector;
+impl furnace_rs_core::Injector<UserRepository> for UserRepositoryInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<UserRepository> {
+        Ok(user_repository())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_USER_REPOSITORY
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_USER_REPOSITORY : furnace_rs_core :: ProviderDescriptor = furnace_rs_core :: __private :: InjectorMetadata :: < UserRepository , UserRepositoryInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (UserRepository)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs_core :: ProviderVisibility :: Private) . with_location (furnace_rs_core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_USER_REPOSITORY }
 
-#[furnace_rs_core::element]
 fn user_service(repository: UserRepository) -> UserService {
     UserService {
         _repository: repository,
     }
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct UserServiceInjector;
+impl furnace_rs_core::Injector<UserService> for UserServiceInjector {
+    type Dependencies = (UserRepository,);
+    async fn inject((dependency_0,): Self::Dependencies) -> furnace_rs_core::Result<UserService> {
+        Ok(user_service(dependency_0))
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_USER_SERVICE
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_USER_SERVICE: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<UserService, UserServiceInjector>::DESCRIPTOR
+        .with_authored_type_name("UserService")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_USER_SERVICE }
 
 #[cauldron]
 struct AppCauldron;
 
 impl furnace_rs_core::Cauldron for AppCauldron {
     fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        self.provide::<UserRepository>()
-            .provide::<UserService>()
+        self.provide_with::<UserRepository, UserRepositoryInjector>()
+            .provide_with::<UserService, UserServiceInjector>()
             .import(RepositoryCauldron)
     }
 }

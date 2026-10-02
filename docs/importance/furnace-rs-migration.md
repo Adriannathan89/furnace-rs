@@ -13,7 +13,7 @@ dependencies. There are no compatibility aliases for the removed declarations.
 | `#[module]`, `Module` | `#[cauldron]`, `Cauldron` |
 | `#[service]` | `#[burner]` |
 | `#[repository]` | `#[storage]` |
-| `#[provider]`, `#[provider(lifecycle)]` | `#[element]`, `#[element(lifecycle)]` |
+| `#[provider]`, `#[element]`, and their lifecycle forms | `Injector::inject` and `Injector::lifecycle` |
 | `#[routes]`, `#[controller(routes = [...])]` | Struct and inherent-impl `#[controller]` |
 | Trait/method guards and `skip` | Unit-struct `#[guard]` policy plus controller seal |
 | `mads.toml`, `MADS_*` | `furnace.toml`, `FURNACE_*` |
@@ -131,10 +131,74 @@ retain their existing behavior.
 
 Each selected provider output and controller belongs to one cauldron. Rust
 namespace placement and Rust `pub` control Rust names, not DI membership or DI
-visibility. Register output types with `.provide::<T>()`; register controllers
-with `.controller::<T>()`. Factory functions remain ordinary callable functions:
-for an `#[element]` factory returning `Result<T>` or `Result<LifecycleResource<T>>`,
-register `T`; for a trait factory, register the actual `Arc<dyn Trait>` output.
+visibility. Register managed providers or plain `T: Injector<T>` services with
+`.provide::<T>()`; register controllers with `.controller::<T>()`.
+For a trait output, use `.provide_with::<Arc<dyn Trait>, Implementer>()`, where
+`Implementer: Injector<Arc<dyn Trait>>` constructs the selected trait value.
+The same method supports third-party native outputs such as `DatabaseConnection`.
+Exports name the output type, not the constructor type.
+
+### Writing an injector
+
+`Injector<T = Self>` constructs a native output. Its `Dependencies` are `()` or
+a tuple of one through sixteen `Clone + Send + Sync + 'static` types. A single
+dependency needs a trailing comma. The framework records those types for missing
+dependency, cycle, and visibility checks before calling the constructor.
+
+```rust
+use furnace::prelude::*;
+use std::sync::Arc;
+
+trait UserRepository: Send + Sync {
+    fn name(&self) -> &str;
+}
+struct MemoryRepository(String);
+impl UserRepository for MemoryRepository {
+    fn name(&self) -> &str { &self.0 }
+}
+impl Injector<Arc<dyn UserRepository>> for MemoryRepository {
+    type Dependencies = (Config,);
+    async fn inject((config,): Self::Dependencies)
+        -> furnace::core::Result<Arc<dyn UserRepository>>
+    {
+        Ok(Arc::new(Self(config.get("app.name").unwrap_or("demo").to_owned())))
+    }
+}
+
+#[burner]
+struct UserService { repository: Arc<dyn UserRepository> }
+
+#[cauldron]
+struct AppCauldron;
+impl Cauldron for AppCauldron {
+    fn register(self) -> CauldronRegistration<Self> {
+        self.provide_with::<Arc<dyn UserRepository>, MemoryRepository>()
+            .provide::<UserService>()
+    }
+}
+```
+
+`inject` is an associated async constructor: `Type::inject(dependencies).await`,
+without a receiver or preconstructed service instance. It returns core `Result<T>`
+and a `Send` future. Registration performs no construction or I/O. Macro-managed
+providers implement `Injector<Self>` automatically; custom constructors can use
+plain structs without `#[burner]` or `#[storage]`.
+
+For lifecycle resources, return the native service from `inject` and override
+`fn lifecycle(value: T) -> LifecycleResource<T>`. Attach existing application or
+infrastructure hooks there. Keep dependency state needed by hooks in the native
+output and clone its handles when attaching hooks. The runtime attaches hooks
+once after successful construction; supplied output overrides skip both steps.
+Startup ordering, rollback, and reverse shutdown remain unchanged.
+
+Manual injectors are discovered from reachable cauldron registrations, so select
+an application root when building or testing them. Unrooted catalog/focused
+builds discover managed macro descriptors and deliberately registered official
+integration metadata. A linked but unreachable manual injector does not affect
+the selected application.
+
+The `element` macro and its lifecycle form are removed, with no compatibility
+alias. Ordinary helper functions remain usable but no longer register outputs.
 
 `.import(UserCauldron)` exposes that directly imported cauldron's explicit
 `.export::<UserService>()` outputs. Transitive imports do not expose transitive
@@ -147,8 +211,8 @@ cauldron. Independent roots keep distinct instances and analysis state.
 
 `LoggerCauldron` exports `Logger`; persistence's `DatabaseCauldron` exports native
 `DatabaseConnection`. Import these infrastructure cauldrons explicitly. Core has
-no HTTP, JWT, cookie, or database dependency. HTTP-only controllers use empty
-seals; Passport requires HTTP+JWT. Focused test fixtures select only their target
+no HTTP, JWT, cookie, or database dependency. HTTP-only controllers may omit
+`Sealable` to remain public; Passport requires HTTP+JWT. Focused test fixtures select only their target
 controller, dependency chain, endpoints, and seal.
 
 ## Configuration, CLI, and inspection

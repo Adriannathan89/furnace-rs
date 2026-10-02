@@ -2,7 +2,7 @@
 #![cfg(all(feature = "http", feature = "jwt"))]
 #![allow(missing_docs)]
 
-use furnace_rs_common::core::{SourceLocation, element};
+use furnace_rs_common::core::SourceLocation;
 use furnace_rs_common::{
     GuardDescriptor, GuardPolicy, PassportPrincipal, SealRegistration, Sealable, TokenSource, guard,
 };
@@ -14,11 +14,32 @@ use std::{
 static CONSTRUCTIONS: AtomicUsize = AtomicUsize::new(0);
 static DESCRIPTOR_CALLS: AtomicUsize = AtomicUsize::new(0);
 
-#[element]
 fn sentinel() -> u64 {
     CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
     42
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct SentinelInjector;
+impl furnace_rs_core::Injector<u64> for SentinelInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<u64> {
+        Ok(sentinel())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_SENTINEL
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_SENTINEL: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<u64, SentinelInjector>::DESCRIPTOR
+        .with_authored_type_name("u64")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_SENTINEL }
 
 #[derive(PassportPrincipal)]
 struct Principal {

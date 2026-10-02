@@ -17,6 +17,24 @@ use std::{
 /// Managed `#[burner]` and `#[storage]` providers implement this automatically.
 /// Plain structs can implement it directly; `Injector<Output>` binds a separate
 /// constructor type to an output such as `Arc<dyn Trait>`.
+///
+/// ```
+/// use furnace_rs_core::{Cauldron, CauldronRegistration, Config, Injector, Result};
+/// struct Greeting(String);
+/// impl Injector for Greeting {
+///     type Dependencies = (Config,);
+///     async fn inject((config,): Self::Dependencies) -> Result<Self> {
+///         Ok(Self(config.get("app.name").unwrap_or("demo").to_owned()))
+///     }
+/// }
+/// #[furnace_rs_core::cauldron]
+/// struct App;
+/// impl Cauldron for App {
+///     fn register(self) -> CauldronRegistration<Self> {
+///         self.provide::<Greeting>()
+///     }
+/// }
+/// ```
 pub trait Injector<T = Self>: Sized + Send + Sync + 'static
 where
     T: Send + Sync + 'static,
@@ -128,6 +146,8 @@ where
 /// Static descriptor bridge for deliberately discoverable native integrations.
 #[doc(hidden)]
 pub struct InjectorMetadata<T, I>(PhantomData<fn() -> (T, I)>);
+pub(crate) const DEFAULT_INJECTOR_LOCATION: SourceLocation =
+    SourceLocation::new(file!(), line!(), column!());
 impl<T: Send + Sync + 'static, I: Injector<T>> InjectorMetadata<T, I> {
     /// Constructor metadata suitable for an inventory submission.
     pub const DESCRIPTOR: ProviderDescriptor = ProviderDescriptor::new(
@@ -136,7 +156,7 @@ impl<T: Send + Sync + 'static, I: Injector<T>> InjectorMetadata<T, I> {
         TypeId::of::<T>,
         <I::Dependencies as sealed::Dependencies>::DESCRIPTORS,
         ProviderVisibility::Private,
-        SourceLocation::new(file!(), line!(), column!()),
+        DEFAULT_INJECTOR_LOCATION,
         construct::<T, I>,
     )
     .with_resolved_type_name(type_name::<T>)

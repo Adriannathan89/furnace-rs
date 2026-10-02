@@ -592,6 +592,19 @@ mod tests {
     #[derive(Clone)]
     struct RouterPreflightEvents(Arc<Mutex<Vec<&'static str>>>);
 
+    impl furnace_rs_core::Injector for RouterPreflightEvents {
+        type Dependencies = ();
+        async fn inject((): ()) -> furnace_rs_core::Result<Self> {
+            Ok(Self(Arc::new(Mutex::new(Vec::new()))))
+        }
+    }
+    impl furnace_rs_core::Injector for PreflightPermit {
+        type Dependencies = ();
+        async fn inject((): ()) -> furnace_rs_core::Result<Self> {
+            Ok(Self(false))
+        }
+    }
+
     fn preflight_controller_type_id() -> TypeId {
         TypeId::of::<PreflightController>()
     }

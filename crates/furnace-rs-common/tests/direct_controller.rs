@@ -5,7 +5,7 @@ use axum::{
     body::{Body, to_bytes},
     http::{Method, Request, StatusCode},
 };
-use furnace_rs_common::core::{Cauldron, CauldronRegistration, Furnace, cauldron, element};
+use furnace_rs_common::core::{Cauldron, CauldronRegistration, Furnace, cauldron};
 use furnace_rs_common::{
     Json, Path, RouteCatalog, SealRegistration, Sealable, build_router, controller,
 };
@@ -15,22 +15,67 @@ use tower::ServiceExt;
 static ORDER: Mutex<Vec<&str>> = Mutex::new(Vec::new());
 #[derive(Clone)]
 struct Repository;
-#[element]
+
 fn repository() -> Repository {
     ORDER.lock().unwrap().push("repository");
     Repository
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct RepositoryInjector;
+impl furnace_rs_core::Injector<Repository> for RepositoryInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Repository> {
+        Ok(repository())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_REPOSITORY
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_REPOSITORY: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Repository, RepositoryInjector>::DESCRIPTOR
+        .with_authored_type_name("Repository")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_REPOSITORY }
+
 #[derive(Clone)]
 struct Service {
     _repository: Repository,
 }
-#[element]
+
 fn service(repository: Repository) -> Service {
     ORDER.lock().unwrap().push("service");
     Service {
         _repository: repository,
     }
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct ServiceInjector;
+impl furnace_rs_core::Injector<Service> for ServiceInjector {
+    type Dependencies = (Repository,);
+    async fn inject((dependency_0,): Self::Dependencies) -> furnace_rs_core::Result<Service> {
+        Ok(service(dependency_0))
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_SERVICE
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_SERVICE: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Service, ServiceInjector>::DESCRIPTOR
+        .with_authored_type_name("Service")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_SERVICE }
 
 #[controller]
 struct UserController {
@@ -89,8 +134,8 @@ impl UserController {
 struct App;
 impl Cauldron for App {
     fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Repository>()
-            .provide::<Service>()
+        self.provide_with::<Repository, RepositoryInjector>()
+            .provide_with::<Service, ServiceInjector>()
             .controller::<UserController>()
     }
 }

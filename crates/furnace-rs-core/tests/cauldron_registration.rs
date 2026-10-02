@@ -11,17 +11,40 @@ struct NamedService {
 }
 #[derive(Clone)]
 struct Dependency;
-#[furnace_rs_core::element]
+
 fn dependency() -> Dependency {
     CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
     Dependency
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct DependencyInjector;
+impl furnace_rs_core::Injector<Dependency> for DependencyInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Dependency> {
+        Ok(dependency())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_DEPENDENCY
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_DEPENDENCY: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Dependency, DependencyInjector>::DESCRIPTOR
+        .with_authored_type_name("Dependency")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_DEPENDENCY }
+
 #[furnace_rs_core::cauldron]
 struct Root;
 impl Cauldron for Root {
     fn register(self) -> CauldronRegistration<Self> {
         self.provide::<NamedService>()
-            .provide::<Dependency>()
+            .provide_with::<Dependency, DependencyInjector>()
             .export::<NamedService>()
             .global()
     }
@@ -49,7 +72,8 @@ fn named_field_types_register_without_construction() {
 struct Duplicate;
 impl Cauldron for Duplicate {
     fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Dependency>().provide::<Dependency>()
+        self.provide_with::<Dependency, DependencyInjector>()
+            .provide_with::<Dependency, DependencyInjector>()
     }
 }
 #[furnace_rs_core::cauldron]
@@ -63,14 +87,15 @@ impl Cauldron for BadExport {
 struct Other;
 impl Cauldron for Other {
     fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Dependency>()
+        self.provide_with::<Dependency, DependencyInjector>()
     }
 }
 #[furnace_rs_core::cauldron]
 struct Conflict;
 impl Cauldron for Conflict {
     fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Dependency>().import(Other)
+        self.provide_with::<Dependency, DependencyInjector>()
+            .import(Other)
     }
 }
 #[test]

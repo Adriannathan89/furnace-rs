@@ -7,7 +7,7 @@ compiler-diagnostic, machine-output, and minimal-scaffolding surface while
 removing the former Diesel and CLI migration integrations.
 
 ~~~text
-application cauldrons, providers, inherent endpoints, controllers
+application cauldrons, typed injectors, providers, inherent endpoints, controllers
                  |
                  v
      furnace-rs-core macros       furnace-rs-common macros

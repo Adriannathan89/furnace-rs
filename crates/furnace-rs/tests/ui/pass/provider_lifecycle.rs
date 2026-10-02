@@ -1,16 +1,14 @@
-use furnace_rs::core::LifecycleResource;
-
-struct DirectResource;
-struct FallibleResource;
-
-#[furnace_rs::element(lifecycle)]
-async fn direct_resource() -> LifecycleResource<DirectResource> {
-    LifecycleResource::new(DirectResource)
+use furnace_rs::core::{Injector, LifecycleResource, Result};
+struct Resource;
+impl Injector for Resource {
+    type Dependencies = ();
+    async fn inject((): ()) -> Result<Self> {
+        Ok(Self)
+    }
+    fn lifecycle(value: Self) -> LifecycleResource<Self> {
+        LifecycleResource::new(value)
+    }
 }
-
-#[furnace_rs::element(lifecycle)]
-async fn fallible_resource() -> furnace_rs::core::Result<LifecycleResource<FallibleResource>> {
-    Ok(LifecycleResource::new(FallibleResource))
+fn main() {
+    let _ = Resource::descriptor();
 }
-
-fn main() {}

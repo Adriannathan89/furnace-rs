@@ -7,11 +7,34 @@ use std::{
 #[derive(Clone)]
 /// Shared output used to exercise public Rust visibility.
 pub struct Value;
-#[furnace_rs_core::element]
+
 /// Constructs the shared output.
 pub fn value() -> Value {
     Value
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+pub struct ValueInjector;
+impl furnace_rs_core::Injector<Value> for ValueInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Value> {
+        Ok(value())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_VALUE
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_VALUE: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Value, ValueInjector>::DESCRIPTOR
+        .with_authored_type_name("Value")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Public)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_VALUE }
+
 #[furnace_rs_core::burner]
 struct Consumer {
     _value: Value,
@@ -28,15 +51,16 @@ macro_rules! cauldron {
     };
 }
 cauldron!(Public, |module: Public| module
-    .provide::<Value>()
+    .provide_with::<Value, ValueInjector>()
     .export::<Value>());
-cauldron!(Private, |module: Private| module.provide::<Value>());
+cauldron!(Private, |module: Private| module
+    .provide_with::<Value, ValueInjector>());
 cauldron!(Global, |module: Global| module
-    .provide::<Value>()
+    .provide_with::<Value, ValueInjector>()
     .export::<Value>()
     .global());
 cauldron!(PrivateGlobal, |module: PrivateGlobal| module
-    .provide::<Value>()
+    .provide_with::<Value, ValueInjector>()
     .global());
 cauldron!(Direct, |module: Direct| module
     .provide::<Consumer>()
@@ -70,7 +94,8 @@ struct Shared;
 impl Cauldron for Shared {
     fn register(self) -> CauldronRegistration<Self> {
         REGISTRATIONS.fetch_add(1, Ordering::SeqCst);
-        self.provide::<Value>().export::<Value>()
+        self.provide_with::<Value, ValueInjector>()
+            .export::<Value>()
     }
 }
 cauldron!(Left, |module: Left| module.import(Shared));

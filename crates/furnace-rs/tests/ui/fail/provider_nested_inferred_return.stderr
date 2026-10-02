@@ -1,5 +1,0 @@
-error: `#[furnace_rs::element]` requires an explicit concrete return type
- --> tests/ui/fail/provider_nested_inferred_return.rs:4:40
-  |
-4 | fn value() -> furnace_rs::core::Result<_> {
-  |                                        ^

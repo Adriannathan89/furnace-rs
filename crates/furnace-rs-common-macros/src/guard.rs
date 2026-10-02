@@ -553,7 +553,7 @@ fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result
         if attribute.path().segments.last().is_some_and(|segment| {
             matches!(
                 segment.ident.to_string().as_str(),
-                "burner" | "storage" | "element" | "controller" | "cauldron"
+                "burner" | "storage" | "controller" | "cauldron"
             )
         }) {
             return Err(Error::new(

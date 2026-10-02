@@ -23,7 +23,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         impl #ident {
             #[doc = "Starts registration of a local provider output."]
             #[track_caller]
-            pub fn provide<T: Send + Sync + 'static>(self) -> #core::CauldronRegistration<Self> {
+            pub fn provide<T: #core::Injector>(self) -> #core::CauldronRegistration<Self> {
                 #core::CauldronRegistration::new(self).provide::<T>()
             }
             #[doc = "Starts registration of an output using a selected injector."]

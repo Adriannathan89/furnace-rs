@@ -113,11 +113,23 @@ impl LifecycleHook for StopHook {
     }
 }
 #[derive(Clone)]
-struct Resource;
-#[furnace_rs_core::element(lifecycle)]
-async fn resource(stops: Stops) -> LifecycleResource<Resource> {
-    LifecycleResource::new(Resource).with_application_hook(StopHook(stops))
+struct Resource(Stops);
+impl furnace_rs_core::Injector for Resource {
+    type Dependencies = (Stops,);
+    async fn inject((stops,): Self::Dependencies) -> furnace_rs_core::Result<Self> {
+        Ok(Self(stops))
+    }
+    fn lifecycle(value: Self) -> LifecycleResource<Self> {
+        let stops = value.0.clone();
+        LifecycleResource::new(value).with_application_hook(StopHook(stops))
+    }
 }
+furnace_rs_core::__private::inventory::submit! {
+    furnace_rs_core::__private::InjectorMetadata::<Resource, Resource>::DESCRIPTOR
+        .with_authored_type_name("Resource").with_namespace(module_path!())
+        .with_location(furnace_rs_core::SourceLocation::new(file!(),line!(),column!()))
+}
+
 fn fixture(stops: Stops) -> furnace_rs_testing::ControllerFixture<Controller> {
     test_fixture()
         .provide(String::from("Ada"))

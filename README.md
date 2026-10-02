@@ -13,7 +13,8 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 
 The furnace metaphor describes startup: a `Cauldron` groups explicitly registered
 components, and `Furnace::burn` starts the selected application. Services use
-`#[burner]`, repositories use `#[storage]`, and factories use `#[element]`.
+`#[burner]` and repositories use `#[storage]`; both generate `Injector` constructors.
+Plain services can implement `Injector` directly.
 
 The philosophy is to take that frustration out of Rust application
 development. FURNACE keeps architecture explicit, typed, and inspectable while
@@ -91,10 +92,15 @@ async fn main() -> Result<(), HttpRuntimeError> {
 `.provide::<T>()`, controllers with `.controller::<T>()`, and imported cauldrons
 with `.import(OtherCauldron)`. Cross-cauldron injection requires `.export::<T>()`;
 `.global()` exposes only those exports throughout the reachable application.
+For trait or third-party outputs, select an implementer with
+`.provide_with::<Arc<dyn Trait>, Implementer>()`. Plain services implement
+`Injector`, declaring typed tuple dependencies and an async `inject` constructor;
+the managed service/repository macros generate this contract automatically.
+Lifecycle constructors override `Injector::lifecycle` to attach resource hooks.
 Rust namespaces and `pub` visibility do not determine DI membership.
 
 See the [breaking-change migration guide](docs/importance/furnace-rs-migration.md)
-for the `cauldron`, `burner`, `storage`, and `element` vocabulary and factory registration.
+for the `cauldron`, `burner`, `storage`, and `Injector` APIs and explicit output bindings.
 
 ## Workspace crates
 
@@ -344,9 +350,11 @@ struct AppConfig {
     api_key: Secret<String>,
 }
 
-#[element]
-fn app_config(config: Config) -> furnace::core::Result<AppConfig> {
-    Ok(config.parse()?)
+impl Injector for AppConfig {
+    type Dependencies = (Config,);
+    async fn inject((config,): Self::Dependencies) -> furnace::core::Result<Self> {
+        Ok(config.parse()?)
+    }
 }
 ```
 
@@ -414,9 +422,11 @@ impl furnace::Cauldron for AppCauldron {
     }
 }
 
-#[furnace::element]
-fn repository(database: DatabaseConnection) -> UserRepository {
-    UserRepository::new(database)
+impl furnace::Injector for UserRepository {
+    type Dependencies = (DatabaseConnection,);
+    async fn inject((database,): Self::Dependencies) -> furnace::core::Result<Self> {
+        Ok(Self::new(database))
+    }
 }
 ```
 

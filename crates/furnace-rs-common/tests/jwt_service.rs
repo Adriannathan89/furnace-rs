@@ -13,6 +13,22 @@ use serde::{Deserialize, Serialize};
 
 const SECRET: &str = "01234567890123456789012345678901";
 
+#[tokio::test]
+async fn explicit_jwt_injector_uses_declared_configuration() {
+    use furnace_rs_common::core::Injector;
+    let service = JwtService::inject((config([("passport.secret", SECRET)]),))
+        .await
+        .unwrap();
+    let token = service
+        .sign(
+            serde_json::json!({"user_id": 7}),
+            JwtSignOptions::access(Duration::from_secs(60)),
+        )
+        .unwrap();
+    assert!(!token.is_empty());
+    assert!(JwtService::inject((Config::empty(),)).await.is_err());
+}
+
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 struct UserClaims {
     user_id: u64,

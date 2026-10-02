@@ -16,7 +16,8 @@ static TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 static DROPS: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Clone)]
-struct EventLog(Arc<Mutex<Vec<&'static str>>>);
+/// Shared events used by lifecycle-aware injector fixtures.
+pub struct EventLog(Arc<Mutex<Vec<&'static str>>>);
 
 impl EventLog {
     fn new() -> Self {
@@ -28,10 +29,31 @@ impl EventLog {
     }
 }
 
-#[furnace_rs_core::element]
 fn event_log() -> EventLog {
     EventLog::new()
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct EventLogInjector;
+impl furnace_rs_core::Injector<EventLog> for EventLogInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<EventLog> {
+        Ok(event_log())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_EVENT_LOG
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_EVENT_LOG: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<EventLog, EventLogInjector>::DESCRIPTOR
+        .with_authored_type_name("EventLog")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_EVENT_LOG }
 
 struct RecordingHook {
     log: EventLog,
@@ -72,24 +94,30 @@ mod automatic {
 
     impl furnace_rs_core::Cauldron for AutomaticRoot {
         fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<EventLog>()
+            self.provide_with::<EventLog, super::EventLogInjector>()
                 .provide::<ManagedResource>()
                 .export::<ManagedResource>()
         }
     }
 
     #[derive(Clone)]
-    pub struct ManagedResource;
+    pub struct ManagedResource(EventLog);
 
-    #[furnace_rs_core::element(lifecycle)]
-    pub async fn managed_resource(log: EventLog) -> LifecycleResource<ManagedResource> {
-        LifecycleResource::new(ManagedResource).with_infrastructure_hook(
-            "test.resource",
-            RecordingHook {
-                log,
-                name: "resource",
-            },
-        )
+    impl furnace_rs_core::Injector for ManagedResource {
+        type Dependencies = (EventLog,);
+        async fn inject((log,): Self::Dependencies) -> furnace_rs_core::Result<Self> {
+            Ok(Self(log))
+        }
+        fn lifecycle(value: Self) -> LifecycleResource<Self> {
+            let log = value.0.clone();
+            LifecycleResource::new(value).with_infrastructure_hook(
+                "test.resource",
+                RecordingHook {
+                    log,
+                    name: "resource",
+                },
+            )
+        }
     }
 }
 
@@ -101,16 +129,16 @@ mod failure {
 
     impl furnace_rs_core::Cauldron for FailureRoot {
         fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<EventLog>()
+            self.provide_with::<EventLog, super::EventLogInjector>()
                 .provide::<DroppedResource>()
-                .provide::<usize>()
+                .provide_with::<usize, LaterFailureInjector>()
                 .export::<DroppedResource>()
                 .export::<usize>()
         }
     }
 
     #[derive(Clone)]
-    pub struct DroppedResource(Arc<DropToken>);
+    pub struct DroppedResource(Arc<DropToken>, EventLog);
 
     pub struct DropToken;
 
@@ -120,18 +148,23 @@ mod failure {
         }
     }
 
-    #[furnace_rs_core::element(lifecycle)]
-    pub async fn dropped_resource(log: EventLog) -> LifecycleResource<DroppedResource> {
-        LifecycleResource::new(DroppedResource(Arc::new(DropToken))).with_infrastructure_hook(
-            "test.failure",
-            RecordingHook {
-                log,
-                name: "resource",
-            },
-        )
+    impl furnace_rs_core::Injector for DroppedResource {
+        type Dependencies = (EventLog,);
+        async fn inject((log,): Self::Dependencies) -> furnace_rs_core::Result<Self> {
+            Ok(Self(Arc::new(DropToken), log))
+        }
+        fn lifecycle(value: Self) -> LifecycleResource<Self> {
+            let log = value.1.clone();
+            LifecycleResource::new(value).with_infrastructure_hook(
+                "test.failure",
+                RecordingHook {
+                    log,
+                    name: "resource",
+                },
+            )
+        }
     }
 
-    #[furnace_rs_core::element]
     pub fn later_failure(resource: DroppedResource) -> furnace_rs_core::Result<usize> {
         let _ = Arc::strong_count(&resource.0);
         Err(Error::new(Diagnostic::new(
@@ -140,6 +173,28 @@ mod failure {
             "the later provider deliberately fails",
         )))
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    pub struct LaterFailureInjector;
+    impl furnace_rs_core::Injector<usize> for LaterFailureInjector {
+        type Dependencies = (DroppedResource,);
+        async fn inject((dependency_0,): Self::Dependencies) -> furnace_rs_core::Result<usize> {
+            later_failure(dependency_0)
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_LATER_FAILURE
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_LATER_FAILURE: furnace_rs_core::ProviderDescriptor =
+        furnace_rs_core::__private::InjectorMetadata::<usize, LaterFailureInjector>::DESCRIPTOR
+            .with_authored_type_name("usize")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Public)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_LATER_FAILURE }
 }
 
 mod empty {
@@ -154,6 +209,15 @@ mod empty {
 }
 
 struct OrdinaryValue;
+impl furnace_rs_core::Injector for OrdinaryValue {
+    type Dependencies = ();
+    async fn inject((): ()) -> furnace_rs_core::Result<Self> {
+        Ok(Self)
+    }
+    fn descriptor() -> &'static ProviderDescriptor {
+        furnace_rs_core::Catalog::provider_for::<Self>().unwrap()
+    }
+}
 
 fn ordinary_type_id() -> TypeId {
     TypeId::of::<OrdinaryValue>()

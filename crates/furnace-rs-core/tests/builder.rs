@@ -18,7 +18,7 @@ mod rooted {
 
         impl furnace_rs_core::Cauldron for AppCauldron {
             fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide::<ReachableService>()
+                self.provide_with::<ReachableService, ReachableServiceInjector>()
                     .export::<ReachableService>()
             }
         }
@@ -26,10 +26,22 @@ mod rooted {
         #[derive(Clone)]
         pub struct ReachableService;
 
-        #[furnace_rs_core::element]
         pub fn reachable_service() -> ReachableService {
             ReachableService
         }
+        #[doc = "Explicit constructor for the fixture's provider output."]
+        pub struct ReachableServiceInjector;
+        impl furnace_rs_core::Injector<ReachableService> for ReachableServiceInjector {
+            type Dependencies = ();
+            async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<ReachableService> {
+                Ok(reachable_service())
+            }
+            fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+                &__FURNACE_INJECTOR_DESCRIPTOR_REACHABLE_SERVICE
+            }
+        }
+        const __FURNACE_INJECTOR_DESCRIPTOR_REACHABLE_SERVICE : furnace_rs_core :: ProviderDescriptor = furnace_rs_core :: __private :: InjectorMetadata :: < ReachableService , ReachableServiceInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (ReachableService)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs_core :: ProviderVisibility :: Public) . with_location (furnace_rs_core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+        furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_REACHABLE_SERVICE }
     }
 
     pub mod unreachable {
@@ -38,7 +50,7 @@ mod rooted {
 
         impl furnace_rs_core::Cauldron for UnreachableCauldron {
             fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide::<UnreachableService>()
+                self.provide_with::<UnreachableService, UnreachableServiceInjector>()
                     .export::<UnreachableService>()
             }
         }
@@ -46,10 +58,34 @@ mod rooted {
         #[derive(Clone)]
         pub struct UnreachableService;
 
-        #[furnace_rs_core::element]
         pub fn unreachable_service() -> UnreachableService {
             UnreachableService
         }
+        #[doc = "Explicit constructor for the fixture's provider output."]
+        pub struct UnreachableServiceInjector;
+        impl furnace_rs_core::Injector<UnreachableService> for UnreachableServiceInjector {
+            type Dependencies = ();
+            async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<UnreachableService> {
+                Ok(unreachable_service())
+            }
+            fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+                &__FURNACE_INJECTOR_DESCRIPTOR_UNREACHABLE_SERVICE
+            }
+        }
+        const __FURNACE_INJECTOR_DESCRIPTOR_UNREACHABLE_SERVICE:
+            furnace_rs_core::ProviderDescriptor = furnace_rs_core::__private::InjectorMetadata::<
+            UnreachableService,
+            UnreachableServiceInjector,
+        >::DESCRIPTOR
+            .with_authored_type_name("UnreachableService")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Public)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+        furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_UNREACHABLE_SERVICE }
     }
 }
 

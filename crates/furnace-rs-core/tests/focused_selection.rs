@@ -12,25 +12,70 @@ mod owned {
 
     impl furnace_rs_core::Cauldron for PrivateCauldron {
         fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<Seed>().provide::<Repository>()
+            self.provide_with::<Seed, SeedInjector>()
+                .provide_with::<Repository, RepositoryInjector>()
         }
     }
 
     #[derive(Clone)]
     pub struct Seed(pub u32);
 
-    #[furnace_rs_core::element]
     fn seed() -> Seed {
         Seed(7)
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    struct SeedInjector;
+    impl furnace_rs_core::Injector<Seed> for SeedInjector {
+        type Dependencies = ();
+        async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Seed> {
+            Ok(seed())
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_SEED
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_SEED: furnace_rs_core::ProviderDescriptor =
+        furnace_rs_core::__private::InjectorMetadata::<Seed, SeedInjector>::DESCRIPTOR
+            .with_authored_type_name("Seed")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_SEED }
 
     #[derive(Clone)]
     pub struct Repository(pub u32);
 
-    #[furnace_rs_core::element]
     fn repository(seed: Seed) -> Repository {
         Repository(seed.0)
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    struct RepositoryInjector;
+    impl furnace_rs_core::Injector<Repository> for RepositoryInjector {
+        type Dependencies = (Seed,);
+        async fn inject(
+            (dependency_0,): Self::Dependencies,
+        ) -> furnace_rs_core::Result<Repository> {
+            Ok(repository(dependency_0))
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_REPOSITORY
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_REPOSITORY: furnace_rs_core::ProviderDescriptor =
+        furnace_rs_core::__private::InjectorMetadata::<Repository, RepositoryInjector>::DESCRIPTOR
+            .with_authored_type_name("Repository")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_REPOSITORY }
 }
 
 mod consumer {
@@ -41,37 +86,121 @@ mod consumer {
 
     impl furnace_rs_core::Cauldron for ConsumerCauldron {
         fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<Service>()
+            self.provide_with::<Service, ServiceInjector>()
         }
     }
 
     #[derive(Clone)]
     pub struct Service(pub u32);
 
-    #[furnace_rs_core::element]
     fn service(repository: Repository) -> Service {
         Service(repository.0 + 1)
     }
+    #[doc = "Explicit constructor for the fixture's provider output."]
+    struct ServiceInjector;
+    impl furnace_rs_core::Injector<Service> for ServiceInjector {
+        type Dependencies = (Repository,);
+        async fn inject((dependency_0,): Self::Dependencies) -> furnace_rs_core::Result<Service> {
+            Ok(service(dependency_0))
+        }
+        fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+            &__FURNACE_INJECTOR_DESCRIPTOR_SERVICE
+        }
+    }
+    const __FURNACE_INJECTOR_DESCRIPTOR_SERVICE: furnace_rs_core::ProviderDescriptor =
+        furnace_rs_core::__private::InjectorMetadata::<Service, ServiceInjector>::DESCRIPTOR
+            .with_authored_type_name("Service")
+            .with_namespace(module_path!())
+            .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+            .with_location(furnace_rs_core::SourceLocation::new(
+                file!(),
+                line!(),
+                column!(),
+            ));
+    furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_SERVICE }
 }
 
 struct Unrelated;
 
-#[furnace_rs_core::element]
 fn unrelated() -> Unrelated {
     panic!("a focused build must not construct an unrelated provider")
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct UnrelatedInjector;
+impl furnace_rs_core::Injector<Unrelated> for UnrelatedInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Unrelated> {
+        Ok(unrelated())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_UNRELATED
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_UNRELATED: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Unrelated, UnrelatedInjector>::DESCRIPTOR
+        .with_authored_type_name("Unrelated")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_UNRELATED }
 
 struct Ambiguous;
 
-#[furnace_rs_core::element]
 fn ambiguous_first() -> Ambiguous {
     Ambiguous
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct AmbiguousFirstInjector;
+impl furnace_rs_core::Injector<Ambiguous> for AmbiguousFirstInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Ambiguous> {
+        Ok(ambiguous_first())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_AMBIGUOUS_FIRST
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_AMBIGUOUS_FIRST: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Ambiguous, AmbiguousFirstInjector>::DESCRIPTOR
+        .with_authored_type_name("Ambiguous")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_AMBIGUOUS_FIRST }
 
-#[furnace_rs_core::element]
 fn ambiguous_second() -> Ambiguous {
     Ambiguous
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct AmbiguousSecondInjector;
+impl furnace_rs_core::Injector<Ambiguous> for AmbiguousSecondInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Ambiguous> {
+        Ok(ambiguous_second())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_AMBIGUOUS_SECOND
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_AMBIGUOUS_SECOND: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Ambiguous, AmbiguousSecondInjector>::DESCRIPTOR
+        .with_authored_type_name("Ambiguous")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_AMBIGUOUS_SECOND }
 
 struct Missing;
 
@@ -81,15 +210,57 @@ struct CycleA;
 #[derive(Clone)]
 struct CycleB;
 
-#[furnace_rs_core::element]
 fn cycle_a(_dependency: CycleB) -> CycleA {
     CycleA
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct CycleAInjector;
+impl furnace_rs_core::Injector<CycleA> for CycleAInjector {
+    type Dependencies = (CycleB,);
+    async fn inject((dependency_0,): Self::Dependencies) -> furnace_rs_core::Result<CycleA> {
+        Ok(cycle_a(dependency_0))
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_CYCLE_A
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_CYCLE_A: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<CycleA, CycleAInjector>::DESCRIPTOR
+        .with_authored_type_name("CycleA")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_CYCLE_A }
 
-#[furnace_rs_core::element]
 fn cycle_b(_dependency: CycleA) -> CycleB {
     CycleB
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct CycleBInjector;
+impl furnace_rs_core::Injector<CycleB> for CycleBInjector {
+    type Dependencies = (CycleA,);
+    async fn inject((dependency_0,): Self::Dependencies) -> furnace_rs_core::Result<CycleB> {
+        Ok(cycle_b(dependency_0))
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_CYCLE_B
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_CYCLE_B: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<CycleB, CycleBInjector>::DESCRIPTOR
+        .with_authored_type_name("CycleB")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_CYCLE_B }
 
 struct UnusedAutoConfiguration;
 

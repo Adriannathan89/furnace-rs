@@ -12,8 +12,8 @@ use crate::{
     Error, FURNACE006, FURNACE008, GraphAnalysis, LifecycleHook, LifecycleManager, LifecycleState,
     ProviderContribution, ProviderDescriptor, ProviderRegistry, Result,
     graph::{
-        SatisfiedProvider, analyze_catalog, analyze_descriptors, build_cauldron_graph,
-        select_focused_providers, select_scoped_providers,
+        SatisfiedProvider, analyze_catalog, build_cauldron_graph, select_focused_providers,
+        select_scoped_providers,
     },
 };
 
@@ -280,7 +280,12 @@ impl FurnaceBuilder {
                 covered_missing.push(*type_id);
             }
         }
-        let mut public = analyze_descriptors(&scoped.descriptors, &satisfied, &covered_missing);
+        let mut public = crate::graph::analyze_descriptors_with_locations(
+            &scoped.descriptors,
+            &satisfied,
+            &covered_missing,
+            &scoped.locations,
+        );
         public.prepend_diagnostics(scoped.diagnostics);
         public.append_diagnostics(auto_configuration.diagnostics);
         public.auto_configurations = auto_configuration.reports;

@@ -20,6 +20,15 @@ pub(crate) fn analyze_parts(
     satisfied: &[SatisfiedProvider],
     covered_missing: &[TypeId],
 ) -> GraphAnalysis {
+    analyze_parts_with_locations(descriptors, satisfied, covered_missing, &[])
+}
+
+pub(crate) fn analyze_parts_with_locations(
+    descriptors: &[&'static ProviderDescriptor],
+    satisfied: &[SatisfiedProvider],
+    covered_missing: &[TypeId],
+    locations: &[(TypeId, SourceLocation)],
+) -> GraphAnalysis {
     let mut descriptors = descriptors.to_vec();
     descriptors.sort_by(|left, right| descriptor_order(left, right));
 
@@ -119,7 +128,12 @@ pub(crate) fn analyze_parts(
             origin: descriptor.kind().into(),
             visibility: descriptor.visibility(),
             state: ProviderState::Planned,
-            location: Some(descriptor.location()),
+            location: Some(
+                locations
+                    .iter()
+                    .find(|(id, _)| *id == type_id)
+                    .map_or(descriptor.location(), |(_, location)| *location),
+            ),
             declared_dependencies: descriptor.dependencies(),
         });
     }

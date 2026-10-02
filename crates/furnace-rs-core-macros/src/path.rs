@@ -34,7 +34,7 @@ pub(crate) fn testing_path() -> syn::Result<Path> {
 
 fn found_path(found: FoundCrate, facade: bool) -> syn::Result<Path> {
     match (found, facade) {
-        (FoundCrate::Itself, false) => Ok(parse_quote!(crate)),
+        (FoundCrate::Itself, false) => Ok(parse_quote!(::furnace_rs_core)),
         (FoundCrate::Itself, true) => Ok(parse_quote!(::furnace_rs::core)),
         (FoundCrate::Name(name), false) => named_path(&name, false),
         (FoundCrate::Name(name), true) => named_path(&name, true),

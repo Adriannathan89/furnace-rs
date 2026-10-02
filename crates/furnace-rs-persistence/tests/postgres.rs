@@ -83,7 +83,7 @@ pub struct Root;
 
 impl furnace_rs_core::Cauldron for Root {
     fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        self.provide::<ItemRepository>()
+        self.provide_with::<ItemRepository, ItemRepositoryInjector>()
             .import(DatabaseCauldron)
             .export::<ItemRepository>()
     }
@@ -94,10 +94,24 @@ pub struct ItemRepository {
     database: DatabaseConnection,
 }
 
-#[furnace_rs_core::element]
 pub fn item_repository(database: DatabaseConnection) -> ItemRepository {
     ItemRepository { database }
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+pub struct ItemRepositoryInjector;
+impl furnace_rs_core::Injector<ItemRepository> for ItemRepositoryInjector {
+    type Dependencies = (DatabaseConnection,);
+    async fn inject(
+        (dependency_0,): Self::Dependencies,
+    ) -> furnace_rs_core::Result<ItemRepository> {
+        Ok(item_repository(dependency_0))
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_ITEM_REPOSITORY
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_ITEM_REPOSITORY : furnace_rs_core :: ProviderDescriptor = furnace_rs_core :: __private :: InjectorMetadata :: < ItemRepository , ItemRepositoryInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (ItemRepository)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs_core :: ProviderVisibility :: Public) . with_location (furnace_rs_core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_ITEM_REPOSITORY }
 
 fn builder(url: &str) -> furnace_rs_core::FurnaceBuilder {
     let config = ConfigBuilder::new()

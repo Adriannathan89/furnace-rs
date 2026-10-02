@@ -17,11 +17,34 @@ struct DefaultResource;
 struct Consumer {
     _default: DefaultResource,
 }
-#[furnace_rs_core::element]
+
 fn tracked() -> Tracked {
     PROVIDERS.fetch_add(1, Ordering::SeqCst);
     Tracked
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct TrackedInjector;
+impl furnace_rs_core::Injector<Tracked> for TrackedInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Tracked> {
+        Ok(tracked())
+    }
+    fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_TRACKED
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_TRACKED: furnace_rs_core::ProviderDescriptor =
+    furnace_rs_core::__private::InjectorMetadata::<Tracked, TrackedInjector>::DESCRIPTOR
+        .with_authored_type_name("Tracked")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs_core::ProviderVisibility::Private)
+        .with_location(furnace_rs_core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_TRACKED }
+
 struct Tracked;
 fn evaluate(_: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluation {
     AutoConfigurationEvaluation::active(

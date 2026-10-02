@@ -43,3 +43,12 @@ pub(crate) fn analyze_catalog(
     let descriptors = Catalog::providers();
     analyze_descriptors(&descriptors, satisfied, covered_missing)
 }
+
+pub(crate) fn analyze_descriptors_with_locations(
+    descriptors: &[&'static crate::ProviderDescriptor],
+    satisfied: &[SatisfiedProvider],
+    covered_missing: &[std::any::TypeId],
+    locations: &[(std::any::TypeId, crate::SourceLocation)],
+) -> GraphAnalysis {
+    analysis::analyze_parts_with_locations(descriptors, satisfied, covered_missing, locations)
+}

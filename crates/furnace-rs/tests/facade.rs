@@ -169,17 +169,29 @@ fn prelude_exposes_core_types_and_bare_attributes() {
 
         impl furnace_rs::core::Cauldron for PreludeCauldron {
             fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-                self.provide::<usize>()
+                self.provide_with::<usize, PreludeValueInjector>()
                     .provide::<PreludeRepository>()
                     .provide::<PreludeService>()
                     .controller::<PreludeController>()
             }
         }
 
-        #[element]
         fn prelude_value() -> usize {
             1
         }
+        #[doc = "Explicit constructor for the fixture's provider output."]
+        struct PreludeValueInjector;
+        impl furnace_rs::core::Injector<usize> for PreludeValueInjector {
+            type Dependencies = ();
+            async fn inject((): Self::Dependencies) -> furnace_rs::core::Result<usize> {
+                Ok(prelude_value())
+            }
+            fn descriptor() -> &'static furnace_rs::core::ProviderDescriptor {
+                &__FURNACE_INJECTOR_DESCRIPTOR_PRELUDE_VALUE
+            }
+        }
+        const __FURNACE_INJECTOR_DESCRIPTOR_PRELUDE_VALUE : furnace_rs :: core :: ProviderDescriptor = furnace_rs :: core :: __private :: InjectorMetadata :: < usize , PreludeValueInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (usize)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs :: core :: ProviderVisibility :: Private) . with_location (furnace_rs :: core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
+        furnace_rs::core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_PRELUDE_VALUE }
 
         #[storage]
         struct PreludeRepository;
@@ -220,12 +232,12 @@ struct FacadeCauldron;
 impl furnace_rs::core::Cauldron for FacadeCauldron {
     fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
         self.provide::<PublicGraphService>()
-            .provide::<u16>()
+            .provide_with::<u16, RestrictedGraphValueInjector>()
             .provide::<FacadeRepository>()
             .provide::<QueryUsecase>()
             .provide::<CommandUsecase>()
             .controller::<FacadeController>()
-            .provide::<GroupedFallibleProvider>()
+            .provide_with::<GroupedFallibleProvider, GroupedFallibleProviderInjector>()
             .provide::<FacadeService>()
             .controller::<RootController>()
             .export::<PublicGraphService>()
@@ -236,10 +248,31 @@ impl furnace_rs::core::Cauldron for FacadeCauldron {
 #[furnace_rs::burner]
 pub struct PublicGraphService;
 
-#[furnace_rs::element]
 pub(crate) fn restricted_graph_value() -> u16 {
     16
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+pub(crate) struct RestrictedGraphValueInjector;
+impl furnace_rs::core::Injector<u16> for RestrictedGraphValueInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs::core::Result<u16> {
+        Ok(restricted_graph_value())
+    }
+    fn descriptor() -> &'static furnace_rs::core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_RESTRICTED_GRAPH_VALUE
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_RESTRICTED_GRAPH_VALUE: furnace_rs::core::ProviderDescriptor =
+    furnace_rs::core::__private::InjectorMetadata::<u16, RestrictedGraphValueInjector>::DESCRIPTOR
+        .with_authored_type_name("u16")
+        .with_namespace(module_path!())
+        .with_visibility(furnace_rs::core::ProviderVisibility::Private)
+        .with_location(furnace_rs::core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+furnace_rs::core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_RESTRICTED_GRAPH_VALUE }
 
 #[furnace_rs::storage]
 struct FacadeRepository;
@@ -282,10 +315,35 @@ impl FacadeController {
 }
 
 #[allow(clippy::result_large_err, unused_parens)]
-#[furnace_rs::element]
+
 fn grouped_fallible_provider() -> (furnace_rs::core::Result<GroupedFallibleProvider>) {
     Ok(GroupedFallibleProvider)
 }
+#[doc = "Explicit constructor for the fixture's provider output."]
+struct GroupedFallibleProviderInjector;
+impl furnace_rs::core::Injector<GroupedFallibleProvider> for GroupedFallibleProviderInjector {
+    type Dependencies = ();
+    async fn inject((): Self::Dependencies) -> furnace_rs::core::Result<GroupedFallibleProvider> {
+        grouped_fallible_provider()
+    }
+    fn descriptor() -> &'static furnace_rs::core::ProviderDescriptor {
+        &__FURNACE_INJECTOR_DESCRIPTOR_GROUPED_FALLIBLE_PROVIDER
+    }
+}
+const __FURNACE_INJECTOR_DESCRIPTOR_GROUPED_FALLIBLE_PROVIDER:
+    furnace_rs::core::ProviderDescriptor = furnace_rs::core::__private::InjectorMetadata::<
+    GroupedFallibleProvider,
+    GroupedFallibleProviderInjector,
+>::DESCRIPTOR
+    .with_authored_type_name("GroupedFallibleProvider")
+    .with_namespace(module_path!())
+    .with_visibility(furnace_rs::core::ProviderVisibility::Private)
+    .with_location(furnace_rs::core::SourceLocation::new(
+        file!(),
+        line!(),
+        column!(),
+    ));
+furnace_rs::core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_GROUPED_FALLIBLE_PROVIDER }
 
 #[furnace_rs::burner]
 struct FacadeService {

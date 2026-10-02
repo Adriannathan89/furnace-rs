@@ -16,6 +16,10 @@ configuration, provider, or lifecycle behavior.
 - The `Configuration` trait, `#[derive(Configuration)]` support, and the
   redacted `Secret<T>` wrapper.
 - Static provider and module descriptors collected through `inventory`.
+- Typed `Injector<T>` constructors with declared dependency tuples; cauldrons
+  select manual constructors using `.provide::<T>()` or
+  `.provide_with::<Output, Implementer>()`. Manual injectors require a root;
+  generated managed providers retain catalog discovery.
 - Root-module selection, explicit cauldron ownership, exports, direct imports, and the
   retained `CauldronGraph`.
 - Concrete-type provider graph analysis, deterministic construction plans,

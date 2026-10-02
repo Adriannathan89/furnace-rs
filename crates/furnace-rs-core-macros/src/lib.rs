@@ -11,7 +11,6 @@ mod configuration;
 mod main_attribute;
 mod managed;
 mod path;
-mod provider;
 mod test_fn;
 
 /// Derives an explicit typed view over an already loaded configuration.
@@ -44,14 +43,6 @@ pub fn main(arguments: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn cauldron(arguments: TokenStream, item: TokenStream) -> TokenStream {
     cauldron::expand(arguments.into(), item.into())
-        .unwrap_or_else(syn::Error::into_compile_error)
-        .into()
-}
-
-/// Declares a free function as a general-purpose provider.
-#[proc_macro_attribute]
-pub fn element(arguments: TokenStream, item: TokenStream) -> TokenStream {
-    provider::expand(arguments.into(), item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
