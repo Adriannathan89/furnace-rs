@@ -35,11 +35,15 @@ pub(crate) fn select_scoped_providers(
         }
     }
     for (owner, member) in graph.members() {
-        let matching: Vec<_> = descriptors
-            .iter()
-            .copied()
-            .filter(|descriptor| descriptor.type_id() == member.type_id)
-            .collect();
+        let matching: Vec<_> = if let Some(descriptor) = member.descriptor {
+            vec![descriptor]
+        } else {
+            descriptors
+                .iter()
+                .copied()
+                .filter(|descriptor| descriptor.type_id() == member.type_id)
+                .collect()
+        };
         let known_controller = matching.iter().any(|descriptor| descriptor.is_controller());
         if (member.controller && !matching.is_empty() && !known_controller)
             || (known_controller && graph.exports(owner.type_id(), member.type_id))

@@ -30,6 +30,7 @@ pub(crate) struct CauldronMember {
     pub(crate) type_name: &'static str,
     pub(crate) controller: bool,
     pub(crate) location: SourceLocation,
+    pub(crate) descriptor: Option<&'static crate::ProviderDescriptor>,
 }
 
 pub(crate) struct CauldronImport {
@@ -61,6 +62,27 @@ impl<M: Cauldron> CauldronRegistration<M> {
             type_name: std::any::type_name::<T>(),
             controller: false,
             location: location(),
+            descriptor: None,
+        });
+        self
+    }
+
+    /// Registers an output constructed by the explicitly selected injector.
+    ///
+    /// Use this for trait bindings or third-party native types. The constructor
+    /// receives its declared dependencies during startup, never during registration.
+    #[track_caller]
+    pub fn provide_with<T, I>(mut self) -> Self
+    where
+        T: Send + Sync + 'static,
+        I: crate::Injector<T>,
+    {
+        self.definition.members.push(CauldronMember {
+            type_id: TypeId::of::<T>(),
+            type_name: std::any::type_name::<T>(),
+            controller: false,
+            location: location(),
+            descriptor: Some(I::descriptor()),
         });
         self
     }
@@ -73,6 +95,7 @@ impl<M: Cauldron> CauldronRegistration<M> {
             type_name: std::any::type_name::<T>(),
             controller: true,
             location: location(),
+            descriptor: None,
         });
         self
     }
@@ -96,6 +119,7 @@ impl<M: Cauldron> CauldronRegistration<M> {
             type_name: std::any::type_name::<T>(),
             controller: false,
             location: location(),
+            descriptor: None,
         });
         self
     }

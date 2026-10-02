@@ -66,12 +66,12 @@
 - Intermediate compatibility: retain current legacy `provide<T>()` until managed and integration providers have migrated. Task 5 makes `T: Injector<T>` authoritative for ordinary registrations.
 - Retain an optional `&'static ProviderDescriptor` in each registration member. Explicit descriptors take precedence over same-output linked descriptors; ownership, controller classification, and overrides still validate normally.
 
-- [ ] Add tests for a plain manually authored trait injector, private dependency in the owning cauldron, exported dependency via direct import, and inaccessible dependency. Assert registry resolution returns the authored trait result.
-- [ ] Add missing-dependency and cycle tests with atomic constructor counters remaining zero. Add duplicate output/owner cases using different implementers and an unrelated broken cauldron excluded from the selected root.
-- [ ] Run the new registration test and confirm failure before adding the registration method.
-- [ ] Integrate selected descriptors into rooted scope before auto-configuration and HTTP preflight; preserve override suppression and registration locations in diagnostics. Do not collect registrations from unreachable cauldrons into the root's provider catalog.
-- [ ] Test competing linked same-output metadata, repeated analysis, a supplied output that suppresses `inject` and `lifecycle`, and a trait binding that does not implicitly register its concrete implementer. Run core cauldron and auto-configuration tests.
-- [ ] Commit: `feat(core): bind cauldron outputs to explicit injectors`.
+- [x] Add tests for a plain manually authored trait injector, private dependency in the owning cauldron, exported dependency via direct import, and inaccessible dependency. Assert registry resolution returns the authored trait result.
+- [x] Add missing-dependency and cycle tests with atomic constructor counters remaining zero. Add duplicate output/owner cases using different implementers and an unrelated broken cauldron excluded from the selected root.
+- [x] Run the new registration test and confirm failure before adding the registration method.
+- [x] Integrate selected descriptors into rooted scope before auto-configuration and HTTP preflight; preserve override suppression and registration locations in diagnostics. Do not collect registrations from unreachable cauldrons into the root's provider catalog.
+- [x] Test competing linked same-output metadata, repeated analysis, a supplied output that suppresses `inject` and `lifecycle`, and a trait binding that does not implicitly register its concrete implementer. Run core cauldron and auto-configuration tests.
+- [x] Commit: `feat(core): bind cauldron outputs to explicit injectors`.
 
 ### Task 3: Managed services and controllers implement Injector
 

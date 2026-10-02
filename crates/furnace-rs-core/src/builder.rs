@@ -112,7 +112,20 @@ impl FurnaceBuilder {
     where
         T: Send + Sync + 'static,
     {
-        let descriptor = Catalog::provider_for::<T>()?;
+        let explicit = if let Some(root) = &self.root {
+            let graph = build_cauldron_graph(root.type_id, &Catalog::cauldrons())?;
+            graph.members().find_map(|(_, member)| {
+                (member.type_id == TypeId::of::<T>())
+                    .then_some(member.descriptor)
+                    .flatten()
+            })
+        } else {
+            None
+        };
+        let descriptor = match explicit {
+            Some(descriptor) => descriptor,
+            None => Catalog::provider_for::<T>()?,
+        };
         let contribution = self.invoke_provider(descriptor).await?;
         self.apply_provider_contribution(descriptor, contribution)?;
         self.satisfied
