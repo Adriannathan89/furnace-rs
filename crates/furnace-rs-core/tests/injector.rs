@@ -62,6 +62,65 @@ impl Injector for Counted {
     }
 }
 
+#[furnace_rs_core::storage]
+struct ManagedStorage {
+    state: Shared,
+}
+#[furnace_rs_core::burner]
+struct ManagedBurner {
+    storage: ManagedStorage,
+}
+#[furnace_rs_core::burner]
+struct Recursive {
+    previous: Arc<Self>,
+}
+
+#[tokio::test]
+async fn managed_injectors_preserve_shared_fields_and_roles() {
+    let _read_recursive: fn(&Recursive) = |value| {
+        let _ = &value.previous;
+    };
+    let state = Arc::new(AtomicUsize::new(0));
+    let storage = ManagedStorage::inject((Shared(state.clone()),))
+        .await
+        .unwrap();
+    let burner = ManagedBurner::inject((storage,)).await.unwrap();
+    burner.storage.state.0.store(8, Ordering::SeqCst);
+    assert_eq!(burner.clone().storage.state.0.load(Ordering::SeqCst), 8);
+    assert_eq!(
+        ManagedStorage::descriptor().kind(),
+        furnace_rs_core::ProviderKind::Repository
+    );
+    assert_eq!(
+        ManagedBurner::descriptor().kind(),
+        furnace_rs_core::ProviderKind::Service
+    );
+    assert_eq!(
+        Recursive::descriptor().dependencies()[0].type_id(),
+        TypeId::of::<Arc<Recursive>>()
+    );
+}
+
+#[tokio::test]
+async fn focused_managed_construction_keeps_catalog_discovery() {
+    let mut builder = furnace_rs_core::Furnace::builder();
+    builder.__test_focus::<ManagedBurner>().unwrap();
+    builder
+        .provide(Shared(Arc::new(AtomicUsize::new(2))))
+        .unwrap();
+    let app = builder.build().await.unwrap();
+    assert_eq!(
+        app.context()
+            .resolve::<ManagedBurner>()
+            .unwrap()
+            .storage
+            .state
+            .0
+            .load(Ordering::SeqCst),
+        2
+    );
+}
+
 #[tokio::test]
 async fn zero_and_single_dependencies_construct_the_native_outputs() {
     let mut registry = ProviderRegistry::new();

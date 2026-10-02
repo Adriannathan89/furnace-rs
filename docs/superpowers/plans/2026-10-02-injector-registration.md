@@ -82,11 +82,11 @@
 - `Injector::descriptor()` returns the managed descriptor, preserving role, namespace, source location, catalog submission, controller callbacks, and focused requirements. Generated descriptor constructors delegate to `inject` and `lifecycle`.
 - Reexport `Injector` and `InjectionDependencies` through core and facade/prelude without enabling unrelated features.
 
-- [ ] Add behavior tests for a managed burner/storage, cloned shared handles, and a managed controller consuming a manual trait binding in a rooted cauldron. Assert direct endpoint requests return the injected implementation's output.
-- [ ] Add self-type normalization and focused unrooted managed construction regression assertions. Run the focused new tests before macro changes and capture the missing Injector failures.
-- [ ] Generate dependency tuples and the injector contract in both managed expansions. Reject fields beyond sixteen with a focused macro diagnostic rather than incidental Rust tuple errors. Preserve generated handle and route APIs.
-- [ ] Run core/common macro tests, new controller/injector tests, direct-controller and optional-seal tests, and the facade pass fixture on stable/MSRV.
-- [ ] Commit: `feat(macros): generate injectors for managed providers and controllers`.
+- [x] Add behavior tests for a managed burner/storage, cloned shared handles, and a managed controller consuming a manual trait binding in a rooted cauldron. Assert direct endpoint requests return the injected implementation's output.
+- [x] Add self-type normalization and focused unrooted managed construction regression assertions. Run the focused new tests before macro changes and capture the missing Injector failures.
+- [x] Generate dependency tuples and the injector contract in both managed expansions. Reject fields beyond sixteen with a focused macro diagnostic rather than incidental Rust tuple errors. Preserve generated handle and route APIs.
+- [x] Run core/common macro tests, new controller/injector tests, direct-controller and optional-seal tests, and the facade pass fixture on stable/MSRV.
+- [x] Commit: `feat(macros): generate injectors for managed providers and controllers`.
 
 ### Task 4: Native integrations and lifecycle migration
 

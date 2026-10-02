@@ -45,6 +45,12 @@ pub(super) fn expand_controller_with_common(
         ));
     }
     if let Fields::Named(fields) = &item.fields {
+        if fields.named.len() > 16 {
+            return Err(Error::new(
+                fields.span(),
+                "managed injectors support at most sixteen dependencies",
+            ));
+        }
         for field in &fields.named {
             if let Some(attribute) = field
                 .attrs
@@ -74,50 +80,54 @@ pub(super) fn expand_controller_with_common(
     let constructor_ident = format_ident!("__furnace_construct_controller_{generated_suffix}");
     let is_unit = matches!(fields, Fields::Unit);
 
-    let (inner_fields, resolve_fields, dependencies) = match fields {
-        Fields::Named(fields) => {
-            let normalized_fields: Vec<_> = fields
-                .named
-                .iter()
-                .cloned()
-                .map(|mut field| {
-                    let dependency_span = field.ty.span();
-                    normalize_self_type(&mut field.ty, &ident);
-                    (field, dependency_span)
-                })
-                .collect();
-            let declarations = normalized_fields.iter().map(|(field, _)| {
-                let attrs = &field.attrs;
-                let vis = &field.vis;
-                let ident = &field.ident;
-                let ty = &field.ty;
-                quote!(#(#attrs)* #vis #ident: #ty)
-            });
-            let resolutions = normalized_fields.iter().map(|(field, dependency_span)| {
-                let ident = field.ident.as_ref().expect("named fields have identifiers");
-                let ty = &field.ty;
-                quote_spanned! {*dependency_span=>
-                    #ident: __furnace_assert_controller_dependency::<#ty>(context)?
-                }
-            });
-            let descriptors = normalized_fields.iter().map(|(field, _)| {
-                let ty = &field.ty;
-                quote! {
-                    #core::DependencyDescriptor::new(
-                        stringify!(#ty),
-                        || ::core::any::TypeId::of::<#ty>(),
-                    )
-                }
-            });
-            (
-                quote!({ #(#declarations,)* }),
-                quote!({ #(#resolutions,)* }),
-                quote!(&[#(#descriptors,)*]),
-            )
-        }
-        Fields::Unit => (quote!(;), quote!(), quote!(&[])),
-        Fields::Unnamed(_) => unreachable!("tuple fields were rejected above"),
-    };
+    let (inner_fields, resolve_fields, dependencies, dependency_types, dependency_pattern) =
+        match fields {
+            Fields::Named(fields) => {
+                let normalized_fields: Vec<_> = fields
+                    .named
+                    .iter()
+                    .cloned()
+                    .map(|mut field| {
+                        let dependency_span = field.ty.span();
+                        normalize_self_type(&mut field.ty, &ident);
+                        (field, dependency_span)
+                    })
+                    .collect();
+                let dependency_types = normalized_fields.iter().map(|(field, _)| &field.ty);
+                let dependency_names = normalized_fields.iter().map(|(field, _)| &field.ident);
+                let declarations = normalized_fields.iter().map(|(field, _)| {
+                    let attrs = &field.attrs;
+                    let vis = &field.vis;
+                    let ident = &field.ident;
+                    let ty = &field.ty;
+                    quote!(#(#attrs)* #vis #ident: #ty)
+                });
+                let resolutions = normalized_fields.iter().map(|(field, dependency_span)| {
+                    let ident = field.ident.as_ref().expect("named fields have identifiers");
+                    quote_spanned! {*dependency_span=>
+                        #ident: #ident
+                    }
+                });
+                let descriptors = normalized_fields.iter().map(|(field, _)| {
+                    let ty = &field.ty;
+                    quote! {
+                        #core::DependencyDescriptor::new(
+                            stringify!(#ty),
+                            || ::core::any::TypeId::of::<#ty>(),
+                        )
+                    }
+                });
+                (
+                    quote!({ #(#declarations,)* }),
+                    quote!({ #(#resolutions,)* }),
+                    quote!(&[#(#descriptors,)*]),
+                    quote!((#(#dependency_types,)*)),
+                    quote!((#(#dependency_names,)*)),
+                )
+            }
+            Fields::Unit => (quote!(;), quote!(), quote!(&[]), quote!(()), quote!(())),
+            Fields::Unnamed(_) => unreachable!("tuple fields were rejected above"),
+        };
 
     let inner_value = if is_unit {
         quote!(#inner_ident)
@@ -180,16 +190,14 @@ pub(super) fn expand_controller_with_common(
         #seal_helper
         #(#cfg_attrs)*
         const _: () = {
-            fn __furnace_assert_controller_dependency<'a, T>(
-                context: &'a #core::ConstructionContext<'a>,
-            ) -> #core::Result<T>
-            where
-                T: ::core::clone::Clone
-                    + ::core::marker::Send
-                    + ::core::marker::Sync
-                    + 'static,
-            {
-                Ok(::core::clone::Clone::clone(context.resolve::<T>()?.as_ref()))
+            impl #core::Injector for #ident {
+                type Dependencies = #dependency_types;
+                async fn inject(#dependency_pattern: Self::Dependencies) -> #core::Result<Self> {
+                    Ok(#ident(::std::sync::Arc::new(#inner_value)))
+                }
+                fn descriptor() -> &'static #core::ProviderDescriptor {
+                    &__FURNACE_DESCRIPTOR
+                }
             }
 
             #[doc(hidden)]
@@ -197,14 +205,17 @@ pub(super) fn expand_controller_with_common(
             fn #constructor_ident<'a>(
                 context: &'a #core::ConstructionContext<'a>,
             ) -> #core::ProviderFuture<'a> {
-                ::std::boxed::Box::pin(async move {
-                    let value = #ident(::std::sync::Arc::new(#inner_value));
-                    let erased: #core::ErasedProvider = ::std::sync::Arc::new(value);
-                    Ok(erased)
-                })
+                (#core::injector_descriptor::<#ident, #ident>().constructor())(context)
             }
 
-            #core::__private::inventory::submit! {
+            fn __furnace_construct_resource<'a>(
+                context: &'a #core::ConstructionContext<'a>,
+            ) -> #core::LifecycleProviderFuture<'a> {
+                (#core::injector_descriptor::<#ident, #ident>()
+                    .lifecycle_constructor().expect("injector lifecycle constructor"))(context)
+            }
+
+            const __FURNACE_DESCRIPTOR: #core::ProviderDescriptor =
                 #core::ProviderDescriptor::new(
                     #core::ProviderKind::Service,
                     concat!(module_path!(), "::", stringify!(#ident)),
@@ -217,7 +228,8 @@ pub(super) fn expand_controller_with_common(
                 .with_runtime_type_name(|| ::core::any::type_name::<#ident>())
                 .with_namespace(module_path!())
                 .with_controller()
-            }
+                .with_lifecycle_constructor(__furnace_construct_resource);
+            #core::__private::inventory::submit! { __FURNACE_DESCRIPTOR }
 
             #route_metadata
 

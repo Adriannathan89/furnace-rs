@@ -3,6 +3,14 @@
         use super::*;
         use quote::ToTokens;
 
+        #[test]
+        fn rejects_seventeen_managed_dependencies_with_a_focused_error() {
+            let fields = (0..17).map(|i| format!("field{i}: String")).collect::<Vec<_>>().join(",");
+            let item: TokenStream = format!("struct TooMany {{ {fields} }}").parse().unwrap();
+            let error = expand(ManagedKind::Service, TokenStream::new(), item).unwrap_err();
+            assert!(error.to_string().contains("at most sixteen dependencies"));
+        }
+
         fn kind_name(kind: &ManagedKind) -> &'static str {
             kind.attribute_name()
         }

@@ -12,6 +12,18 @@ fn normalized(tokens: impl ToTokens) -> String {
 }
 
 #[test]
+fn rejects_seventeen_controller_dependencies_with_a_focused_error() {
+    let fields = (0..17)
+        .map(|i| format!("field{i}: String"))
+        .collect::<Vec<_>>()
+        .join(",");
+    let item = syn::parse_str(&format!("struct TooMany {{ {fields} }}")).unwrap();
+    let error =
+        expand_controller_with_common(item, &syn::parse_quote!(furnace_rs_common)).unwrap_err();
+    assert!(error.to_string().contains("at most sixteen dependencies"));
+}
+
+#[test]
 fn records_a_managed_controller_and_its_static_seal_callback() {
     let item = syn::parse_str("pub struct Controller;").unwrap();
     let expanded = normalized(
