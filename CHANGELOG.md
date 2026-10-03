@@ -4,6 +4,20 @@ All notable changes to furnace-rs are documented in this file. Published MADS
 release history is retained below; the pending 0.9.2 work and furnace-rs API
 migration are consolidated into the first 1.0.0 release.
 
+## [Unreleased]
+
+### Security
+
+- Bound incomplete initial HTTP requests, including idle sockets and partial
+  protocol prefaces, and HTTP/1 request headers to ten seconds. Preserve HTTP/2,
+  upgrades, long-running handlers, and graceful connection draining.
+- Add a ten-second idle deadline while reading request bodies. Progress renews
+  the deadline; stalled reads return a safe HTTP 408 response before response
+  headers are sent and close the affected HTTP/1 connection. A timeout during
+  response streaming terminates that stream. Body-size limits remain enforced.
+- Record isolated before/after regression measurements in the
+  [HTTP runtime security report](benchmark/HTTP_RUNTIME_SECURITY.md).
+
 ## [1.0.0] - 2026-10-03
 
 The workspace is prepared for the first stable furnace-rs release on 2026-10-03. Publication,
