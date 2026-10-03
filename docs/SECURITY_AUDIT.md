@@ -1,6 +1,6 @@
 # furnace-rs 1.0.0 security audit
 
-Status: **release preparation; 1.0.0 is not yet published**. The audit changes
+Status: **Released at 2026-10-3**. The audit changes
 were committed before release preparation at `a847743`. This document brings
 together the authentication, core/database, and all-crate reviews without
 changing their historical evidence.
