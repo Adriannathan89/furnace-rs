@@ -29,6 +29,8 @@ cargo_metadata = "=0.19.2"
 cookie = { version = "=0.18.1", default-features = false, features = ["percent-encode"] }
 dotenvy = "=0.15.7"
 http-body = "1"
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["server-auto", "service", "tokio"] }
 futures-util = "0.3"
 inventory = "0.3"
 jsonwebtoken = { version = "=10.3.0", default-features = false, features = ["aws_lc_rs", "use_pem"] }

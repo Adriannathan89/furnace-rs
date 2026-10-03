@@ -21,6 +21,8 @@ use crate::server_config::{
 };
 use crate::{build_router, configure_router};
 
+const HEADER_READ_TIMEOUT: Duration = Duration::from_secs(10);
+
 /// A standard application run had no reachable managed HTTP route.
 pub const FURNACE031: DiagnosticCode = DiagnosticCode::new("FURNACE031");
 
@@ -240,6 +242,8 @@ fn config_directory_error(error: std::io::Error) -> HttpRuntimeError {
 /// Generated-route validation and final router configuration complete before
 /// lifecycle hooks start or the listener is bound. Once lifecycle startup
 /// succeeds, every exit path attempts shutdown.
+/// Incomplete initial requests and HTTP/1 request headers expire after ten
+/// seconds. This deadline does not limit handler execution or response streaming.
 /// A bind or serving failure is retained if shutdown succeeds; if shutdown
 /// also fails, both failures are returned in [`HttpRuntimeError::OperationAndShutdown`].
 ///
@@ -285,6 +289,8 @@ pub async fn serve(
 /// The explicit `address` is the complete listener override. It is resolved
 /// and bound after lifecycle startup, and it may use port zero regardless of
 /// any automatic `server.host` or `server.port` configuration.
+/// Incomplete initial requests and HTTP/1 request headers expire after ten
+/// seconds without imposing a handler execution deadline.
 ///
 /// # Errors
 ///
@@ -361,11 +367,79 @@ where
             return finish_after_error(application, HttpRuntimeError::Bind(error)).await;
         }
     };
-    let result = axum::serve(listener, router)
-        .with_graceful_shutdown(shutdown)
+    let result = serve_http(listener, router, shutdown)
         .await
         .map_err(HttpRuntimeError::Serve);
     finish(application, result).await
+}
+
+// Axum's convenience server does not install a Hyper timer. Without one,
+// incomplete request headers retain their socket and task indefinitely.
+async fn serve_http(
+    mut listener: TcpListener,
+    router: axum::Router,
+    shutdown: impl Future<Output = ()> + Send + 'static,
+) -> std::io::Result<()> {
+    use axum::serve::Listener;
+    use hyper_util::{
+        rt::{TokioExecutor, TokioIo, TokioTimer},
+        server::conn::auto::Builder,
+        service::TowerToHyperService,
+    };
+
+    let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(());
+    let mut connections = tokio::task::JoinSet::new();
+    tokio::pin!(shutdown);
+    loop {
+        tokio::select! {
+            biased;
+            _ = &mut shutdown => break,
+            Some(_) = connections.join_next(), if !connections.is_empty() => {},
+            (stream, _) = Listener::accept(&mut listener) => {
+                let first_request = std::sync::Arc::new(tokio::sync::Notify::new());
+                let request_received = std::sync::Arc::clone(&first_request);
+                let service = tower::ServiceBuilder::new()
+                    .map_request(move |request: axum::http::Request<hyper::body::Incoming>| {
+                        request_received.notify_one();
+                        request
+                    })
+                    .service(router.clone().with_state(()));
+                let service = TowerToHyperService::new(service);
+                let mut shutdown_rx = shutdown_rx.clone();
+                connections.spawn(async move {
+                    let mut builder = Builder::new(TokioExecutor::new());
+                    builder.http1().timer(TokioTimer::new())
+                        .header_read_timeout(HEADER_READ_TIMEOUT);
+                    builder.http2().enable_connect_protocol();
+                    let connection = builder
+                        .serve_connection_with_upgrades(TokioIo::new(stream), service);
+                    tokio::pin!(connection);
+                    // Automatic protocol detection precedes Hyper's header timer.
+                    // Bound that phase too, including clients sending no bytes or
+                    // only a partial HTTP/2 preface. Stop this timer once the first
+                    // request arrives so long-running handlers are unaffected.
+                    let initial_headers = async {
+                        if tokio::time::timeout(HEADER_READ_TIMEOUT, first_request.notified()).await.is_ok() {
+                            std::future::pending::<()>().await;
+                        }
+                    };
+                    tokio::select! {
+                        _ = &mut connection => {},
+                        _ = initial_headers => {},
+                        _ = shutdown_rx.changed() => {
+                            connection.as_mut().graceful_shutdown();
+                            let _ = connection.await;
+                        }
+                    }
+                });
+            }
+        }
+    }
+    // Stop accepting before draining active requests and running lifecycle hooks.
+    drop(listener);
+    drop(shutdown_tx);
+    while connections.join_next().await.is_some() {}
+    Ok(())
 }
 
 async fn finish(
@@ -455,6 +529,203 @@ mod tests {
     static STARTS: AtomicUsize = AtomicUsize::new(0);
     static BINDS: AtomicUsize = AtomicUsize::new(0);
     static TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+    #[tokio::test]
+    async fn header_deadline_does_not_cancel_handlers_or_graceful_drain() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let started = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Notify::new());
+        let handler_started = Arc::clone(&started);
+        let handler_release = Arc::clone(&release);
+        let router = axum::Router::new().route(
+            "/slow",
+            axum::routing::get(move || {
+                let started = Arc::clone(&handler_started);
+                let release = Arc::clone(&handler_release);
+                async move {
+                    started.notify_one();
+                    release.notified().await;
+                    "completed"
+                }
+            }),
+        );
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(super::serve_http(listener, router, async move {
+            let _ = shutdown_rx.await;
+        }));
+        let client = tokio::spawn(async move {
+            let mut stream = tokio::net::TcpStream::connect(address).await.unwrap();
+            stream
+                .write_all(b"GET /slow HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                .await
+                .unwrap();
+            let mut response = Vec::new();
+            tokio::time::timeout(Duration::from_secs(15), stream.read_to_end(&mut response))
+                .await
+                .unwrap()
+                .unwrap();
+            response
+        });
+        tokio::time::timeout(Duration::from_secs(2), started.notified())
+            .await
+            .unwrap();
+        tokio::time::sleep(Duration::from_secs(11)).await;
+        let _ = shutdown_tx.send(());
+        tokio::task::yield_now().await;
+        assert!(
+            !server.is_finished(),
+            "shutdown must drain the active handler"
+        );
+        release.notify_one();
+        let response = client.await.unwrap();
+        assert!(response.starts_with(b"HTTP/1.1 200"));
+        assert!(response.ends_with(b"completed"));
+        tokio::time::timeout(Duration::from_secs(2), server)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn idle_connections_and_partial_protocol_prefaces_expire() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(super::serve_http(
+            listener,
+            axum::Router::new(),
+            async move {
+                let _ = shutdown_rx.await;
+            },
+        ));
+        let mut checks = tokio::task::JoinSet::new();
+        for prefix in [b"".as_slice(), b"PRI", b"G"] {
+            let mut stream = tokio::net::TcpStream::connect(address).await.unwrap();
+            stream.write_all(prefix).await.unwrap();
+            checks.spawn(async move {
+                let mut byte = [0];
+                tokio::time::timeout(Duration::from_secs(12), stream.read(&mut byte)).await
+            });
+        }
+        let mut results = Vec::new();
+        while let Some(result) = checks.join_next().await {
+            results.push(result.unwrap());
+        }
+        let _ = shutdown_tx.send(());
+        server.await.unwrap().unwrap();
+        for result in results {
+            assert!(
+                matches!(result, Ok(Ok(0)) | Ok(Err(_))),
+                "connection did not expire: {result:?}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn header_deadline_preserves_http2_requests() {
+        use hyper_util::rt::{TokioExecutor, TokioIo};
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router =
+            axum::Router::new().route("/health", axum::routing::get(|| async { "healthy" }));
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(super::serve_http(listener, router, async move {
+            let _ = shutdown_rx.await;
+        }));
+        let stream = tokio::net::TcpStream::connect(address).await.unwrap();
+        let (mut sender, connection) =
+            hyper::client::conn::http2::handshake(TokioExecutor::new(), TokioIo::new(stream))
+                .await
+                .unwrap();
+        let client = tokio::spawn(connection);
+        let request = axum::http::Request::builder()
+            .uri("http://localhost/health")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let response = tokio::time::timeout(Duration::from_secs(2), sender.send_request(request))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = axum::body::to_bytes(axum::body::Body::new(response.into_body()), 1024)
+            .await
+            .unwrap();
+        assert_eq!(&body[..], b"healthy");
+        drop(sender);
+        let _ = shutdown_tx.send(());
+        tokio::time::timeout(Duration::from_secs(2), server)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        client.await.unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn incomplete_headers_expire_without_stopping_the_server() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let mut builder = Furnace::builder();
+        builder.root::<raw_router::App>().unwrap();
+        let application = builder.build().await.unwrap();
+        let router =
+            axum::Router::new().route("/health", axum::routing::get(|| async { "healthy" }));
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(serve_router_with(
+            application,
+            router,
+            (),
+            move |_| async move { Ok(listener) },
+            async move {
+                let _ = shutdown_rx.await;
+            },
+        ));
+
+        // One incomplete request is enough to check the resource-retention bug;
+        // this test never floods the listener or exhausts machine resources.
+        let mut stalled = tokio::net::TcpStream::connect(address).await.unwrap();
+        stalled
+            .write_all(b"GET /health HTTP/1.1\r\nHost: localhost\r\nX-Stalled: ")
+            .await
+            .unwrap();
+        let mut byte = [0];
+        let expired = tokio::time::timeout(Duration::from_secs(12), stalled.read(&mut byte)).await;
+
+        let mut healthy = tokio::net::TcpStream::connect(address).await.unwrap();
+        healthy
+            .write_all(b"GET /health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+            .await
+            .unwrap();
+        let mut response = Vec::new();
+        tokio::time::timeout(Duration::from_secs(2), healthy.read_to_end(&mut response))
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(response.starts_with(b"HTTP/1.1 200"));
+        assert!(response.ends_with(b"healthy"));
+
+        // Clean up even when the unpatched server keeps the request open.
+        drop(stalled);
+        let _ = shutdown_tx.send(());
+        tokio::time::timeout(Duration::from_secs(2), server)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert!(
+            matches!(expired, Ok(Ok(0)) | Ok(Err(_))),
+            "incomplete headers retained a connection past the deadline: {expired:?}"
+        );
+    }
 
     #[tokio::test]
     async fn private_shutdown_file_completes_the_standard_shutdown_signal() {
