@@ -21,7 +21,10 @@ use crate::server_config::{
 };
 use crate::{build_router, configure_router};
 
+mod body;
+
 const HEADER_READ_TIMEOUT: Duration = Duration::from_secs(10);
+const BODY_READ_IDLE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// A standard application run had no reachable managed HTTP route.
 pub const FURNACE031: DiagnosticCode = DiagnosticCode::new("FURNACE031");
@@ -244,6 +247,9 @@ fn config_directory_error(error: std::io::Error) -> HttpRuntimeError {
 /// succeeds, every exit path attempts shutdown.
 /// Incomplete initial requests and HTTP/1 request headers expire after ten
 /// seconds. This deadline does not limit handler execution or response streaming.
+/// A request-body read that waits ten seconds without a frame times out. Before
+/// response headers are sent, this produces HTTP 408; a timeout while streaming
+/// a response terminates that stream instead.
 /// A bind or serving failure is retained if shutdown succeeds; if shutdown
 /// also fails, both failures are returned in [`HttpRuntimeError::OperationAndShutdown`].
 ///
@@ -291,6 +297,7 @@ pub async fn serve(
 /// any automatic `server.host` or `server.port` configuration.
 /// Incomplete initial requests and HTTP/1 request headers expire after ten
 /// seconds without imposing a handler execution deadline.
+/// Request-body reads also have a ten-second idle deadline, renewed by progress.
 ///
 /// # Errors
 ///
@@ -380,12 +387,17 @@ async fn serve_http(
     router: axum::Router,
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> std::io::Result<()> {
+    use axum::response::IntoResponse;
     use axum::serve::Listener;
     use hyper_util::{
         rt::{TokioExecutor, TokioIo, TokioTimer},
         server::conn::auto::Builder,
-        service::TowerToHyperService,
     };
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+    use tower::ServiceExt;
 
     let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(());
     let mut connections = tokio::task::JoinSet::new();
@@ -398,13 +410,28 @@ async fn serve_http(
             (stream, _) = Listener::accept(&mut listener) => {
                 let first_request = std::sync::Arc::new(tokio::sync::Notify::new());
                 let request_received = std::sync::Arc::clone(&first_request);
-                let service = tower::ServiceBuilder::new()
-                    .map_request(move |request: axum::http::Request<hyper::body::Incoming>| {
-                        request_received.notify_one();
-                        request
-                    })
-                    .service(router.clone().with_state(()));
-                let service = TowerToHyperService::new(service);
+                let connection_router = router.clone().with_state(());
+                let service = hyper::service::service_fn(move |request: axum::http::Request<hyper::body::Incoming>| {
+                    request_received.notify_one();
+                    let router = connection_router.clone();
+                    async move {
+                        let version = request.version();
+                        let expired = Arc::new(AtomicBool::new(false));
+                        let request = request.map(|body| axum::body::Body::new(body::IdleTimeoutBody::new(body, BODY_READ_IDLE_TIMEOUT, Arc::clone(&expired))));
+                        let response = router.oneshot(request).await?;
+                        if !expired.load(Ordering::Relaxed) {
+                            return Ok::<_, std::convert::Infallible>(response);
+                        }
+                        let mut response = (
+                            axum::http::StatusCode::REQUEST_TIMEOUT,
+                            axum::Json(serde_json::json!({"error": {"code": "request_timeout", "message": "request body read timed out"}})),
+                        ).into_response();
+                        if matches!(version, axum::http::Version::HTTP_10 | axum::http::Version::HTTP_11) {
+                            response.headers_mut().insert(axum::http::header::CONNECTION, axum::http::HeaderValue::from_static("close"));
+                        }
+                        Ok(response)
+                    }
+                });
                 let mut shutdown_rx = shutdown_rx.clone();
                 connections.spawn(async move {
                     let mut builder = Builder::new(TokioExecutor::new());
@@ -529,6 +556,184 @@ mod tests {
     static STARTS: AtomicUsize = AtomicUsize::new(0);
     static BINDS: AtomicUsize = AtomicUsize::new(0);
     static TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+    #[tokio::test]
+    async fn body_deadline_preserves_valid_json_and_body_size_rejections() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = axum::Router::new()
+            .route(
+                "/upload",
+                axum::routing::post(|_: axum::Json<serde_json::Value>| async { "accepted" }),
+            )
+            .layer(axum::extract::DefaultBodyLimit::max(8));
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(super::serve_http(listener, router, async move {
+            let _ = shutdown_rx.await;
+        }));
+        for (length, body, status) in [
+            (2, "{}", "200"),
+            (1, "{", "400"),
+            (16, "abcdefghijklmnop", "413"),
+        ] {
+            let mut stream = tokio::net::TcpStream::connect(address).await.unwrap();
+            let request = format!(
+                "POST /upload HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: {length}\r\nConnection: close\r\n\r\n{body}"
+            );
+            stream.write_all(request.as_bytes()).await.unwrap();
+            let mut response = Vec::new();
+            tokio::time::timeout(Duration::from_secs(2), stream.read_to_end(&mut response))
+                .await
+                .unwrap()
+                .unwrap();
+            assert!(
+                response.starts_with(format!("HTTP/1.1 {status}").as_bytes()),
+                "unexpected response: {response:?}"
+            );
+        }
+        let _ = shutdown_tx.send(());
+        tokio::time::timeout(Duration::from_secs(2), server)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn stalled_http2_body_does_not_stop_other_requests() {
+        use hyper_util::rt::{TokioExecutor, TokioIo};
+
+        struct StalledBody;
+        impl hyper::body::Body for StalledBody {
+            type Data = hyper::body::Bytes;
+            type Error = std::convert::Infallible;
+            fn poll_frame(
+                self: std::pin::Pin<&mut Self>,
+                _: &mut std::task::Context<'_>,
+            ) -> std::task::Poll<Option<Result<hyper::body::Frame<Self::Data>, Self::Error>>>
+            {
+                std::task::Poll::Pending
+            }
+        }
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = axum::Router::new()
+            .route(
+                "/upload",
+                axum::routing::post(|_: axum::Json<serde_json::Value>| async { "accepted" }),
+            )
+            .route("/health", axum::routing::get(|| async { "healthy" }));
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(super::serve_http(listener, router, async move {
+            let _ = shutdown_rx.await;
+        }));
+        let stream = tokio::net::TcpStream::connect(address).await.unwrap();
+        let (mut sender, connection) =
+            hyper::client::conn::http2::handshake(TokioExecutor::new(), TokioIo::new(stream))
+                .await
+                .unwrap();
+        let client = tokio::spawn(connection);
+        let upload = axum::http::Request::builder()
+            .method("POST")
+            .uri("http://localhost/upload")
+            .header("content-type", "application/json")
+            .body(axum::body::Body::new(StalledBody))
+            .unwrap();
+        let response = tokio::time::timeout(Duration::from_secs(12), sender.send_request(upload))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(response.status(), axum::http::StatusCode::REQUEST_TIMEOUT);
+        assert!(
+            !response
+                .headers()
+                .contains_key(axum::http::header::CONNECTION)
+        );
+        let body = axum::body::to_bytes(axum::body::Body::new(response.into_body()), 1024)
+            .await
+            .unwrap();
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&body).unwrap(),
+            serde_json::json!({"error": {"code": "request_timeout", "message": "request body read timed out"}})
+        );
+        let health = axum::http::Request::builder()
+            .uri("http://localhost/health")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let response = tokio::time::timeout(Duration::from_secs(2), sender.send_request(health))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = axum::body::to_bytes(axum::body::Body::new(response.into_body()), 1024)
+            .await
+            .unwrap();
+        assert_eq!(&body[..], b"healthy");
+        drop(sender);
+        let _ = shutdown_tx.send(());
+        tokio::time::timeout(Duration::from_secs(2), server)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        client.abort();
+    }
+
+    #[tokio::test]
+    async fn stalled_request_body_expires_and_server_remains_available() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = axum::Router::new()
+            .route(
+                "/upload",
+                axum::routing::post(|_: axum::Json<serde_json::Value>| async { "accepted" }),
+            )
+            .route("/health", axum::routing::get(|| async { "healthy" }));
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(super::serve_http(listener, router, async move {
+            let _ = shutdown_rx.await;
+        }));
+        let mut stalled = tokio::net::TcpStream::connect(address).await.unwrap();
+        stalled.write_all(b"POST /upload HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: 10\r\n\r\n{").await.unwrap();
+        let mut response = Vec::new();
+        let expired =
+            tokio::time::timeout(Duration::from_secs(12), stalled.read_to_end(&mut response)).await;
+        drop(stalled);
+
+        let mut healthy = tokio::net::TcpStream::connect(address).await.unwrap();
+        healthy
+            .write_all(b"GET /health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+            .await
+            .unwrap();
+        let mut health_response = Vec::new();
+        tokio::time::timeout(
+            Duration::from_secs(2),
+            healthy.read_to_end(&mut health_response),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        let _ = shutdown_tx.send(());
+        tokio::time::timeout(Duration::from_secs(2), server)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert!(health_response.starts_with(b"HTTP/1.1 200"));
+        assert!(health_response.ends_with(b"healthy"));
+        assert!(
+            matches!(expired, Ok(Ok(_))),
+            "stalled upload did not expire: {expired:?}"
+        );
+        assert!(
+            response.starts_with(b"HTTP/1.1 408"),
+            "expected safe timeout response: {response:?}"
+        );
+    }
 
     #[tokio::test]
     async fn header_deadline_does_not_cancel_handlers_or_graceful_drain() {
