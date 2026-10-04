@@ -1,6 +1,9 @@
-use furnace_rs::prelude::Secret;
+use furnace_rs::prelude::*;
 
 use super::{model::User, traits::UserRepository};
+use std::sync::Arc;
+use furnace_rs::prelude::{Config, Injector};
+
 
 // Repository: deliberately in memory so this project focuses on auth and TPRS.
 pub struct DemoUserRepository {
@@ -11,6 +14,23 @@ pub struct DemoUserRepository {
 impl DemoUserRepository {
     pub fn new(username: String, password: Secret<String>) -> Self {
         Self { username, password }
+    }
+}
+
+#[derive(Configuration)]
+#[config(prefix = "demo")]
+struct DemoConfig {
+    username: String,
+    password: Secret<String>,
+}
+
+impl Injector<Arc<dyn UserRepository>> for DemoUserRepository {
+    type Dependencies = (Config,);
+    async fn inject(
+        (config,): Self::Dependencies,
+    ) -> furnace_rs::core::Result<Arc<dyn UserRepository>> {
+        let settings: DemoConfig = config.parse()?;
+        Ok(Arc::new(Self::new(settings.username, settings.password)))
     }
 }
 
