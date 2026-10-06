@@ -8,6 +8,13 @@ migration are consolidated into the first 1.0.0 release.
 
 ### Security
 
+- Reject zero database idle and lifetime maintenance durations before creating
+  SeaORM pools, preventing continuously rescheduled maintenance tasks. Native
+  options can still disable these policies with `None`.
+- Reject inventory constructor outputs whose concrete type differs from their
+  declared type identifier before application construction succeeds.
+- Record [before/after database and inventory regression measurements](benchmark/DATABASE_INVENTORY_SECURITY.md),
+  including retained JWT algorithm binding and native PostgreSQL recovery controls.
 - Bound incomplete initial HTTP requests, including idle sockets and partial
   protocol prefaces, and HTTP/1 request headers to ten seconds. Preserve HTTP/2,
   upgrades, long-running handlers, and graceful connection draining.

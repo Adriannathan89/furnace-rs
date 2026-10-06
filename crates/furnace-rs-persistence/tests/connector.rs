@@ -90,3 +90,30 @@ async fn valid_native_timeouts_and_disabled_reaping_preserve_lazy_connections() 
     let connection = DatabaseFactory.provide(connector).await.unwrap();
     connection.close_by_ref().await.unwrap();
 }
+
+#[tokio::test]
+async fn zero_maintenance_deadlines_are_rejected_before_creating_a_pool() {
+    for field in ["idle", "lifetime"] {
+        let mut connector = SeaOrmPostgres::new("postgres://localhost/db");
+        let options = connector.options_mut();
+        options.connect_lazy(true);
+        match field {
+            "idle" => {
+                options.idle_timeout(std::time::Duration::ZERO);
+            }
+            "lifetime" => {
+                options.max_lifetime(std::time::Duration::ZERO);
+            }
+            _ => unreachable!(),
+        }
+        let result = DatabaseFactory.provide(connector).await;
+        // Close an unexpectedly accepted pool immediately; never run a busy-loop workload.
+        if let Ok(connection) = &result {
+            connection.close_by_ref().await.unwrap();
+        }
+        assert_eq!(
+            result.unwrap_err().kind(),
+            PersistenceErrorKind::InvalidConfiguration
+        );
+    }
+}

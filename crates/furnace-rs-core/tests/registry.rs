@@ -31,22 +31,22 @@ fn resolves_the_same_application_scoped_allocation() {
 }
 
 #[test]
-fn reports_a_type_mismatch_for_invalid_erased_provider_storage() {
+fn rejects_invalid_erased_provider_storage_without_poisoning_the_registry() {
     let mut registry = ProviderRegistry::new();
     let value: ErasedProvider = Arc::new(String::from("not a counter"));
 
-    registry
+    let error = registry
         .insert_erased(
             TypeId::of::<Counter>(),
             std::any::type_name::<Counter>(),
             value,
         )
-        .expect("erased provider should insert");
-
-    assert_eq!(
-        registry.resolve::<Counter>().unwrap_err().code(),
-        FURNACE004
-    );
+        .expect_err("mismatched metadata must fail at insertion");
+    assert_eq!(error.code(), FURNACE004);
+    assert!(registry.is_empty());
+    assert!(!registry.contains::<Counter>());
+    registry.insert(Counter).unwrap();
+    assert!(registry.resolve::<Counter>().is_ok());
 }
 
 #[test]
