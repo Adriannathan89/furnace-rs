@@ -1,6 +1,12 @@
 //! Shared private inspection protocol fixture behavior.
 
-use std::{env, fs, thread, time::Duration};
+use std::{
+    env, fs,
+    io::{self, Write},
+    path::Path,
+    thread,
+    time::Duration,
+};
 
 use furnace_rs_common::__private::{
     INSPECTION_ACK_ENV, INSPECTION_KIND_ENV, INSPECTION_PROTOCOL_VERSION, INSPECTION_RESPONSE_ENV,
@@ -30,7 +36,7 @@ pub fn run(mode: &str) {
     } else {
         &token
     };
-    fs::write(
+    publish_output(
         ack_path,
         format!(
             r#"{{"protocol_version":{},"token":"{}"}}"#,
@@ -49,7 +55,7 @@ pub fn run(mode: &str) {
     }
 
     if mode == "malformed" {
-        fs::write(response_path, "this is not JSON").expect("response should be written");
+        publish_output(response_path, "this is not JSON").expect("response should be written");
         return;
     }
 
@@ -67,11 +73,34 @@ pub fn run(mode: &str) {
         r#"{{"kind":"{}","graph":{{"root_cauldron":null,"cauldrons":[],"imports":[],"providers":[],"dependencies":[],"construction_order":null,"auto_configurations":[]}},"routes":[],"checks":[],"diagnostics":[],"failed":false}}"#,
         inspection_kind_name(kind)
     );
-    fs::write(
+    publish_output(
         response_path,
         format!(r#"{{"protocol_version":{version},"token":"{response_token}","report":{report}}}"#),
     )
     .expect("response should be written");
+}
+
+fn publish_output(path: impl AsRef<Path>, contents: impl AsRef<[u8]>) -> io::Result<()> {
+    publish_with_writer(path.as_ref(), |file| file.write_all(contents.as_ref()))
+}
+
+fn publish_with_writer(
+    path: &Path,
+    writer: impl FnOnce(&mut fs::File) -> io::Result<()>,
+) -> io::Result<()> {
+    let temporary = path.with_extension("tmp");
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary)?;
+    let result = (|| {
+        writer(&mut file)?;
+        file.sync_all()?;
+        drop(file);
+        fs::rename(&temporary, path)
+    })();
+    let _ = fs::remove_file(&temporary);
+    result
 }
 
 const fn inspection_kind_name(kind: InspectionKind) -> &'static str {
@@ -88,5 +117,50 @@ fn inspection_kind(value: &str) -> InspectionKind {
         "graph" => InspectionKind::Graph,
         "doctor" => InspectionKind::Doctor,
         _ => panic!("unexpected inspection kind"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{
+        sync::mpsc,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    #[test]
+    fn output_is_hidden_until_the_writer_finishes() {
+        let directory = env::temp_dir().join(format!(
+            "furnace-protocol-publication-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&directory).unwrap();
+        let output = directory.join("response.json");
+        let child_output = output.clone();
+        let (started_tx, started_rx) = mpsc::channel();
+        let (finish_tx, finish_rx) = mpsc::channel();
+        let publisher = thread::spawn(move || {
+            publish_with_writer(&child_output, |file| {
+                file.write_all(b"{\"complete\":")?;
+                started_tx.send(()).unwrap();
+                finish_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                file.write_all(b"true}")
+            })
+        });
+        started_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        let visible_during_write = output.exists();
+        finish_tx.send(()).unwrap();
+        publisher.join().unwrap().unwrap();
+        let contents = fs::read(&output).unwrap();
+        fs::remove_dir_all(directory).unwrap();
+        assert!(
+            !visible_during_write,
+            "partial inspection output was visible to the supervisor"
+        );
+        assert_eq!(contents, b"{\"complete\":true}");
     }
 }

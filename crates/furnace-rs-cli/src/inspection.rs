@@ -395,7 +395,9 @@ async fn supervise(
             }
             break;
         }
-        ensure_child_is_running(child)?;
+        if output_published_on_exit(child, acknowledgement)? {
+            continue;
+        }
         if Instant::now() >= handshake_deadline {
             return Err(inspection_error(
                 "the application did not acknowledge the inspection request in time; private inspection requires the standard Furnace::burn::<AppCauldron>() entry point",
@@ -418,7 +420,9 @@ async fn supervise(
             }
             break envelope;
         }
-        ensure_child_is_running(child)?;
+        if output_published_on_exit(child, response)? {
+            continue;
+        }
         if Instant::now() >= report_deadline {
             return Err(inspection_error(
                 "the application did not return an inspection report in time",
@@ -431,14 +435,17 @@ async fn supervise(
     Ok(envelope.into_report())
 }
 
-fn ensure_child_is_running(child: &mut Child) -> Result<(), CliError> {
+fn output_published_on_exit(child: &mut Child, output: &Path) -> Result<bool, CliError> {
     match child.try_wait().map_err(|error| {
         inspection_error("could not observe the inspection application").with_source(error)
     })? {
+        // The child may publish and exit after the loop's first file check.
+        // Once exit is observed, its final file must get normal protocol validation.
+        Some(_) if output.exists() => Ok(true),
         Some(status) => Err(inspection_error(format!(
             "the application exited before completing private inspection ({status}); private inspection requires the standard Furnace::burn::<AppCauldron>() entry point"
         ))),
-        None => Ok(()),
+        None => Ok(false),
     }
 }
 
@@ -516,6 +523,54 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn accepts_output_published_between_the_file_check_and_child_exit() {
+        let application = fixture_application("success").await;
+        let directory = crate::private_temp_dir::create().unwrap();
+        let output = directory.path().join("acknowledgement.json");
+        let response = directory.path().join("response.json");
+        assert!(!output.exists());
+        let mut child = super::inspection_command(
+            &application,
+            InspectionKind::Routes,
+            "synthetic",
+            &output,
+            &response,
+            super::InspectionStreams::Suppress,
+        )
+        .spawn()
+        .unwrap();
+        // Observe exit only after the real child publishes, modelling a stale first file check.
+        child.wait().await.unwrap();
+        let ready = super::output_published_on_exit(&mut child, &output);
+        assert!(
+            matches!(ready, Ok(true)),
+            "published output must reach normal validation"
+        );
+        std::fs::remove_file(&output).unwrap();
+        let missing = super::output_published_on_exit(&mut child, &output).unwrap_err();
+        assert!(
+            missing
+                .message()
+                .contains("exited before completing private inspection")
+        );
+    }
+
+    #[tokio::test]
+    async fn protocol_fixture_publishes_complete_outputs_atomically() {
+        let status = tokio::process::Command::new("cargo")
+            .args(["test", "--offline", "--lib", "--manifest-path"])
+            .arg(fixture_root().join("Cargo.toml"))
+            .kill_on_drop(true)
+            .status()
+            .await
+            .expect("protocol fixture regression test should run");
+        assert!(
+            status.success(),
+            "protocol fixture must hide incomplete output"
+        );
+    }
+
+    #[tokio::test]
     async fn accepts_valid_protocol_after_delayed_acknowledgement_and_report() {
         let application = fixture_application("delayed_success").await;
         let report = inspect_application_with_timeouts(
@@ -524,7 +579,12 @@ mod tests {
             InspectionTimeouts::for_test(),
         )
         .await
-        .expect("valid delayed protocol fixture should succeed");
+        .unwrap_or_else(|error| {
+            panic!(
+                "valid delayed protocol fixture should succeed: {}",
+                error.message()
+            )
+        });
 
         assert_eq!(report.kind, InspectionKind::Routes);
     }
@@ -570,7 +630,8 @@ mod tests {
         assert_eq!(error.code(), FURNACE203);
         assert!(
             error.message().contains(expected_message),
-            "expected {expected_message:?}, got {error:?}"
+            "expected {expected_message:?}, got {:?}",
+            error.message()
         );
     }
 
