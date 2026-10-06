@@ -373,8 +373,8 @@ fn package_content_policy_checks_every_workspace_archive() {
 }
 
 #[test]
-fn all_packages_use_v100_pins_and_workspace_version() {
-    const VERSION: &str = "1.0.0";
+fn all_packages_use_v101_pins_and_workspace_version() {
+    const VERSION: &str = "1.0.1";
 
     let root = workspace_root();
     let workspace_manifest =

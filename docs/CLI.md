@@ -1,6 +1,6 @@
 # FURNACE CLI
 
-FURNACE 1.0.0 (unreleased) provides Cargo-native execution, inspection, a minimal-project
+FURNACE 1.0.1 (unreleased) provides Cargo-native execution, inspection, a minimal-project
 generator, and a versioned JSON result
 for finite FURNACE-owned commands. Human-readable output remains the default.
 
@@ -55,7 +55,7 @@ sibling staging directory, and publishes them with one atomic rename. An
 existing destination, including an empty directory, is never changed. The
 command does not download dependencies, run Cargo, initialize Git, select a
 remote template, or ask an interactive question. It offers no template,
-database, JWT, VCS, or target-directory option in 1.0.0. A successful human
+database, JWT, VCS, or target-directory option in 1.0.1. A successful human
 result identifies the relative path and prints only `cd <name>` and `furnace dev`.
 
 ## Project and target selection

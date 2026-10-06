@@ -1,10 +1,11 @@
 # Migrating to furnace-rs 1.0.0
 
-1.0.0 is an unreleased major release with breaking API changes from MADS.
-All nine workspace packages target 1.0.0, Rust edition 2024 and MSRV 1.94.
-The renamed package family must be published before registry-only installation
-can work. The manifest below shows the future registry dependency; before
-publication, use local workspace/path dependencies. There are no compatibility aliases for the removed declarations.
+Version 1.0.0 introduced breaking API changes from MADS. This guide describes
+that migration; the current patch-release preparation targets 1.0.1 across all
+nine workspace packages, with Rust edition 2024 and MSRV 1.94.
+Version 1.0.1 must be available on the registry before installing the exact
+pins below. Until its publication, use local workspace/path dependencies.
+There are no compatibility aliases for the removed declarations.
 
 | Previous API | Current API |
 | --- | --- |
@@ -30,7 +31,7 @@ recommended for applications:
 
 ```toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.0", default-features = false, features = ["http", "jwt", "runtime-tokio"] }
+furnace = { package = "furnace-rs", version = "=1.0.1", default-features = false, features = ["http", "jwt", "runtime-tokio"] }
 serde = { version = "1", features = ["derive"] }
 ```
 

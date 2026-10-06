@@ -669,7 +669,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "furnace-rs-common",
  "furnace-rs-core",
@@ -684,7 +684,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-cli"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "assert_cmd",
  "cargo_metadata",
@@ -703,7 +703,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "axum",
  "axum-extra",
@@ -729,7 +729,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common-macros"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -739,7 +739,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "cargo_metadata",
  "dotenvy",
@@ -753,7 +753,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core-macros"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -763,14 +763,14 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-extra"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "furnace-rs-core",
 ]
 
 [[package]]
 name = "furnace-rs-persistence"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "furnace-rs",
  "furnace-rs-core",
@@ -781,7 +781,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-testing"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "axum",
  "furnace-rs-common",

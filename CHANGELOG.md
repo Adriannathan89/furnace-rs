@@ -6,6 +6,11 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-06
+
+Security and availability hardening for the HTTP runtime, database pool
+configuration, and inventory provider construction.
+
 ### Security
 
 - Reject zero database idle and lifetime maintenance durations before creating
@@ -326,3 +331,4 @@ First public beta of the MADS.rs HTTP application foundation.
 [0.7.0-beta.1]: https://github.com/Adriannathan89/mads/releases/tag/v0.7.0-beta.1
 
 [1.0.0]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.0
+[1.0.1]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.1

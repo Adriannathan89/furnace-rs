@@ -8,5 +8,5 @@ publish = false
 [workspace]
 
 [dependencies]
-furnace-rs = { path = "../../crates/furnace-rs", version = "=1.0.0", default-features = false, features = ["http", "jwt", "logger", "runtime-tokio"] }
+furnace-rs = { path = "../../crates/furnace-rs", version = "=1.0.1", default-features = false, features = ["http", "jwt", "logger", "runtime-tokio"] }
 serde = { version = "1", features = ["derive"] }
