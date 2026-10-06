@@ -1,6 +1,5 @@
 mod controller;
 mod model;
-mod provider;
 mod repository;
 mod service;
 mod traits;

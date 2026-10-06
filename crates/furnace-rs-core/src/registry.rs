@@ -35,7 +35,9 @@ impl ProviderRegistry {
         )
     }
 
-    /// Stores an erased provider under an explicit type identifier.
+    /// Stores an erased provider under its matching concrete type identifier.
+    ///
+    /// Rejects mismatched values before they can enter application storage.
     #[allow(clippy::result_large_err)]
     pub fn insert_erased(
         &mut self,
@@ -49,6 +51,17 @@ impl ProviderRegistry {
                     FURNACE001,
                     "duplicate provider",
                     "an application-scoped provider is already registered for this type",
+                )
+                .with_subject(type_name),
+            ));
+        }
+
+        if value.as_ref().type_id() != type_id {
+            return Err(Error::new(
+                Diagnostic::new(
+                    FURNACE004,
+                    "provider type mismatch",
+                    "the provider value does not match its declared type identifier",
                 )
                 .with_subject(type_name),
             ));

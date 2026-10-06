@@ -60,7 +60,7 @@ For an HTTP-only application, use:
 
 ~~~toml
 [dependencies]
-furnace-rs = { version = "1.0.0", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs = { version = "1.0.1", default-features = false, features = ["http", "runtime-tokio"] }
 ~~~
 
 The workspace crates use exact internal version pins. External dependency

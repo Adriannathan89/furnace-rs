@@ -3,25 +3,27 @@
 [![Latest release](https://img.shields.io/github/v/release/Adriannathan89/furnace-rs?display_name=tag&sort=semver)](https://github.com/Adriannathan89/furnace-rs/releases/latest)
 [![CI](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml)
 
-furnace-rs 1.0.0 is a Rust application framework with a framework-neutral
+furnace-rs 1.0.1 is a Rust application framework with a framework-neutral
 core, a scoped Axum HTTP runtime, source-aware typed configuration, safe REST
 errors, request validation, and opt-in native SeaORM persistence. A root
 module selects one application; startup validates its scoped graph and routes
 before it starts lifecycle hooks, checks a database, or binds a socket.
 
-## 1.0.0 release preparation
+## 1.0.1 release preparation
 
-**Release date: 2026-10-03.**
+**Release date: 2026-10-06.**
 
-The workspace and local examples target **1.0.0**. This is a prepared release,
-not a statement that the packages or `v1.0.0` tag have been published. Until
+The workspace and local examples target **1.0.1**. This is a prepared release,
+not a statement that the packages or `v1.0.1` tag have been published. Until
 publication, build the CLI from this checkout with
 `cargo install --path crates/furnace-rs-cli --locked`.
 
 See the [changelog](CHANGELOG.md),
 [migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
-[release readiness guide](docs/releases/1.0.0.md),
+[release readiness guide](docs/releases/1.0.1.md),
 [security policy](docs/SECURITY.md), and [security audit](docs/SECURITY_AUDIT.md).
+Version 1.0.1 adds HTTP header/body deadlines, validates database maintenance
+intervals, and rejects mismatched inventory outputs during construction.
 The release includes strict Bearer parsing, safe core error formatting, checked
 database timeouts, protected connection tracing, and owner-only Unix CLI
 control directories. The audit documents reproduction, fixes, benchmark
@@ -164,7 +166,7 @@ guides for dependencies, source layout, and change ownership.
 
 ~~~toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.0" }
+furnace = { package = "furnace-rs", version = "=1.0.1" }
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
@@ -426,7 +428,7 @@ Database support is not a `furnace-rs` or `furnace-rs-common` feature. Add the c
 explicitly and import its global module in your application root:
 
 ```toml
-furnace-rs-persistence = { version = "1.0.0", features = ["sea-orm-postgres"] }
+furnace-rs-persistence = { version = "1.0.1", features = ["sea-orm-postgres"] }
 ```
 
 ```rust,ignore
@@ -724,7 +726,7 @@ limitations, resource measurements, and interpretation guidance.
 
 ## Current scope
 
-Version 1.0.0 includes rooted module scope, conventional startup, CORS,
+Version 1.0.1 includes rooted module scope, conventional startup, CORS,
 native router composition, typed input validation, the seven REST errors,
 explicit typed configuration and redacted secrets, focused FURNACE macro
 diagnostics, Cargo-native run/dev, compiled route/graph/doctor inspection,
@@ -761,7 +763,7 @@ cargo +1.94.0 test --locked --workspace --all-features
 CI also provisions PostgreSQL 16 and runs the ignored database suites plus the
 85% line-coverage gate. To run those locally, set `FURNACE_TEST_DATABASE_URL` to a
 PostgreSQL 16 database and use the commands in the
-[1.0.0 release readiness guide](docs/releases/1.0.0.md).
+[1.0.1 release readiness guide](docs/releases/1.0.1.md).
 
 ## Community
 
@@ -775,7 +777,7 @@ the [MIT License](LICENSE-MIT), at your option.
 
 ## Focused tests
 
-Add `furnace-rs-testing = "=1.0.0"` under `[dev-dependencies]`. Annotate an async,
+Add `furnace-rs-testing = "=1.0.1"` under `[dev-dependencies]`. Annotate an async,
 zero-argument test function with `#[furnace::test]`; Cargo runs it without a separate
 Tokio dependency. The local `test_fixture()` builds one registered subject's
 dependency chain without module setup.

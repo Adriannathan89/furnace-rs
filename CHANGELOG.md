@@ -4,6 +4,32 @@ All notable changes to furnace-rs are documented in this file. Published MADS
 release history is retained below; the pending 0.9.2 work and furnace-rs API
 migration are consolidated into the first 1.0.0 release.
 
+## [Unreleased]
+
+## [1.0.1] - 2026-10-06
+
+Security and availability hardening for the HTTP runtime, database pool
+configuration, and inventory provider construction.
+
+### Security
+
+- Reject zero database idle and lifetime maintenance durations before creating
+  SeaORM pools, preventing continuously rescheduled maintenance tasks. Native
+  options can still disable these policies with `None`.
+- Reject inventory constructor outputs whose concrete type differs from their
+  declared type identifier before application construction succeeds.
+- Record [before/after database and inventory regression measurements](benchmark/DATABASE_INVENTORY_SECURITY.md),
+  including retained JWT algorithm binding and native PostgreSQL recovery controls.
+- Bound incomplete initial HTTP requests, including idle sockets and partial
+  protocol prefaces, and HTTP/1 request headers to ten seconds. Preserve HTTP/2,
+  upgrades, long-running handlers, and graceful connection draining.
+- Add a ten-second idle deadline while reading request bodies. Progress renews
+  the deadline; stalled reads return a safe HTTP 408 response before response
+  headers are sent and close the affected HTTP/1 connection. A timeout during
+  response streaming terminates that stream. Body-size limits remain enforced.
+- Record isolated before/after regression measurements in the
+  [HTTP runtime security report](benchmark/HTTP_RUNTIME_SECURITY.md).
+
 ## [1.0.0] - 2026-10-03
 
 The workspace is prepared for the first stable furnace-rs release on 2026-10-03. Publication,
@@ -305,3 +331,4 @@ First public beta of the MADS.rs HTTP application foundation.
 [0.7.0-beta.1]: https://github.com/Adriannathan89/mads/releases/tag/v0.7.0-beta.1
 
 [1.0.0]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.0
+[1.0.1]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.1

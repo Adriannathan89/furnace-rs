@@ -15,6 +15,16 @@ pub struct AuthServiceImpl {
     logger: Logger,
 }
 
+impl Injector<Arc<dyn AuthService>> for AuthServiceImpl {
+    type Dependencies = (AuthServiceImpl,);
+    async fn inject(
+        (service,): <Self as Injector<Arc<dyn AuthService>>>::Dependencies,
+    ) -> furnace_rs::core::Result<Arc<dyn AuthService>> {
+        Ok(Arc::new(service))
+    }
+}
+
+
 impl AuthService for AuthServiceImpl {
     fn login(&self, username: &str, password: &str) -> JwtResult<Option<String>> {
         let Some(user) = self.repository.authenticate(username, password) else {

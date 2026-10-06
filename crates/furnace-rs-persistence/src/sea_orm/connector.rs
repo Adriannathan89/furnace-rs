@@ -63,6 +63,21 @@ impl DatabaseConnector for SeaOrmPostgres {
 
     async fn connect(self) -> PersistenceResult<Self::Database> {
         validate_postgres_scheme(self.options.get_url())?;
+        // A zero reaping interval continuously reschedules SQLx maintenance.
+        // Native callers can disable these policies with None instead.
+        if [
+            self.options.get_idle_timeout().flatten(),
+            self.options.get_max_lifetime().flatten(),
+        ]
+        .into_iter()
+        .flatten()
+        .any(|duration| duration.is_zero())
+        {
+            return Err(PersistenceError::new(
+                PersistenceErrorKind::InvalidConfiguration,
+                "configure",
+            ));
+        }
         // SQLx adds pool timeouts to an Instant without checking overflow.
         // Validate native options too, including options changed after parsing.
         for duration in [

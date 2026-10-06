@@ -28,14 +28,14 @@ sea-orm-postgres = [
 ]
 
 [dependencies]
-furnace-rs-core = { path = "../furnace-rs-core", version = "=1.0.0" }
+furnace-rs-core = { path = "../furnace-rs-core", version = "=1.0.1" }
 sea-orm = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio.workspace = true
 sea-orm = { workspace = true, features = ["mock", "runtime-tokio-rustls"] }
-furnace-rs = { path = "../furnace-rs", version = "=1.0.0", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs = { path = "../furnace-rs", version = "=1.0.1", default-features = false, features = ["http", "runtime-tokio"] }
 
 [lints]
 workspace = true
