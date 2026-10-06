@@ -4,8 +4,6 @@ All notable changes to furnace-rs are documented in this file. Published MADS
 release history is retained below; the pending 0.9.2 work and furnace-rs API
 migration are consolidated into the first 1.0.0 release.
 
-## [Unreleased]
-
 ## [1.0.1] - 2026-10-06
 
 Security and availability hardening for the HTTP runtime, database pool
