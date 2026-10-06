@@ -242,3 +242,30 @@ fn named_keys_and_algorithms_reject_confusion_before_signature_validation() {
         JwtErrorKind::MalformedToken,
     );
 }
+
+#[test]
+fn rsa_public_key_cannot_be_reinterpreted_as_an_hmac_secret() {
+    let (_directory, service) = current_service();
+    let legitimate = access_token(&service, 7);
+    let payload = legitimate.split('.').nth(1).unwrap();
+    let header =
+        URL_SAFE_NO_PAD.encode(r#"{"alg":"HS256","kid":"current","typ":"furnace_rs-access+jwt"}"#);
+    let message = format!("{header}.{payload}");
+    // Sign only a local fixture with the public key bytes as an HMAC secret.
+    let signature = jsonwebtoken::crypto::sign(
+        message.as_bytes(),
+        &jsonwebtoken::EncodingKey::from_secret(CURRENT_PUBLIC),
+        jsonwebtoken::Algorithm::HS256,
+    )
+    .unwrap();
+    assert_error(
+        &service,
+        &format!("{message}.{signature}"),
+        JwtErrorKind::AlgorithmMismatch,
+    );
+    assert!(
+        service
+            .verify::<UserClaims>(&legitimate, JwtValidation::access())
+            .is_ok()
+    );
+}

@@ -13,7 +13,9 @@ pub(super) struct SeaOrmConfig {
     max_connections: Option<u32>,
     connect_timeout_seconds: Option<u64>,
     acquire_timeout_seconds: Option<u64>,
+    #[config(validate(positive))]
     idle_timeout_seconds: Option<u64>,
+    #[config(validate(positive))]
     max_lifetime_seconds: Option<u64>,
     sqlx_logging: Option<bool>,
 }
@@ -206,6 +208,22 @@ mod tests {
             assert_eq!(errors.issues()[0].code(), "out_of_range");
             assert!(!format!("{errors:?} {errors}").contains("timeout-secret-password"));
             assert!(!format!("{errors:?} {errors}").contains("18446744073709551615"));
+        }
+    }
+
+    #[test]
+    fn zero_maintenance_deadlines_are_rejected_on_their_configuration_keys() {
+        for key in [
+            "persistence.seaorm.idle_timeout_seconds",
+            "persistence.seaorm.max_lifetime_seconds",
+        ] {
+            let errors = SeaOrmConfig::parse(&config([
+                ("persistence.seaorm.url", "postgres://localhost/db"),
+                (key, "0"),
+            ]))
+            .unwrap_err();
+            assert_eq!(errors.issues()[0].key(), key);
+            assert_eq!(errors.issues()[0].code(), "too_small");
         }
     }
 

@@ -2,6 +2,19 @@
 
 ## Security regression workload (local source)
 
+For database maintenance settings, core inventory output safety, JWT algorithm
+binding, and native PostgreSQL recovery, run the isolated before/after comparison:
+
+```sh
+python3 benchmark/tool/database_inventory_security.py \
+  --output /tmp/furnace-database-inventory-security.json
+```
+
+This requires Python 3.12+, cached Rust dependencies, local baseline history,
+PostgreSQL binaries (override the default with `--postgres-bin`), and loopback
+binding permission. The runner creates and removes its own local database.
+See [the measured database, JWT, and inventory results](DATABASE_INVENTORY_SECURITY.md).
+
 For incomplete HTTP headers and stalled request-body reads, compare historical
 production code with the patched runtime using isolated regression fixtures:
 
