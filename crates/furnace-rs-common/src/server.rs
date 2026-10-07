@@ -8,6 +8,7 @@
 use std::error::Error as StdError;
 use std::fmt;
 use std::future::Future;
+use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -105,7 +106,12 @@ impl FurnaceBurnExt for Furnace {
                 return result;
             }
             let prepared = prepare_standard_run::<M>(&root).await?;
-            println!("{}", prepared.startup_summary());
+            let clear = if std::io::stdout().is_terminal() {
+                "\x1b[2J\x1b[H"
+            } else {
+                ""
+            };
+            println!("{clear}{}", prepared.startup_summary());
             serve_prepared(prepared, TcpListener::bind, shutdown_signal()).await
         }
     }
@@ -146,21 +152,21 @@ impl fmt::Display for StartupSummary {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
-            "\n  FURNACE · Application ready\n  ────────────────────────────\n  Server  http://{}:{}\n  Routes  {}",
+            "\n\nFURNACE · Application ready\n────────────────────────────\nServer  http://{}:{}\nRoutes  {}",
             self.host, self.port, self.route_count
         )?;
         if !self.routes.is_empty() {
-            write!(formatter, "\n\n  METHOD  PATH\n  ──────  ────")?;
+            write!(formatter, "\n\nMETHOD  PATH\n──────  ────")?;
         }
         for route in &self.routes {
             write!(
                 formatter,
-                "\n  {:<6}  {}",
+                "\n{:<6}  {}",
                 route.method().as_str(),
                 route.full_path()
             )?;
         }
-        Ok(())
+        writeln!(formatter)
     }
 }
 
@@ -1294,7 +1300,7 @@ mod tests {
         assert_eq!(prepared.route_count, 1);
         assert_eq!(
             prepared.startup_summary().to_string(),
-            "\n  FURNACE · Application ready\n  ────────────────────────────\n  Server  http://127.0.0.1:3000\n  Routes  1\n\n  METHOD  PATH\n  ──────  ────\n  GET     /standard-run-health"
+            "\n\nFURNACE · Application ready\n────────────────────────────\nServer  http://127.0.0.1:3000\nRoutes  1\n\nMETHOD  PATH\n──────  ────\nGET     /standard-run-health\n"
         );
     }
 
@@ -1304,7 +1310,7 @@ mod tests {
 
         assert_eq!(
             summary.to_string(),
-            "\n  FURNACE · Application ready\n  ────────────────────────────\n  Server  http://api.internal:4321\n  Routes  7"
+            "\n\nFURNACE · Application ready\n────────────────────────────\nServer  http://api.internal:4321\nRoutes  7\n"
         );
     }
 
@@ -1333,7 +1339,7 @@ mod tests {
 
         assert_eq!(
             summary.to_string(),
-            "\n  FURNACE · Application ready\n  ────────────────────────────\n  Server  http://api.internal:4321\n  Routes  5\n\n  METHOD  PATH\n  ──────  ────\n  GET     /users\n  POST    /users\n  PUT     /users/:id\n  PATCH   /users/:id\n  DELETE  /users/:id"
+            "\n\nFURNACE · Application ready\n────────────────────────────\nServer  http://api.internal:4321\nRoutes  5\n\nMETHOD  PATH\n──────  ────\nGET     /users\nPOST    /users\nPUT     /users/:id\nPATCH   /users/:id\nDELETE  /users/:id\n"
         );
     }
 
