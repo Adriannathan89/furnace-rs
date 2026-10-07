@@ -1249,6 +1249,10 @@ mod tests {
             AutoConfigurationStatus::Active,
         );
         assert_eq!(prepared.route_count, 1);
+        assert_eq!(
+            prepared.startup_summary().to_string(),
+            "\n  FURNACE · Application ready\n  ────────────────────────────\n  Server  http://127.0.0.1:3000\n  Routes  1\n\n  METHOD  PATH\n  ──────  ────\n  GET     /standard-run-health"
+        );
     }
 
     #[test]
@@ -1257,7 +1261,7 @@ mod tests {
 
         assert_eq!(
             summary.to_string(),
-            "FURNACE application ready\nserver: http://api.internal:4321\nroutes: 7"
+            "\n  FURNACE · Application ready\n  ────────────────────────────\n  Server  http://api.internal:4321\n  Routes  7"
         );
     }
 
