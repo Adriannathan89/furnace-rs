@@ -16,6 +16,7 @@ use tokio::net::TcpListener;
 
 use crate::cors::CORS_AUTO_CONFIGURATION_ID;
 use crate::http_scope::HttpApplicationScope;
+use crate::route::RouteDescriptor;
 use crate::server_config::{
     HttpRuntimeMode, SERVER_AUTO_CONFIGURATION_ID, ServerBinding, load_standard_config_from,
 };
@@ -115,20 +116,28 @@ struct PreparedStandardRun {
     router: axum::Router,
     binding: std::sync::Arc<ServerBinding>,
     route_count: usize,
+    routes: Vec<RouteDescriptor>,
 }
 
 struct StartupSummary {
     host: String,
     port: u16,
     route_count: usize,
+    routes: Vec<RouteDescriptor>,
 }
 
 impl StartupSummary {
-    const fn new(host: String, port: u16, route_count: usize) -> Self {
+    const fn new(
+        host: String,
+        port: u16,
+        route_count: usize,
+        routes: Vec<RouteDescriptor>,
+    ) -> Self {
         Self {
             host,
             port,
             route_count,
+            routes,
         }
     }
 }
@@ -137,9 +146,21 @@ impl fmt::Display for StartupSummary {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
-            "FURNACE application ready\nserver: http://{}:{}\nroutes: {}",
+            "\n  FURNACE · Application ready\n  ────────────────────────────\n  Server  http://{}:{}\n  Routes  {}",
             self.host, self.port, self.route_count
-        )
+        )?;
+        if !self.routes.is_empty() {
+            write!(formatter, "\n\n  METHOD  PATH\n  ──────  ────")?;
+        }
+        for route in &self.routes {
+            write!(
+                formatter,
+                "\n  {:<6}  {}",
+                route.method().as_str(),
+                route.full_path()
+            )?;
+        }
+        Ok(())
     }
 }
 
@@ -149,6 +170,7 @@ impl PreparedStandardRun {
             self.binding.host().to_owned(),
             self.binding.port(),
             self.route_count,
+            self.routes.clone(),
         )
     }
 }
@@ -186,12 +208,14 @@ fn prepare_standard_application(
         .context()
         .resolve::<ServerBinding>()
         .map_err(HttpRuntimeError::Bootstrap)?;
+    let routes = scope.route_records().map(|(_, route)| *route).collect();
 
     Ok(PreparedStandardRun {
         application,
         router,
         binding,
         route_count,
+        routes,
     })
 }
 
@@ -210,6 +234,7 @@ where
         router,
         binding,
         route_count: _,
+        routes: _,
     } = prepared;
     let address = (binding.host().to_owned(), binding.port());
     serve_configured_router_with(application, router, address, binder, shutdown).await
@@ -1257,11 +1282,40 @@ mod tests {
 
     #[test]
     fn startup_summary_formats_owned_binding_and_validated_route_count() {
-        let summary = StartupSummary::new("api.internal".into(), 4321, 7);
+        let summary = StartupSummary::new("api.internal".into(), 4321, 7, vec![]);
 
         assert_eq!(
             summary.to_string(),
             "\n  FURNACE · Application ready\n  ────────────────────────────\n  Server  http://api.internal:4321\n  Routes  7"
+        );
+    }
+
+    #[test]
+    fn startup_summary_lists_every_method_and_full_path() {
+        let routes = [
+            (HttpMethod::Get, "/", "/users"),
+            (HttpMethod::Post, "/", "/users"),
+            (HttpMethod::Put, "/:id", "/users/:id"),
+            (HttpMethod::Patch, "/:id", "/users/:id"),
+            (HttpMethod::Delete, "/:id", "/users/:id"),
+        ]
+        .into_iter()
+        .map(|(method, path, full_path)| {
+            RouteDescriptor::new(
+                method,
+                "/users",
+                path,
+                full_path,
+                "handler",
+                SourceLocation::new("routes.rs", 1, 1),
+            )
+        })
+        .collect();
+        let summary = StartupSummary::new("api.internal".into(), 4321, 5, routes);
+
+        assert_eq!(
+            summary.to_string(),
+            "\n  FURNACE · Application ready\n  ────────────────────────────\n  Server  http://api.internal:4321\n  Routes  5\n\n  METHOD  PATH\n  ──────  ────\n  GET     /users\n  POST    /users\n  PUT     /users/:id\n  PATCH   /users/:id\n  DELETE  /users/:id"
         );
     }
 
