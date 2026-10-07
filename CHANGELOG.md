@@ -4,6 +4,22 @@ All notable changes to furnace-rs are documented in this file. Published MADS
 release history is retained below; the pending 0.9.2 work and furnace-rs API
 migration are consolidated into the first 1.0.0 release.
 
+## [Unreleased]
+
+### Added
+
+- Enable HTTP request logging with `[furnace] mode = "debug"` in `furnace.toml`.
+  Print aligned `[debug]` rows with local timestamps to millisecond precision,
+  final response status codes, HTTP methods, and paths without query strings.
+  Logging includes body-timeout 408 responses and remains disabled when the
+  mode is absent or differs from `debug`.
+
+### Changed
+
+- Display all registered routes in the startup summary with uppercase HTTP
+  methods and full controller-prefixed paths, using a readable header and
+  aligned method/path columns.
+
 ## [1.0.1] - 2026-10-06
 
 Security and availability hardening for the HTTP runtime, database pool
