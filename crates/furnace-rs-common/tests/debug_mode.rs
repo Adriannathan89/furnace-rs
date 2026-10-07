@@ -46,6 +46,8 @@ fn debug_mode_logs_timestamp_final_status_and_path_for_each_request() {
             .split_once(" | ")
             .unwrap();
         assert_eq!(timestamp.len(), 23, "{line}");
+        chrono::NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%d %H:%M:%S%.3f")
+            .expect("request timestamp must be a valid date and time");
         assert_eq!(request, expected);
         assert_eq!(
             line.match_indices('|')

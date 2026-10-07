@@ -207,6 +207,28 @@ credentials = false
 max_age_seconds = 600
 ```
 
+Enable HTTP request logging by adding this to `furnace.toml`:
+
+```toml
+[furnace]
+mode = "debug"
+```
+
+Debug mode writes one line to standard output when each response is ready,
+including the local timestamp with milliseconds, final status code, HTTP method,
+and request path (without its query string). Columns have fixed widths:
+
+```text
+[debug] 2026-10-08 14:32:05.123 | 200 | GET     | /users
+[debug] 2026-10-08 14:32:06.456 | 404 | DELETE  | /users/42
+```
+
+Logging is disabled when `furnace.mode` is absent or differs from `debug`.
+`FURNACE_FURNACE__MODE=debug` can override the TOML value through the standard
+configuration loader. Low-level `serve` and `serve_router` use the configuration
+already supplied to the application builder, and honor the same setting.
+Request logging is included in the `http` feature.
+
 Wildcard-capable CORS fields use a scalar, not a one-element list:
 
 ```toml

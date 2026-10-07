@@ -51,6 +51,13 @@ the captured application-scoped handles. The standard server path configures
 the final router, starts lifecycle hooks, waits for infrastructure readiness,
 binds the listener, serves, and then shuts down in reverse order.
 
+With `[furnace] mode = "debug"` in `furnace.toml`, the HTTP server prints a
+local timestamp with milliseconds, final response status code, HTTP method,
+and request path for each response in aligned `[debug]` rows.
+Query strings are omitted. This works with the `http` feature alone; request
+logging is disabled when the setting is absent or has any other value.
+See the [configuration example](../../README.md#conventional-configuration-and-http).
+
 The JWT service can be used without HTTP. Passport adds a typed strategy and
 principal layer on top of verified JWT claims, with guard policy resolved
 before requests. Native Axum routes remain available as an escape hatch and do

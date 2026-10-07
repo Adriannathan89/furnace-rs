@@ -12,6 +12,7 @@ description = "HTTP, JWT, cookies, and Passport integrations for furnace-rs"
 [features]
 default = ["http"]
 http = [
+    "dep:chrono",
     "dep:axum",
     "dep:axum-extra",
     "dep:hyper",

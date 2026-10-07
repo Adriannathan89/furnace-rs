@@ -389,6 +389,7 @@ where
     BindFuture: Future<Output = std::io::Result<TcpListener>>,
     Shutdown: Future<Output = ()> + Send + 'static,
 {
+    let debug = application.context().config().get("furnace.mode") == Some("debug");
     application
         .start()
         .await
@@ -399,7 +400,7 @@ where
             return finish_after_error(application, HttpRuntimeError::Bind(error)).await;
         }
     };
-    let result = serve_http(listener, router, shutdown)
+    let result = serve_http(debug, listener, router, shutdown)
         .await
         .map_err(HttpRuntimeError::Serve);
     finish(application, result).await
@@ -408,6 +409,7 @@ where
 // Axum's convenience server does not install a Hyper timer. Without one,
 // incomplete request headers retain their socket and task indefinitely.
 async fn serve_http(
+    debug: bool,
     mut listener: TcpListener,
     router: axum::Router,
     shutdown: impl Future<Output = ()> + Send + 'static,
@@ -440,21 +442,36 @@ async fn serve_http(
                     request_received.notify_one();
                     let router = connection_router.clone();
                     async move {
+                        let path = debug.then(|| request.uri().path().to_owned());
+                        let method = debug.then(|| request.method().clone());
                         let version = request.version();
                         let expired = Arc::new(AtomicBool::new(false));
                         let request = request.map(|body| axum::body::Body::new(body::IdleTimeoutBody::new(body, BODY_READ_IDLE_TIMEOUT, Arc::clone(&expired))));
                         let response = router.oneshot(request).await?;
-                        if !expired.load(Ordering::Relaxed) {
-                            return Ok::<_, std::convert::Infallible>(response);
+                        let response = if expired.load(Ordering::Relaxed) {
+                            let mut response = (
+                                axum::http::StatusCode::REQUEST_TIMEOUT,
+                                axum::Json(serde_json::json!({"error": {"code": "request_timeout", "message": "request body read timed out"}})),
+                            ).into_response();
+                            if matches!(version, axum::http::Version::HTTP_10 | axum::http::Version::HTTP_11) {
+                                response.headers_mut().insert(axum::http::header::CONNECTION, axum::http::HeaderValue::from_static("close"));
+                            }
+                            response
+                        } else {
+                            response
+                        };
+                        if let (Some(path), Some(method)) = (path, method) {
+                            use std::io::Write;
+                            let _ = writeln!(
+                                std::io::stdout().lock(),
+                                "[debug] {} | {:3} | {:<7} | {}",
+                                chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
+                                response.status().as_u16(),
+                                method.as_str(),
+                                path,
+                            );
                         }
-                        let mut response = (
-                            axum::http::StatusCode::REQUEST_TIMEOUT,
-                            axum::Json(serde_json::json!({"error": {"code": "request_timeout", "message": "request body read timed out"}})),
-                        ).into_response();
-                        if matches!(version, axum::http::Version::HTTP_10 | axum::http::Version::HTTP_11) {
-                            response.headers_mut().insert(axum::http::header::CONNECTION, axum::http::HeaderValue::from_static("close"));
-                        }
-                        Ok(response)
+                        Ok::<_, std::convert::Infallible>(response)
                     }
                 });
                 let mut shutdown_rx = shutdown_rx.clone();
@@ -595,7 +612,7 @@ mod tests {
             )
             .layer(axum::extract::DefaultBodyLimit::max(8));
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         for (length, body, status) in [
@@ -651,7 +668,7 @@ mod tests {
             )
             .route("/health", axum::routing::get(|| async { "healthy" }));
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         let stream = tokio::net::TcpStream::connect(address).await.unwrap();
@@ -719,7 +736,7 @@ mod tests {
             )
             .route("/health", axum::routing::get(|| async { "healthy" }));
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         let mut stalled = tokio::net::TcpStream::connect(address).await.unwrap();
@@ -783,7 +800,7 @@ mod tests {
             }),
         );
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         let client = tokio::spawn(async move {
@@ -828,6 +845,7 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let server = tokio::spawn(super::serve_http(
+            false,
             listener,
             axum::Router::new(),
             async move {
@@ -866,7 +884,7 @@ mod tests {
         let router =
             axum::Router::new().route("/health", axum::routing::get(|| async { "healthy" }));
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         let stream = tokio::net::TcpStream::connect(address).await.unwrap();
