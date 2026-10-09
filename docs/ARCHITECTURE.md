@@ -1,8 +1,8 @@
-# furnace-rs 1.0.1 Architecture (Unreleased)
+# furnace-rs architecture
 
 FURNACE separates framework-neutral construction and configuration from Axum HTTP
 delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
-The 1.0.1 preparation retains the validation, REST-error, typed configuration,
+The current implementation retains the validation, REST-error, typed configuration,
 compiler-diagnostic, machine-output, and minimal-scaffolding surface while
 removing the former Diesel and CLI migration integrations.
 

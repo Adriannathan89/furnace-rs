@@ -1,10 +1,10 @@
 # Migrating to furnace-rs 1.0.0
 
 Version 1.0.0 introduced breaking API changes from MADS. This guide describes
-that migration; the current patch-release preparation targets 1.0.1 across all
+that migration; the current released version is 1.0.1 across all
 nine workspace packages, with Rust edition 2024 and MSRV 1.94.
-Version 1.0.1 must be available on the registry before installing the exact
-pins below. Until its publication, use local workspace/path dependencies.
+Use the exact registry pins below for the release, or local path dependencies
+when working with this checkout.
 There are no compatibility aliases for the removed declarations.
 
 | Previous API | Current API |

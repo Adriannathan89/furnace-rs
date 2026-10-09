@@ -1,10 +1,10 @@
 # Protected route, validation, and logger
 
-This independent FURNACE 0.9 project demonstrates the
+This independent FURNACE 1.0.1 project demonstrates the
 [TPRS pattern](https://github.com/Adriannathan89/furnace-rs-rs-example): Trait,
 Provider, Repository, Service. `src/auth/traits.rs` declares the contracts;
-`provider.rs` binds them to concrete types; `repository.rs` holds one demo user
-in memory; `service.rs` signs a JWT and resolves identity; `controller.rs`
+`mod.rs` binds them to concrete types with `.provide_with`;
+`repository.rs` holds one demo user in memory; `service.rs` signs a JWT and resolves identity; `controller.rs`
 handles HTTP. Passport verifies the Bearer JWT before the guarded handler runs.
 
 Requires Rust 1.94 or newer. From this directory:
@@ -46,6 +46,6 @@ registration, password hashing, token revocation, or durable sessions. For a
 real application, replace the repository with persistent users, store password
 hashes, and apply your session and rotation policy.
 
-`AuthController` exposes public login with an empty seal. `ProfileController`
-seals every profile endpoint with `ProfileGuard`; both controllers are explicitly
-registered in `AuthCauldron`.
+`AuthController` exposes public login without a `Sealable` implementation.
+`ProfileController` seals every profile endpoint with `ProfileGuard`; both
+controllers are explicitly registered in `AuthCauldron`.

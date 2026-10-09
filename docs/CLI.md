@@ -1,6 +1,6 @@
 # FURNACE CLI
 
-FURNACE 1.0.1 (unreleased) provides Cargo-native execution, inspection, a minimal-project
+FURNACE 1.0.1 provides Cargo-native execution, inspection, a minimal-project
 generator, and a versioned JSON result
 for finite FURNACE-owned commands. Human-readable output remains the default.
 
