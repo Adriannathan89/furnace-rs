@@ -30,6 +30,38 @@ fn scripted_dev_command_is_advertised_by_the_cli() {
 }
 
 #[test]
+fn start_log_waits_for_complete_records_during_fragmented_writes() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("start.log");
+    let mut writer = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .unwrap();
+
+    for fragment in ["123", "|--seed|", "42\r"] {
+        writer.write_all(fragment.as_bytes()).unwrap();
+        assert!(
+            log_lines(&path).is_empty(),
+            "unfinished record was consumed"
+        );
+    }
+
+    writer.write_all(b"\n456").unwrap();
+    assert_eq!(log_lines(&path), ["123|--seed|42"]);
+    let first = wait_for_start(&path, 1, "first complete record");
+    assert_eq!(first.pid, 123);
+    assert_eq!(first.arguments, "--seed|42");
+
+    writer.write_all(b"|--seed|99").unwrap();
+    assert_eq!(log_lines(&path), ["123|--seed|42"]);
+    writer.write_all(b"\n").unwrap();
+    let second = wait_for_start(&path, 2, "second complete record");
+    assert_eq!(second.pid, 456);
+    assert_eq!(second.arguments, "--seed|99");
+}
+
+#[test]
 fn real_dev_loop() {
     let fixture = DevFixture::copy().expect("test fixture should copy");
     let address =
@@ -302,11 +334,13 @@ fn health_is_ready(address: SocketAddr) -> bool {
 }
 
 fn log_lines(path: &Path) -> Vec<String> {
-    fs::read_to_string(path)
-        .unwrap_or_default()
-        .lines()
-        .map(ToOwned::to_owned)
-        .collect()
+    let contents = fs::read_to_string(path).unwrap_or_default();
+    // The fixture can append a record in several writes. Its newline commits
+    // the record; an unterminated tail must not be counted or parsed yet.
+    let Some(end) = contents.rfind('\n') else {
+        return Vec::new();
+    };
+    contents[..=end].lines().map(ToOwned::to_owned).collect()
 }
 
 fn available_localhost_address() -> io::Result<SocketAddr> {
