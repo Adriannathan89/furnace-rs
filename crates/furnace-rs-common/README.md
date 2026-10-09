@@ -21,11 +21,13 @@ facade disables those defaults and maps its own features explicitly.
 | `logger` | Timestamped console application logging. | Chrono dependency. |
 | `jwt` | `JwtService`, claims, validation profiles, algorithms, keyrings, and JWT auto-configuration. | No Axum or database dependency. |
 | `cookies` | Strict cookie extraction and checked response-cookie composition. | Implies `http` and enables the cookie/Passport macro support. |
+| `sea-orm` | `From<sea_orm::DbErr> for HttpError`, enabling `?` in HTTP handlers. | Implies `http`; adds SeaORM without a database driver. |
 
 Passport route guards and managed strategies are available when `http + jwt`
-are selected. Cookie-backed guards additionally need `cookies`. The
-Persistence is supplied separately by `furnace-rs-persistence`; this crate has no
-database feature or automatic database-to-HTTP error conversion.
+are selected. Cookie-backed guards additionally need `cookies`.
+Persistence is supplied separately by `furnace-rs-persistence`. The opt-in
+`sea-orm` feature maps native query errors into redacted HTTP 500 responses and
+retains the original `DbErr` as the error source; it does not provision connections.
 
 ## How this crate fits the runtime
 

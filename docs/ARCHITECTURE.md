@@ -53,6 +53,7 @@ http                         Axum + validation + standard REST errors
 logger                       application logging and console backend
 jwt                          JWT service/configuration, no Axum
 cookies                      HTTP cookie support
+sea-orm                      HTTP + native DbErr conversion, no database driver
 http + jwt (+ cookies)       Passport Bearer (and cookie) guards
 furnace-rs-persistence/sea-orm-postgres  native SeaORM PostgreSQL connector
 ~~~
@@ -140,10 +141,13 @@ FURNACE-owned internal failures map to redacted 500 responses. User-created
 `Unauthorized` does not claim a Bearer scheme, and ordinary native responses
 are not normalized.
 
-Persistence-to-HTTP conversion is application-owned. The SeaORM connector
-returns the native database value or a typed `PersistenceError`; there is no
-automatic database-to-HTTP mapping. Applications choose a domain-specific
-`map_err` policy without exposing connection details to clients.
+The SeaORM connector returns the native database value or a typed
+`PersistenceError`. The opt-in `sea-orm` feature on `furnace-rs-common` (also
+exposed by the facade) converts native query `DbErr` values into redacted
+`HttpError` 500 responses, allowing `?` in `HttpResult` handlers. It retains the
+original error source and does not select a driver or provision connections.
+Applications can choose a domain-specific `map_err` policy when a failure
+needs another HTTP status.
 
 ## Root scope and normal runtime
 

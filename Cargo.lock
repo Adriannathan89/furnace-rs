@@ -717,6 +717,7 @@ dependencies = [
  "hyper-util",
  "jsonwebtoken",
  "rustix",
+ "sea-orm",
  "serde",
  "serde_json",
  "serde_path_to_error",

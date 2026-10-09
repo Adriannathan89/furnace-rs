@@ -36,6 +36,7 @@ jwt = [
 ]
 cookies = ["http", "dep:cookie", "axum-extra/cookie", "furnace-rs-common-macros?/cookies"]
 logger = ["dep:chrono"]
+sea-orm = ["http", "dep:sea-orm"]
 
 [dependencies]
 axum = { workspace = true, optional = true }
@@ -51,6 +52,7 @@ serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde_path_to_error = { workspace = true, optional = true }
 serde_urlencoded = { workspace = true, optional = true }
+sea-orm = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
 tower = { workspace = true, optional = true }
 tower-http = { workspace = true, optional = true }

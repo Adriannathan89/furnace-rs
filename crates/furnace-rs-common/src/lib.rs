@@ -1,6 +1,6 @@
 //! Standard integration contracts for furnace-rs.
 //!
-//! Enable the `http`, `jwt`, `cookies`, or `logger` feature to select only
+//! Enable the `http`, `jwt`, `cookies`, `logger`, or `sea-orm` feature to select only
 //! the integration contracts an application needs. The framework-neutral core
 //! boundary is always available through [`core`].
 #![cfg_attr(
