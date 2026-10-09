@@ -1,0 +1,74 @@
+   Compiling typenum v1.20.1
+   Compiling syn v3.0.3
+   Compiling tracing v0.1.44
+   Compiling num-traits v0.2.19
+   Compiling mio v1.2.2
+   Compiling serde_json v1.0.151
+   Compiling futures-task v0.3.34
+   Compiling futures-channel v0.3.34
+   Compiling getrandom v0.4.3
+   Compiling futures-util v0.3.34
+   Compiling axum-core v0.5.6
+   Compiling tempfile v3.27.0
+   Compiling generic-array v0.14.7
+   Compiling num-integer v0.1.47
+   Compiling chrono v0.4.45
+   Compiling num-bigint v0.4.8
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling digest v0.10.7
+   Compiling sha1 v0.10.7
+   Compiling headers v0.4.1
+   Compiling axum-extra v0.12.6
+   Compiling serde_derive v1.0.229
+   Compiling tokio-macros v2.7.2
+   Compiling thiserror-impl v2.0.20
+   Compiling tokio v1.53.1
+   Compiling thiserror v2.0.20
+   Compiling simple_asn1 v0.6.3
+   Compiling serde v1.0.229
+   Compiling serde_spanned v0.6.9
+   Compiling toml_datetime v0.6.11
+   Compiling serde_urlencoded v0.7.1
+   Compiling jsonwebtoken v10.3.0
+   Compiling toml_edit v0.22.27
+   Compiling tokio-util v0.7.19
+   Compiling tower v0.5.3
+   Compiling toml v0.8.23
+   Compiling h2 v0.4.19
+   Compiling furnace-rs-core v1.0.1 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-core)
+   Compiling hyper v1.11.0
+   Compiling hyper-util v0.1.20
+   Compiling axum v0.8.9
+   Compiling furnace-rs-common v1.0.1 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-common)
+    Finished `test` profile [unoptimized] target(s) in 19.07s
+     Running tests/validated_extractors.rs (target/debug/deps/validated_extractors-cb50ff20b9967b72)
+
+running 25 tests
+test json_configured_body_limit_overflow_is_a_safe_payload_too_large ... ok
+test json_nested_rejection_retains_structured_containing_path ... ok
+test json_malformed_syntax_is_one_sourced_validation_issue ... ok
+test json_missing_or_wrong_content_type_is_a_safe_unsupported_media_type ... ok
+test json_missing_field_custom_error_does_not_disclose_private_text ... ok
+test json_other_client_body_read_failure_is_a_safe_bad_request ... ok
+test query_missing_field_custom_error_does_not_disclose_private_text ... ok
+test json_missing_renamed_field_is_one_required_issue_at_its_containing_path ... ok
+test path_missing_field_custom_error_does_not_disclose_private_text ... ok
+test query_path_custom_deserializer_messages_do_not_leak_into_paths ... ok
+test json_post_conversion_validation_returns_every_issue_in_derive_order ... ok
+test json_type_conversion_is_one_sourced_validation_issue ... ok
+test query_path_path_validation_returns_every_path_issue_in_derive_order ... ok
+test query_path_path_invalid_utf8_is_one_redacted_syntax_issue ... ok
+test query_path_path_honors_serde_deny_unknown_fields ... ok
+test json_valid_input_reaches_the_handler_once ... ok
+test query_path_path_type_conversion_is_one_redacted_path_issue ... ok
+test query_path_query_validation_returns_every_query_issue_in_derive_order ... ok
+test query_path_query_missing_renamed_field_is_one_required_query_issue ... ok
+test query_path_query_honors_serde_deny_unknown_fields ... ok
+test query_path_query_type_conversion_is_one_redacted_query_issue ... ok
+test query_path_path_missing_field_is_one_required_path_issue ... ok
+test query_path_server_configuration_errors_are_redacted_internal_errors ... ok
+test query_path_valid_query_uses_external_names_and_ignores_unknown_fields ... ok
+test query_path_valid_path_uses_into_inner_external_names_and_unknown_field_defaults ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

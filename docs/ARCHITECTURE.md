@@ -113,6 +113,11 @@ deserialization authority and reports its first conversion failure. Sources,
 wire field names, issue codes, and fixed built-in messages are deliberate public
 contracts; rejected values are never copied into a built-in issue.
 
+Native deserializer error text is used only to classify fixed issue codes.
+Missing-field rejections retain any structured containing path but omit the
+missing field name when it is available only inside free-form error text:
+custom Serde implementations can put private data in that text.
+
 Native `Json<T>`, `Query<T>`, and `Path<T>` are still the ordinary Axum
 extractors. A native `Json` handler performs no FURNACE `Input` validation, which
 is the compatibility escape hatch for application-owned extraction, routing,
