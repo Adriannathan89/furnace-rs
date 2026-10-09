@@ -34,9 +34,9 @@ See the [documentation index](docs/README.md), [changelog](CHANGELOG.md),
 [migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
 [release notes and verification](docs/releases/1.0.2.md),
 [security policy](docs/SECURITY.md), and [security audit](docs/SECURITY_AUDIT.md).
-Version 1.0.1 adds HTTP header/body deadlines, validates database maintenance
-intervals, and rejects mismatched inventory outputs during construction.
-The release includes strict Bearer parsing, safe core error formatting, checked
+Version 1.0.2 includes HTTP header/body deadlines, database maintenance
+interval validation, and inventory output type checks during construction,
+as well as strict Bearer parsing, safe core error formatting, checked
 database timeouts, protected connection tracing, and owner-only Unix CLI
 control directories. The audit documents reproduction, fixes, benchmark
 evidence, prior real PostgreSQL validation, and the limits of the review.
@@ -46,10 +46,11 @@ evidence, prior real PostgreSQL validation, and the limits of the review.
 The furnace metaphor describes startup: a `Cauldron` groups explicitly registered
 components, and `Furnace::burn` starts the selected application. Services use
 `#[burner]` and repositories use `#[storage]`; both generate `Injector` constructors.
-Plain services can implement `Injector` directly.
+Plain services can implement `Injector` directly. A service layer is optional:
+simple controllers can call repositories directly, as in the Posts CRUD example.
+Use services when business rules or coordination across repositories warrant them.
 
-The philosophy is to take that frustration out of Rust application
-development. FURNACE keeps architecture explicit, typed, and inspectable while
+FURNACE keeps application structure explicit, typed, and inspectable while
 automating the repetitive work around cauldrons, dependency wiring, lifecycle,
 configuration, routing, and infrastructure. Developers can then spend more
 time on domain logic and business systems instead of rebuilding the same
@@ -66,9 +67,12 @@ furnace dev
 ```
 
 `furnace new` creates exactly `Cargo.toml`, `furnace.toml`, `src/main.rs`, and
-`src/app/{mod,controller,service}.rs`. The generated application has
-only the `http` and `runtime-tokio` FURNACE features—no database, JWT, cookie,
-migration, or authentication setup—and answers `GET /` with `Hello World!`.
+`src/app/{mod,controller,service}.rs`. The current starter injects `AppService`
+into `AppController` to return the greeting. This demonstrates dependency wiring;
+services are optional in application code, even though the CLI currently generates
+one by default. The generated application enables only `http` and
+`runtime-tokio`, and answers `GET /` with `Hello World!`. Database, JWT, cookie,
+migration, and authentication setup remain application-owned.
 The application package starts at `0.1.0`; its FURNACE dependency is pinned to the
 installed CLI version. See [the CLI reference](docs/CLI.md) for its atomic,
 offline generator contract, naming rules, exact JSON output, and non-goals.
@@ -82,7 +86,7 @@ furnace run
 ```
 
 See the [authoritative CLI reference](docs/CLI.md) for target selectors,
-forwarded application arguments, diagnostics, watcher behavior, inspection
+forwarded application arguments, diagnostics, watcher behavior, and inspection
 limits.
 
 The [four independent example projects](example/) use local workspace crates.
@@ -105,8 +109,19 @@ curl http://127.0.0.1:3000/
 # Hello, world!
 ```
 
-Posts CRUD requires PostgreSQL and applying its SQL migration with `psql` before
-startup. For the protected-route example, copy `.env.example` to `.env` first.
+Both CRUD projects require PostgreSQL, a local `.env` copied from `.env.example`,
+and their SQL migration applied with `psql` before startup. They use the same
+port 3001 and database name by default. Run them one at a time, or start the
+service variant on a different port from its directory:
+
+```sh
+cd example/post-crud-with-service
+FURNACE_SERVER__PORT=3003 cargo run --locked
+# Use http://127.0.0.1:3003/posts for requests to this instance.
+```
+
+Set a different `DATABASE_URL` if the two instances need separate data.
+For the protected-route example, copy `.env.example` to `.env` first.
 Its plaintext demo credentials illustrate wiring; applications own password
 hashing and session policy. See the example guides for setup and requests.
 For repeatable HTTP load and failure checks, see the [benchmark suite](benchmark/).
@@ -227,7 +242,7 @@ including `use furnace_rs::prelude::*;`, as in the runnable examples.
 | `logger` | Injectable application logging; import `LoggerCauldron` for the default console logger |
 | `jwt` | JWT signing/verification; Passport guards and strategies when combined with `http` |
 | `cookies` | Cookie extraction and response cookies; implies `http` |
-| `sea-orm` | Converts SeaORM `DbErr` into redacted HTTP 500 errors through `?`; implies `http` |
+| `sea-orm` | Enables `DbErr` conversion into `HttpError` for `?` in `HttpResult` handlers; implies `http`, with no database driver or connection provider |
 | `runtime-tokio` | Tokio entry-point support for `#[furnace_rs::main]` |
 | `common` | Convenience feature enabling `http` and `logger` |
 | `extra` | Reserved integration boundary |
@@ -401,9 +416,11 @@ issues. Rejected values never appear in built-in issues. Validated JSON keeps
 envelope.
 
 Native `Json<T>`, `Query<T>`, and `Path<T>` remain the unmodified Axum
-extractors and deliberately do not run `Input`. Use them when an application
-needs its own extraction or validation policy; do not rename a native `Json`
-alias and present it as validation.
+extractors and do not run `Input`. Their extraction failures use Axum's rejection
+responses, including a failed `Path<i32>` parse. Use the validated extractors for
+FURNACE's JSON rejection envelope, or native extractors for an application-owned
+extraction or validation policy. Renaming a native `Json` alias does not add
+validation.
 
 The `http` feature exports the seven standard errors: `BadRequest` (400),
 `Unauthorized` (401), `Forbidden` (403), `NotFound` (404), `Conflict` (409),
@@ -432,9 +449,15 @@ unsupported validated JSON content types to
 `request body could not be read`, and all server-class failures to
 `internal server error`.
 
-Database-to-HTTP error conversion remains an application delivery-policy
-decision. The persistence connector returns a native SeaORM connection and
-retains typed connector errors; it does not map them automatically to HTTP.
+With the opt-in `sea-orm` feature on `furnace-rs` (or `furnace-rs-common`),
+`HttpResult<T>` handlers can propagate native SeaORM `DbErr` values with `?`.
+This conversion returns a redacted HTTP 500 envelope and retains the error source.
+Without that feature, handlers must map query errors explicitly. Applications
+can also choose explicit mappings for domain-specific statuses such as 404 or 409.
+The persistence connector's configuration, connection, readiness, and shutdown
+failures use the separate `PersistenceError` type; it has no automatic HTTP
+conversion. See [native database provisioning](#native-database-provisioning) for
+both feature selections.
 
 ## Typed configuration and secrets
 
@@ -509,19 +532,40 @@ the complete-catalog compatibility behavior.
 
 ## Native database provisioning
 
-Database provisioning comes from the separate persistence crate. Add the connector
-explicitly and import its global module in your application root:
+Database connections and HTTP error conversion are enabled separately:
+
+| Crate and feature | Purpose |
+| --- | --- |
+| `furnace-rs` with `sea-orm` | Adds `From<sea_orm::DbErr> for HttpError`, enabling query-error propagation with `?` in `HttpResult<T>` handlers |
+| `furnace-rs-persistence` with `sea-orm-postgres` | Enables the PostgreSQL driver, Tokio/rustls runtime, connection provisioning, and lifecycle integration |
+
+To use both, select their features explicitly:
 
 ```toml
-furnace-rs-persistence = { version = "1.0.2", features = ["sea-orm-postgres"] }
+[dependencies]
+furnace-rs = { version = "=1.0.2", default-features = false, features = ["sea-orm", "runtime-tokio"] }
+furnace-rs-persistence = { version = "=1.0.2", features = ["sea-orm-postgres"] }
 ```
 
-The opt-in `sea-orm` feature on `furnace-rs` adds
-`From<sea_orm::DbErr> for HttpError`. HTTP handlers returning `HttpResult<T>` can
-use `repository.list().await?` directly. Database failures produce a redacted
-500 JSON envelope and preserve the original source for diagnosis. The feature
-does not select a database driver or provision a connection. See the
-[simple CRUD example and optional service variant](example/posts-crud/).
+The facade's `sea-orm` feature implies `http`; it enables no database driver and
+provisions no connection. Propagating a `DbErr` with `?` produces a redacted 500
+JSON envelope and preserves the original source for diagnosis. Connector
+`PersistenceError` values remain separate and require explicit HTTP mapping if
+used in a handler. See the [simple CRUD example](example/posts-crud/) and the
+[optional service variant](example/post-crud-with-service/).
+
+Configure the connection URL through conventional configuration:
+
+```toml
+# furnace.toml
+[persistence.seaorm]
+url = "${DATABASE_URL}"
+```
+
+Supply `DATABASE_URL` through the process environment or the local `.env`.
+Import the connector's global module in your application root and inject its
+native connection into repositories. The following fragment assumes an
+application-defined `UserRepository` with a `new(DatabaseConnection)` constructor:
 
 ```rust,ignore
 use furnace_rs_persistence::sea_orm::{DatabaseConnection, DatabaseCauldron};
@@ -565,6 +609,10 @@ escape hatch. Its address overrides automatic server binding; use
 routes.
 
 ## Passport configuration and JWT profiles
+
+Enable the facade's `jwt` feature for JWT signing, verification, and Passport
+integration. Guarded HTTP applications also need `http`; cookie examples need
+`cookies`. These are opt-in features and are absent from the CLI starter.
 
 `Furnace::burn` supplies the standard conventional source order; the low-level
 builder stays explicit. Dotenv sources provide interpolation values, and
@@ -795,23 +843,15 @@ listener.
 
 ## Benchmarks
 
-The current benchmark suite covers native Axum/FURNACE throughput and
-process-start-to-ready comparisons with Axum, Go/Gin, and NestJS/Fastify.
+The repository includes HTTP stress workloads, security regression runners,
+and a [recorded FURNACE/native Axum/Go Fiber comparison](benchmark/COMPARISON.md)
+for Hello World, PostgreSQL CRUD, and login plus protected JWT requests.
+That comparison was measured on 2026-09-25 using FURNACE 0.9.1 source; it is
+historical evidence for that revision, not a measurement of the 1.0.2 release.
 
-| Application | Startup P50 | Startup P95 |
-| --- | ---: | ---: |
-| Native Axum | 21 ms | 30 ms |
-| Go/Gin | 22 ms | 29 ms |
-| FURNACE | 22 ms | 30 ms |
-| NestJS/Fastify | 428 ms | 443 ms |
-
-The startup comparison uses 1,000 release-build starts per application and an
-equivalent PostgreSQL readiness check. In the exploratory throughput suite,
-every native Axum/FURNACE saturation range overlaps, while both sustain the fixed
-1,000 requests/second target with closely grouped latency.
-
-See [the benchmark guide](benchmark/README.md) for the complete results, methodology,
-limitations, resource measurements, and interpretation guidance.
+See [the benchmark guide](benchmark/README.md) for runnable workloads, raw results,
+methodology, and limits. Throughput and latency depend on the host, client,
+database access pattern, and application workload.
 
 ## Current scope
 
@@ -819,8 +859,10 @@ Version 1.0.2 includes rooted module scope, conventional startup, CORS,
 native router composition, typed input validation, the seven REST errors,
 explicit typed configuration and redacted secrets, focused FURNACE macro
 diagnostics, Cargo-native run/dev, compiled route/graph/doctor inspection,
-schema-version-2 finite-command JSON, opt-in native SeaORM persistence, and the
-offline atomic minimal-project generator. It preserves the low-level builder,
+schema-version-2 finite-command JSON, opt-in native SeaORM persistence,
+opt-in query-error conversion for `HttpResult`, debug HTTP request logging,
+a startup summary of registered methods and full paths, and the offline atomic
+minimal-project generator. It preserves the low-level builder,
 the complete-catalog rootless compatibility path, native Axum extractors and
 responses, ordinary human CLI output, and application-owned database policy.
 
@@ -830,11 +872,14 @@ It does **not** implement `Inject<dyn Trait>`,
 asynchronous or database-backed derive validators, automatic validation for
 native extractors, full-RFC/DNS email validation, login or credential
 validation, refresh endpoints or persistence/rotation/revocation, password
-hashing, CSRF, remote JWKS, JWE, third-party auto-configuration, arbitrary
-configuration sources/shapes, multiple-listener/TLS or configurable HTTP/2 server settings,
+hashing, CSRF, remote JWKS, JWE, third-party auto-configuration, additional
+conventional configuration formats or arbitrary typed configuration shapes,
+multiple-listener/TLS or configurable HTTP/2 server settings,
 JSON-wrapped run/dev streams, or scaffold database/JWT/cookie/migration/Git
-setup. Database errors never map automatically; applications own their
-delivery policy.
+setup. Native SeaORM query errors convert to redacted HTTP 500 errors when the
+`sea-orm` feature is enabled and a handler propagates them with `?` into
+`HttpResult`. Connector `PersistenceError` values and application-specific
+status mappings remain application-owned.
 
 ## Focused tests
 
@@ -888,8 +933,8 @@ RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 cargo +1.94.0 test --locked --workspace --all-features
 ```
 
-CI also provisions PostgreSQL 16 and runs the ignored database suites plus the
-85% line-coverage gate. To run those locally, set `FURNACE_TEST_DATABASE_URL` to a
+CI also provisions PostgreSQL 16, runs the ignored PostgreSQL integration suite,
+and enforces an 85% line-coverage gate. To run those locally, set `FURNACE_TEST_DATABASE_URL` to a
 PostgreSQL 16 database and use the commands in the
 [1.0.2 release verification guide](docs/releases/1.0.2.md).
 
