@@ -305,6 +305,19 @@ fn cli_documentation_lists_the_exact_surface() {
 #[test]
 fn dev_starts_an_application_and_can_be_terminated() {
     let fixture = copied_single_fixture();
+    // Cold compilation, especially under coverage, is not server startup time.
+    // Build this exact copy first so dev's incremental build fits the readiness wait.
+    let build = ProcessCommand::new("cargo")
+        .arg("build")
+        .current_dir(fixture.path())
+        .output()
+        .expect("CLI fixture should build");
+    assert!(
+        build.status.success(),
+        "CLI fixture build failed:\n{}\n{}",
+        String::from_utf8_lossy(&build.stdout),
+        String::from_utf8_lossy(&build.stderr)
+    );
     let address = available_localhost_address().unwrap();
     fs::write(
         fixture.path().join("furnace.toml"),
@@ -330,7 +343,7 @@ fn dev_starts_an_application_and_can_be_terminated() {
             .unwrap(),
     );
     wait_for_output(&output_path, "furnace dev: starting");
-    wait_for_health(address);
+    wait_for_health(address, &output_path);
     child.kill();
 }
 
@@ -441,7 +454,7 @@ fn available_localhost_address() -> std::io::Result<SocketAddr> {
 
 #[cfg(unix)]
 fn wait_for_output(path: &Path, expected: &str) {
-    wait_until(|| {
+    wait_until(expected, path, || {
         fs::read_to_string(path)
             .unwrap_or_default()
             .contains(expected)
@@ -449,8 +462,8 @@ fn wait_for_output(path: &Path, expected: &str) {
 }
 
 #[cfg(unix)]
-fn wait_for_health(address: SocketAddr) {
-    wait_until(|| {
+fn wait_for_health(address: SocketAddr, output_path: &Path) {
+    wait_until("application health response", output_path, || {
         let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_millis(100))
         else {
             return false;
@@ -464,12 +477,13 @@ fn wait_for_health(address: SocketAddr) {
 }
 
 #[cfg(unix)]
-fn wait_until(mut condition: impl FnMut() -> bool) {
+fn wait_until(phase: &str, output_path: &Path, mut condition: impl FnMut() -> bool) {
     let deadline = Instant::now() + Duration::from_secs(60);
     while !condition() {
         assert!(
             Instant::now() < deadline,
-            "timed out waiting for CLI fixture"
+            "timed out waiting for {phase}; fixture output:\n{}",
+            fs::read_to_string(output_path).unwrap_or_default()
         );
         thread::sleep(Duration::from_millis(50));
     }
