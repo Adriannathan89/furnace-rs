@@ -8,8 +8,8 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [1.0.2] - 2026-10-09
 
-Prepared for stable publication. The stable workflow creates the version tag
-and GitHub release after its verification and publication gates pass.
+Released on crates.io. See the [release notes](docs/releases/1.0.2.md) for
+changes and recorded verification.
 
 ### Added
 
@@ -365,3 +365,4 @@ First public beta of the MADS.rs HTTP application foundation.
 
 [1.0.0]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.0
 [1.0.1]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.1
+[1.0.2]: https://crates.io/crates/furnace-rs/1.0.2

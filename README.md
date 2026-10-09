@@ -11,18 +11,15 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 
 ## Release status
 
-**Release date: 2026-10-06.**
-
-**1.0.1 is the current released version.** Install the released CLI with:
+**1.0.2 is the current released version**, available on
+[crates.io](https://crates.io/crates/furnace-rs/1.0.2). Install the released CLI with:
 
 ```sh
-cargo install furnace-rs-cli --version 1.0.1 --locked
+cargo install furnace-rs-cli --version 1.0.2 --locked
 ```
 
-### Prepared release: 1.0.2
-
-The workspace and all four local examples target **1.0.2**, prepared on
-**2026-10-09**. Install the prepared CLI from this checkout with:
+The workspace and all four local examples target **1.0.2**. To install the CLI
+from this checkout instead, use:
 
 ```sh
 cargo install --path crates/furnace-rs-cli --locked
@@ -31,12 +28,11 @@ cargo install --path crates/furnace-rs-cli --locked
 The [1.0.2 release notes](docs/releases/1.0.2.md) cover opt-in SeaORM HTTP error
 conversion, simpler CRUD examples with an optional service, debug request
 logging, the expanded route summary, and validated-extractor error redaction.
-Publication is pending the stable workflow. Future changes belong under
-**Unreleased** in the changelog.
+Future changes belong under **Unreleased** in the changelog.
 
 See the [documentation index](docs/README.md), [changelog](CHANGELOG.md),
 [migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
-[release preparation and verification](docs/releases/1.0.2.md),
+[release notes and verification](docs/releases/1.0.2.md),
 [security policy](docs/SECURITY.md), and [security audit](docs/SECURITY_AUDIT.md).
 Version 1.0.1 adds HTTP header/body deadlines, validates database maintenance
 intervals, and rejects mismatched inventory outputs during construction.
@@ -270,7 +266,7 @@ credentials = false
 max_age_seconds = 600
 ```
 
-Enable HTTP request logging in this checkout (an Unreleased change) with:
+Enable HTTP request logging, available in 1.0.2, with:
 
 ```toml
 [furnace]

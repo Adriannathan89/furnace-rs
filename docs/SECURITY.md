@@ -1,7 +1,8 @@
 # Security policy
 
-The current released version is furnace-rs **1.0.1**, released on **2026-10-06**.
-Use 1.0.1 for the latest released security and availability fixes.
+The current released version is furnace-rs **1.0.2**, available on
+[crates.io](https://crates.io/crates/furnace-rs/1.0.2).
+Use 1.0.2 for the latest released security and availability fixes.
 
 Version 1.0.1 adds ten-second initial-request/header and idle-body deadlines,
 rejects zero database maintenance durations, and validates inventory output
@@ -10,11 +11,10 @@ types during construction. See the [release notes](releases/1.0.1.md),
 [database/inventory report](../benchmark/DATABASE_INVENTORY_SECURITY.md).
 The [1.0.0 audit](SECURITY_AUDIT.md) retains evidence for earlier fixes.
 
-The prepared **1.0.2** release includes the
-[validated-extractor error-redaction fix](security/2026-10-09-extractor-error-redaction.md).
-That fix is present in the checkout; it is not part of the published 1.0.1 release.
-See the [1.0.2 preparation guide](releases/1.0.2.md); publication is pending the
-stable workflow.
+The released **1.0.2** includes the
+[validated-extractor error-redaction fix](security/2026-10-09-extractor-error-redaction.md)
+and retains the earlier protections described above.
+See the [1.0.2 release notes](releases/1.0.2.md) for changes and verification.
 
 ## Reporting a vulnerability
 

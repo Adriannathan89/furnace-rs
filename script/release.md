@@ -28,13 +28,13 @@ It does not edit README or changelog content, commit, tag, push, or publish.
 Review the Cargo changes and complete the release documentation manually.
 Independent example manifests must also pin the prepared FURNACE version.
 
-Version 1.0.2 is prepared locally; publication is pending the stable workflow.
+Version 1.0.2 is already released on crates.io.
 See the [release guide](../docs/releases/1.0.2.md) for changes and verification.
 For subsequent releases, select the next version and follow the same gates.
 After release review and authorization, committing and pushing the prepared
 stable version to `main` activates the stable
 publication workflow, which runs its release gates, publishes missing crate versions
-to crates.io in dependency order, and creates the `v1.0.2` Git tag and stable
+to crates.io in dependency order, and creates the matching version Git tag and stable
 GitHub Release. Configure `CRATES_IO_TOKEN` in the GitHub `stable` environment.
 
 The workflow publishes `furnace-rs-testing` after `furnace-rs-common` and before `furnace-rs`.

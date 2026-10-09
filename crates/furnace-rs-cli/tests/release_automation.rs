@@ -498,18 +498,14 @@ fn documentation_points_to_current_examples_and_released_version() {
     assert!(common.contains("../../example/protected-route/README.md"));
     for (name, source) in [("README", &readme), ("security policy", &security)] {
         assert!(
-            source.contains("1.0.1"),
-            "{name} must identify the current release"
-        );
-        assert!(
             source.contains("1.0.2"),
-            "{name} must identify the prepared release"
+            "{name} must identify the current release"
         );
         assert!(!source.contains("preparing furnace-rs"));
         assert!(!source.contains("forthcoming 1.0.x"));
     }
-    assert!(readme.contains("1.0.1 is the current released version"));
-    assert!(security.contains("current released version is furnace-rs **1.0.1**"));
+    assert!(readme.contains("1.0.2 is the current released version"));
+    assert!(security.contains("current released version is furnace-rs **1.0.2**"));
 }
 
 #[test]
