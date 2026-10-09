@@ -23,7 +23,8 @@ To use this branch's implementation, install from the checkout with
 `cargo install --path crates/furnace-rs-cli --locked`. The workspace and local
 examples target 1.0.1, but this branch also contains changes listed under
 **Unreleased** in the changelog: debug request logging, an expanded startup
-route summary, and validated-extractor error redaction. Descriptions of those
+route summary, validated-extractor error redaction, opt-in SeaORM HTTP error
+conversion, and simpler CRUD examples. Descriptions of those
 changes below refer to the checkout, rather than the published 1.0.1 packages.
 
 See the [documentation index](docs/README.md), [changelog](CHANGELOG.md),
@@ -81,13 +82,14 @@ See the [authoritative CLI reference](docs/CLI.md) for target selectors,
 forwarded application arguments, diagnostics, watcher behavior, inspection
 limits.
 
-The [three independent example projects](example/) use local workspace crates.
+The [four independent example projects](example/) use local workspace crates.
 Run commands from each example directory so configuration loads there.
 
 | Example | Implementation | Routes | Port |
 | --- | --- | --- | ---: |
 | [Hello World](example/hello-world/) | Public controller, root registration, debug request logging | `GET /` | 3000 |
-| [Posts CRUD](example/posts-crud/) | Native SeaORM PostgreSQL connection, repository/service/controller, validated input | `POST /posts`, `GET /posts`, `GET /posts/{id}`, `PUT /posts/{id}`, `DELETE /posts/{id}` | 3001 |
+| [Posts CRUD](example/posts-crud/) | Native SeaORM PostgreSQL connection, controller/repository, validated input | `POST /posts`, `GET /posts`, `GET /posts/{id}`, `PUT /posts/{id}`, `DELETE /posts/{id}` | 3001 |
+| [Posts CRUD with service](example/post-crud-with-service/) | The same CRUD routes with an optional service layer | `POST /posts`, `GET /posts`, `GET /posts/{id}`, `PUT /posts/{id}`, `DELETE /posts/{id}` | 3001 |
 | [Protected route](example/protected-route/) | Trait bindings, in-memory repository, validated login, JWT strategy, `reader` guard, application logger | `POST /auth/login`, `GET /auth/me` | 3002 |
 
 Start the smallest example with:
@@ -222,6 +224,7 @@ including `use furnace_rs::prelude::*;`, as in the runnable examples.
 | `logger` | Injectable application logging; import `LoggerCauldron` for the default console logger |
 | `jwt` | JWT signing/verification; Passport guards and strategies when combined with `http` |
 | `cookies` | Cookie extraction and response cookies; implies `http` |
+| `sea-orm` | Converts SeaORM `DbErr` into redacted HTTP 500 errors through `?`; implies `http` |
 | `runtime-tokio` | Tokio entry-point support for `#[furnace_rs::main]` |
 | `common` | Convenience feature enabling `http` and `logger` |
 | `extra` | Reserved integration boundary |
@@ -503,12 +506,19 @@ the complete-catalog compatibility behavior.
 
 ## Native database provisioning
 
-Database support is not a `furnace-rs` or `furnace-rs-common` feature. Add the connector
+Database provisioning comes from the separate persistence crate. Add the connector
 explicitly and import its global module in your application root:
 
 ```toml
 furnace-rs-persistence = { version = "1.0.1", features = ["sea-orm-postgres"] }
 ```
+
+In this checkout, the opt-in `sea-orm` feature on `furnace-rs` adds
+`From<sea_orm::DbErr> for HttpError`. HTTP handlers returning `HttpResult<T>` can
+use `repository.list().await?` directly. Database failures produce a redacted
+500 JSON envelope and preserve the original source for diagnosis. The feature
+does not select a database driver or provision a connection. See the
+[simple CRUD example and optional service variant](example/posts-crud/).
 
 ```rust,ignore
 use furnace_rs_persistence::sea_orm::{DatabaseConnection, DatabaseCauldron};

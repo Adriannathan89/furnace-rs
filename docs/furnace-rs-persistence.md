@@ -106,10 +106,13 @@ and `Debug` retain operation/category information while hiding native sources;
 explicit `std::error::Error::source()` access retains the underlying error.
 Conversion to a core error uses `FURNACE140`.
 
-Database errors do not map automatically to HTTP responses. The Posts CRUD
-controller explicitly converts query failures with `InternalError::new`, and
-returns `NotFound` for absent posts. Applications own query policy and client
-messages.
+The opt-in `sea-orm` feature on `furnace-rs` lets HTTP handlers propagate native
+query `DbErr` values with `?` into redacted HTTP 500 responses. The
+[simple CRUD example](../example/posts-crud/) uses this conversion and returns
+`NotFound` for absent posts; the [service variant](../example/post-crud-with-service/)
+shows an optional layer for business logic. Applications own domain-specific
+query policies and client messages. Typed connector `PersistenceError` values
+remain separate from query errors.
 
 The connector suppresses tracing while polling SeaORM connection establishment,
 including callbacks inside that operation, because native connection spans can

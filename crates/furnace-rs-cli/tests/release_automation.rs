@@ -463,7 +463,8 @@ fn current_docs_describe_native_persistence() {
         "sea-orm-postgres",
         "DatabaseCauldron",
         "DatabaseConnection",
-        "InternalError::new",
+        "DbErr",
+        "sea-orm",
         "Injector::lifecycle",
     ] {
         assert!(

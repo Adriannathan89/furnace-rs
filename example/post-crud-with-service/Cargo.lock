@@ -568,7 +568,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "furnace-rs-example-posts-crud"
+name = "furnace-rs-example-post-crud-with-service"
 version = "0.1.0"
 dependencies = [
  "furnace-rs",

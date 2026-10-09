@@ -2,12 +2,12 @@ use furnace_rs::prelude::*;
 
 use super::{
     model::{Post, PostInput},
-    repository::PostRepository,
+    service::PostService,
 };
 
 #[controller]
 pub struct PostController {
-    repository: PostRepository,
+    service: PostService,
 }
 
 #[controller(route = "/posts")]
@@ -17,18 +17,18 @@ impl PostController {
         &self,
         ValidatedJson(body): ValidatedJson<PostInput>,
     ) -> HttpResult<Created<Json<Post>>> {
-        let post = self.repository.create(body.title, body.body).await?;
+        let post = self.service.create(body.title, body.body).await?;
         Ok(Created(Json(post)))
     }
 
     #[get]
     async fn list(&self) -> HttpResult<Json<Vec<Post>>> {
-        Ok(Json(self.repository.list().await?))
+        Ok(Json(self.service.list().await?))
     }
 
     #[get("/:id")]
     async fn find(&self, Path(id): Path<i32>) -> HttpResult<Json<Post>> {
-        self.repository
+        self.service
             .find(id)
             .await?
             .map(Json)
@@ -41,7 +41,7 @@ impl PostController {
         Path(id): Path<i32>,
         ValidatedJson(body): ValidatedJson<PostInput>,
     ) -> HttpResult<Json<Post>> {
-        self.repository
+        self.service
             .update(id, body.title, body.body)
             .await?
             .map(Json)
@@ -50,7 +50,7 @@ impl PostController {
 
     #[delete("/:id")]
     async fn delete(&self, Path(id): Path<i32>) -> HttpResult<NoContent> {
-        if self.repository.delete(id).await? {
+        if self.service.delete(id).await? {
             Ok(NoContent)
         } else {
             Err(NotFound::new("post not found").into())

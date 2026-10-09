@@ -8,6 +8,10 @@ migration are consolidated into the first 1.0.0 release.
 
 ### Added
 
+- Add an opt-in `sea-orm` HTTP feature to convert native `DbErr` values into
+  redacted `HttpError` 500 responses through `?`, preserving the original source.
+- Add a separate runnable `example/post-crud-with-service` project alongside
+  the simpler posts CRUD example.
 - Enable HTTP request logging with `[furnace] mode = "debug"` in `furnace.toml`.
   Print aligned `[debug]` rows with local timestamps to millisecond precision,
   final response status codes, HTTP methods, and paths without query strings.
@@ -16,6 +20,8 @@ migration are consolidated into the first 1.0.0 release.
 
 ### Changed
 
+- Make the default posts CRUD example call its repository directly, with no
+  required service layer or repeated `map_err(InternalError::new)` calls.
 - Display all registered routes in the startup summary with uppercase HTTP
   methods and full controller-prefixed paths, using a readable header and
   aligned method/path columns.
