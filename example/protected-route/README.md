@@ -1,6 +1,6 @@
 # Protected route, validation, and logger
 
-This independent FURNACE 1.0.1 project demonstrates the
+This independent FURNACE 1.0.2 project demonstrates the
 [TPRS pattern](https://github.com/Adriannathan89/furnace-rs-rs-example): Trait,
 Provider, Repository, Service. `src/auth/traits.rs` declares the contracts;
 `mod.rs` binds them to concrete types with `.provide_with`;

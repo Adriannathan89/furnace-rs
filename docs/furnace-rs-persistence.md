@@ -1,6 +1,6 @@
 # Native SeaORM PostgreSQL persistence
 
-FURNACE 1.0.1 integrates SeaORM's native PostgreSQL connection through the
+FURNACE 1.0.2 integrates SeaORM's native PostgreSQL connection through the
 separate `furnace-rs-persistence` crate. The crate has no default backend;
 select `sea-orm-postgres` explicitly. Database support is not a facade feature.
 
@@ -8,8 +8,8 @@ select `sea-orm-postgres` explicitly. Database support is not a facade feature.
 
 ```toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.1", default-features = false, features = ["http", "runtime-tokio"] }
-furnace-rs-persistence = { version = "=1.0.1", features = ["sea-orm-postgres"] }
+furnace = { package = "furnace-rs", version = "=1.0.2", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs-persistence = { version = "=1.0.2", features = ["sea-orm-postgres"] }
 sea-orm = { version = "2.0.0", default-features = false, features = ["macros", "sqlx-postgres", "runtime-tokio-rustls"] }
 ```
 
@@ -106,10 +106,13 @@ and `Debug` retain operation/category information while hiding native sources;
 explicit `std::error::Error::source()` access retains the underlying error.
 Conversion to a core error uses `FURNACE140`.
 
-Database errors do not map automatically to HTTP responses. The Posts CRUD
-controller explicitly converts query failures with `InternalError::new`, and
-returns `NotFound` for absent posts. Applications own query policy and client
-messages.
+The opt-in `sea-orm` feature on `furnace-rs` lets HTTP handlers propagate native
+query `DbErr` values with `?` into redacted HTTP 500 responses. The
+[simple CRUD example](../example/posts-crud/) uses this conversion and returns
+`NotFound` for absent posts; the [service variant](../example/post-crud-with-service/)
+shows an optional layer for business logic. Applications own domain-specific
+query policies and client messages. Typed connector `PersistenceError` values
+remain separate from query errors.
 
 The connector suppresses tracing while polling SeaORM connection establishment,
 including callbacks inside that operation, because native connection spans can
@@ -131,5 +134,5 @@ cargo test --locked -p furnace-rs-persistence --all-features \
   --test postgres --test recovery -- --ignored --test-threads=1
 ```
 
-See the [security policy](SECURITY.md), [release verification](releases/1.0.1.md),
+See the [security policy](SECURITY.md), [release verification](releases/1.0.2.md),
 and [migration guide](importance/furnace-rs-migration.md).

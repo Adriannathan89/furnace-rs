@@ -301,8 +301,10 @@ fn release_workflows_verify_v090_feature_boundaries_and_package_contents() {
             "cargo check -p furnace-rs-common --no-default-features --features http",
             "cargo check -p furnace-rs-common --no-default-features --features jwt",
             "cargo check -p furnace-rs-common --no-default-features --features cookies",
+            "cargo check -p furnace-rs-common --no-default-features --features sea-orm",
             "cargo check -p furnace-rs --no-default-features",
             "cargo check -p furnace-rs --no-default-features --features http,runtime-tokio",
+            "cargo check -p furnace-rs --no-default-features --features sea-orm",
             "cargo package --locked --workspace --no-verify",
         ] {
             assert!(
@@ -373,8 +375,8 @@ fn package_content_policy_checks_every_workspace_archive() {
 }
 
 #[test]
-fn all_packages_use_v101_pins_and_workspace_version() {
-    const VERSION: &str = "1.0.1";
+fn all_packages_use_v102_pins_and_workspace_version() {
+    const VERSION: &str = "1.0.2";
 
     let root = workspace_root();
     let workspace_manifest =
@@ -463,7 +465,8 @@ fn current_docs_describe_native_persistence() {
         "sea-orm-postgres",
         "DatabaseCauldron",
         "DatabaseConnection",
-        "InternalError::new",
+        "DbErr",
+        "sea-orm",
         "Injector::lifecycle",
     ] {
         assert!(
@@ -483,6 +486,7 @@ fn documentation_points_to_current_examples_and_released_version() {
     for path in [
         "example/hello-world/",
         "example/posts-crud/",
+        "example/post-crud-with-service/",
         "example/protected-route/",
     ] {
         assert!(
@@ -498,8 +502,8 @@ fn documentation_points_to_current_examples_and_released_version() {
             "{name} must identify the current release"
         );
         assert!(
-            source.contains("Unreleased"),
-            "{name} must distinguish checkout changes"
+            source.contains("1.0.2"),
+            "{name} must identify the prepared release"
         );
         assert!(!source.contains("preparing furnace-rs"));
         assert!(!source.contains("forthcoming 1.0.x"));

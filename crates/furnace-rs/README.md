@@ -49,6 +49,7 @@ its own manifest.
 | `logger` | `furnace-rs-common/logger` | Tracing-based application logging. |
 | `jwt` | `furnace-rs-common/jwt` | JWT service, claims, profiles, algorithms, and key handling without Axum. |
 | `cookies` | `http` + `furnace-rs-common/cookies` | Cookie extraction/response support; cookies imply HTTP. |
+| `sea-orm` | `http` + `furnace-rs-common/sea-orm` | Propagate SeaORM `DbErr` through `HttpResult` with `?` as redacted 500 errors. |
 | `runtime-tokio` | `furnace-rs-core/runtime-tokio` | Tokio support for `#[furnace_rs::main]`. |
 | `extra` | `furnace-rs-extra` | Reserved extension boundary. |
 
@@ -60,7 +61,7 @@ For an HTTP-only application, use:
 
 ~~~toml
 [dependencies]
-furnace-rs = { version = "1.0.1", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs = { version = "1.0.2", default-features = false, features = ["http", "runtime-tokio"] }
 ~~~
 
 The workspace crates use exact internal version pins. External dependency

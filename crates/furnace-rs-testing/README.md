@@ -9,10 +9,10 @@ Rust privacy still applies. Supplied values replace matching constructors.
 
 ```toml
 [dependencies]
-furnace-rs = "=1.0.1"
+furnace-rs = "=1.0.2"
 
 [dev-dependencies]
-furnace-rs-testing = "=1.0.1"
+furnace-rs-testing = "=1.0.2"
 ```
 
 Apply `#[furnace_rs::test]` to a zero-argument, nongeneric `async fn`. Cargo discovers

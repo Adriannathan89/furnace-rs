@@ -10,8 +10,8 @@ readme = "README.md"
 description = "Focused in-process test fixtures for furnace-rs"
 
 [dependencies]
-furnace-rs-core = { path = "../furnace-rs-core", version = "=1.0.1" }
-furnace-rs-common = { path = "../furnace-rs-common", version = "=1.0.1", features = ["http"] }
+furnace-rs-core = { path = "../furnace-rs-core", version = "=1.0.2" }
+furnace-rs-common = { path = "../furnace-rs-common", version = "=1.0.2", features = ["http"] }
 sea-orm = { workspace = true, features = ["mock", "runtime-tokio"] }
 futures-util.workspace = true
 axum.workspace = true

@@ -1,10 +1,11 @@
-# Posts CRUD with PostgreSQL
+# Posts CRUD with a service and PostgreSQL
 
 This independent FURNACE 1.0.2 project connects to PostgreSQL through the opt-in
 `furnace-rs-persistence` SeaORM connector. `DatabaseCauldron` supplies the native
-`DatabaseConnection` to `PostRepository`; `PostController` calls the repository
-directly and exposes the HTTP routes. The connector checks readiness before
-the HTTP listener binds and closes the connection during graceful shutdown.
+`DatabaseConnection` to `PostRepository`; `PostService` coordinates calls to the
+repository and `PostController` exposes the HTTP routes. The connector checks
+readiness before the HTTP listener binds and closes the connection during
+graceful shutdown.
 
 Requires Rust 1.94 or newer, PostgreSQL, and `psql`. From this directory:
 
@@ -40,31 +41,17 @@ The create route returns 201; delete returns 204. A missing post returns 404.
 controller runs. Database failures become redacted 500 responses, while the
 underlying error remains available to the server for diagnosis.
 
-## Simple handlers and optional services
+## When to use a service
 
-The default example needs only a controller, repository, and model. Enable the
-`sea-orm` feature on `furnace-rs` so repository errors propagate through
-`HttpResult` with `?`:
+The request flow is `PostController → PostService → PostRepository → database`.
+`PostService` is a thin forwarding layer in this example to demonstrate dependency
+wiring. Add business rules or coordinate multiple repositories here when needed.
+For straightforward CRUD, start with the [simpler example](../posts-crud/), whose
+controller calls its repository directly.
 
-```rust,ignore
-#[get]
-async fn list(&self) -> HttpResult<Json<Vec<Post>>> {
-    Ok(Json(self.repository.list().await?))
-}
-```
+Handlers use `.await?` with the opt-in `sea-orm` feature on `furnace-rs` to turn
+`DbErr` into redacted HTTP 500 responses. The service and repository keep their
+native `Result<_, DbErr>` signatures.
 
-Every `DbErr` becomes a redacted 500 response. Map an error explicitly when your
-application needs a different status, such as 409 for a known domain conflict.
-
-Use a service when there is business logic to coordinate. The runnable
-[post-crud-with-service project](../post-crud-with-service/) demonstrates that optional
-layer using the same model, repository, database configuration, and CRUD routes:
-
-```sh
-# Stop the default server first; both variants use port 3001.
-cd ../post-crud-with-service
-cargo run
-```
-
-`PostService` is deliberately a thin forwarding layer here to illustrate the
-wiring; the default application works without it.
+Both CRUD projects use port 3001 and the same database name by default. Run them
+one at a time, or adjust the port in `furnace.toml` and `DATABASE_URL` in `.env`.

@@ -10,12 +10,12 @@ readme = "README.md"
 description = "Modular Rust application framework with Axum and Passport integrations"
 
 [dependencies]
-furnace-rs-common = { path = "../furnace-rs-common", version = "=1.0.1", optional = true, default-features = false }
-furnace-rs-core = { path = "../furnace-rs-core", version = "=1.0.1" }
-furnace-rs-extra = { path = "../furnace-rs-extra", version = "=1.0.1", optional = true }
+furnace-rs-common = { path = "../furnace-rs-common", version = "=1.0.2", optional = true, default-features = false }
+furnace-rs-core = { path = "../furnace-rs-core", version = "=1.0.2" }
+furnace-rs-extra = { path = "../furnace-rs-extra", version = "=1.0.2", optional = true }
 
 [dev-dependencies]
-furnace-rs-testing = { path = "../furnace-rs-testing", version = "=1.0.1" }
+furnace-rs-testing = { path = "../furnace-rs-testing", version = "=1.0.2" }
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
@@ -28,6 +28,7 @@ common = ["http", "logger"]
 http = ["dep:furnace-rs-common", "furnace-rs-common/http"]
 jwt = ["dep:furnace-rs-common", "furnace-rs-common/jwt"]
 cookies = ["http", "furnace-rs-common/cookies"]
+sea-orm = ["http", "furnace-rs-common/sea-orm"]
 logger = ["dep:furnace-rs-common", "furnace-rs-common/logger"]
 runtime-tokio = ["furnace-rs-core/runtime-tokio"]
 extra = ["dep:furnace-rs-extra"]
