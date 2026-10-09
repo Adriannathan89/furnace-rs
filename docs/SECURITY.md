@@ -1,8 +1,18 @@
 # Security policy
 
-This repository is preparing furnace-rs **1.0.1**. Version 1.0.0 was
-published on 2026-10-03. Security fixes described in the
-[audit](SECURITY_AUDIT.md) are included in the prepared source.
+The current released version is furnace-rs **1.0.1**, released on **2026-10-06**.
+Use 1.0.1 for the latest released security and availability fixes.
+
+Version 1.0.1 adds ten-second initial-request/header and idle-body deadlines,
+rejects zero database maintenance durations, and validates inventory output
+types during construction. See the [release notes](releases/1.0.1.md),
+[HTTP runtime report](../benchmark/HTTP_RUNTIME_SECURITY.md), and
+[database/inventory report](../benchmark/DATABASE_INVENTORY_SECURITY.md).
+The [1.0.0 audit](SECURITY_AUDIT.md) retains evidence for earlier fixes.
+
+This branch also includes the Unreleased
+[validated-extractor error-redaction fix](security/2026-10-09-extractor-error-redaction.md).
+That fix is present in the checkout; it is not part of the published 1.0.1 release.
 
 ## Reporting a vulnerability
 
@@ -22,7 +32,7 @@ Distinguish a confirmed exploit from a source-level hypothesis.
 
 The security review covers the nine `furnace-rs` workspace crates, their normal
 dependency graph, CLI control transports, and documented authentication/database
-integration. The current development branch and forthcoming 1.0.x line are the
+integration. The current development branch and released 1.0.x line are the
 focus of this policy. This does not promise backports to every historical MADS
 or furnace-rs 0.x release.
 

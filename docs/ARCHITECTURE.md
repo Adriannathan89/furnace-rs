@@ -1,8 +1,8 @@
-# furnace-rs 1.0.1 Architecture (Unreleased)
+# furnace-rs architecture
 
 FURNACE separates framework-neutral construction and configuration from Axum HTTP
 delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
-The 1.0.1 preparation retains the validation, REST-error, typed configuration,
+The current implementation retains the validation, REST-error, typed configuration,
 compiler-diagnostic, machine-output, and minimal-scaffolding surface while
 removing the former Diesel and CLI migration integrations.
 
@@ -112,6 +112,11 @@ validator, sequence-index, and lexical-key order. Serde itself remains the
 deserialization authority and reports its first conversion failure. Sources,
 wire field names, issue codes, and fixed built-in messages are deliberate public
 contracts; rejected values are never copied into a built-in issue.
+
+Native deserializer error text is used only to classify fixed issue codes.
+Missing-field rejections retain any structured containing path but omit the
+missing field name when it is available only inside free-form error text:
+custom Serde implementations can put private data in that text.
 
 Native `Json<T>`, `Query<T>`, and `Path<T>` are still the ordinary Axum
 extractors. A native `Json` handler performs no FURNACE `Input` validation, which

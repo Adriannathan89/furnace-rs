@@ -1,6 +1,6 @@
 # Posts CRUD with PostgreSQL
 
-This independent FURNACE 0.9 project connects to PostgreSQL through the opt-in
+This independent FURNACE 1.0.1 project connects to PostgreSQL through the opt-in
 `furnace-rs-persistence` SeaORM connector. `DatabaseCauldron` supplies the native
 `DatabaseConnection` to `PostRepository`; `PostService` handles the use case and
 `PostController` exposes the HTTP routes. The connector checks readiness before
@@ -17,7 +17,7 @@ psql 'postgres://postgres:postgres@127.0.0.1:5432/mads_posts_example' -f migrati
 cargo run
 ```
 
-The `furnace-rs db` CLI commands were removed in 0.9. Apply the SQL file with `psql`
+The `furnace` CLI has no database commands. Apply the SQL file with `psql`
 before starting this example. `furnace.toml` reads `DATABASE_URL` through dotenv
 interpolation; `.env` is ignored by Git.
 

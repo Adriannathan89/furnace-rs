@@ -76,8 +76,8 @@ fn schema_error_response(issue: ValidationIssue, source: ValidationSource) -> Re
 
 fn data_issue(error: &JsonDataError) -> ValidationIssue {
     let path_error = find_source::<PathError<serde_json::Error>>(error);
-    let missing_field = path_error.and_then(|error| parse_missing_field(error.inner()));
-    let kind = if missing_field.is_some() {
+    let missing_field = path_error.is_some_and(|error| is_missing_field(error.inner()));
+    let kind = if missing_field {
         support::IssueKind::Required
     } else {
         support::IssueKind::InvalidType
@@ -87,10 +87,6 @@ fn data_issue(error: &JsonDataError) -> ValidationIssue {
     if let Some(error) = path_error {
         issue = apply_path(issue, error.path());
     }
-    if let Some(field) = missing_field {
-        issue = issue.at_field(field);
-    }
-
     issue
 }
 
@@ -107,14 +103,12 @@ fn query_issue(error: &FailedToDeserializeQueryString) -> ValidationIssue {
     let Some(error) = find_source::<PathError<serde_urlencoded::de::Error>>(error) else {
         return support::issue(support::IssueKind::InvalidType);
     };
-    let missing_field = parse_plain_missing_field(&error.inner().to_string());
-    let kind = if missing_field.is_some() {
+    let kind = if is_plain_missing_field(&error.inner().to_string()) {
         support::IssueKind::Required
     } else {
         support::IssueKind::InvalidType
     };
-    let issue = apply_path(support::issue(kind), error.path());
-    apply_fallback_field(issue, missing_field)
+    apply_path(support::issue(kind), error.path())
 }
 
 fn path_issue(error: &FailedToDeserializePathParams) -> ValidationIssue {
@@ -130,13 +124,12 @@ fn path_issue(error: &FailedToDeserializePathParams) -> ValidationIssue {
             support::issue(support::IssueKind::InvalidType).at_index(*index)
         }
         PathErrorKind::Message(message) => {
-            let missing_field = parse_plain_missing_field(message);
-            let kind = if missing_field.is_some() {
+            let kind = if is_plain_missing_field(message) {
                 support::IssueKind::Required
             } else {
                 support::IssueKind::InvalidType
             };
-            apply_fallback_field(support::issue(kind), missing_field)
+            support::issue(kind)
         }
         _ => support::issue(support::IssueKind::InvalidType),
     }
@@ -153,31 +146,32 @@ fn apply_path(mut issue: ValidationIssue, path: &serde_path_to_error::Path) -> V
     issue
 }
 
-fn parse_missing_field(error: &serde_json::Error) -> Option<String> {
+// Native error text may originate in an application/custom deserializer and
+// contain private data. Use its shape only to select a fixed issue code; never
+// promote any substring into client-visible field/path metadata.
+fn is_missing_field(error: &serde_json::Error) -> bool {
     let message = error.to_string();
-    let remainder = message.strip_prefix("missing field `")?;
-    let (field, location) = remainder.split_once("` at line ")?;
-    let (line, column) = location.split_once(" column ")?;
-    let is_exact_form = !field.is_empty()
+    let Some(remainder) = message.strip_prefix("missing field `") else {
+        return false;
+    };
+    let Some((field, location)) = remainder.split_once("` at line ") else {
+        return false;
+    };
+    let Some((line, column)) = location.split_once(" column ") else {
+        return false;
+    };
+    !field.is_empty()
         && !line.is_empty()
         && !column.is_empty()
         && line.bytes().all(|byte| byte.is_ascii_digit())
-        && column.bytes().all(|byte| byte.is_ascii_digit());
-    is_exact_form.then(|| field.to_owned())
+        && column.bytes().all(|byte| byte.is_ascii_digit())
 }
 
-fn parse_plain_missing_field(message: &str) -> Option<String> {
-    let field = message.strip_prefix("missing field `")?.strip_suffix('`')?;
-    (!field.is_empty()).then(|| field.to_owned())
-}
-
-fn apply_fallback_field(issue: ValidationIssue, field: Option<String>) -> ValidationIssue {
-    if issue.path().is_empty()
-        && let Some(field) = field
-    {
-        return issue.at_field(field);
-    }
-    issue
+fn is_plain_missing_field(message: &str) -> bool {
+    message
+        .strip_prefix("missing field `")
+        .and_then(|remainder| remainder.strip_suffix('`'))
+        .is_some_and(|field| !field.is_empty())
 }
 
 fn find_source<'a, T>(mut error: &'a (dyn Error + 'static)) -> Option<&'a T>

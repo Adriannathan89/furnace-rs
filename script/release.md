@@ -27,8 +27,9 @@ workspace version. The script rejects a CLI manifest that pins its own version.
 It does not edit README or changelog content, commit, tag, push, or publish.
 Review the Cargo changes and complete the release documentation manually.
 
-The 1.0.1 preparation is unreleased; see the
-[release guide](../docs/releases/1.0.1.md) for outstanding gates.
+Version 1.0.1 is released; the command above illustrates its version update.
+For subsequent releases, select the next version and follow the same gates. See
+the [release guide](../docs/releases/1.0.1.md) for the recorded verification.
 After release review and authorization, committing and pushing the prepared
 stable version to `main` activates the stable
 publication workflow, which runs its release gates, publishes missing crate versions

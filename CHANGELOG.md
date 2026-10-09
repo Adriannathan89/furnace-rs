@@ -20,6 +20,14 @@ migration are consolidated into the first 1.0.0 release.
   methods and full controller-prefixed paths, using a readable header and
   aligned method/path columns.
 
+### Security
+
+- Prevent custom Serde missing-field error text from leaking through the
+  client-visible paths of `ValidatedJson`, `ValidatedQuery`, and `ValidatedPath`
+  rejections. Retain HTTP 422, fixed messages, and structured containing paths;
+  omit field names recovered only from native error text. See the
+  [patch writeup and reproductions](docs/security/2026-10-09-extractor-error-redaction.md).
+
 ## [1.0.1] - 2026-10-06
 
 Security and availability hardening for the HTTP runtime, database pool

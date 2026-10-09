@@ -1,0 +1,29 @@
+   Compiling furnace-rs-common v1.0.1 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-common)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.74s
+     Running tests/validated_extractors.rs (target/debug/deps/validated_extractors-23070630daa17039)
+
+running 3 tests
+
+thread 'query_missing_field_custom_error_does_not_disclose_private_text' (217) panicked at crates/furnace-rs-common/tests/validated_extractors.rs:63:5:
+native deserializer text leaked in the response: {"error":{"code":"validation_error","issues":[{"code":"required","message":"required value is missing","path":["PRIVATE_SERVER_SENTINEL"],"source":"query"}],"message":"input validation failed"}}
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'path_missing_field_custom_error_does_not_disclose_private_text' (216) panicked at crates/furnace-rs-common/tests/validated_extractors.rs:63:5:
+native deserializer text leaked in the response: {"error":{"code":"validation_error","issues":[{"code":"required","message":"required value is missing","path":["PRIVATE_SERVER_SENTINEL"],"source":"path"}],"message":"input validation failed"}}
+
+thread 'json_missing_field_custom_error_does_not_disclose_private_text' (215) panicked at crates/furnace-rs-common/tests/validated_extractors.rs:63:5:
+native deserializer text leaked in the response: {"error":{"code":"validation_error","issues":[{"code":"required","message":"required value is missing","path":["PRIVATE_SERVER_SENTINEL"],"source":"body"}],"message":"input validation failed"}}
+test json_missing_field_custom_error_does_not_disclose_private_text ... FAILED
+test query_missing_field_custom_error_does_not_disclose_private_text ... FAILED
+test path_missing_field_custom_error_does_not_disclose_private_text ... FAILED
+
+failures:
+
+failures:
+    json_missing_field_custom_error_does_not_disclose_private_text
+    path_missing_field_custom_error_does_not_disclose_private_text
+    query_missing_field_custom_error_does_not_disclose_private_text
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 21 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p furnace-rs-common --test validated_extractors`

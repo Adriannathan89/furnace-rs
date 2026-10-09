@@ -5,6 +5,12 @@ were committed before release preparation at `a847743`. This document brings
 together the authentication, core/database, and all-crate reviews without
 changing their historical evidence.
 
+The current released version is **1.0.1** (2026-10-06). This document preserves
+the 1.0.0 audit snapshot; subsequent HTTP deadline, database maintenance, and
+inventory output fixes are documented in the [1.0.1 release notes](releases/1.0.1.md).
+The [extractor error-redaction report](security/2026-10-09-extractor-error-redaction.md)
+covers a separate Unreleased change in this checkout.
+
 ## Reviewed scope
 
 All nine workspace crates were reviewed: facade, core, both procedural-macro

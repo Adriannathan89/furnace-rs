@@ -33,6 +33,114 @@ use tower::ServiceExt;
 type HandlerCounter = Arc<AtomicUsize>;
 
 #[derive(Input)]
+struct MissingFieldMessageInput;
+
+impl<'de> serde::Deserialize<'de> for MissingFieldMessageInput {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // A native/custom deserializer error is not safe response metadata,
+        // even when its text looks like Serde's usual missing-field error.
+        struct RejectMap;
+        impl<'de> serde::de::Visitor<'de> for RejectMap {
+            type Value = MissingFieldMessageInput;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("an input map")
+            }
+
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                _: A,
+            ) -> Result<Self::Value, A::Error> {
+                Err(serde::de::Error::custom(
+                    "missing field `PRIVATE_SERVER_SENTINEL`",
+                ))
+            }
+        }
+        deserializer.deserialize_map(RejectMap)
+    }
+}
+
+async fn assert_missing_field_message_is_redacted(response: Response, source: &str) {
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let body = response_json(response).await;
+    assert!(
+        !body.to_string().contains("PRIVATE_SERVER_SENTINEL"),
+        "native deserializer text leaked in the response: {body}"
+    );
+    assert_eq!(
+        body,
+        validation_envelope(source, json!([]), "required", "required value is missing")
+    );
+}
+
+#[tokio::test]
+async fn json_missing_field_custom_error_does_not_disclose_private_text() {
+    async fn handler(_: ValidatedJson<MissingFieldMessageInput>) {
+        panic!("invalid extraction must not invoke the handler");
+    }
+    let response = Router::new()
+        .route("/input", post(handler))
+        .oneshot(json_request("{}", Some("application/json")))
+        .await
+        .unwrap();
+    assert_missing_field_message_is_redacted(response, "body").await;
+}
+
+#[derive(serde::Deserialize, Input)]
+struct NestedMissingFieldInput {
+    #[validate(nested)]
+    payload: MissingFieldMessageInput,
+}
+
+#[tokio::test]
+async fn json_nested_rejection_retains_structured_containing_path() {
+    async fn handler(_: ValidatedJson<NestedMissingFieldInput>) {
+        panic!("invalid extraction must not invoke the handler");
+    }
+    let response = Router::new()
+        .route("/input", post(handler))
+        .oneshot(json_request(r#"{"payload":{}}"#, Some("application/json")))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(
+        response_json(response).await,
+        validation_envelope(
+            "body",
+            json!(["payload"]),
+            "required",
+            "required value is missing"
+        )
+    );
+}
+
+#[tokio::test]
+async fn query_missing_field_custom_error_does_not_disclose_private_text() {
+    async fn handler(_: ValidatedQuery<MissingFieldMessageInput>) {
+        panic!("invalid extraction must not invoke the handler");
+    }
+    let response = Router::new()
+        .route("/", get(handler))
+        .oneshot(Request::get("/?value=1").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_missing_field_message_is_redacted(response, "query").await;
+}
+
+#[tokio::test]
+async fn path_missing_field_custom_error_does_not_disclose_private_text() {
+    async fn handler(_: ValidatedPath<MissingFieldMessageInput>) {
+        panic!("invalid extraction must not invoke the handler");
+    }
+    let response = Router::new()
+        .route("/{value}", get(handler))
+        .oneshot(Request::get("/1").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_missing_field_message_is_redacted(response, "path").await;
+}
+
+#[derive(Input)]
 struct CustomRejectedInput;
 
 impl<'de> serde::Deserialize<'de> for CustomRejectedInput {
@@ -230,7 +338,7 @@ async fn json_type_conversion_is_one_sourced_validation_issue() {
 }
 
 #[tokio::test]
-async fn json_missing_renamed_field_is_one_required_issue_at_its_external_path() {
+async fn json_missing_renamed_field_is_one_required_issue_at_its_containing_path() {
     let counter = HandlerCounter::default();
     let response = json_router(counter.clone())
         .oneshot(json_request(r#"{"count":4}"#, Some("application/json")))
@@ -240,12 +348,7 @@ async fn json_missing_renamed_field_is_one_required_issue_at_its_external_path()
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(
         response_json(response).await,
-        validation_envelope(
-            "body",
-            json!(["emailAddress"]),
-            "required",
-            "required value is missing"
-        )
+        validation_envelope("body", json!([]), "required", "required value is missing")
     );
     assert_eq!(counter.load(Ordering::SeqCst), 0);
 }
@@ -350,12 +453,7 @@ async fn query_path_query_missing_renamed_field_is_one_required_query_issue() {
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(
         response_json(response).await,
-        validation_envelope(
-            "query",
-            json!(["emailAddress"]),
-            "required",
-            "required value is missing"
-        )
+        validation_envelope("query", json!([]), "required", "required value is missing")
     );
     assert_eq!(counter.load(Ordering::SeqCst), 0);
 }
@@ -556,12 +654,7 @@ async fn query_path_path_missing_field_is_one_required_path_issue() {
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(
         response_json(response).await,
-        validation_envelope(
-            "path",
-            json!(["slug"]),
-            "required",
-            "required value is missing"
-        )
+        validation_envelope("path", json!([]), "required", "required value is missing")
     );
     assert_eq!(counter.load(Ordering::SeqCst), 0);
 }

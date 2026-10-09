@@ -9,18 +9,26 @@ errors, request validation, and opt-in native SeaORM persistence. A root
 module selects one application; startup validates its scoped graph and routes
 before it starts lifecycle hooks, checks a database, or binds a socket.
 
-## 1.0.1 release preparation
+## Released version: 1.0.1
 
 **Release date: 2026-10-06.**
 
-The workspace and local examples target **1.0.1**. This is a prepared release,
-not a statement that the packages or `v1.0.1` tag have been published. Until
-publication, build the CLI from this checkout with
-`cargo install --path crates/furnace-rs-cli --locked`.
+**1.0.1 is the current released version.** Install the released CLI with:
 
-See the [changelog](CHANGELOG.md),
+```sh
+cargo install furnace-rs-cli --version 1.0.1 --locked
+```
+
+To use this branch's implementation, install from the checkout with
+`cargo install --path crates/furnace-rs-cli --locked`. The workspace and local
+examples target 1.0.1, but this branch also contains changes listed under
+**Unreleased** in the changelog: debug request logging, an expanded startup
+route summary, and validated-extractor error redaction. Descriptions of those
+changes below refer to the checkout, rather than the published 1.0.1 packages.
+
+See the [documentation index](docs/README.md), [changelog](CHANGELOG.md),
 [migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
-[release readiness guide](docs/releases/1.0.1.md),
+[release notes and verification](docs/releases/1.0.1.md),
 [security policy](docs/SECURITY.md), and [security audit](docs/SECURITY_AUDIT.md).
 Version 1.0.1 adds HTTP header/body deadlines, validates database maintenance
 intervals, and rejects mismatched inventory outputs during construction.
@@ -73,21 +81,38 @@ See the [authoritative CLI reference](docs/CLI.md) for target selectors,
 forwarded application arguments, diagnostics, watcher behavior, inspection
 limits.
 
-For runnable FURNACE 1.0 walkthroughs, see the [three example projects](example/):
-Hello World, PostgreSQL posts CRUD, and a JWT-protected route with validation
-and logging.
+The [three independent example projects](example/) use local workspace crates.
+Run commands from each example directory so configuration loads there.
+
+| Example | Implementation | Routes | Port |
+| --- | --- | --- | ---: |
+| [Hello World](example/hello-world/) | Public controller, root registration, debug request logging | `GET /` | 3000 |
+| [Posts CRUD](example/posts-crud/) | Native SeaORM PostgreSQL connection, repository/service/controller, validated input | `POST /posts`, `GET /posts`, `GET /posts/{id}`, `PUT /posts/{id}`, `DELETE /posts/{id}` | 3001 |
+| [Protected route](example/protected-route/) | Trait bindings, in-memory repository, validated login, JWT strategy, `reader` guard, application logger | `POST /auth/login`, `GET /auth/me` | 3002 |
+
+Start the smallest example with:
+
+```sh
+cd example/hello-world
+cargo run --locked
+# In another terminal:
+curl http://127.0.0.1:3000/
+# Hello, world!
+```
+
+Posts CRUD requires PostgreSQL and applying its SQL migration with `psql` before
+startup. For the protected-route example, copy `.env.example` to `.env` first.
+Its plaintext demo credentials illustrate wiring; applications own password
+hashing and session policy. See the example guides for setup and requests.
 For repeatable HTTP load and failure checks, see the [benchmark suite](benchmark/).
 
 ## Standard application
 
 ```rust,no_run
-use furnace::prelude::*;
+use furnace_rs::prelude::*;
 
 #[controller]
 struct HelloController;
-impl Sealable for HelloController {
-    fn seals() -> SealRegistration<Self> { SealRegistration::new() }
-}
 #[controller(route = "/")]
 impl HelloController {
     #[get]
@@ -102,7 +127,7 @@ impl Cauldron for AppCauldron {
     }
 }
 
-#[furnace::main]
+#[furnace_rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {
     Furnace::burn::<AppCauldron>().await
 }
@@ -118,6 +143,10 @@ For trait or third-party outputs, select an implementer with
 the managed service/repository macros generate this contract automatically.
 Lifecycle constructors override `Injector::lifecycle` to attach resource hooks.
 Rust namespaces and `pub` visibility do not determine DI membership.
+
+Controllers without `impl Sealable` are public. Attach a typed `#[guard]` through
+`Sealable::seals` to protect a controller. `#[seal(skip)]` explicitly bypasses
+that guard for an endpoint.
 
 See the [breaking-change migration guide](docs/importance/furnace-rs-migration.md)
 for the `cauldron`, `burner`, `storage`, and `Injector` APIs and explicit output bindings.
@@ -138,6 +167,15 @@ application
     │   └── furnace-rs-common-macros
     └── furnace-rs-extra (optional)
         └── furnace-rs-core
+
+application (opt-in persistence)
+└── furnace-rs-persistence
+    └── furnace-rs-core
+
+application tests
+└── furnace-rs-testing
+    ├── furnace-rs-core
+    └── furnace-rs-common
 
 furnace-rs-cli
 ├── furnace-rs
@@ -166,7 +204,7 @@ guides for dependencies, source layout, and change ownership.
 
 ~~~toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.1" }
+furnace-rs = { version = "=1.0.1" }
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
@@ -174,8 +212,23 @@ tower = { version = "0.5", features = ["util"] }
 ~~~
 
 furnace-rs supports Rust 1.94 and uses Rust edition 2024. The default facade
-enables HTTP and logging with the Tokio runtime. For feature combinations, see the
-[facade README](crates/furnace-rs/README.md).
+enables HTTP and application logging with the Tokio runtime. The dependency
+uses the package name `furnace-rs`; Rust imports use `furnace_rs::...`,
+including `use furnace_rs::prelude::*;`, as in the runnable examples.
+
+| Facade feature | Enables |
+| --- | --- |
+| `http` | Axum routing/server, controllers, extractors, validation, REST errors, and CORS |
+| `logger` | Injectable application logging; import `LoggerCauldron` for the default console logger |
+| `jwt` | JWT signing/verification; Passport guards and strategies when combined with `http` |
+| `cookies` | Cookie extraction and response cookies; implies `http` |
+| `runtime-tokio` | Tokio entry-point support for `#[furnace_rs::main]` |
+| `common` | Convenience feature enabling `http` and `logger` |
+| `extra` | Reserved integration boundary |
+
+Use `default-features = false` to select integrations explicitly. Persistence
+and focused testing are separate dependencies. See the
+[facade README](crates/furnace-rs/README.md) for feature boundaries.
 
 ## Conventional configuration and HTTP
 
@@ -207,7 +260,7 @@ credentials = false
 max_age_seconds = 600
 ```
 
-Enable HTTP request logging by adding this to `furnace.toml`:
+Enable HTTP request logging in this checkout (an Unreleased change) with:
 
 ```toml
 [furnace]
@@ -248,6 +301,13 @@ Use the tracked [`.env.example`](.env.example) as a local template, copy it to
 the ignored `.env`, and put real secrets in process variables in CI and
 production.
 
+The serving APIs bound incomplete initial requests and HTTP/1 headers to ten
+seconds. Pending request-body reads have a ten-second idle deadline renewed by
+progress. A stalled body returns a safe 408 before response headers are sent;
+a timeout during response streaming terminates the stream. These deadlines do
+not impose a handler execution limit. HTTP/2 and upgrades remain supported;
+there is no built-in TLS configuration.
+
 ## Validated requests and REST errors
 
 Use `#[derive(serde::Deserialize, Input)]` with `ValidatedJson<T>`,
@@ -255,7 +315,7 @@ Use `#[derive(serde::Deserialize, Input)]` with `ValidatedJson<T>`,
 `body`, `query`, or `path` source, and invoke a handler only on valid input.
 
 ```rust,no_run
-use furnace::prelude::*;
+use furnace_rs::prelude::*;
 
 #[derive(serde::Deserialize, Input)]
 struct CreateUser {
@@ -267,9 +327,6 @@ struct CreateUser {
 
 #[controller]
 struct UserController;
-impl Sealable for UserController {
-    fn seals() -> SealRegistration<Self> { SealRegistration::new() }
-}
 #[controller(route = "/users")]
 impl UserController {
     #[post]
@@ -380,7 +437,7 @@ new loader or global type discovery. Derive a named configuration struct and
 request it explicitly through `Config::parse`:
 
 ```rust,no_run
-use furnace::prelude::*;
+use furnace_rs::prelude::*;
 
 #[derive(Configuration)]
 #[config(prefix = "app")]
@@ -394,7 +451,7 @@ struct AppConfig {
 
 impl Injector for AppConfig {
     type Dependencies = (Config,);
-    async fn inject((config,): Self::Dependencies) -> furnace::core::Result<Self> {
+    async fn inject((config,): Self::Dependencies) -> furnace_rs::core::Result<Self> {
         Ok(config.parse()?)
     }
 }
@@ -456,17 +513,17 @@ furnace-rs-persistence = { version = "1.0.1", features = ["sea-orm-postgres"] }
 ```rust,ignore
 use furnace_rs_persistence::sea_orm::{DatabaseConnection, DatabaseCauldron};
 
-#[furnace::cauldron]
+#[furnace_rs::cauldron]
 struct AppCauldron;
-impl furnace::Cauldron for AppCauldron {
-    fn register(self) -> furnace::CauldronRegistration<Self> {
+impl furnace_rs::Cauldron for AppCauldron {
+    fn register(self) -> furnace_rs::CauldronRegistration<Self> {
         self.import(DatabaseCauldron).provide::<UserRepository>()
     }
 }
 
-impl furnace::Injector for UserRepository {
+impl furnace_rs::Injector for UserRepository {
     type Dependencies = (DatabaseConnection,);
-    async fn inject((database,): Self::Dependencies) -> furnace::core::Result<Self> {
+    async fn inject((database,): Self::Dependencies) -> furnace_rs::core::Result<Self> {
         Ok(Self::new(database))
     }
 }
@@ -541,7 +598,7 @@ process working directory.
 
 ```rust,ignore
 use std::time::Duration;
-use furnace::prelude::*;
+use furnace_rs::prelude::*;
 
 let access = jwt.sign(
     UserClaims { user_id: 7 },
@@ -667,7 +724,7 @@ directly require `JwtService`, or the builder must explicitly provide a
 concrete `JwtService`; otherwise construction fails with `FURNACE131`.
 
 See the [current migration guide](docs/importance/furnace-rs-migration.md) and the
-[v0.5.5 security and release notes](docs/importance/version_0.5.5/passport-jwt-and-cookies.md).
+[runnable protected-route example](example/protected-route/).
 
 ## A typed HTTP route
 
@@ -676,7 +733,7 @@ Generated adapters resolve the controller once while building the router and
 call its Rust methods directly. Handlers use native Axum extractors.
 
 ```rust,no_run
-use furnace::prelude::*;
+use furnace_rs::prelude::*;
 
 #[derive(Clone, serde::Serialize)]
 struct User {
@@ -685,9 +742,6 @@ struct User {
 
 #[controller]
 struct UserController;
-impl Sealable for UserController {
-    fn seals() -> SealRegistration<Self> { SealRegistration::new() }
-}
 #[controller(route = "/readme-users")]
 impl UserController {
     #[get("/:id")]
@@ -702,7 +756,7 @@ impl Cauldron for AppCauldron {
     fn register(self) -> CauldronRegistration<Self> { self.controller::<UserController>() }
 }
 
-#[furnace::main]
+#[furnace_rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {
     Furnace::burn::<AppCauldron>().await
 }
@@ -713,7 +767,7 @@ async fn main() -> Result<(), HttpRuntimeError> {
 The prelude exports `Path<T>`, `Query<T>`, `Json<T>`, `Header<T>`, `Request`,
 `HttpResult<T>`, `Created<T>`, `NoContent`, `build_router`, `configure_router`,
 `serve`, and `serve_router`.
-`furnace::common::axum` remains the native Axum escape hatch for extractors,
+`furnace_rs::common::axum` remains the native Axum escape hatch for extractors,
 responses, routers, middleware, and Tower composition.
 
 Endpoint attributes accept `/:id` or `/{id}` and a final `/*rest` or
@@ -764,10 +818,49 @@ asynchronous or database-backed derive validators, automatic validation for
 native extractors, full-RFC/DNS email validation, login or credential
 validation, refresh endpoints or persistence/rotation/revocation, password
 hashing, CSRF, remote JWKS, JWE, third-party auto-configuration, arbitrary
-configuration sources/shapes, multiple-listener/TLS/HTTP2 server configuration,
+configuration sources/shapes, multiple-listener/TLS or configurable HTTP/2 server settings,
 JSON-wrapped run/dev streams, or scaffold database/JWT/cookie/migration/Git
 setup. Database errors never map automatically; applications own their
 delivery policy.
+
+## Focused tests
+
+Add `furnace-rs-testing = "=1.0.1"` under `[dev-dependencies]`. Annotate an async,
+zero-argument test function with `#[furnace_rs::test]`; Cargo runs it without a separate
+Tokio dependency. The local `test_fixture()` builds one registered subject's
+dependency chain without module setup.
+
+```rust
+use furnace_rs::prelude::*;
+
+#[controller]
+struct TestController;
+
+#[controller(route = "/test")]
+impl TestController {
+    #[get]
+    async fn hello(&self) -> &'static str { "Hello, world!" }
+}
+
+#[furnace_rs::test]
+async fn controller_returns_ok() {
+    test_fixture()
+        .controller::<TestController>()
+        .run(|client| async move {
+            client.get("/test").send().await.unwrap()
+                .assert_status(furnace_rs_testing::http_types::StatusCode::OK);
+        })
+        .await
+        .unwrap();
+}
+```
+
+Use `.subject::<UserService>()` and `context.resolve::<UserService>()` for direct
+service tests. Database dependencies require an explicit SeaORM
+`MockDatabase` configured with `DbBackend::Sqlite`; it queues scripted results and never opens a production
+connection. `run` awaits lifecycle shutdown on completion and unwinding assertion
+panics. See the [testing guide](crates/furnace-rs-testing/README.md) for complete service
+and controller examples, supplies, and response assertions.
 
 ## Development
 
@@ -785,7 +878,7 @@ cargo +1.94.0 test --locked --workspace --all-features
 CI also provisions PostgreSQL 16 and runs the ignored database suites plus the
 85% line-coverage gate. To run those locally, set `FURNACE_TEST_DATABASE_URL` to a
 PostgreSQL 16 database and use the commands in the
-[1.0.1 release readiness guide](docs/releases/1.0.1.md).
+[1.0.1 release verification guide](docs/releases/1.0.1.md).
 
 ## Community
 
@@ -796,34 +889,3 @@ All participants are expected to follow the [code of conduct](CODE_OF_CONDUCT.md
 
 furnace-rs is licensed under either the [Apache License 2.0](LICENSE-APACHE) or
 the [MIT License](LICENSE-MIT), at your option.
-
-## Focused tests
-
-Add `furnace-rs-testing = "=1.0.1"` under `[dev-dependencies]`. Annotate an async,
-zero-argument test function with `#[furnace::test]`; Cargo runs it without a separate
-Tokio dependency. The local `test_fixture()` builds one registered subject's
-dependency chain without module setup.
-
-```rust
-#[furnace::test]
-async fn controller_returns_ok() {
-    test_fixture()
-        .mock_database(furnace_rs_testing::sea_orm::MockDatabase::new(
-            furnace_rs_testing::sea_orm::DbBackend::Sqlite,
-        ))
-        .controller::<UserController>()
-        .run(|client| async move {
-            client.get("/users").send().await.unwrap()
-                .assert_status(furnace_rs_testing::http_types::StatusCode::OK);
-        })
-        .await
-        .unwrap();
-}
-```
-
-Use `.subject::<UserService>()` and `context.resolve::<UserService>()` for direct
-service tests. Database dependencies require an explicit SeaORM
-`MockDatabase` configured with `DbBackend::Sqlite`; it queues scripted results and never opens a production
-connection. `run` awaits lifecycle shutdown on completion and unwinding assertion
-panics. See the [testing guide](crates/furnace-rs-testing/README.md) for complete service
-and controller examples, supplies, and response assertions.

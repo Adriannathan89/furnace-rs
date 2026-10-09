@@ -18,7 +18,7 @@ facade disables those defaults and maps its own features explicitly.
 | Feature | Adds | Requires |
 | --- | --- | --- |
 | `http` | Axum 0.8 routing/server delivery, route/controller contracts, extractors, validation, REST errors, CORS, and native Axum/Tower re-exports. | `furnace-rs-core` and the HTTP dependency set. |
-| `logger` | Tracing-based application logging. | Tracing dependencies. |
+| `logger` | Timestamped console application logging. | Chrono dependency. |
 | `jwt` | `JwtService`, claims, validation profiles, algorithms, keyrings, and JWT auto-configuration. | No Axum or database dependency. |
 | `cookies` | Strict cookie extraction and checked response-cookie composition. | Implies `http` and enables the cookie/Passport macro support. |
 
@@ -126,7 +126,7 @@ require the fixtures under `crates/furnace-rs/tests/ui`.
 
 See the [architecture reference](../../docs/ARCHITECTURE.md), the
 [CLI contract](../../docs/CLI.md), and the
-[Passport example](../../docs/examples/passport_jwt.md) before changing a
+[Passport example](../../example/protected-route/README.md) before changing a
 public integration contract.
 
 Controllers without `impl Sealable` are public. Implement the trait to attach
