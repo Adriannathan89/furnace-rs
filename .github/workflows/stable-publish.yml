@@ -61,8 +61,10 @@ jobs:
           cargo check -p furnace-rs-common --no-default-features --features http
           cargo check -p furnace-rs-common --no-default-features --features jwt
           cargo check -p furnace-rs-common --no-default-features --features cookies
+          cargo check -p furnace-rs-common --no-default-features --features sea-orm
           cargo check -p furnace-rs --no-default-features
           cargo check -p furnace-rs --no-default-features --features http,runtime-tokio
+          cargo check -p furnace-rs --no-default-features --features sea-orm
           bash script/verify-package-contents.sh
       - name: Build distributable crate archives
         run: cargo package --locked --workspace --no-verify
@@ -135,6 +137,7 @@ jobs:
         run: |
           cargo update -p sea-orm --precise 2.0.0
           cargo test -p furnace-rs-persistence --features sea-orm-postgres
+          cargo test -p furnace-rs-common --no-default-features --features sea-orm --test response
 
   postgres:
     name: Verify PostgreSQL integration

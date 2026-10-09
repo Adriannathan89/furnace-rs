@@ -10,9 +10,11 @@ types during construction. See the [release notes](releases/1.0.1.md),
 [database/inventory report](../benchmark/DATABASE_INVENTORY_SECURITY.md).
 The [1.0.0 audit](SECURITY_AUDIT.md) retains evidence for earlier fixes.
 
-This branch also includes the Unreleased
+The prepared **1.0.2** release includes the
 [validated-extractor error-redaction fix](security/2026-10-09-extractor-error-redaction.md).
 That fix is present in the checkout; it is not part of the published 1.0.1 release.
+See the [1.0.2 preparation guide](releases/1.0.2.md); publication is pending the
+stable workflow.
 
 ## Reporting a vulnerability
 

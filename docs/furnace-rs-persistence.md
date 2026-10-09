@@ -1,6 +1,6 @@
 # Native SeaORM PostgreSQL persistence
 
-FURNACE 1.0.1 integrates SeaORM's native PostgreSQL connection through the
+FURNACE 1.0.2 integrates SeaORM's native PostgreSQL connection through the
 separate `furnace-rs-persistence` crate. The crate has no default backend;
 select `sea-orm-postgres` explicitly. Database support is not a facade feature.
 
@@ -8,8 +8,8 @@ select `sea-orm-postgres` explicitly. Database support is not a facade feature.
 
 ```toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.1", default-features = false, features = ["http", "runtime-tokio"] }
-furnace-rs-persistence = { version = "=1.0.1", features = ["sea-orm-postgres"] }
+furnace = { package = "furnace-rs", version = "=1.0.2", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs-persistence = { version = "=1.0.2", features = ["sea-orm-postgres"] }
 sea-orm = { version = "2.0.0", default-features = false, features = ["macros", "sqlx-postgres", "runtime-tokio-rustls"] }
 ```
 
@@ -134,5 +134,5 @@ cargo test --locked -p furnace-rs-persistence --all-features \
   --test postgres --test recovery -- --ignored --test-threads=1
 ```
 
-See the [security policy](SECURITY.md), [release verification](releases/1.0.1.md),
+See the [security policy](SECURITY.md), [release verification](releases/1.0.2.md),
 and [migration guide](importance/furnace-rs-migration.md).

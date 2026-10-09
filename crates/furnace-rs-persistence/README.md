@@ -6,7 +6,7 @@ opt-in; the crate has no default database backend.
 For PostgreSQL, depend explicitly on:
 
 ```toml
-furnace-rs-persistence = { version = "1.0.1", features = ["sea-orm-postgres"] }
+furnace-rs-persistence = { version = "1.0.2", features = ["sea-orm-postgres"] }
 ```
 
 Import `furnace_rs_persistence::sea_orm::DatabaseCauldron` in the application root.

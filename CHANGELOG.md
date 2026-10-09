@@ -6,6 +6,11 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-09
+
+Prepared for stable publication. The stable workflow creates the version tag
+and GitHub release after its verification and publication gates pass.
+
 ### Added
 
 - Add an opt-in `sea-orm` HTTP feature to convert native `DbErr` values into

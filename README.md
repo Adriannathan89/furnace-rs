@@ -3,13 +3,13 @@
 [![Latest release](https://img.shields.io/github/v/release/Adriannathan89/furnace-rs?display_name=tag&sort=semver)](https://github.com/Adriannathan89/furnace-rs/releases/latest)
 [![CI](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml)
 
-furnace-rs 1.0.1 is a Rust application framework with a framework-neutral
+furnace-rs 1.0.2 is a Rust application framework with a framework-neutral
 core, a scoped Axum HTTP runtime, source-aware typed configuration, safe REST
 errors, request validation, and opt-in native SeaORM persistence. A root
 module selects one application; startup validates its scoped graph and routes
 before it starts lifecycle hooks, checks a database, or binds a socket.
 
-## Released version: 1.0.1
+## Release status
 
 **Release date: 2026-10-06.**
 
@@ -19,17 +19,24 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 cargo install furnace-rs-cli --version 1.0.1 --locked
 ```
 
-To use this branch's implementation, install from the checkout with
-`cargo install --path crates/furnace-rs-cli --locked`. The workspace and local
-examples target 1.0.1, but this branch also contains changes listed under
-**Unreleased** in the changelog: debug request logging, an expanded startup
-route summary, validated-extractor error redaction, opt-in SeaORM HTTP error
-conversion, and simpler CRUD examples. Descriptions of those
-changes below refer to the checkout, rather than the published 1.0.1 packages.
+### Prepared release: 1.0.2
+
+The workspace and all four local examples target **1.0.2**, prepared on
+**2026-10-09**. Install the prepared CLI from this checkout with:
+
+```sh
+cargo install --path crates/furnace-rs-cli --locked
+```
+
+The [1.0.2 release notes](docs/releases/1.0.2.md) cover opt-in SeaORM HTTP error
+conversion, simpler CRUD examples with an optional service, debug request
+logging, the expanded route summary, and validated-extractor error redaction.
+Publication is pending the stable workflow. Future changes belong under
+**Unreleased** in the changelog.
 
 See the [documentation index](docs/README.md), [changelog](CHANGELOG.md),
 [migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
-[release notes and verification](docs/releases/1.0.1.md),
+[release preparation and verification](docs/releases/1.0.2.md),
 [security policy](docs/SECURITY.md), and [security audit](docs/SECURITY_AUDIT.md).
 Version 1.0.1 adds HTTP header/body deadlines, validates database maintenance
 intervals, and rejects mismatched inventory outputs during construction.
@@ -206,7 +213,7 @@ guides for dependencies, source layout, and change ownership.
 
 ~~~toml
 [dependencies]
-furnace-rs = { version = "=1.0.1" }
+furnace-rs = { version = "=1.0.2" }
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
@@ -510,10 +517,10 @@ Database provisioning comes from the separate persistence crate. Add the connect
 explicitly and import its global module in your application root:
 
 ```toml
-furnace-rs-persistence = { version = "1.0.1", features = ["sea-orm-postgres"] }
+furnace-rs-persistence = { version = "1.0.2", features = ["sea-orm-postgres"] }
 ```
 
-In this checkout, the opt-in `sea-orm` feature on `furnace-rs` adds
+The opt-in `sea-orm` feature on `furnace-rs` adds
 `From<sea_orm::DbErr> for HttpError`. HTTP handlers returning `HttpResult<T>` can
 use `repository.list().await?` directly. Database failures produce a redacted
 500 JSON envelope and preserve the original source for diagnosis. The feature
@@ -812,7 +819,7 @@ limitations, resource measurements, and interpretation guidance.
 
 ## Current scope
 
-Version 1.0.1 includes rooted module scope, conventional startup, CORS,
+Version 1.0.2 includes rooted module scope, conventional startup, CORS,
 native router composition, typed input validation, the seven REST errors,
 explicit typed configuration and redacted secrets, focused FURNACE macro
 diagnostics, Cargo-native run/dev, compiled route/graph/doctor inspection,
@@ -835,7 +842,7 @@ delivery policy.
 
 ## Focused tests
 
-Add `furnace-rs-testing = "=1.0.1"` under `[dev-dependencies]`. Annotate an async,
+Add `furnace-rs-testing = "=1.0.2"` under `[dev-dependencies]`. Annotate an async,
 zero-argument test function with `#[furnace_rs::test]`; Cargo runs it without a separate
 Tokio dependency. The local `test_fixture()` builds one registered subject's
 dependency chain without module setup.
@@ -888,7 +895,7 @@ cargo +1.94.0 test --locked --workspace --all-features
 CI also provisions PostgreSQL 16 and runs the ignored database suites plus the
 85% line-coverage gate. To run those locally, set `FURNACE_TEST_DATABASE_URL` to a
 PostgreSQL 16 database and use the commands in the
-[1.0.1 release verification guide](docs/releases/1.0.1.md).
+[1.0.2 release verification guide](docs/releases/1.0.2.md).
 
 ## Community
 

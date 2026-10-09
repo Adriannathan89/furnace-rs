@@ -13,11 +13,11 @@ stable furnace-rs release.
 ## Usage
 
 ```bash
-script/release.sh 1.0.1
+script/release.sh 1.0.2
 ```
 
-The script sets the workspace version to exactly `1.0.1`, updates every exact
-internal FURNACE crate dependency to `=1.0.1`, updates matching FURNACE package
+The script sets the workspace version to exactly `1.0.2`, updates every exact
+internal FURNACE crate dependency to `=1.0.2`, updates matching FURNACE package
 records in every `Cargo.lock`, then runs locked Cargo metadata and workspace
 checks.
 
@@ -26,14 +26,15 @@ workspace version. The script rejects a CLI manifest that pins its own version.
 
 It does not edit README or changelog content, commit, tag, push, or publish.
 Review the Cargo changes and complete the release documentation manually.
+Independent example manifests must also pin the prepared FURNACE version.
 
-Version 1.0.1 is released; the command above illustrates its version update.
-For subsequent releases, select the next version and follow the same gates. See
-the [release guide](../docs/releases/1.0.1.md) for the recorded verification.
+Version 1.0.2 is prepared locally; publication is pending the stable workflow.
+See the [release guide](../docs/releases/1.0.2.md) for changes and verification.
+For subsequent releases, select the next version and follow the same gates.
 After release review and authorization, committing and pushing the prepared
 stable version to `main` activates the stable
 publication workflow, which runs its release gates, publishes missing crate versions
-to crates.io in dependency order, and creates the `v1.0.1` Git tag and stable
+to crates.io in dependency order, and creates the `v1.0.2` Git tag and stable
 GitHub Release. Configure `CRATES_IO_TOKEN` in the GitHub `stable` environment.
 
 The workflow publishes `furnace-rs-testing` after `furnace-rs-common` and before `furnace-rs`.

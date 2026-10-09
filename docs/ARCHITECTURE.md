@@ -200,10 +200,11 @@ generate database/JWT/cookie/migration code.
 
 ## Deliberate non-goals
 
-1.0.1 does not add automatic validation to native extractors, asynchronous or
+1.0.2 does not add automatic validation to native extractors, asynchronous or
 database-backed derive validation, full-RFC or DNS email validation, automatic
-persistence-to-HTTP conversion, new configuration sources or arbitrary TOML
-shapes, global configuration discovery, generic compiler-diagnostic rewriting,
+conversion of connector `PersistenceError` values into HTTP responses, new
+configuration sources or arbitrary TOML shapes, global configuration discovery,
+generic compiler-diagnostic rewriting,
 JSON wrapping for run/dev streams, additional generators, or starter database,
 JWT, cookie, migration, and Git setup. Login,
 credential validation, password hashing, CSRF, remote JWKS, JWE, MySQL/SQLite,

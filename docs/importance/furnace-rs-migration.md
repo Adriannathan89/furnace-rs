@@ -3,8 +3,8 @@
 Version 1.0.0 introduced breaking API changes from MADS. This guide describes
 that migration; the current released version is 1.0.1 across all
 nine workspace packages, with Rust edition 2024 and MSRV 1.94.
-Use the exact registry pins below for the release, or local path dependencies
-when working with this checkout.
+This checkout prepares 1.0.2; the dependency examples below target that version.
+Use local path dependencies until publication, or exact registry pins afterward.
 There are no compatibility aliases for the removed declarations.
 
 | Previous API | Current API |
@@ -31,7 +31,7 @@ recommended for applications:
 
 ```toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.1", default-features = false, features = ["http", "jwt", "runtime-tokio"] }
+furnace = { package = "furnace-rs", version = "=1.0.2", default-features = false, features = ["http", "jwt", "runtime-tokio"] }
 serde = { version = "1", features = ["derive"] }
 ```
 

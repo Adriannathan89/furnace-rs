@@ -24,7 +24,6 @@ impl Injector<Arc<dyn AuthService>> for AuthServiceImpl {
     }
 }
 
-
 impl AuthService for AuthServiceImpl {
     fn login(&self, username: &str, password: &str) -> JwtResult<Option<String>> {
         let Some(user) = self.repository.authenticate(username, password) else {

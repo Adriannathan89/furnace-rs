@@ -1,6 +1,6 @@
 # Posts CRUD with a service and PostgreSQL
 
-This independent FURNACE 1.0.1 project connects to PostgreSQL through the opt-in
+This independent FURNACE 1.0.2 project connects to PostgreSQL through the opt-in
 `furnace-rs-persistence` SeaORM connector. `DatabaseCauldron` supplies the native
 `DatabaseConnection` to `PostRepository`; `PostService` coordinates calls to the
 repository and `PostController` exposes the HTTP routes. The connector checks
