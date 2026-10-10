@@ -6,6 +6,12 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### Security
+
+- Reject cookie Path/Domain delimiters and ASCII controls before emitting a
+  response batch, preventing supplied attributes from injecting additional
+  Set-Cookie attributes. See the [patch and reproduction](docs/security/2026-10-10-cookie-attribute-injection.md).
+
 ## [1.0.2] - 2026-10-09
 
 Released on crates.io. See the [release notes](docs/releases/1.0.2.md) for
