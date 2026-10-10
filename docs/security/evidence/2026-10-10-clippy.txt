@@ -1,0 +1,2 @@
+    Checking furnace-rs-cli v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli)
+    Finished `dev` profile [unoptimized] target(s) in 1.76s

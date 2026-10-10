@@ -24,6 +24,7 @@ migration are consolidated into the first 1.0.0 release.
 - Supply the accepted socket peer address to native HTTP `ConnectInfo`
   extractors and Passport request metadata for HTTP/1 and HTTP/2. See the
   [patch and reproduction](docs/security/2026-10-10-http-peer-address.md).
+- Record the [implementation scan and its limits](docs/security/2026-10-10-implementation-scan.md).
 
 ## [1.0.2] - 2026-10-09
 
