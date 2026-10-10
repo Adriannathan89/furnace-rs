@@ -15,6 +15,9 @@ migration are consolidated into the first 1.0.0 release.
   preventing other users from modifying generated files through permissive
   umasks. Published project directories retain `0700`. See the
   [patch and reproduction](docs/security/2026-10-10-scaffold-directory-privacy.md).
+- Reject native SeaORM `max_connections(0)` with a typed configuration error
+  before pool construction can panic. See the
+  [patch and reproduction](docs/security/2026-10-10-native-pool-capacity.md).
 
 ## [1.0.2] - 2026-10-09
 

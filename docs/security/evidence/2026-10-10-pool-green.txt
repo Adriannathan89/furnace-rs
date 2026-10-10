@@ -1,0 +1,15 @@
+    Blocking waiting for file lock on build directory
+   Compiling furnace-rs-persistence v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-persistence)
+    Finished `test` profile [unoptimized] target(s) in 52.97s
+     Running tests/connector.rs (target/debug/deps/connector-9d4bd4606d03bd5f)
+
+running 7 tests
+test connector_debug_never_discloses_url ... ok
+test native_options_reject_all_overflowing_deadlines_even_with_lazy_connections ... ok
+test unsupported_schemes_fail_before_connecting ... ok
+test unrepresentable_pool_deadline_is_rejected_without_panicking ... ok
+test zero_maintenance_deadlines_are_rejected_before_creating_a_pool ... ok
+test valid_native_timeouts_and_disabled_reaping_preserve_lazy_connections ... ok
+test native_zero_pool_capacity_returns_a_typed_error_without_panicking ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
