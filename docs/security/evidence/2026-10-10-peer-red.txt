@@ -1,0 +1,129 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.24
+   Compiling bytes v1.12.1
+   Compiling libc v0.2.189
+   Compiling itoa v1.0.18
+   Compiling pin-project-lite v0.2.17
+   Compiling hashbrown v0.17.1
+   Compiling equivalent v1.0.2
+   Compiling serde_core v1.0.229
+   Compiling futures-core v0.3.34
+   Compiling once_cell v1.21.4
+   Compiling serde v1.0.229
+   Compiling version_check v0.9.5
+   Compiling log v0.4.33
+   Compiling typenum v1.20.1
+   Compiling slab v0.4.12
+   Compiling tracing-core v0.1.36
+   Compiling tower-service v0.3.3
+   Compiling winnow v1.0.4
+   Compiling tower-layer v0.3.3
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling cfg-if v1.0.4
+   Compiling httpdate v1.0.3
+   Compiling generic-array v0.14.7
+   Compiling httparse v1.10.1
+   Compiling futures-sink v0.3.34
+   Compiling http v1.5.0
+   Compiling try-lock v0.2.5
+   Compiling indexmap v2.14.0
+   Compiling tracing v0.1.44
+   Compiling atomic-waker v1.1.2
+   Compiling mime v0.3.17
+   Compiling sync_wrapper v1.0.2
+   Compiling fnv v1.0.7
+   Compiling futures-task v0.3.34
+   Compiling zmij v1.0.23
+   Compiling autocfg v1.5.1
+   Compiling futures-util v0.3.34
+   Compiling syn v3.0.3
+   Compiling syn v2.0.119
+   Compiling want v0.3.1
+   Compiling errno v0.3.14
+   Compiling socket2 v0.6.5
+   Compiling mio v1.2.2
+   Compiling num-traits v0.2.19
+   Compiling signal-hook-registry v1.4.8
+   Compiling http-body v1.1.0
+   Compiling futures-channel v0.3.34
+   Compiling http-body-util v0.1.5
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling winnow v0.7.15
+   Compiling toml_write v0.1.2
+   Compiling bitflags v2.13.1
+   Compiling digest v0.10.7
+   Compiling serde_json v1.0.151
+   Compiling percent-encoding v2.3.2
+   Compiling smallvec v1.15.2
+   Compiling cpufeatures v0.2.17
+   Compiling getrandom v0.4.3
+   Compiling rustix v1.1.4
+   Compiling sha1 v0.10.7
+   Compiling axum-core v0.5.6
+   Compiling form_urlencoded v1.2.2
+   Compiling toml_edit v0.25.13+spec-1.1.0
+   Compiling headers-core v0.3.0
+   Compiling ryu v1.0.23
+   Compiling linux-raw-sys v0.12.1
+   Compiling base64 v0.22.1
+   Compiling memchr v2.8.3
+   Compiling headers v0.4.1
+   Compiling proc-macro-crate v3.5.0
+   Compiling serde_path_to_error v0.1.20
+   Compiling iana-time-zone v0.1.65
+   Compiling matchit v0.8.4
+   Compiling dotenvy v0.15.7
+   Compiling inventory v0.3.24
+   Compiling fastrand v2.5.0
+   Compiling chrono v0.4.45
+   Compiling tower-http v0.6.11
+   Compiling axum-extra v0.12.6
+   Compiling serde_derive v1.0.229
+   Compiling tokio-macros v2.7.2
+   Compiling tempfile v3.27.0
+   Compiling tokio v1.53.1
+   Compiling furnace-rs-core-macros v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-core-macros)
+   Compiling furnace-rs-common-macros v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-common-macros)
+   Compiling toml_datetime v0.6.11
+   Compiling serde_spanned v0.6.9
+   Compiling serde_urlencoded v0.7.1
+   Compiling toml_edit v0.22.27
+   Compiling toml v0.8.23
+   Compiling tokio-util v0.7.19
+   Compiling tower v0.5.3
+   Compiling furnace-rs-core v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-core)
+   Compiling h2 v0.4.19
+   Compiling hyper v1.11.0
+   Compiling hyper-util v0.1.20
+   Compiling axum v0.8.9
+   Compiling furnace-rs-common v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-common)
+    Finished `test` profile [unoptimized] target(s) in 24.28s
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_common-607efcb2d4259735)
+
+running 2 tests
+
+thread 'server::tests::http1_socket_peer_is_available_to_native_extractors' (379960) panicked at crates/furnace-rs-common/src/server.rs:651:9:
+assertion `left == right` failed: ConnectInfo was unavailable: b"Missing request extension: Extension of type `axum::extract::connect_info::ConnectInfo<core::net::socket_addr::SocketAddr>` was not found. Perhaps you forgot to add it? See `axum::Extension`."
+  left: 500
+ right: 200
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test server::tests::http1_socket_peer_is_available_to_native_extractors ... FAILED
+
+thread 'server::tests::http2_socket_peer_is_available_to_native_extractors' (379961) panicked at crates/furnace-rs-common/src/server.rs:651:9:
+assertion `left == right` failed: ConnectInfo was unavailable: b"Missing request extension: Extension of type `axum::extract::connect_info::ConnectInfo<core::net::socket_addr::SocketAddr>` was not found. Perhaps you forgot to add it? See `axum::Extension`."
+  left: 500
+ right: 200
+test server::tests::http2_socket_peer_is_available_to_native_extractors ... FAILED
+
+failures:
+
+failures:
+    server::tests::http1_socket_peer_is_available_to_native_extractors
+    server::tests::http2_socket_peer_is_available_to_native_extractors
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 39 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p furnace-rs-common --lib`
