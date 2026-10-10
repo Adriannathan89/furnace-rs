@@ -11,6 +11,10 @@ migration are consolidated into the first 1.0.0 release.
 - Reject cookie Path/Domain delimiters and ASCII controls before emitting a
   response batch, preventing supplied attributes from injecting additional
   Set-Cookie attributes. See the [patch and reproduction](docs/security/2026-10-10-cookie-attribute-injection.md).
+- Create Unix scaffold staging directories with mode `0700` at creation,
+  preventing other users from modifying generated files through permissive
+  umasks. Published project directories retain `0700`. See the
+  [patch and reproduction](docs/security/2026-10-10-scaffold-directory-privacy.md).
 
 ## [1.0.2] - 2026-10-09
 
