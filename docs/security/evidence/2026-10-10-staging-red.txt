@@ -1,0 +1,81 @@
+   Compiling mio v1.2.2
+   Compiling serde_json v1.0.151
+   Compiling aho-corasick v1.1.5
+   Compiling regex-syntax v0.8.11
+   Compiling proc-macro2 v1.0.107
+   Compiling inotify-sys v0.1.8
+   Compiling quote v1.0.47
+   Compiling camino v1.2.5
+   Compiling predicates-core v1.0.10
+   Compiling thiserror v2.0.20
+   Compiling thiserror-impl v2.0.20
+   Compiling float-cmp v0.10.0
+   Compiling termtree v0.5.1
+   Compiling same-file v1.0.6
+   Compiling normalize-line-endings v0.3.0
+   Compiling assert_cmd v2.2.2
+   Compiling anstyle v1.0.14
+   Compiling difflib v0.4.0
+   Compiling tokio v1.53.1
+   Compiling inotify v0.11.5
+   Compiling walkdir v2.5.0
+   Compiling predicates-tree v1.0.13
+   Compiling cargo-platform v0.1.9
+   Compiling notify-types v2.1.0
+   Compiling semver v1.0.28
+   Compiling wait-timeout v0.2.1
+   Compiling notify v8.2.0
+   Compiling syn v2.0.119
+   Compiling cargo_metadata v0.19.2
+   Compiling regex-automata v0.4.18
+   Compiling regex v1.13.1
+   Compiling bstr v1.13.1
+   Compiling predicates v3.1.4
+   Compiling tokio-util v0.7.19
+   Compiling tower v0.5.3
+   Compiling furnace-rs-core v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-core)
+   Compiling h2 v0.4.19
+   Compiling hyper v1.11.0
+   Compiling hyper-util v0.1.20
+   Compiling axum v0.8.9
+   Compiling furnace-rs-common v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-common)
+   Compiling furnace-rs v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs)
+   Compiling furnace-rs-cli v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli)
+    Finished `test` profile [unoptimized] target(s) in 17.06s
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_cli-fae3d719c9451f0f)
+
+running 1 test
+test scaffold::publish::tests::scaffold_directories_are_private_under_each_umask ... FAILED
+
+failures:
+
+---- scaffold::publish::tests::scaffold_directories_are_private_under_each_umask stdout ----
+
+thread 'scaffold::publish::tests::scaffold_directories_are_private_under_each_umask' (827) panicked at crates/furnace-rs-cli/src/scaffold/publish.rs:310:13:
+umask 000:
+running 1 test
+test scaffold::publish::tests::private_scaffold_child ... FAILED
+
+failures:
+
+failures:
+    scaffold::publish::tests::private_scaffold_child
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 77 filtered out; finished in 0.00s
+
+
+thread 'scaffold::publish::tests::private_scaffold_child' (829) panicked at crates/furnace-rs-cli/src/scaffold/publish.rs:346:17:
+assertion `left == right` failed: staging mode was 777
+  left: 511
+ right: 448
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    scaffold::publish::tests::scaffold_directories_are_private_under_each_umask
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 77 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p furnace-rs-cli --lib`

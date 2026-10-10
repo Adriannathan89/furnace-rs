@@ -6,6 +6,26 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### Security
+
+- Reject cookie Path/Domain delimiters and ASCII controls before emitting a
+  response batch, preventing supplied attributes from injecting additional
+  Set-Cookie attributes. See the [patch and reproduction](docs/security/2026-10-10-cookie-attribute-injection.md).
+- Create Unix scaffold staging directories with mode `0700` at creation,
+  preventing other users from modifying generated files through permissive
+  umasks. Published project directories retain `0700`. See the
+  [patch and reproduction](docs/security/2026-10-10-scaffold-directory-privacy.md).
+- Reject native SeaORM `max_connections(0)` with a typed configuration error
+  before pool construction can panic. See the
+  [patch and reproduction](docs/security/2026-10-10-native-pool-capacity.md).
+
+### Fixed
+
+- Supply the accepted socket peer address to native HTTP `ConnectInfo`
+  extractors and Passport request metadata for HTTP/1 and HTTP/2. See the
+  [patch and reproduction](docs/security/2026-10-10-http-peer-address.md).
+- Record the [implementation scan and its limits](docs/security/2026-10-10-implementation-scan.md).
+
 ## [1.0.2] - 2026-10-09
 
 Released on crates.io. See the [release notes](docs/releases/1.0.2.md) for

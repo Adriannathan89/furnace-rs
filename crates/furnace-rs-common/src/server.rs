@@ -329,6 +329,9 @@ pub async fn serve(
 /// Incomplete initial requests and HTTP/1 request headers expire after ten
 /// seconds without imposing a handler execution deadline.
 /// Request-body reads also have a ten-second idle deadline, renewed by progress.
+/// Each request carries the accepted socket peer in Axum's `ConnectInfo<SocketAddr>`
+/// extension, available to native extractors and Passport strategies. Forwarding
+/// headers do not replace this transport address.
 ///
 /// # Errors
 ///
@@ -440,12 +443,13 @@ async fn serve_http(
             biased;
             _ = &mut shutdown => break,
             Some(_) = connections.join_next(), if !connections.is_empty() => {},
-            (stream, _) = Listener::accept(&mut listener) => {
+            (stream, peer_addr) = Listener::accept(&mut listener) => {
                 let first_request = std::sync::Arc::new(tokio::sync::Notify::new());
                 let request_received = std::sync::Arc::clone(&first_request);
                 let connection_router = router.clone().with_state(());
-                let service = hyper::service::service_fn(move |request: axum::http::Request<hyper::body::Incoming>| {
+                let service = hyper::service::service_fn(move |mut request: axum::http::Request<hyper::body::Incoming>| {
                     request_received.notify_one();
+                    request.extensions_mut().insert(axum::extract::ConnectInfo(peer_addr));
                     let router = connection_router.clone();
                     async move {
                         let path = debug.then(|| request.uri().path().to_owned());
@@ -604,6 +608,81 @@ mod tests {
     static STARTS: AtomicUsize = AtomicUsize::new(0);
     static BINDS: AtomicUsize = AtomicUsize::new(0);
     static TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+    async fn assert_socket_peer_metadata(http2: bool) {
+        use axum::extract::ConnectInfo;
+        use hyper_util::rt::{TokioExecutor, TokioIo};
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = axum::Router::new().route(
+            "/peer",
+            axum::routing::get(|ConnectInfo(peer): ConnectInfo<SocketAddr>| async move {
+                peer.to_string()
+            }),
+        );
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
+            let _ = shutdown_rx.await;
+        }));
+        let stream = tokio::net::TcpStream::connect(address).await.unwrap();
+        let expected_peer = stream.local_addr().unwrap().to_string();
+        let request = axum::http::Request::builder()
+            .uri("http://localhost/peer")
+            .header("forwarded", "for=203.0.113.10")
+            .header("x-forwarded-for", "203.0.113.11")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let (response, client) = if http2 {
+            let (mut sender, connection) =
+                hyper::client::conn::http2::handshake(TokioExecutor::new(), TokioIo::new(stream))
+                    .await
+                    .unwrap();
+            let client = tokio::spawn(connection);
+            let response = sender.send_request(request).await.unwrap();
+            (response, client)
+        } else {
+            let (mut sender, connection) =
+                hyper::client::conn::http1::handshake(TokioIo::new(stream))
+                    .await
+                    .unwrap();
+            let client = tokio::spawn(connection);
+            let response = sender.send_request(request).await.unwrap();
+            (response, client)
+        };
+        let status = response.status();
+        let body = axum::body::to_bytes(axum::body::Body::new(response.into_body()), 1024)
+            .await
+            .unwrap();
+        client.abort();
+        let _ = shutdown_tx.send(());
+        tokio::time::timeout(Duration::from_secs(2), server)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(
+            status,
+            axum::http::StatusCode::OK,
+            "ConnectInfo was unavailable: {body:?}"
+        );
+        assert_eq!(
+            &body[..],
+            expected_peer.as_bytes(),
+            "forwarding headers must not replace the socket peer"
+        );
+    }
+
+    #[tokio::test]
+    async fn http1_socket_peer_is_available_to_native_extractors() {
+        assert_socket_peer_metadata(false).await;
+    }
+
+    #[tokio::test]
+    async fn http2_socket_peer_is_available_to_native_extractors() {
+        assert_socket_peer_metadata(true).await;
+    }
 
     #[tokio::test]
     async fn body_deadline_preserves_valid_json_and_body_size_rejections() {
