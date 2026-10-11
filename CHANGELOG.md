@@ -6,6 +6,13 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### Declarative DI beta (1.1.0-beta.1)
+
+- Add registration in the existing cauldron attribute and root-scoped compile-time dependency/visibility checks, including reachable globals and native injector outputs.
+- Add optional parameterless injection markers on burner, storage and controller fields; retain unmarked injection and legacy fluent registration.
+- Adopt declarative contracts for DatabaseCauldron and LoggerCauldron while retaining native overrides and lifecycle behavior.
+- Add a standalone compile-time DI example with a missing-logger compile-fail Cargo test. See [beta notes](docs/releases/1.1.0-beta.1.md).
+
 ### Security
 
 - Reject cookie Path/Domain delimiters and ASCII controls before emitting a

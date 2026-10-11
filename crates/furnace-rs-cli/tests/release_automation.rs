@@ -375,15 +375,15 @@ fn package_content_policy_checks_every_workspace_archive() {
 }
 
 #[test]
-fn all_packages_use_v102_pins_and_workspace_version() {
-    const VERSION: &str = "1.0.2";
+fn all_packages_use_beta_pins_and_workspace_version() {
+    const VERSION: &str = "1.1.0-beta.1";
 
     let root = workspace_root();
     let workspace_manifest =
         fs::read_to_string(root.join("Cargo.toml")).expect("workspace manifest should exist");
     assert!(
         workspace_manifest.contains(&format!("version = \"{VERSION}\"")),
-        "the workspace must remain at the approved stable version"
+        "the workspace must remain at the approved beta version"
     );
 
     let lockfile =
@@ -393,7 +393,7 @@ fn all_packages_use_v102_pins_and_workspace_version() {
             .unwrap_or_else(|error| panic!("{package} manifest should exist: {error}"));
         assert!(
             manifest.contains("version.workspace = true"),
-            "{package} must inherit the workspace stable version"
+            "{package} must inherit the workspace beta version"
         );
 
         for dependency in manifest
@@ -402,7 +402,7 @@ fn all_packages_use_v102_pins_and_workspace_version() {
         {
             assert!(
                 dependency.contains(&format!("version = \"={VERSION}\"")),
-                "{package} internal dependency must use an exact stable pin: {dependency}"
+                "{package} internal dependency must use an exact beta pin: {dependency}"
             );
         }
 

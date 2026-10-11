@@ -3,7 +3,7 @@
 [![Latest release](https://img.shields.io/github/v/release/Adriannathan89/furnace-rs?display_name=tag&sort=semver)](https://github.com/Adriannathan89/furnace-rs/releases/latest)
 [![CI](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml)
 
-furnace-rs 1.0.2 is a Rust application framework with a framework-neutral
+furnace-rs is a Rust application framework with a framework-neutral
 core, a scoped Axum HTTP runtime, source-aware typed configuration, safe REST
 errors, request validation, and opt-in native SeaORM persistence. A root
 module selects one application; startup validates its scoped graph and routes
@@ -18,7 +18,7 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 cargo install furnace-rs-cli --version 1.0.2 --locked
 ```
 
-The workspace and all four local examples target **1.0.2**. To install the CLI
+This checkout and its local examples target **1.1.0-beta.1**, with [declarative DI and compile-time root checking](docs/declarative-di.md). The beta has not been published. To install the CLI
 from this checkout instead, use:
 
 ```sh

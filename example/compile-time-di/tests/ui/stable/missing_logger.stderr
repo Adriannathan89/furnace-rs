@@ -1,0 +1,39 @@
+warning: unused import: `Furnace`
+ --> tests/ui/stable/missing_logger.rs:1:36
+  |
+1 | use furnace_rs::{burner, cauldron, Furnace, Logger};
+  |                                    ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0277]: the trait bound `furnace_rs::furnace_rs_core::__private::Branch<furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<true, furnace_rs::furnace_rs_core::__private::ConfigSlot>>, furnace_rs::furnace_rs_core::__private::Branch<furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<true, __FurnaceGreetingCauldronSlot0>>, furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<false, __FurnaceGreetingCauldronSlot1>>>>: furnace_rs::furnace_rs_core::__private::Lookup<Logger, _>` is not satisfied
+   --> tests/ui/stable/missing_logger.rs:10:1
+    |
+ 10 | #[cauldron(root, imports=[GreetingCauldron])]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `furnace_rs::furnace_rs_core::__private::Lookup<Logger, _>` is not implemented for `furnace_rs::furnace_rs_core::__private::Branch<furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<true, furnace_rs::furnace_rs_core::__private::ConfigSlot>>, furnace_rs::furnace_rs_core::__private::Branch<furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<true, __FurnaceGreetingCauldronSlot0>>, furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<false, __FurnaceGreetingCauldronSlot1>>>>`
+help: `furnace_rs::furnace_rs_core::__private::Branch<L, R>` implements trait `furnace_rs::furnace_rs_core::__private::Lookup<T, Proof>`
+   --> /home/ryynn/Desktop/furnace-rs/crates/furnace-rs-core/src/di_contract.rs:67:1
+    |
+ 67 | impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs::furnace_rs_core::__private::Lookup<T, furnace_rs::furnace_rs_core::__private::Left<P>>`
+ 68 | impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs::furnace_rs_core::__private::Lookup<T, furnace_rs::furnace_rs_core::__private::Right<P>>`
+    = note: required for `(Logger,)` to implement `furnace_rs::furnace_rs_core::__private::CheckDependencies<furnace_rs::furnace_rs_core::__private::Branch<furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<true, furnace_rs::furnace_rs_core::__private::ConfigSlot>>, furnace_rs::furnace_rs_core::__private::Branch<furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<true, __FurnaceGreetingCauldronSlot0>>, furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<false, __FurnaceGreetingCauldronSlot1>>>>, (_,)>`
+note: required for `__FurnaceGreetingCauldronMetadata` to implement `furnace_rs::furnace_rs_core::__private::CheckModule<furnace_rs::furnace_rs_core::__private::Branch<furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<true, furnace_rs::furnace_rs_core::__private::ConfigSlot>>, furnace_rs::furnace_rs_core::__private::Branch<furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<true, __FurnaceGreetingCauldronSlot0>>, furnace_rs::furnace_rs_core::__private::Leaf<furnace_rs::furnace_rs_core::__private::Enabled<false, __FurnaceGreetingCauldronSlot1>>>>, ((_,),)>`
+   --> tests/ui/stable/missing_logger.rs:8:1
+    |
+  8 | #[cauldron(providers=[Greeting], exports=[Greeting])]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound introduced here
+  9 | struct GreetingCauldron;
+    |        ^^^^^^^^^^^^^^^^
+note: required by a bound in `furnace_rs::furnace_rs_core::__private::assert_module_scope`
+   --> /home/ryynn/Desktop/furnace-rs/crates/furnace-rs-core/src/di_contract.rs:160:8
+    |
+158 | pub fn assert_module_scope<M, S, P>(_: S)
+    |        ------------------- required by a bound in this function
+159 | where
+160 |     M: CheckModule<S, P>,
+    |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module_scope`
+    = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

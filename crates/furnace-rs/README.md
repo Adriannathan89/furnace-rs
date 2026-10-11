@@ -61,7 +61,7 @@ For an HTTP-only application, use:
 
 ~~~toml
 [dependencies]
-furnace-rs = { version = "1.0.2", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs = { version = "1.1.0-beta.1", default-features = false, features = ["http", "runtime-tokio"] }
 ~~~
 
 The workspace crates use exact internal version pins. External dependency
@@ -139,3 +139,5 @@ and the full workspace feature gate.
 See the [root workspace guide](../../README.md#workspace-crates),
 [architecture reference](../../docs/ARCHITECTURE.md), and
 [contribution guide](../../CONTRIBUTING.md).
+
+The `1.1.0-beta.1` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.

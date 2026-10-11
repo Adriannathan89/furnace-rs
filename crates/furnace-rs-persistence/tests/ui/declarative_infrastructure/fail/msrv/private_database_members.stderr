@@ -20,14 +20,14 @@ note: required for `__FurnaceAppMetadata` to implement `CheckModule<Branch<Branc
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ^^^
   | |
   | unsatisfied trait bound introduced here
-note: required by a bound in `assert_module`
+note: required by a bound in `assert_module_scope`
  --> $WORKSPACE/crates/furnace-rs-core/src/di_contract.rs
   |
-  | pub fn assert_module<M, S, P>()
-  |        ------------- required by a bound in this function
+  | pub fn assert_module_scope<M, S, P>(_: S)
+  |        ------------------- required by a bound in this function
   | where
   |     M: CheckModule<S, P>,
-  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module`
+  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module_scope`
   = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: the trait bound `Branch<Branch<Leaf<Enabled<true, ConfigSlot>>, Branch<Leaf<Enabled<true, __FurnaceAppSlot0>>, Leaf<Enabled<false, __FurnaceDatabaseCauldronSlot0>>>>, Branch<Leaf<Enabled<false, __FurnaceDatabaseCauldronSlot1>>, Branch<Leaf<Enabled<false, __FurnaceDatabaseCauldronSlot2>>, Leaf<Enabled<true, __FurnaceDatabaseCauldronSlot3>>>>>: Lookup<SeaOrmPostgres, _>` is not satisfied
@@ -52,12 +52,12 @@ note: required for `__FurnaceAppMetadata` to implement `CheckModule<Branch<Branc
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ^^^
   | |
   | unsatisfied trait bound introduced here
-note: required by a bound in `assert_module`
+note: required by a bound in `assert_module_scope`
  --> $WORKSPACE/crates/furnace-rs-core/src/di_contract.rs
   |
-  | pub fn assert_module<M, S, P>()
-  |        ------------- required by a bound in this function
+  | pub fn assert_module_scope<M, S, P>(_: S)
+  |        ------------------- required by a bound in this function
   | where
   |     M: CheckModule<S, P>,
-  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module`
+  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module_scope`
   = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -1,12 +1,13 @@
-# FURNACE 1.0 examples
+# FURNACE examples
 
-These are four independent Rust projects. Run each command from its example
+These are independent Rust projects. The checkout targets the 1.1.0-beta.1 release. Run each command from its example
 directory so `Furnace::burn` loads that project's `furnace.toml` and optional `.env`.
 Each project uses local workspace crates to demonstrate the new explicit cauldron
 registration API.
 
 | Project | What it demonstrates | Port |
 | --- | --- | --- |
+| [compile-time-di](compile-time-di/) | Declared root checking and a missing-dependency Cargo test | None |
 | [hello-world](hello-world/) | The smallest FURNACE HTTP application | 3000 |
 | [posts-crud](posts-crud/) | PostgreSQL and SeaORM CRUD with a controller calling its repository directly | 3001 |
 | [post-crud-with-service](post-crud-with-service/) | The same CRUD routes with an optional `PostService` layer | 3001 |

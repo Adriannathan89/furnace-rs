@@ -7,6 +7,8 @@ define behavior.
 
 | Guide | Purpose |
 | --- | --- |
+| [Declarative DI beta](declarative-di.md) | Compile-time roots, API, visibility and migration |
+| [1.1.0-beta.1 preparation](releases/1.1.0-beta.1.md) | Beta scope, limits and verification |
 | [Architecture](ARCHITECTURE.md) | Crate boundaries, graph selection, construction, and lifecycle |
 | [CLI](CLI.md) | Scaffolding, run/dev, inspection, target selection, and JSON schema 2 |
 | [Persistence](furnace-rs-persistence.md) | Native SeaORM PostgreSQL setup, configuration, and errors |

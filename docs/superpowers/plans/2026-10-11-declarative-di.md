@@ -62,12 +62,12 @@ This task is a feasibility gate, not a distributable feature. Do not copy a fail
 
 **Interfaces:** Consumes existing `CauldronRegistration::{provide,provide_with,controller,import,export,global}`. Produces generated `impl Cauldron` from `providers`, `controllers`, `imports`, `exports`, `global`, and `root` syntax; root proof emission is attached in Task 3.
 
-- [ ] Add tests comparing declarative and manual registration definitions for provider output/constructor pairs, import/export lists, controller membership, and global status. Add `#[cauldron(providers = [])]` empty-module coverage and bare/zero-argument attribute manual-impl legacy pass fixtures.
-- [ ] Run `cargo test -p furnace-rs-core --test declarative_di` and the targeted facade UI suite; verify the new syntax fails for the intended unsupported-arguments reason before implementation.
-- [ ] Parse declarations in `cauldron/declaration.rs`; retain explicit bare-attribute handling. Generate the same runtime registration and inventory descriptor in the declarative branch. Do not add a second descriptor or alter existing constructor metadata.
-- [ ] Add compile-fail fixtures for duplicate options/list entries, unknown options, malformed `Output => Injector`, generic/non-unit structs, and manual-impl conflicts. Check qualified paths and empty lists.
-- [ ] Run the new runtime and UI tests plus existing core cauldron registration/scope tests; assert equivalent runtime selection and preserved legacy acceptance.
-- [ ] Commit the tested registration extension with its regression tests. Preserve actual red/green command evidence; do not manufacture a failing historical commit.
+- [x] Add tests comparing declarative and manual registration definitions for provider output/constructor pairs, import/export lists, controller membership, and global status. Add `#[cauldron(providers = [])]` empty-module coverage and bare/zero-argument attribute manual-impl legacy pass fixtures.
+- [x] Run `cargo test -p furnace-rs-core --test declarative_di` and the targeted facade UI suite; verify the new syntax fails for the intended unsupported-arguments reason before implementation.
+- [x] Parse declarations in `cauldron/declaration.rs`; retain explicit bare-attribute handling. Generate the same runtime registration and inventory descriptor in the declarative branch. Do not add a second descriptor or alter existing constructor metadata.
+- [x] Add compile-fail fixtures for duplicate options/list entries, unknown options, malformed `Output => Injector`, generic/non-unit structs, and manual-impl conflicts. Check qualified paths and empty lists.
+- [x] Run the new runtime and UI tests plus existing core cauldron registration/scope tests; assert equivalent runtime selection and preserved legacy acceptance.
+- [x] Commit the tested registration extension with its regression tests. Preserve actual red/green command evidence; do not manufacture a failing historical commit.
 
 ## Task 3: Verify the complete declared root graph
 
@@ -75,14 +75,14 @@ This task is a feasibility gate, not a distributable feature. Do not copy a fail
 
 **Interfaces:** Consumes the exact proven Task 1 witness API and Task 2 declaration model. Produces `__private::ModuleContract`, `__private::ModuleMetadata`, `__private::CheckModule<Scope, Proof>`, marker/tree/identity helpers established by the probe, and an unconditional generated assertion for `#[cauldron(root, ...)]`.
 
-- [ ] Write compile pass/fail fixtures for local injection, direct export access, hidden/non-exported dependencies, transitive non-global access, native `Output => Injector`, invalid exports, controller export rejection, and missing metadata on an imported legacy module.
-- [ ] Add global fixtures: nested global success, missing global import, unexported global member, unrelated linked global, independent roots, diamond, overlap cases, and rejection of a marked root imported by another marked root. Include an empty `main` case proving checks run even without burn/build calls.
-- [ ] Run the UI harness before implementing contracts; confirm failures arise from missing support, then establish snapshots only after implementing correct behavior.
-- [ ] Generate metadata, same-name macro callbacks, staged child-description bootstrap and the root collector, and per-module normalized balanced scope assertions using the proven mechanism. Include compiler identity guards before any declaration/slot deduplication. Validate actual `Injector::Dependencies` for every selected constructor/controller. Model `Config` as the existing intrinsic; do not treat arbitrary auto-configuration outputs as universal capabilities.
-- [ ] Add a fixture where a runtime native override is supplied but a declared constructor dependency is absent: the marked root must still fail. Add a fixture proving an arbitrary runtime auto-config output is not statically assumed.
-- [ ] Verify renamed core/facade dependencies, raw identifiers, private module types, duplicate authored paths, and qualified bindings. Adjust generated metadata visibility without requiring application types to become public.
-- [ ] Run `cargo test -p furnace-rs-core --test declarative_di_ui` on stable and Rust 1.94; follow the existing compiler-specific snapshot convention. Run facade path-resolution tests and core no-default-features checks.
-- [ ] Commit the compile-time contract and tests after the feasibility gate and all required pass cases succeed.
+- [x] Write compile pass/fail fixtures for local injection, direct export access, hidden/non-exported dependencies, transitive non-global access, native `Output => Injector`, invalid exports, controller export rejection, and missing metadata on an imported legacy module.
+- [x] Add global fixtures: nested global success, missing global import, unexported global member, unrelated linked global, independent roots, diamond, overlap cases, and rejection of a marked root imported by another marked root. Include an empty `main` case proving checks run even without burn/build calls.
+- [x] Run the UI harness before implementing contracts; confirm failures arise from missing support, then establish snapshots only after implementing correct behavior.
+- [x] Generate metadata, same-name macro callbacks, staged child-description bootstrap and the root collector, and per-module normalized balanced scope assertions using the proven mechanism. Include compiler identity guards before any declaration/slot deduplication. Validate actual `Injector::Dependencies` for every selected constructor/controller. Model `Config` as the existing intrinsic; do not treat arbitrary auto-configuration outputs as universal capabilities.
+- [x] Add a fixture where a runtime native override is supplied but a declared constructor dependency is absent: the marked root must still fail. Add a fixture proving an arbitrary runtime auto-config output is not statically assumed.
+- [x] Verify renamed core/facade dependencies, raw identifiers, private module types, duplicate authored paths, and qualified bindings. Adjust generated metadata visibility without requiring application types to become public.
+- [x] Run `cargo test -p furnace-rs-core --test declarative_di_ui` on stable and Rust 1.94; follow the existing compiler-specific snapshot convention. Run facade path-resolution tests and core no-default-features checks.
+- [x] Commit the compile-time contract and tests after the feasibility gate and all required pass cases succeed.
 
 ## Task 4: Accept explicit injection markers on managed types
 
@@ -90,12 +90,12 @@ This task is a feasibility gate, not a distributable feature. Do not copy a fail
 
 **Interfaces:** Consumes parameterless field `#[inject]`; produces the same generated `Injector::Dependencies`, managed handle, descriptor, and lifecycle as the existing field injection model.
 
-- [ ] Add fixtures for marked burner/storage/controller dependencies, mixed marked/unmarked fields, fully unmarked legacy declarations, repeated markers, and rejected `#[inject(token = ...)]` arguments.
-- [ ] Run the targeted facade UI suite and macro unit tests; confirm valid markers currently fail at field-attribute validation.
-- [ ] Accept and consume one parameterless marker per field. Keep every managed field in the constructor tuple; retain documentation attributes and existing diagnostics for other unsupported attributes. Preserve automatic controller dependencies and HTTP metadata.
-- [ ] Add runtime coverage comparing marked/unmarked handles, dependency values, and lifecycle behavior; retain HTTP preflight-before-construction tests. A controller dependency supplied only by runtime auto-configuration is not a static capability unless the root contract declares it.
-- [ ] Run core injector/lifecycle tests, facade UI tests with HTTP enabled, and common HTTP preflight tests. Verify the macro removes helpers before emitting field definitions.
-- [ ] Commit injection-marker support and compatibility tests.
+- [x] Add fixtures for marked burner/storage/controller dependencies, mixed marked/unmarked fields, fully unmarked legacy declarations, repeated markers, and rejected `#[inject(token = ...)]` arguments.
+- [x] Run the targeted facade UI suite and macro unit tests; confirm valid markers currently fail at field-attribute validation.
+- [x] Accept and consume one parameterless marker per field. Keep every managed field in the constructor tuple; retain documentation attributes and existing diagnostics for other unsupported attributes. Preserve automatic controller dependencies and HTTP metadata.
+- [x] Add runtime coverage comparing marked/unmarked handles, dependency values, and lifecycle behavior; retain HTTP preflight-before-construction tests. A controller dependency supplied only by runtime auto-configuration is not a static capability unless the root contract declares it.
+- [x] Run core injector/lifecycle tests, facade UI tests with HTTP enabled, and common HTTP preflight tests. Verify the macro removes helpers before emitting field definitions.
+- [x] Commit injection-marker support and compatibility tests.
 
 ## Task 5: Adopt the database and logger contracts across crates
 
@@ -103,13 +103,13 @@ This task is a feasibility gate, not a distributable feature. Do not copy a fail
 
 **Interfaces:** Consumes declarative metadata, `global`, `Output => Injector`, intrinsic `Config`, and field markers. Produces static metadata for existing public `DatabaseCauldron` and `LoggerCauldron` paths with unchanged runtime registrations.
 
-- [ ] Add cross-crate compile fixtures with a burner consuming both `DatabaseConnection` and `Logger`: importing both global modules into the root must compile; removing either import must fail naming that dependency. Include feature gating so the database fixtures run only with the SeaORM feature enabled.
-- [ ] Verify these tests fail because the current infrastructure modules lack static metadata, rather than connecting to a database.
-- [ ] Replace each infrastructure module's manual `impl Cauldron` with the exact declarations in the spec. Keep injectors, inventory provider descriptors, connector configuration, native connection output, and lifecycle hooks intact.
-- [ ] Test that database factory/connector remain private, logger-only consumers work without persistence enabled, unrelated globals do not leak, and legacy roots can still import both migrated modules.
-- [ ] Extend runtime tests for supplied native database/logger values, default logger selection, connection readiness/shutdown, and one instance through diamond imports. Use existing SeaORM mocks for ordinary CI; real PostgreSQL tests remain conditional on the existing environment.
-- [ ] Run common/logger tests and persistence module tests with `sea-orm-postgres`, plus the cross-crate UI suite. Report real-database tests separately if their required service is unavailable.
-- [ ] Commit the infrastructure adoption and regression tests.
+- [x] Add cross-crate compile fixtures with a burner consuming both `DatabaseConnection` and `Logger`: importing both global modules into the root must compile; removing either import must fail naming that dependency. Include feature gating so the database fixtures run only with the SeaORM feature enabled.
+- [x] Verify these tests fail because the current infrastructure modules lack static metadata, rather than connecting to a database.
+- [x] Replace each infrastructure module's manual `impl Cauldron` with the exact declarations in the spec. Keep injectors, inventory provider descriptors, connector configuration, native connection output, and lifecycle hooks intact.
+- [x] Test that database factory/connector remain private, logger-only consumers work without persistence enabled, unrelated globals do not leak, and legacy roots can still import both migrated modules.
+- [x] Extend runtime tests for supplied native database/logger values, default logger selection, connection readiness/shutdown, and one instance through diamond imports. Use existing SeaORM mocks for ordinary CI; real PostgreSQL tests remain conditional on the existing environment.
+- [x] Run common/logger tests and persistence module tests with `sea-orm-postgres`, plus the cross-crate UI suite. Report real-database tests separately if their required service is unavailable.
+- [x] Commit the infrastructure adoption and regression tests.
 
 ## Task 6: Deliver a tested example, migration guide, and beta metadata
 
@@ -117,15 +117,17 @@ This task is a feasibility gate, not a distributable feature. Do not copy a fail
 
 **Interfaces:** Consumes the final macro grammar and infrastructure exports. Produces an independently runnable example and a reproducible compile-fail case invoked through `cargo test`.
 
-- [ ] Add a standalone example using burner, inject, local providers, global LoggerCauldron, and a marked root. Add trybuild fixtures where the logger import is absent. Document a database-root variant using DatabaseCauldron and its required feature/configuration without requiring PostgreSQL for the default run.
-- [ ] First run the compile-fail harness against a valid fixture to prove it rejects unexpected compilation; then remove the dependency registration/import and run it normally. A passing test means the invalid application failed compilation for the intended DI reason.
-- [ ] Run `cargo run --manifest-path example/compile-time-di/Cargo.toml` and `cargo test --manifest-path example/compile-time-di/Cargo.toml` on stable and Rust 1.94. Keep fixture failures out of ordinary example builds.
-- [ ] Update docs with `root`, global reachability, explicit markers, native bindings, compatibility, static override restrictions, and runtime failure boundaries. Test public examples and update the existing persistence example to show database/logger root imports where features permit.
-- [ ] Prepare `1.1.0-beta.1` workspace versions and exact internal pins, regenerate relevant lockfiles, and update existing release-policy tests only where they intentionally assert version alignment. Add beta release notes; do not publish.
-- [ ] Run `cargo fmt --all --check`, `cargo test --workspace --all-features`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, and `RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps`.
-- [ ] Run the relevant MSRV UI/runtime suites with `cargo +1.94.0`, core `--no-default-features` build, existing facade feature matrix, renamed dependency tests, and existing standalone example checks. Distinguish environment failures from DI regressions.
-- [ ] Review the whole diff for graph parity, visibility changes, macro hygiene, proof ambiguity, beta pins, and unsupported guarantees. Use an independent reviewer only when explicitly authorized; fix confirmed findings and rerun affected checks.
-- [ ] Commit the example, docs, and beta preparation with verification evidence. Leave the branch ready for review without publishing or integration actions.
+- [x] Add a standalone example using burner, inject, local providers, global LoggerCauldron, and a marked root. Add trybuild fixtures where the logger import is absent. Document a database-root variant using DatabaseCauldron and its required feature/configuration without requiring PostgreSQL for the default run.
+- [x] First run the compile-fail harness against a valid fixture to prove it rejects unexpected compilation; then remove the dependency registration/import and run it normally. A passing test means the invalid application failed compilation for the intended DI reason.
+- [x] Run `cargo run --manifest-path example/compile-time-di/Cargo.toml` and `cargo test --manifest-path example/compile-time-di/Cargo.toml` on stable and Rust 1.94. Keep fixture failures out of ordinary example builds.
+- [x] Update docs with `root`, global reachability, explicit markers, native bindings, compatibility, static override restrictions, and runtime failure boundaries. Test public examples and update the existing persistence example to show database/logger root imports where features permit.
+- [x] Prepare `1.1.0-beta.1` workspace versions and exact internal pins, regenerate relevant lockfiles, and update existing release-policy tests only where they intentionally assert version alignment. Add beta release notes; do not publish.
+- [x] Run `cargo fmt --all --check`, `cargo test --workspace --all-features`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, and `RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps`.
+- [x] Run the relevant MSRV UI/runtime suites with `cargo +1.94.0`, core `--no-default-features` build, existing facade feature matrix, renamed dependency tests, and existing standalone example checks. Distinguish environment failures from DI regressions.
+- [x] Review the whole diff for graph parity, visibility changes, macro hygiene, proof ambiguity, beta pins, and unsupported guarantees. Use an independent reviewer only when explicitly authorized; fix confirmed findings and rerun affected checks.
+- [x] Commit the example, docs, and beta preparation with verification evidence. Leave the branch ready for review without publishing or integration actions.
+
+**Execution status:** Tasks 1–6 complete. See [beta verification and TDD history](../../releases/1.1.0-beta.1-verification.md) for final test evidence and review resolution. The branch remains local and separate; no publication or integration action was performed.
 
 ## Handoff and completion criteria
 

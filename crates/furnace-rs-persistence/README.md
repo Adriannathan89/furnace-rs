@@ -6,7 +6,7 @@ opt-in; the crate has no default database backend.
 For PostgreSQL, depend explicitly on:
 
 ```toml
-furnace-rs-persistence = { version = "1.0.2", features = ["sea-orm-postgres"] }
+furnace-rs-persistence = { version = "1.1.0-beta.1", features = ["sea-orm-postgres"] }
 ```
 
 Import `furnace_rs_persistence::sea_orm::DatabaseCauldron` in the application root.
@@ -34,3 +34,5 @@ This also suppresses tracing from callbacks running inside that operation.
 Tracing outside connection establishment and configured statement logging on
 the returned database connection keep their existing behavior. Applications
 should keep credentials out of their own diagnostic messages and log events.
+
+The `1.1.0-beta.1` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.

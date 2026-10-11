@@ -39,7 +39,11 @@ pub fn main(arguments: TokenStream, item: TokenStream) -> TokenStream {
     }
 }
 
-/// Declares a non-generic unit struct composed through `Cauldron::register`.
+/// Declares a unit cauldron with fluent or declarative registration.
+///
+/// Bare attributes retain manual `Cauldron::register`. Options declare providers,
+/// controllers, imports, exports and global status; `root` checks the reachable
+/// declarative graph's typed dependencies during compilation.
 #[proc_macro_attribute]
 pub fn cauldron(arguments: TokenStream, item: TokenStream) -> TokenStream {
     cauldron::expand(arguments.into(), item.into())

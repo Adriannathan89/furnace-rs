@@ -9,6 +9,8 @@ Application authors normally reach this API through the
 framework-neutral integration or when a contribution changes graph,
 configuration, provider, or lifecycle behavior.
 
+The beta also supports [declarative DI and root compile-time checks](../../docs/declarative-di.md) through the existing cauldron attribute, alongside legacy fluent registration.
+
 ## What this crate owns
 
 - Source-aware scalar and string-array `Config` values, configuration builders,
