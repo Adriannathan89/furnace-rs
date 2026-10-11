@@ -1,0 +1,11 @@
+[package]
+name = "furnace-missing-dependency-example"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+publish = false
+
+[dependencies]
+furnace-rs = { path = "../../crates/furnace-rs", version = "=1.1.0-beta.1", default-features = false }
+
+[workspace]
