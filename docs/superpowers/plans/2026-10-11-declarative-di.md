@@ -39,16 +39,18 @@
 
 ## Task 1: Prove root-scoped globals without changing product behavior
 
+**Execution status:** gate failed on Rust 1.94 and stable 1.96. Local/direct/single-global cases passed and missing/root-isolation cases were correctly rejected, but valid diamonds, visibility overlaps, and two distinct globals produced E0283. Explicit proof controls passed. See the spec's Task 1 feasibility result. Tasks 2–6 have not started; revise the proof mechanism before proceeding.
+
 **Files:** Create a throwaway `/tmp/furnace-di-contract-probe/` Rust project and record conclusions in the spec's feasibility section. Do not install production dependencies.
 
 **Interfaces:** Consumes the proposed `ModuleContract` associated metadata and `CheckGraph<Root, Proof>` contract. Produces a verified witness mechanism and exact helper trait definitions for Task 3.
 
-- [ ] Write isolated cases for local resolution, direct exports, a nested global, and `(Config,)` intrinsic inputs; missing types must fail using Rust type identity.
-- [ ] Run `cargo +1.94.0 check --manifest-path /tmp/furnace-di-contract-probe/Cargo.toml` for each valid graph; record exit 0. Run invalid variants separately; record a missing trait-bound failure.
-- [ ] Add a diamond reaching the same global, local/global overlap, direct/global overlap, two roots with different imports, and a linked but unreachable global. Valid overlap cases must compile; the missing-global root must fail.
-- [ ] Run the same matrix on installed stable Rust. Inspect errors for trait solver ambiguity or overflow on valid graphs.
+- [x] Write isolated cases for local resolution, direct exports, a nested global, and `(Config,)` intrinsic inputs; missing types must fail using Rust type identity.
+- [x] Run `cargo +1.94.0 check --manifest-path /tmp/furnace-di-contract-probe/Cargo.toml` for each valid graph; record exit 0. Run invalid variants separately; record a missing trait-bound failure.
+- [x] Add a diamond reaching the same global, local/global overlap, direct/global overlap, two roots with different imports, and a linked but unreachable global. Valid overlap cases must compile; the missing-global root must fail. Required overlap outcomes failed; this is a gate failure, not a passing implementation.
+- [x] Run the same matrix on installed stable Rust. Inspect errors for trait solver ambiguity or overflow on valid graphs.
 - [ ] Document the exact working metadata/witness signatures, inference entry point, duplicate handling, and recursion behavior in the spec before Task 3.
-- [ ] If any required valid case cannot be represented without changing public syntax or semantics, stop product implementation and report the concrete failed case. Revise the spec before proceeding; do not substitute runtime checking for the promised compile check.
+- [x] If any required valid case cannot be represented without changing public syntax or semantics, stop product implementation and report the concrete failed case. Revise the spec before proceeding; do not substitute runtime checking for the promised compile check.
 
 This task is a feasibility gate, not a distributable feature. Do not copy a failing prototype into the engine.
 

@@ -1,6 +1,6 @@
 # Declarative cauldron registration and compile-time DI
 
-Status: draft for review; this document specifies an API proposal, not implemented support.
+Status: API and plan approved; implementation started. Task 1 rejected the proposed inferred-witness mechanism. Product implementation is gated on revising and verifying that mechanism.
 
 ## Intent and bounded scope
 
@@ -110,6 +110,61 @@ The root assertion requests a `CheckGraph<Root, Proof>` implementation whose pro
 This mechanism is a candidate, not a claim that Rust inference can trivially solve graph membership. The first implementation task must demonstrate global resolution, valid diamonds, local/global overlap, direct/global overlap, and root isolation on Rust 1.94. If candidate proofs are ambiguous or cannot represent these cases, stop before product migration, record the limitation, and revise the mechanism. Do not weaken visibility, require user-authored proof types, or silently disable global checking to get tests passing.
 
 Static import cycles and constructor cycles are not promised new structured compile-time diagnostics. Invalid recursive graphs may be rejected by the compiler; the existing runtime diagnostics remain available on legacy paths. Acyclic valid graphs must compile without application changes to recursion limits.
+
+### Task 1 feasibility result (2026-10-11)
+
+The approved documentation was committed as `a83c803`. A dependency-free throwaway Cargo project at `/tmp/furnace-di-contract-probe/` tested the proposed inferred proof selection on Rust 1.94.0 and stable Rust 1.96.0. Both compilers produced the same outcomes:
+
+| Probe | Required outcome | Actual outcome |
+| --- | --- | --- |
+| Local provider | Compile | Compiles |
+| Direct imported export | Compile | Compiles |
+| One reachable nested global | Compile | Compiles |
+| Intrinsic Config | Compile | Compiles |
+| Missing provider | Reject | E0277 |
+| Global reachable only from another root | Reject | E0277 |
+| Two-root isolation | Reject the missing root | E0277 |
+| Diamond reaching the same global | Compile | E0283: ambiguous proof |
+| Local/global access to the same owner | Compile | E0283: ambiguous proof |
+| Direct-import/global access to the same owner | Compile | E0283: ambiguous proof |
+| Two globals with different exported outputs | Compile | E0283: ambiguous proof |
+
+The reduced model uses these implementations:
+
+```rust
+impl<M, R, T> Resolves<R, T, Local> for M
+where M: Provides<T> {}
+
+impl<M, R, T, I, P> Resolves<R, T, Direct<I, P>> for M
+where M: Imports<I, P>, I: Exports<T> {}
+
+impl<M, R, T, I, P> Resolves<R, T, Global<I, P>> for M
+where R: Reachable<I, P>, I: GlobalExports<T> {}
+
+fn assert_dependency<M, R, T, P>()
+where M: Resolves<R, T, P> {}
+```
+
+The intended assertion supplies `P = _`. Rust does not choose one of several valid proof types, and does not uniquely select a reachable module by searching all its nested export bounds. The two-global case fails even without duplicate outputs or diamond imports. Associated module lists and a graph-validation wrapper cannot by themselves remove this ambiguity at dependency selection.
+
+Control experiments explicitly selecting `Local`, `Direct<DatabaseModule, First>`, or `Global<DatabaseModule, Left>` compile on both toolchains. This confirms the modeled dependency is present and isolates inference as the blocker; requiring those types from application authors would violate the approved API. This result rejects this candidate mechanism, not compile-time DI in general.
+
+An alternative using safe constant equality of `TypeId::of::<T>()` also fails on the MSRV: `PartialEq` is not a stable const trait (E0658). Do not rely on unsafe transmutation of TypeId's unspecified representation, nightly features, stringified type names, or source-tree scanning to bypass that boundary.
+
+Reproduction while the throwaway project exists:
+
+```sh
+cargo +1.94.0 check --offline --manifest-path /tmp/furnace-di-contract-probe/Cargo.toml --bin nested_global
+# Expected exit 0.
+cargo +1.94.0 check --offline --manifest-path /tmp/furnace-di-contract-probe/Cargo.toml --bin two_global_outputs
+# Observed exit 101, E0283.
+cargo +1.94.0 check --offline --manifest-path /tmp/furnace-di-contract-probe/Cargo.toml --bin direct_global_explicit
+# Expected exit 0, diagnostic control only; not an acceptable public API.
+```
+
+Next design requirement: generate or otherwise establish a canonical output-to-owner lookup before dependency verification, deduplicate repeated paths to one module, and choose visibility without existential inference among competing witnesses. Cross-crate metadata, private types, aliases, and root-specific globals must remain covered. A macro metadata/callback approach is a candidate for investigation, not a verified replacement. Revise the mechanism and repeat the feasibility matrix before Tasks 2–6; all application syntax and infrastructure requirements above remain the intended contract.
+
+No engine, infrastructure, version, or example files were changed by Task 1. Its gate deliberately prevents shipping the rejected checker or declaring a weaker runtime-only migration complete.
 
 ## DatabaseCauldron contract
 
