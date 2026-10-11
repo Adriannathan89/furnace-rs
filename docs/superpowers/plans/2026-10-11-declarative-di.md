@@ -18,6 +18,8 @@
 - Root verification adds no public proof argument to burn/builder APIs and no separate checked-cauldron attribute.
 - Unmarked managed fields remain injected; sixteen-dependency tuple limit remains unchanged.
 - Globals are visible only inside the marked root's reachable graph and only through exported outputs.
+- Declarative imports support cauldron declarations, qualified paths, re-exports, and `use` aliases; module `type` aliases retain support only in legacy fluent registration.
+- Zero-argument cauldron attributes retain legacy behavior; empty declarative modules use `providers = []`.
 - Beta target is `1.1.0-beta.1`; do not publish, tag, merge, or push.
 
 ## Review Focus
@@ -39,7 +41,7 @@
 
 ## Task 1: Prove root-scoped globals without changing product behavior
 
-**Execution status:** gate failed on Rust 1.94 and stable 1.96. Local/direct/single-global cases passed and missing/root-isolation cases were correctly rejected, but valid diamonds, visibility overlaps, and two distinct globals produced E0283. Explicit proof controls passed. See the spec's Task 1 feasibility result. Tasks 2–6 have not started; revise the proof mechanism before proceeding.
+**Execution status:** complete after mechanism revision and the user's beta-import restriction approval. The replacement marker/callback protocol passed 30 expected-outcome checks on Rust 1.94/stable and two additional declaration-ID collision controls. The original inference failure is retained in the spec as evidence; product tasks now consume the revised signatures and protocol.
 
 **Files:** Create a throwaway `/tmp/furnace-di-contract-probe/` Rust project and record conclusions in the spec's feasibility section. Do not install production dependencies.
 
@@ -49,7 +51,7 @@
 - [x] Run `cargo +1.94.0 check --manifest-path /tmp/furnace-di-contract-probe/Cargo.toml` for each valid graph; record exit 0. Run invalid variants separately; record a missing trait-bound failure.
 - [x] Add a diamond reaching the same global, local/global overlap, direct/global overlap, two roots with different imports, and a linked but unreachable global. Valid overlap cases must compile; the missing-global root must fail. Required overlap outcomes failed; this is a gate failure, not a passing implementation.
 - [x] Run the same matrix on installed stable Rust. Inspect errors for trait solver ambiguity or overflow on valid graphs.
-- [ ] Document the exact working metadata/witness signatures, inference entry point, duplicate handling, and recursion behavior in the spec before Task 3.
+- [x] Document the exact working metadata/witness signatures, inference entry point, duplicate handling, and recursion behavior in the spec before Task 3.
 - [x] If any required valid case cannot be represented without changing public syntax or semantics, stop product implementation and report the concrete failed case. Revise the spec before proceeding; do not substitute runtime checking for the promised compile check.
 
 This task is a feasibility gate, not a distributable feature. Do not copy a failing prototype into the engine.
@@ -60,7 +62,7 @@ This task is a feasibility gate, not a distributable feature. Do not copy a fail
 
 **Interfaces:** Consumes existing `CauldronRegistration::{provide,provide_with,controller,import,export,global}`. Produces generated `impl Cauldron` from `providers`, `controllers`, `imports`, `exports`, `global`, and `root` syntax; root proof emission is attached in Task 3.
 
-- [ ] Add tests comparing declarative and manual registration definitions for provider output/constructor pairs, import/export lists, controller membership, and global status. Add `#[cauldron()]` empty-module coverage and a bare-attribute/manual-impl legacy pass fixture.
+- [ ] Add tests comparing declarative and manual registration definitions for provider output/constructor pairs, import/export lists, controller membership, and global status. Add `#[cauldron(providers = [])]` empty-module coverage and bare/zero-argument attribute manual-impl legacy pass fixtures.
 - [ ] Run `cargo test -p furnace-rs-core --test declarative_di` and the targeted facade UI suite; verify the new syntax fails for the intended unsupported-arguments reason before implementation.
 - [ ] Parse declarations in `cauldron/declaration.rs`; retain explicit bare-attribute handling. Generate the same runtime registration and inventory descriptor in the declarative branch. Do not add a second descriptor or alter existing constructor metadata.
 - [ ] Add compile-fail fixtures for duplicate options/list entries, unknown options, malformed `Output => Injector`, generic/non-unit structs, and manual-impl conflicts. Check qualified paths and empty lists.
@@ -71,12 +73,12 @@ This task is a feasibility gate, not a distributable feature. Do not copy a fail
 
 **Files:** Core `src/di_contract.rs`, `src/lib.rs`, `Cargo.toml` if trybuild is needed; macro `cauldron/contract.rs`; core declarative UI harness and fixtures; facade `tests/path_resolution.rs` and its existing consumer fixtures.
 
-**Interfaces:** Consumes the exact proven Task 1 witness API and Task 2 declaration model. Produces `__private::ModuleContract`, `__private::CheckGraph<Root, Proof>`, helper types/traits established by the probe, and an unconditional generated assertion for `#[cauldron(root, ...)]`.
+**Interfaces:** Consumes the exact proven Task 1 witness API and Task 2 declaration model. Produces `__private::ModuleContract`, `__private::ModuleMetadata`, `__private::CheckModule<Scope, Proof>`, marker/tree/identity helpers established by the probe, and an unconditional generated assertion for `#[cauldron(root, ...)]`.
 
 - [ ] Write compile pass/fail fixtures for local injection, direct export access, hidden/non-exported dependencies, transitive non-global access, native `Output => Injector`, invalid exports, controller export rejection, and missing metadata on an imported legacy module.
 - [ ] Add global fixtures: nested global success, missing global import, unexported global member, unrelated linked global, independent roots, diamond, overlap cases, and rejection of a marked root imported by another marked root. Include an empty `main` case proving checks run even without burn/build calls.
 - [ ] Run the UI harness before implementing contracts; confirm failures arise from missing support, then establish snapshots only after implementing correct behavior.
-- [ ] Generate metadata and assertions using the proven mechanism. Validate actual `Injector::Dependencies` for every selected constructor/controller. Model `Config` as the existing intrinsic; do not treat arbitrary auto-configuration outputs as universal capabilities.
+- [ ] Generate metadata, same-name macro callbacks, the staged graph collector, and per-module normalized balanced scope assertions using the proven mechanism. Include compiler identity guards before any declaration/slot deduplication. Validate actual `Injector::Dependencies` for every selected constructor/controller. Model `Config` as the existing intrinsic; do not treat arbitrary auto-configuration outputs as universal capabilities.
 - [ ] Add a fixture where a runtime native override is supplied but a declared constructor dependency is absent: the marked root must still fail. Add a fixture proving an arbitrary runtime auto-config output is not statically assumed.
 - [ ] Verify renamed core/facade dependencies, raw identifiers, private module types, duplicate authored paths, and qualified bindings. Adjust generated metadata visibility without requiring application types to become public.
 - [ ] Run `cargo test -p furnace-rs-core --test declarative_di_ui` on stable and Rust 1.94; follow the existing compiler-specific snapshot convention. Run facade path-resolution tests and core no-default-features checks.

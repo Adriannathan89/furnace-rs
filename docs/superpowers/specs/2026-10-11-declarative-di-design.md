@@ -1,6 +1,6 @@
 # Declarative cauldron registration and compile-time DI
 
-Status: API and plan approved; implementation started. Task 1 rejected the proposed inferred-witness mechanism. Product implementation is gated on revising and verifying that mechanism.
+Status: approved, implementation in progress. The first witness mechanism was rejected; the revised marker/callback mechanism passed the feasibility matrix. The user approved the beta import restriction recorded below.
 
 ## Intent and bounded scope
 
@@ -58,10 +58,10 @@ A root contract is tied to that declared graph. Reusing a non-root module as a r
 
 - Supported declaration remains a non-generic unit struct.
 - `providers = [Type, Output => InjectorType]` registers ordinary and selected injectors respectively. `Output => InjectorType` maps to existing `provide_with::<Output, InjectorType>()`.
-- `controllers = [Type]`, `imports = [ModuleType]`, and `exports = [OutputType]` contain Rust type paths, including qualified paths. Imports name unit module types, not runtime expressions.
+- `controllers = [Type]`, `imports = [ModuleType]`, and `exports = [OutputType]` contain Rust paths, including qualified paths. Imports name unit cauldron declarations or their re-exports/`use ... as ...` aliases, not runtime expressions. For the beta, module aliases declared using `type Alias = Module` are unsupported in declarative imports; the user explicitly approved this restriction. Output/dependency type aliases remain supported, and the fluent API retains its existing module type-alias support.
 - `global` makes this module's exported providers available throughout its reachable root graph.
 - `root` enables complete verification of the declared application graph.
-- `#[cauldron()]` is an empty declarative module. Bare `#[cauldron]` preserves the legacy expansion and manual `impl Cauldron` contract. The parser must distinguish these forms explicitly.
+- Bare `#[cauldron]` and zero-argument `#[cauldron()]` both preserve the legacy expansion and manual `impl Cauldron` contract. Use `#[cauldron(providers = [])]` for an empty declarative module. Attribute macros receive identical empty argument streams for the two zero-argument forms; preserving legacy behavior takes precedence over the initial proposal to distinguish them.
 - List options default to empty; flags default to false. Unknown options, repeated options, duplicate authored list entries, unsupported shapes, and malformed binding syntax have macro diagnostics at the authored syntax.
 - Entries containing aliases or different paths to the same type remain subject to type checking and existing runtime ownership checks; token comparison must not pretend to resolve Rust type identity.
 - Whole declarations may use existing supported conditional-compilation placement. Per-entry runtime expressions and per-entry `cfg` are outside this first grammar.
@@ -90,26 +90,29 @@ The verifier must prove dependencies for every registered provider and controlle
 
 ## Engine mechanism and feasibility gate
 
-Use additive, hidden public metadata required for cross-crate macro expansion:
+Use additive, hidden public metadata and marker traits under `__private`:
 
 ```rust
-pub trait ModuleContract: Cauldron {
-    type Imports;
-    type Providers;
-    type Exports;
-    type Global;
-}
-
-pub trait CheckGraph<Root, Proof>: ModuleContract {}
+pub trait ModuleContract: Cauldron { type Metadata: ModuleMetadata; }
+pub trait ModuleMetadata { const KEY: &'static str; }
+pub trait SlotAt<const INDEX: usize> { type Slot: SlotKey; }
+pub trait ImportAt<const INDEX: usize> { type Metadata: ModuleMetadata; }
+pub trait Represents<T> {}
+pub trait Lookup<T, Proof> {}
+pub trait CheckModule<Scope, Proof> {}
 ```
 
-Metadata lists describe output/injector pairs, controller injectors, imports, and export types. Generated runtime registration uses the same declaration as this metadata; there must not be two separately authored registrations.
+Each declared output has an opaque public marker implementing `Represents<ActualOutput>`. This keeps actual private types out of public associated metadata while retaining Rust type identity for dependency checks. Module check implementations read actual `Injector::Dependencies`; private constructors may appear in implementation bounds without becoming public associated types. Imports expose public metadata proxies through associated-type equality bounds, avoiding leakage of private imported module types.
 
-The root assertion requests a `CheckGraph<Root, Proof>` implementation whose proof is inferred. Indexed membership witnesses distinguish local, direct-import, and reachable-global capabilities. Cross-crate Rust types, not stringified type names, establish identity. Implementation may add narrowly scoped helper traits and list types behind `__private`; it must not add a public proof argument to `Furnace::burn` or builder methods.
+Each declarative cauldron also supplies a same-name function-like metadata macro. Ordinary `use` aliases and re-exports carry both type and macro namespaces; `type` aliases do not, explaining the agreed beta restriction. An import's macro callback resolves its canonical callback path at the importing declaration's original scope. Its public proxy is addressed through the importing metadata's `ImportAt` projection, so expansion at the root does not need access to private source modules or their import names.
 
-This mechanism is a candidate, not a claim that Rust inference can trivially solve graph membership. The first implementation task must demonstrate global resolution, valid diamonds, local/global overlap, direct/global overlap, and root isolation on Rust 1.94. If candidate proofs are ambiguous or cannot represent these cases, stop before product migration, record the limitation, and revise the mechanism. Do not weaken visibility, require user-authored proof types, or silently disable global checking to get tests passing.
+A staged internal collector visits the declared root's graph, retains canonical declaration IDs, and expands each node's imports once. The root generates separate scopes containing locals, direct imported exports, reachable global exports, and intrinsic Config. Visibility is evaluated using closed constant expressions, not generic const expressions. Repeated slots in a scope are disabled before trait lookup. The resulting balanced marker tree admits one membership proof for each valid output; local/global and direct/global access to one owner are normalized rather than presented as competing candidates.
 
-Static import cycles and constructor cycles are not promised new structured compile-time diagnostics. Invalid recursive graphs may be rejected by the compiler; the existing runtime diagnostics remain available on legacy paths. Acyclic valid graphs must compile without application changes to recursion limits.
+Declaration/slot keys are indexing aids, not type-identity substitutes. Every repeated declaration ID requires an unconditional `SameWhen<true, A, B>` proof that its metadata proxy types are equal. Equal normalization keys likewise require equal marker types. Rust type equality therefore protects deduplication against identifier collisions; `Represents<ActualOutput>` establishes output identity. No type-name hashing, unsafe TypeId conversion, source-tree scanning, or process-global proc-macro registration state is used.
+
+Generated runtime registrations and static metadata come from one declaration. Public burn/builder signatures stay unchanged; the root emits unconditional checks for every reachable module, including unused roots. Hidden proof arguments remain generated implementation details.
+
+Static import cycles and constructor cycles are not promised new structured compile-time diagnostics. Runtime validation remains authoritative for those cases. Balanced scope trees avoid linear-depth membership proofs; the callback protocol still operates within Rust's compiler expansion limits and must be covered by representative multi-module tests.
 
 ### Task 1 feasibility result (2026-10-11)
 
@@ -165,6 +168,20 @@ cargo +1.94.0 check --offline --manifest-path /tmp/furnace-di-contract-probe/Car
 Next design requirement: generate or otherwise establish a canonical output-to-owner lookup before dependency verification, deduplicate repeated paths to one module, and choose visibility without existential inference among competing witnesses. Cross-crate metadata, private types, aliases, and root-specific globals must remain covered. A macro metadata/callback approach is a candidate for investigation, not a verified replacement. Revise the mechanism and repeat the feasibility matrix before Tasks 2–6; all application syntax and infrastructure requirements above remain the intended contract.
 
 No engine, infrastructure, version, or example files were changed by Task 1. Its gate deliberately prevents shipping the rejected checker or declaring a weaker runtime-only migration complete.
+
+### Revised feasibility result (2026-10-11)
+
+A separate throwaway workspace at `/tmp/furnace-di-metadata-probe/` implements the marker tree, constant visibility/normalization, compiler identity guards, cross-crate same-name metadata callbacks, and generated root assertions. It has separate core, macro, infrastructure, and application crates; the application renames its infrastructure dependency. It models the infrastructure contract; actual Furnace database/logger migration remains Task 5.
+
+Thirty checks across Rust 1.94.0 and stable 1.96.0 matched their expected outcomes:
+
+- Valid: two global outputs, `use` aliases, nested global reachability, diamond with direct/global overlap, private providers and private imported modules, direct non-global exports.
+- Invalid: missing database, missing logger, a linked but unreachable global, root isolation, a non-global output without a direct import, transitive non-global access, an unexported private global member, and a marker-key identity collision.
+- Module `type` aliases were rejected as expected under the user-approved beta restriction. Dependency/output aliases, including a native `Arc<String>` output owned outside the infrastructure crate, worked.
+
+Two additional negative controls deliberately reused a declaration ID for distinct database/logger metadata proxies. Both compilers rejected this with `SameWhen<true, A, B>` rather than silently merging different modules. Results and compiler logs are retained in the throwaway workspace, including `results.json`.
+
+This passes the revised feasibility gate for the agreed beta contract. Production tasks must still test generated declarations, macro hygiene/diagnostics, HTTP controllers, actual infrastructure integration, and representative graph size; prototype results do not establish those features as implemented.
 
 ## DatabaseCauldron contract
 
