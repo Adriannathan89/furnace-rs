@@ -21,6 +21,7 @@ toml_edit.workspace = true
 cargo_metadata.workspace = true
 tempfile = "3"
 tokio.workspace = true
+trybuild.workspace = true
 
 [features]
 default = []

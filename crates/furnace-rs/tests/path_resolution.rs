@@ -9,6 +9,7 @@ fn attributes_expand_for_supported_dependency_paths() {
     let target_dir = manifest_dir.join("../../target/macro-consumers");
 
     for consumer in [
+        "declarative_metadata",
         "direct_default",
         "direct_alias",
         "direct_renamed",

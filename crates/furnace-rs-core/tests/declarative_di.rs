@@ -101,6 +101,12 @@ fn empty_declarations_and_zero_argument_legacy_attributes_keep_their_contracts()
 }
 
 struct Controller;
+impl Injector for Controller {
+    type Dependencies = ();
+    async fn inject(_: ()) -> furnace_rs_core::Result<Self> {
+        Ok(Self)
+    }
+}
 #[furnace_rs_core::cauldron(controllers = [Controller])]
 struct ControllerModule;
 

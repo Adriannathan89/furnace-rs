@@ -3,6 +3,7 @@ use crate::path::core_path;
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Error, Fields, ItemStruct};
+pub(crate) mod contract;
 mod declaration;
 
 pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
@@ -21,6 +22,10 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     }
     let core = core_path()?;
     let ident = &item.ident;
+    let contract = declaration
+        .as_ref()
+        .map(|d| contract::expand(d, &item, &core))
+        .transpose()?;
     let registration = declaration.as_ref().map(|d| {
         let providers = d.providers.iter().map(|p| {
             let output = &p.output;
@@ -44,6 +49,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     Ok(quote! {
         #item
         #registration
+        #contract
         impl #ident {
             #[doc = "Starts registration of a local provider output."]
             #[track_caller]

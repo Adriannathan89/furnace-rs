@@ -1,0 +1,25 @@
+error[E0277]: the trait bound `(): furnace_rs_core::__private::SameWhen<true, B, A>` is not satisfied
+  --> tests/ui/declarative_di/fail/stable/declaration_collision.rs:8:1
+   |
+ 8 | / furnace_rs_core::__private::__di_collect! { [furnace_rs_core::__private] [
+ 9 | | uid("a") module(A) members() exports() global(false) root(true) direct(false) imports()
+10 | | uid("a") module(B) members() exports() global(false) root(false) direct(false) imports()
+11 | | ] }
+   | |___^ the trait `furnace_rs_core::__private::SameWhen<true, B, A>` is not implemented for `()`
+   |
+help: `()` implements trait `furnace_rs_core::__private::SameWhen<MATCH, A, B>`
+  --> src/di_contract.rs
+   |
+   | impl<A, B> SameWhen<false, A, B> for () {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::SameWhen<false, A, B>`
+   | impl<A> SameWhen<true, A, A> for () {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::SameWhen<true, A, A>`
+note: required by a bound in `furnace_rs_core::__private::assert_identity`
+  --> src/di_contract.rs
+   |
+   | pub fn assert_identity<const MATCH: bool, A, B>()
+   |        --------------- required by a bound in this function
+   | where
+   |     (): SameWhen<MATCH, A, B>,
+   |         ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `assert_identity`
+   = note: this error originates in the macro `furnace_rs_core::__private::__di_collect` (in Nightly builds, run with -Z macro-backtrace for more info)

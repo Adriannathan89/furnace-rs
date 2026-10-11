@@ -39,3 +39,11 @@ fn main() {
     let _ = framework_result;
     let _ = status_name;
 }
+
+#[runtime::burner]
+struct DeclarativeService;
+#[runtime::cauldron(providers=[DeclarativeService], exports=[DeclarativeService])]
+struct DeclarativeModule;
+use DeclarativeModule as DeclarativeAlias;
+#[runtime::cauldron(root, imports=[DeclarativeAlias])]
+struct DeclarativeApp;

@@ -47,6 +47,24 @@ pub fn cauldron(arguments: TokenStream, item: TokenStream) -> TokenStream {
         .into()
 }
 
+/// Internal callback that resolves imported metadata macro identities.
+#[doc(hidden)]
+#[proc_macro]
+pub fn __di_bootstrap(input: TokenStream) -> TokenStream {
+    cauldron::contract::bootstrap(input.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// Internal callback that collects a declared root graph and emits checks.
+#[doc(hidden)]
+#[proc_macro]
+pub fn __di_collect(input: TokenStream) -> TokenStream {
+    cauldron::contract::collect(input.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
 /// Declares a named-field or unit struct as an application service.
 #[proc_macro_attribute]
 pub fn burner(arguments: TokenStream, item: TokenStream) -> TokenStream {
