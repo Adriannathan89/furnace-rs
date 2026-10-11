@@ -85,3 +85,18 @@ uses the pinned local-source locks in `benchmark/targets/furnace-rs/locks/`. Thi
 does not claim to measure the published crate archive. The Axum `Cargo.lock`
 and Fiber `go.sum` are included separately. See [benchmark setup](README.md#furnace-rs-vs-native-axum-vs-go-fiber-v2)
 for build and rerun commands.
+
+## 2026-10-11 — DI beta runtime comparison
+
+This rerun compares the released **FURNACE 1.0.2** source at `8c08bba` with **1.1.0-beta.1** source at `613ee02`, then places the existing Axum and Fiber targets alongside them. The full raw runs, host details, lock hashes, contract outcomes and pair order are in [the machine-readable result](results/2026-10-11-di-runtime-comparison.json).
+
+The FURNACE versions ran in five paired rounds with order alternated. Each round first passed the benchmark contracts and warmup, then measured 12,000 Hello requests or 6,000 valid login/profile pairs (12,000 HTTP responses) at 64 clients. Axum 0.8.9 and Fiber 2.52.15 each ran five fresh stress measurements immediately afterward. All measured responses had expected status/content and zero errors. Medians below are medians of per-run throughput and p95.
+
+| Workload | FURNACE 1.0.2 | FURNACE 1.1.0-beta.1 | Axum 0.8.9 | Fiber v2.52.15 |
+| --- | ---: | ---: | ---: | ---: |
+| Hello World | 8,821.6 resp/s; 17.06 ms | 9,042.4 resp/s; 16.84 ms | 8,885.4 resp/s; 17.51 ms | 8,942.7 resp/s; 17.19 ms |
+| Login + protected JWT read | 6,891.9 resp/s; 20.52 ms | 6,948.6 resp/s; 20.98 ms | 6,999.9 resp/s; 20.29 ms | 6,993.9 resp/s; 20.50 ms |
+
+In the paired runs, beta median throughput was **2.5% higher** for Hello World and **0.8% higher** for JWT than 1.0.2. Their per-run throughput ranges overlap for both workloads; p95 also overlaps. This small sample found no material runtime change from the DI release. It does not establish that every application graph has zero overhead. The DI assertions are compile-time checks; this HTTP run measures end-to-end framework and application work, not compiler cost or an isolated injector lookup.
+
+PostgreSQL CRUD is omitted because no local server or disposable `BENCH_*_DATABASE_URL` databases were available. The pre-existing 2026-09-25 comparison table above remains historical: it measures FURNACE 0.9.1 and should not be conflated with this beta rerun. The refreshed Fiber oversized-body probe again reset the connection; this is recorded separately by the existing runner and is outside the valid-request throughput samples.

@@ -240,8 +240,8 @@ does not edit the examples or their lockfiles. The reproducible local-source
 lockfiles are stored in `benchmark/targets/furnace-rs/locks/`; on a warm cache,
 `build_furnace.py --offline` avoids network access. The helper uses an existing
 lock from that directory with `--locked`, or saves the resolved lock after the
-first successful build. Results from this command measure **local FURNACE 1.0.0
-source**, not the published crate archive.
+first successful build. Results measure the **local FURNACE version in the current checkout**,
+not a published crate archive.
 
 For CRUD, provision three isolated PostgreSQL databases, apply the same
 `example/posts-crud/migrations/001_create_posts.sql` to each, and set:
