@@ -11,14 +11,8 @@ impl HelloController {
     }
 }
 
-#[cauldron]
+#[cauldron(root, controllers = [HelloController])]
 struct AppCauldron;
-
-impl furnace_rs::core::Cauldron for AppCauldron {
-    fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-        self.controller::<HelloController>()
-    }
-}
 
 #[furnace_rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {

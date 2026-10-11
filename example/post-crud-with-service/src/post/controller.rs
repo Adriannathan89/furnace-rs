@@ -7,6 +7,7 @@ use super::{
 
 #[controller]
 pub struct PostController {
+    #[inject]
     service: PostService,
 }
 

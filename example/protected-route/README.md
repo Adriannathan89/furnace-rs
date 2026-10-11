@@ -1,9 +1,9 @@
 # Protected route, validation, and logger
 
-This independent FURNACE 1.0.2 project demonstrates the
+This independent FURNACE 1.1.0-beta.1 project demonstrates the
 [TPRS pattern](https://github.com/Adriannathan89/furnace-rs-rs-example): Trait,
 Provider, Repository, Service. `src/auth/traits.rs` declares the contracts;
-`mod.rs` binds them to concrete types with `.provide_with`;
+`mod.rs` binds them with `Output => Injector` entries in `#[cauldron(providers = [...])]`;
 `repository.rs` holds one demo user in memory; `service.rs` signs a JWT and resolves identity; `controller.rs`
 handles HTTP. Passport verifies the Bearer JWT before the guarded handler runs.
 
@@ -49,3 +49,9 @@ hashes, and apply your session and rotation policy.
 `AuthController` exposes public login without a `Sealable` implementation.
 `ProfileController` seals every profile endpoint with `ProfileGuard`; both
 controllers are explicitly registered in `AuthCauldron`.
+
+`AppCauldron` is a checked root importing `AuthCauldron` and global
+`LoggerCauldron`. `AuthCauldron` explicitly registers `JwtService`, whose
+constructor reads the existing Passport configuration from intrinsic `Config`.
+`#[inject]` marks managed dependencies. Missing providers or logger imports fail
+compilation; credentials and signing configuration are still checked at runtime.

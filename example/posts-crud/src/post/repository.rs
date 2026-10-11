@@ -6,6 +6,7 @@ use super::model::{Post, entity};
 
 #[storage]
 pub struct PostRepository {
+    #[inject]
     database: DatabaseConnection,
 }
 
