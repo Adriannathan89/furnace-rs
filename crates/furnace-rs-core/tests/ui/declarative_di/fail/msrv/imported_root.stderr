@@ -6,4 +6,4 @@ error: a marked root cauldron cannot be imported into another marked root
 3 | #[cauldron(root, imports=[First])] struct Second;
   | ---------------------------------- in this attribute macro expansion
   |
-  = note: this error originates in the macro `__furnace_di_eeb7e40305d75289` which comes from the expansion of the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the macro `__furnace_di_937b59775288ad26` which comes from the expansion of the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

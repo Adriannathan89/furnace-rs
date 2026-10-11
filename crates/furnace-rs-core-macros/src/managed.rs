@@ -307,8 +307,6 @@ impl VisitMut for SelfTypeNormalizer<'_> {
         visit_mut::visit_type_path_mut(self, type_path);
     }
 }
-#[cfg(test)]
-include!("../tests/support/managed.rs");
 
 // Field helpers belong to the enclosing managed macro and must not survive
 // expansion. Unmarked fields deliberately retain legacy injection semantics.
@@ -329,3 +327,6 @@ fn consume_inject(attributes: &mut Vec<Attribute>) -> syn::Result<()> {
     attributes.retain(|a| !a.path().is_ident("inject"));
     Ok(())
 }
+
+#[cfg(test)]
+include!("../tests/support/managed.rs");

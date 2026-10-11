@@ -30,6 +30,39 @@ pub struct Here;
 pub struct Left<Proof>(PhantomData<Proof>);
 pub struct Right<Proof>(PhantomData<Proof>);
 
+pub fn leaf<S>() -> Leaf<S> {
+    Leaf(PhantomData)
+}
+pub fn branch<L, R>(_: L, _: R) -> Branch<L, R> {
+    Branch(PhantomData)
+}
+
+// At a root these markers are concrete. Autoref dispatch removes explicit
+// Config outputs (including aliases) from membership: the intrinsic satisfies
+// those inputs. CheckModule still verifies the declared factories' dependencies.
+pub struct ConfigFilter<const ACTIVE: bool, Slot>(PhantomData<Slot>);
+pub fn config_filter<const ACTIVE: bool, Slot>() -> ConfigFilter<ACTIVE, Slot> {
+    ConfigFilter(PhantomData)
+}
+pub trait FilterConfig {
+    type Scope;
+    fn filter_config(self) -> Self::Scope;
+}
+impl<const ACTIVE: bool, Slot> FilterConfig for &ConfigFilter<ACTIVE, Slot> {
+    type Scope = Leaf<Enabled<ACTIVE, Slot>>;
+    fn filter_config(self) -> Self::Scope {
+        leaf()
+    }
+}
+impl<const ACTIVE: bool, Slot: Represents<crate::Config>> FilterConfig
+    for &&ConfigFilter<ACTIVE, Slot>
+{
+    type Scope = Nil;
+    fn filter_config(self) -> Self::Scope {
+        Nil
+    }
+}
+
 impl<T, Slot> Lookup<T, Here> for Leaf<Enabled<true, Slot>> where Slot: Represents<T> {}
 impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
 impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
@@ -120,5 +153,10 @@ where
 pub fn assert_has<T, S, P>()
 where
     S: Lookup<T, P>,
+{
+}
+pub fn assert_module_scope<M, S, P>(_: S)
+where
+    M: CheckModule<S, P>,
 {
 }

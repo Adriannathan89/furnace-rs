@@ -9,12 +9,18 @@ mod private {
         type Dependencies = ();
         async fn inject(_: ()) -> Result<State> { Ok(State) }
     }
+    struct ConfigFactory;
+    impl Injector<furnace_rs_core::Config> for ConfigFactory {
+        type Dependencies = (State,);
+        async fn inject(_: Self::Dependencies) -> Result<furnace_rs_core::Config> { Ok(furnace_rs_core::Config::empty()) }
+    }
+    type Settings = furnace_rs_core::Config;
     struct NativeFactory;
     impl Injector<Arc<String>> for NativeFactory {
         type Dependencies = (State,);
         async fn inject(_: Self::Dependencies) -> Result<Arc<String>> { Ok(Arc::new(String::new())) }
     }
-    #[cauldron(providers=[State => StateFactory, Arc<String> => NativeFactory], exports=[Arc<String>], global)]
+    #[cauldron(providers=[State => StateFactory, Arc<String> => NativeFactory, Settings => ConfigFactory], exports=[Arc<String>, Settings], global)]
     struct Database;
     #[cauldron(imports=[Database])]
     pub struct Parent;

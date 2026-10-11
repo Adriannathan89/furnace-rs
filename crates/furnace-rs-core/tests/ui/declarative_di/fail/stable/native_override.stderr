@@ -20,12 +20,12 @@ note: required for `__FurnaceAppMetadata` to implement `furnace_rs_core::__priva
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ^^^
   | |
   | unsatisfied trait bound introduced here
-note: required by a bound in `furnace_rs_core::__private::assert_module`
+note: required by a bound in `furnace_rs_core::__private::assert_module_scope`
  --> src/di_contract.rs
   |
-  | pub fn assert_module<M, S, P>()
-  |        ------------- required by a bound in this function
+  | pub fn assert_module_scope<M, S, P>(_: S)
+  |        ------------------- required by a bound in this function
   | where
   |     M: CheckModule<S, P>,
-  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module`
+  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module_scope`
   = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

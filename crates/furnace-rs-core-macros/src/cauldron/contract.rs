@@ -471,10 +471,12 @@ fn emit_checks(state: Collection) -> TokenStream {
         }
         let k = format_ident!("__FURNACE_KEYS_{scope_index}");
         let v = format_ident!("__FURNACE_VISIBLE_{scope_index}");
-        let s = format_ident!("__FurnaceScope{scope_index}");
         let keys = slots.iter().map(|t| quote!(<#t as #core::SlotKey>::KEY));
-        let leaves = slots.iter().enumerate().map(|(i, slot)| quote!(#core::Leaf<#core::Enabled<{#core::first_visible(#k, #v, #i)}, #slot>>)).collect::<Vec<_>>();
-        let tree = balanced(&leaves, core);
+        let leaves = slots.iter().enumerate().map(|(i, slot)| {
+            if i == 0 { quote!(#core::leaf::<#core::Enabled<true, #slot>>()) }
+            else { quote!((&&#core::config_filter::<{#core::first_visible(#k, #v, #i)}, #slot>()).filter_config()) }
+        }).collect::<Vec<_>>();
+        let tree = balanced_value(&leaves, core);
         for (i, a) in slots.iter().enumerate() {
             for b in slots.iter().take(i) {
                 checks.extend(quote!(#core::assert_identity::<{#core::same(<#a as #core::SlotKey>::KEY, <#b as #core::SlotKey>::KEY)}, #a, #b>();));
@@ -483,11 +485,10 @@ fn emit_checks(state: Collection) -> TokenStream {
         checks.extend(quote! {
             const #k: &[&str] = &[#(#keys),*];
             const #v: &[bool] = &[#(#visible),*];
-            type #s = #tree;
-            #core::assert_module::<#owner_type, #s, _>();
+            #core::assert_module_scope::<#owner_type, _, _>(#tree);
         });
     }
-    quote!(const _: fn() = || { #checks };)
+    quote!(const _: fn() = || { use #core::FilterConfig as _; #checks };)
 }
 fn balanced(items: &[TokenStream], core: &Path) -> TokenStream {
     match items.len() {
@@ -498,6 +499,19 @@ fn balanced(items: &[TokenStream], core: &Path) -> TokenStream {
             let l = balanced(&items[..middle], core);
             let r = balanced(&items[middle..], core);
             quote!(#core::Branch<#l, #r>)
+        }
+    }
+}
+
+fn balanced_value(items: &[TokenStream], core: &Path) -> TokenStream {
+    match items.len() {
+        0 => quote!(#core::Nil),
+        1 => items[0].clone(),
+        _ => {
+            let middle = items.len() / 2;
+            let l = balanced_value(&items[..middle], core);
+            let r = balanced_value(&items[middle..], core);
+            quote!(#core::branch(#l, #r))
         }
     }
 }

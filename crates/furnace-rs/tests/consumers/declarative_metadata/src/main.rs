@@ -6,6 +6,6 @@ use std::sync::Arc;
 #[cauldron(imports=[Infrastructure])] struct Left;
 #[cauldron(imports=[Infrastructure])] struct Right;
 type NativeAlias = Arc<String>;
-#[burner] struct Consumer { _connection: NativeAlias }
+#[burner] struct Consumer { _connection: NativeAlias, _settings: runtime::Config }
 #[cauldron(root, imports=[Left, Right], providers=[Consumer])] struct App;
 fn main() {}

@@ -238,3 +238,5 @@ Do not replace inventory, alter HTTP routing or persistence behavior, change ins
 Production dependencies remain unchanged. `trybuild` may be added as a core dev dependency. Rust MSRV remains 1.94 and edition remains 2024. All public API examples must be tested in the appropriate feature configurations.
 
 Implementation refinement (Task 3): same-crate diamond fixtures exposed Rust's crate-level macro-export absolute-path lint, which the initial external-crate prototype did not exercise. Capturing and embedding child descriptions at each parent declaration avoids that access entirely; no consumer lint suppression is added. The typed scope, visibility and membership mechanism stays unchanged.
+
+Review refinement: explicit Config outputs (including aliases and imported exports) must not compete with intrinsic Config. The root constructs an inferred zero-sized scope tree, with autoref dispatch on concrete `Represents<Config>` slot markers selecting Nil for those redundant memberships. This uses Rust trait identity and leaves every declared constructor's dependency check intact. No type-name comparison or consumer syntax is added.
