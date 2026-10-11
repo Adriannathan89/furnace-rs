@@ -54,7 +54,7 @@ pub(crate) fn expand(
     expand_managed(kind, item)
 }
 
-fn expand_managed(kind: ManagedKind, item: ItemStruct) -> syn::Result<TokenStream> {
+fn expand_managed(kind: ManagedKind, mut item: ItemStruct) -> syn::Result<TokenStream> {
     if !item.generics.params.is_empty() || item.generics.where_clause.is_some() {
         return Err(Error::new(item.generics.span(), kind.supported_form()));
     }
@@ -83,14 +83,15 @@ fn expand_managed(kind: ManagedKind, item: ItemStruct) -> syn::Result<TokenStrea
         ));
     }
 
-    if let Fields::Named(fields) = &item.fields {
+    if let Fields::Named(fields) = &mut item.fields {
         if fields.named.len() > 16 {
             return Err(Error::new(
                 fields.span(),
                 "managed injectors support at most sixteen dependencies",
             ));
         }
-        for field in &fields.named {
+        for field in &mut fields.named {
+            consume_inject(&mut field.attrs)?;
             if let Some(attribute) = field.attrs.iter().find(|attribute| !is_doc(attribute)) {
                 return Err(Error::new(
                     attribute.span(),
@@ -308,3 +309,23 @@ impl VisitMut for SelfTypeNormalizer<'_> {
 }
 #[cfg(test)]
 include!("../tests/support/managed.rs");
+
+// Field helpers belong to the enclosing managed macro and must not survive
+// expansion. Unmarked fields deliberately retain legacy injection semantics.
+fn consume_inject(attributes: &mut Vec<Attribute>) -> syn::Result<()> {
+    let mut seen = false;
+    for attribute in attributes.iter().filter(|a| a.path().is_ident("inject")) {
+        if seen {
+            return Err(Error::new_spanned(attribute, "duplicate #[inject] marker"));
+        }
+        if !matches!(attribute.meta, syn::Meta::Path(_)) {
+            return Err(Error::new_spanned(
+                attribute,
+                "#[inject] takes no arguments",
+            ));
+        }
+        seen = true;
+    }
+    attributes.retain(|a| !a.path().is_ident("inject"));
+    Ok(())
+}
