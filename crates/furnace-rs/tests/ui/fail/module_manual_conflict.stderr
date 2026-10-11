@@ -1,0 +1,10 @@
+error[E0119]: conflicting implementations of trait `Cauldron` for type `App`
+ --> tests/ui/fail/module_manual_conflict.rs:2:1
+  |
+2 | #[furnace_rs::cauldron(providers = [])]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `App`
+3 | struct App;
+4 | impl Cauldron for App {
+  | --------------------- first implementation here
+  |
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
