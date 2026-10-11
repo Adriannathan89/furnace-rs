@@ -13,7 +13,11 @@ use crate::DatabaseFactory;
 use lifecycle::SeaOrmLifecycle;
 
 /// Global module that provides one native SeaORM PostgreSQL connection.
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(
+    providers = [DatabaseFactory, SeaOrmPostgres, DatabaseConnection => SeaOrmDatabaseInjector],
+    exports = [DatabaseConnection],
+    global,
+)]
 pub struct DatabaseCauldron;
 
 fn database_factory() -> DatabaseFactory {
@@ -102,13 +106,3 @@ const DATABASE_DESCRIPTOR: furnace_rs_core::ProviderDescriptor =
 furnace_rs_core::__private::inventory::submit! { FACTORY_DESCRIPTOR }
 furnace_rs_core::__private::inventory::submit! { CONNECTOR_DESCRIPTOR }
 furnace_rs_core::__private::inventory::submit! { DATABASE_DESCRIPTOR }
-
-impl furnace_rs_core::Cauldron for DatabaseCauldron {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        self.provide::<DatabaseFactory>()
-            .provide::<SeaOrmPostgres>()
-            .provide_with::<DatabaseConnection, SeaOrmDatabaseInjector>()
-            .export::<DatabaseConnection>()
-            .global()
-    }
-}

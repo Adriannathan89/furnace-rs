@@ -24,7 +24,7 @@ pub use logger_service::{LogLevel, Logger, LoggerService};
 /// the application builder. Keep [`Logger`] explicitly registered in one
 /// reachable cauldron and export it to its consumers. A supplied value takes
 /// precedence over the linked default factory without changing ownership.
-#[crate::core::cauldron]
+#[crate::core::cauldron(providers = [Logger], exports = [Logger], global)]
 pub struct LoggerCauldron;
 
 /// Provides the default console-backed [`Logger`].
@@ -53,9 +53,3 @@ const LOGGER_DESCRIPTOR: crate::core::ProviderDescriptor =
             column!(),
         ));
 crate::core::__private::inventory::submit! { LOGGER_DESCRIPTOR }
-
-impl crate::core::Cauldron for LoggerCauldron {
-    fn register(self) -> crate::core::CauldronRegistration<Self> {
-        self.provide::<Logger>().export::<Logger>().global()
-    }
-}

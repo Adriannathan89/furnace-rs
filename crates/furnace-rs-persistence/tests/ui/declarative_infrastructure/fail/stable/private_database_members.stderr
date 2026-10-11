@@ -1,0 +1,63 @@
+error[E0277]: the trait bound `furnace_rs_core::__private::Branch<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot0>>>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot1>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot2>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot3>>>>>: furnace_rs_core::__private::Lookup<DatabaseFactory, _>` is not satisfied
+ --> tests/ui/declarative_infrastructure/fail/stable/private_database_members.rs:4:76
+  |
+4 | #[cauldron(root, imports=[DatabaseCauldron], providers=[Consumer])] struct App;
+  |                                                                            ^^^ unsatisfied trait bound
+  |
+  = help: the trait `furnace_rs_core::__private::Lookup<DatabaseFactory, _>` is not implemented for `furnace_rs_core::__private::Branch<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot0>>>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot1>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot2>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot3>>>>>`
+help: `furnace_rs_core::__private::Branch<L, R>` implements trait `furnace_rs_core::__private::Lookup<T, Proof>`
+ --> $WORKSPACE/crates/furnace-rs-core/src/di_contract.rs
+  |
+  | impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::Lookup<T, furnace_rs_core::__private::Left<P>>`
+  | impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::Lookup<T, furnace_rs_core::__private::Right<P>>`
+  = note: required for `(DatabaseFactory, SeaOrmPostgres)` to implement `furnace_rs_core::__private::CheckDependencies<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot0>>>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot1>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot2>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot3>>>>>, (_, _)>`
+note: required for `__FurnaceAppMetadata` to implement `furnace_rs_core::__private::CheckModule<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot0>>>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot1>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot2>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot3>>>>>, ((_, _),)>`
+ --> tests/ui/declarative_infrastructure/fail/stable/private_database_members.rs:4:1
+  |
+4 | #[cauldron(root, imports=[DatabaseCauldron], providers=[Consumer])] struct App;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ^^^
+  | |
+  | unsatisfied trait bound introduced here
+note: required by a bound in `furnace_rs_core::__private::assert_module`
+ --> $WORKSPACE/crates/furnace-rs-core/src/di_contract.rs
+  |
+  | pub fn assert_module<M, S, P>()
+  |        ------------- required by a bound in this function
+  | where
+  |     M: CheckModule<S, P>,
+  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module`
+  = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `furnace_rs_core::__private::Branch<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot0>>>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot1>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot2>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot3>>>>>: furnace_rs_core::__private::Lookup<SeaOrmPostgres, _>` is not satisfied
+ --> tests/ui/declarative_infrastructure/fail/stable/private_database_members.rs:4:76
+  |
+4 | #[cauldron(root, imports=[DatabaseCauldron], providers=[Consumer])] struct App;
+  |                                                                            ^^^ unsatisfied trait bound
+  |
+  = help: the trait `furnace_rs_core::__private::Lookup<SeaOrmPostgres, _>` is not implemented for `furnace_rs_core::__private::Branch<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot0>>>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot1>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot2>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot3>>>>>`
+help: `furnace_rs_core::__private::Branch<L, R>` implements trait `furnace_rs_core::__private::Lookup<T, Proof>`
+ --> $WORKSPACE/crates/furnace-rs-core/src/di_contract.rs
+  |
+  | impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::Lookup<T, furnace_rs_core::__private::Left<P>>`
+  | impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::Lookup<T, furnace_rs_core::__private::Right<P>>`
+  = note: required for `(DatabaseFactory, SeaOrmPostgres)` to implement `furnace_rs_core::__private::CheckDependencies<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot0>>>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot1>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot2>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot3>>>>>, (_, _)>`
+note: required for `__FurnaceAppMetadata` to implement `furnace_rs_core::__private::CheckModule<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot0>>>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot1>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot2>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_persistence::sea_orm::__FurnaceDatabaseCauldronSlot3>>>>>, ((_, _),)>`
+ --> tests/ui/declarative_infrastructure/fail/stable/private_database_members.rs:4:1
+  |
+4 | #[cauldron(root, imports=[DatabaseCauldron], providers=[Consumer])] struct App;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ^^^
+  | |
+  | unsatisfied trait bound introduced here
+note: required by a bound in `furnace_rs_core::__private::assert_module`
+ --> $WORKSPACE/crates/furnace-rs-core/src/di_contract.rs
+  |
+  | pub fn assert_module<M, S, P>()
+  |        ------------- required by a bound in this function
+  | where
+  |     M: CheckModule<S, P>,
+  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module`
+  = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

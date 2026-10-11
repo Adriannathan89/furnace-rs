@@ -1,0 +1,39 @@
+warning: unused import: `DatabaseCauldron`
+ --> tests/ui/declarative_infrastructure/fail/msrv/missing_database.rs:2:39
+  |
+2 | use furnace_rs_persistence::sea_orm::{DatabaseCauldron, DatabaseConnection};
+  |                                       ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0277]: the trait bound `Branch<Branch<Leaf<Enabled<true, ConfigSlot>>, Leaf<Enabled<true, __FurnaceAppSlot0>>>, Branch<Leaf<Enabled<false, __FurnaceLoggerCauldronSlot0>>, Leaf<Enabled<true, __FurnaceLoggerCauldronSlot1>>>>: Lookup<DatabaseConnection, _>` is not satisfied
+ --> tests/ui/declarative_infrastructure/fail/msrv/missing_database.rs:4:74
+  |
+4 | #[cauldron(root, imports=[LoggerCauldron], providers=[Consumer])] struct App;
+  |                                                                          ^^^ unsatisfied trait bound
+  |
+  = help: the trait `Lookup<DatabaseConnection, _>` is not implemented for `Branch<Branch<Leaf<Enabled<true, ConfigSlot>>, Leaf<Enabled<true, __FurnaceAppSlot0>>>, Branch<Leaf<Enabled<false, __FurnaceLoggerCauldronSlot0>>, Leaf<Enabled<true, __FurnaceLoggerCauldronSlot1>>>>`
+help: the following other types implement trait `Lookup<T, Proof>`
+ --> $WORKSPACE/crates/furnace-rs-core/src/di_contract.rs
+  |
+  | impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Left<P>>`
+  | impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Right<P>>`
+  = note: required for `(DatabaseConnection, Logger)` to implement `CheckDependencies<Branch<Branch<Leaf<Enabled<true, ConfigSlot>>, Leaf<Enabled<true, __FurnaceAppSlot0>>>, Branch<Leaf<Enabled<false, __FurnaceLoggerCauldronSlot0>>, Leaf<Enabled<true, __FurnaceLoggerCauldronSlot1>>>>, (_, furnace_rs_core::__private::Right<furnace_rs_core::__private::Right<Here>>)>`
+note: required for `__FurnaceAppMetadata` to implement `CheckModule<Branch<Branch<Leaf<Enabled<true, ConfigSlot>>, Leaf<Enabled<true, __FurnaceAppSlot0>>>, Branch<Leaf<Enabled<false, __FurnaceLoggerCauldronSlot0>>, Leaf<Enabled<true, __FurnaceLoggerCauldronSlot1>>>>, ((_, furnace_rs_core::__private::Right<furnace_rs_core::__private::Right<Here>>),)>`
+ --> tests/ui/declarative_infrastructure/fail/msrv/missing_database.rs:4:1
+  |
+4 | #[cauldron(root, imports=[LoggerCauldron], providers=[Consumer])] struct App;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ^^^
+  | |
+  | unsatisfied trait bound introduced here
+note: required by a bound in `assert_module`
+ --> $WORKSPACE/crates/furnace-rs-core/src/di_contract.rs
+  |
+  | pub fn assert_module<M, S, P>()
+  |        ------------- required by a bound in this function
+  | where
+  |     M: CheckModule<S, P>,
+  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module`
+  = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

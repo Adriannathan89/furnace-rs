@@ -779,6 +779,7 @@ dependencies = [
  "sea-orm",
  "tokio",
  "tracing",
+ "trybuild",
 ]
 
 [[package]]
