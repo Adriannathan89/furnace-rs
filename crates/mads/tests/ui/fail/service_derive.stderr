@@ -1,5 +1,0 @@
-error: `#[mads::service]` managed providers support documentation attributes only in v0.2; remove this struct attribute
- --> tests/ui/fail/service_derive.rs:4:1
-  |
-4 | #[derive(Clone)]
-  | ^

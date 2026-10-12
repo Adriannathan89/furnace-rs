@@ -1,0 +1,5 @@
+error: duplicate declaration entry
+ --> tests/ui/fail/module_duplicate_entries.rs:1:46
+  |
+1 | #[furnace_rs::cauldron(providers = [Service, Service])]
+  |                                              ^^^^^^^

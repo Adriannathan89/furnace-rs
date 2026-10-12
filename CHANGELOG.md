@@ -1,8 +1,243 @@
 # Changelog
 
-All notable changes to MADS.rs are documented in this file.
+All notable changes to furnace-rs are documented in this file. Published MADS
+release history is retained below; the pending 0.9.2 work and furnace-rs API
+migration are consolidated into the first 1.0.0 release.
 
-## [0.8.0] - 2026-10-04
+## [Unreleased]
+
+## [2.0.0-beta.1] - 2026-10-12
+
+### Breaking
+
+- Require parameterless `#[inject]` on every dependency field of burner, storage and managed controller structs. Unmarked fields now fail compilation; unit structs and manual `Injector` implementations are unchanged.
+
+### Declarative DI
+
+- Add registration in the existing cauldron attribute and root-scoped compile-time dependency/visibility checks, including reachable globals and native injector outputs.
+- Retain legacy fluent registration alongside declarative cauldron registration.
+- Adopt declarative contracts for DatabaseCauldron and LoggerCauldron while retaining native overrides and lifecycle behavior.
+- Add a standalone compile-time DI example with a missing-logger compile-fail Cargo test. See [2.0 release notes](docs/releases/2.0.0-beta.1.md).
+- Make checker callback names independent of the checkout directory so compile-fail diagnostics remain reproducible.
+
+### Security
+
+- Reject cookie Path/Domain delimiters and ASCII controls before emitting a
+  response batch, preventing supplied attributes from injecting additional
+  Set-Cookie attributes. See the [patch and reproduction](docs/security/2026-10-10-cookie-attribute-injection.md).
+- Create Unix scaffold staging directories with mode `0700` at creation,
+  preventing other users from modifying generated files through permissive
+  umasks. Published project directories retain `0700`. See the
+  [patch and reproduction](docs/security/2026-10-10-scaffold-directory-privacy.md).
+- Reject native SeaORM `max_connections(0)` with a typed configuration error
+  before pool construction can panic. See the
+  [patch and reproduction](docs/security/2026-10-10-native-pool-capacity.md).
+
+### Fixed
+
+- Supply the accepted socket peer address to native HTTP `ConnectInfo`
+  extractors and Passport request metadata for HTTP/1 and HTTP/2. See the
+  [patch and reproduction](docs/security/2026-10-10-http-peer-address.md).
+- Record the [implementation scan and its limits](docs/security/2026-10-10-implementation-scan.md).
+
+## [1.0.2] - 2026-10-09
+
+Released on crates.io. See the [release notes](docs/releases/1.0.2.md) for
+changes and recorded verification.
+
+### Added
+
+- Add an opt-in `sea-orm` HTTP feature to convert native `DbErr` values into
+  redacted `HttpError` 500 responses through `?`, preserving the original source.
+- Add a separate runnable `example/post-crud-with-service` project alongside
+  the simpler posts CRUD example.
+- Enable HTTP request logging with `[furnace] mode = "debug"` in `furnace.toml`.
+  Print aligned `[debug]` rows with local timestamps to millisecond precision,
+  final response status codes, HTTP methods, and paths without query strings.
+  Logging includes body-timeout 408 responses and remains disabled when the
+  mode is absent or differs from `debug`.
+
+### Changed
+
+- Make the default posts CRUD example call its repository directly, with no
+  required service layer or repeated `map_err(InternalError::new)` calls.
+- Display all registered routes in the startup summary with uppercase HTTP
+  methods and full controller-prefixed paths, using a readable header and
+  aligned method/path columns.
+
+### Security
+
+- Prevent custom Serde missing-field error text from leaking through the
+  client-visible paths of `ValidatedJson`, `ValidatedQuery`, and `ValidatedPath`
+  rejections. Retain HTTP 422, fixed messages, and structured containing paths;
+  omit field names recovered only from native error text. See the
+  [patch writeup and reproductions](docs/security/2026-10-09-extractor-error-redaction.md).
+
+## [1.0.1] - 2026-10-06
+
+Security and availability hardening for the HTTP runtime, database pool
+configuration, and inventory provider construction.
+
+### Security
+
+- Reject zero database idle and lifetime maintenance durations before creating
+  SeaORM pools, preventing continuously rescheduled maintenance tasks. Native
+  options can still disable these policies with `None`.
+- Reject inventory constructor outputs whose concrete type differs from their
+  declared type identifier before application construction succeeds.
+- Record [before/after database and inventory regression measurements](benchmark/DATABASE_INVENTORY_SECURITY.md),
+  including retained JWT algorithm binding and native PostgreSQL recovery controls.
+- Bound incomplete initial HTTP requests, including idle sockets and partial
+  protocol prefaces, and HTTP/1 request headers to ten seconds. Preserve HTTP/2,
+  upgrades, long-running handlers, and graceful connection draining.
+- Add a ten-second idle deadline while reading request bodies. Progress renews
+  the deadline; stalled reads return a safe HTTP 408 response before response
+  headers are sent and close the affected HTTP/1 connection. A timeout during
+  response streaming terminates that stream. Body-size limits remain enforced.
+- Record isolated before/after regression measurements in the
+  [HTTP runtime security report](benchmark/HTTP_RUNTIME_SECURITY.md).
+
+## [1.0.0] - 2026-10-03
+
+The workspace is prepared for the first stable furnace-rs release on 2026-10-03. Publication,
+the `v1.0.0` tag, and the GitHub release still require the release workflow.
+
+### Breaking changes and migration
+
+- Rename all nine packages from the MADS family to `furnace-rs` and
+  `furnace-rs-*`; rename the CLI executable to `furnace` and diagnostics to
+  the `FURNACE` family. No aliases preserve the retired declarations.
+- Replace module/service/repository attributes with `#[cauldron]`, `#[burner]`,
+  and `#[storage]`. Replace provider/element factories with typed `Injector`
+  construction and explicit `.provide_with::<Output, Implementer>()` bindings,
+  including application-authored shared trait-object outputs.
+- Declare members, controllers, imports, exports, and global status in
+  `Cauldron::register`. Rust `pub` controls Rust visibility; cauldron exports
+  control dependency access, and explicit guards control HTTP authorization.
+- Start conventional applications with `Furnace::burn` and `FurnaceBurnExt`.
+- Declare endpoints in inherent `#[controller(route = "/users")]`
+  implementations; remove `#[routes]` and `controller(routes = ...)`.
+  Controllers are public without `impl Sealable`; a static `#[guard]` policy
+  attached through `Sealable` protects endpoints, with `#[seal(skip)]` for
+  intentionally public exceptions.
+- Rename conventional files/environment keys to `furnace.toml` and `FURNACE_*`.
+  Finite CLI reports and private inspection use schema/protocol 2. The offline
+  generator creates six direct-controller application files.
+
+See [the migration guide](docs/importance/furnace-rs-migration.md) before
+upgrading an application from MADS 0.x.
+
+### Added
+
+- `furnace-rs-testing` supplies focused, module-free fixtures for registered
+  providers, services, repositories, and controllers; supplied native mocks
+  prevent production database construction during test setup.
+- `#[furnace::test]` registers a zero-argument async test and creates a local
+  `test_fixture()` helper without requiring a direct Tokio dev dependency.
+- Scripted SeaORM `MockDatabase` values can supply native `DatabaseConnection`
+  dependencies. In-process requests support status, JSON, text, and header
+  assertions for only the selected controller's routes and guards.
+- Scoped fixtures start lifecycle hooks and await shutdown after completion or
+  an unwinding test panic, preserving rollback and the original panic.
+- Reproducible HTTP authentication, core/database, and CLI filesystem security
+  workloads with failure-sensitive JSON reports and source/binary fingerprints.
+- A [security policy](docs/SECURITY.md), [combined security audit](docs/SECURITY_AUDIT.md),
+  and [1.0.0 release readiness guide](docs/releases/1.0.0.md).
+
+### Security
+
+- Enforce strict Bearer credential syntax before authentication adapters or
+  handlers execute. Internal tab separators, duplicate/combined credentials,
+  and invalid token characters reject with the generic 401/Bearer response;
+  case-insensitive schemes and multiple ASCII spaces remain accepted. The
+  reproduced parser differential required a valid signed JWT, not a forged one.
+- Redact retained causes from ordinary core `Error` debug formatting, including
+  nested native errors that can contain database credentials. Typed causes
+  remain available through explicit `source()` access.
+- Reject unrepresentable typed and native database timeout deadlines before
+  SQLx can panic on `Instant` arithmetic; preserve valid and disabled policies.
+- Suppress credential-bearing SeaORM connection-establishment tracing with a
+  future-scoped dispatcher. Surrounding application tracing is restored;
+  native handshake telemetry and inline callback tracing are suppressed.
+- Create Unix CLI inspection/control directories with atomic owner-only `0700`
+  permissions, preventing other local users from tampering under permissive
+  umasks. The check covers actual permissions and owner access in isolated
+  child processes; executable replacement races were not reproduced end to end.
+- Retain the `time` advisory fix and the explicitly selected AWS-LC JWT backend,
+  keeping the RustCrypto RSA implementation out of the normal workspace graph.
+  A consumer enabling both crypto backends is covered separately.
+- The all-crate audit scanned all nine workspace crates and seven checked-in
+  lockfiles, with no known advisory matches at its recorded RustSec snapshot.
+  Historical reports keep their original versions, commits, and limitations.
+  The prepared 1.0.0 tree also passed a refreshed eight-lockfile advisory scan,
+  security smoke contracts, and authenticated live PostgreSQL validation; see
+  the [release verification](docs/releases/1.0.0.md#local-verification).
+
+### Compatibility and release tooling
+
+- Align all nine workspace packages, including CLI and testing, at `1.0.0` with
+  exact internal pins. Keep Rust edition 2024, MSRV 1.94, current public feature
+  boundaries, Axum 0.8, and native SeaORM PostgreSQL integration (minimum 2.0.0).
+- Stable and beta publication retain dependency-ordered publishing and now
+  require advisory and security-regression verification before publication.
+- Update active examples, installation snippets, migration/architecture/CLI
+  documentation and version-sensitive generated-project acceptance tests.
+- Correct benchmark version reporting to read the actual workspace version
+  rather than labeling new local-source runs with a historical release number.
+
+## [0.9.1] - 2026-09-25
+
+### Fixed
+
+- Oversized JSON requests now return `413 Payload Too Large` with
+  `Connection: close`, allowing HTTP/1.1 clients to continue safely after the
+  server closes the rejected request's connection.
+- Passport documentation examples now compile with both the default feature
+  set and the `jwt` feature enabled.
+
+## [0.9.0] - 2026-09-24
+
+### Compatibility
+
+- Raise the minimum supported Rust version from 1.85 to 1.94. MADS continues
+  to use Rust edition 2024.
+
+### Added
+
+- `mads-persistence` provides an explicitly imported SeaORM PostgreSQL
+  `DatabaseModule`, native `DatabaseConnection` injection, readiness and
+  graceful close. `DatabaseFactory::provide` returns the native connection or
+  a typed, safely formatted `PersistenceError`.
+
+- `mads-common` provide new logger module to imported into main apps with
+  default console logger. User can override the logger inner instance using
+  provide macros and provide their logger service
+
+### Breaking changes
+
+- Removed the Diesel-backed `mads-common/database` and `mads/database`
+  features and their public API. Persistence is available only by depending on
+  `mads-persistence` explicitly with `sea-orm-postgres`.
+- Removed the `mads db` migration commands and database-specific JSON data
+  types. Use SeaORM's native migration tooling instead.
+- `mads-cli` now inherits and publishes the 0.9.0 workspace version alongside
+  the framework crates. Release scripts no longer accept
+  `--keep-cli-version`.
+
+## [0.8.1] - 2026-09-20
+
+### Added
+
+- `#[module(global)]` marks an imported module's public providers as available
+  to every module reachable from the application root, without requiring each
+  consumer to declare a direct import.
+
+### Compatibility
+
+- `mads-cli` remains at version `0.8.0` and consumes the `0.8.1` framework
+  crates through exact internal dependencies.
+
+## [0.8.0] - 2026-09-10
 
 Stable release of the MADS.rs CLI, development loop, and framework
 diagnostics.
@@ -155,6 +390,13 @@ First public beta of the MADS.rs HTTP application foundation.
 - TLS, HTTP/2 configuration, multiple listeners, and declarative middleware are application-owned.
 - Public APIs may change in later `0.6.0-beta.*` releases based on adopter feedback.
 
+[0.9.1]: https://github.com/Adriannathan89/mads/releases/tag/v0.9.1
+[0.9.0]: https://github.com/Adriannathan89/mads/releases/tag/v0.9.0
+[0.8.0]: https://github.com/Adriannathan89/mads/releases/tag/v0.8.0
 [0.6.0-beta.1]: https://github.com/Adriannathan89/mads/releases/tag/v0.6.0-beta.1
 [0.7.0]: https://github.com/Adriannathan89/mads/releases/tag/v0.7.0
 [0.7.0-beta.1]: https://github.com/Adriannathan89/mads/releases/tag/v0.7.0-beta.1
+
+[1.0.0]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.0
+[1.0.1]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.1
+[1.0.2]: https://crates.io/crates/furnace-rs/1.0.2

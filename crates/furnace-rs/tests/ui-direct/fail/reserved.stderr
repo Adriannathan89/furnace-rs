@@ -1,0 +1,5 @@
+error: `seal` is reserved for static controller protection
+ --> tests/ui-direct/fail/reserved.rs:6:29
+  |
+6 | impl Controller { #[get] fn seal(&self) {} }
+  |                             ^^^^

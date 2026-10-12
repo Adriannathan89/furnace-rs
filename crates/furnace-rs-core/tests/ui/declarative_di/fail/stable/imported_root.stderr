@@ -1,0 +1,7 @@
+error: a marked root cauldron cannot be imported into another marked root
+ --> tests/ui/declarative_di/fail/stable/imported_root.rs:3:1
+  |
+3 | #[cauldron(root, imports=[First])] struct Second;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `::furnace_rs_core::__private::__di_collect` (in Nightly builds, run with -Z macro-backtrace for more info)

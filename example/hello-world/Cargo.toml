@@ -1,0 +1,11 @@
+[package]
+name = "furnace-rs-example-hello-world"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+publish = false
+
+[workspace]
+
+[dependencies]
+furnace-rs = { path = "../../crates/furnace-rs", version = "=2.0.0-beta.1", default-features = false, features = ["http", "runtime-tokio"] }

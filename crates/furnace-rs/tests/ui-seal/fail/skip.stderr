@@ -1,0 +1,5 @@
+error: static guard policies do not support `skip`
+ --> tests/ui-seal/fail/skip.rs:4:9
+  |
+4 | #[guard(skip)]
+  |         ^^^^

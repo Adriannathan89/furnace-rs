@@ -1,0 +1,10 @@
+[package]
+name = "renamed-testing-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[workspace]
+[dependencies]
+framework = { package = "furnace-rs", path = "../../../", default-features = false }
+[dev-dependencies]
+fixtures = { package = "furnace-rs-testing", path = "../../../../furnace-rs-testing" }

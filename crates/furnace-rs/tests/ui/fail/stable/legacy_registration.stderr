@@ -1,0 +1,29 @@
+error[E0433]: cannot find `module` in `furnace_rs`
+ --> tests/ui/fail/stable/legacy_registration.rs:1:15
+  |
+1 | #[furnace_rs::module]
+  |               ^^^^^^ could not find `module` in `furnace_rs`
+
+error[E0433]: cannot find `service` in `furnace_rs`
+ --> tests/ui/fail/stable/legacy_registration.rs:3:15
+  |
+3 | #[furnace_rs::service]
+  |               ^^^^^^^ could not find `service` in `furnace_rs`
+
+error[E0433]: cannot find `repository` in `furnace_rs`
+ --> tests/ui/fail/stable/legacy_registration.rs:5:15
+  |
+5 | #[furnace_rs::repository]
+  |               ^^^^^^^^^^ could not find `repository` in `furnace_rs`
+
+error[E0433]: cannot find `provider` in `furnace_rs`
+ --> tests/ui/fail/stable/legacy_registration.rs:7:15
+  |
+7 | #[furnace_rs::provider]
+  |               ^^^^^^^^ could not find `provider` in `furnace_rs`
+
+error[E0599]: no associated function or constant named `run` found for struct `Furnace` in the current scope
+  --> tests/ui/fail/stable/legacy_registration.rs:10:40
+   |
+10 |     let _ = furnace_rs::core::Furnace::run::<LegacyCauldron>();
+   |                                        ^^^ associated function or constant not found in `Furnace`

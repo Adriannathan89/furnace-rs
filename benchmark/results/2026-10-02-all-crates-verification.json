@@ -1,0 +1,262 @@
+{
+  "timestamp_utc": "2026-10-02T17:06:24.320066+00:00",
+  "git_head": "16413c65a8bae48ec774fb6aa6387cb03a647f05",
+  "working_tree": true,
+  "source_inventory": [
+    {
+      "crate": "furnace-rs",
+      "rust_source_files": [
+        "crates/furnace-rs/src/lib.rs"
+      ],
+      "source_sha256": "e548f5e6bf20cc9bcc2cbff7854900440ffe4a9f78ec09b49640d36723acc7ca"
+    },
+    {
+      "crate": "furnace-rs-core",
+      "rust_source_files": [
+        "crates/furnace-rs-core/src/auto_configuration/analysis.rs",
+        "crates/furnace-rs-core/src/auto_configuration/descriptor.rs",
+        "crates/furnace-rs-core/src/auto_configuration/mod.rs",
+        "crates/furnace-rs-core/src/auto_configuration/report.rs",
+        "crates/furnace-rs-core/src/builder.rs",
+        "crates/furnace-rs-core/src/catalog.rs",
+        "crates/furnace-rs-core/src/cauldron.rs",
+        "crates/furnace-rs-core/src/config.rs",
+        "crates/furnace-rs-core/src/configuration/error.rs",
+        "crates/furnace-rs-core/src/configuration/mod.rs",
+        "crates/furnace-rs-core/src/configuration/parse.rs",
+        "crates/furnace-rs-core/src/configuration/secret.rs",
+        "crates/furnace-rs-core/src/configuration/validate.rs",
+        "crates/furnace-rs-core/src/context.rs",
+        "crates/furnace-rs-core/src/descriptor.rs",
+        "crates/furnace-rs-core/src/diagnostic.rs",
+        "crates/furnace-rs-core/src/graph/analysis.rs",
+        "crates/furnace-rs-core/src/graph/cauldron.rs",
+        "crates/furnace-rs-core/src/graph/cycle.rs",
+        "crates/furnace-rs-core/src/graph/focus.rs",
+        "crates/furnace-rs-core/src/graph/inspection.rs",
+        "crates/furnace-rs-core/src/graph/mod.rs",
+        "crates/furnace-rs-core/src/graph/model.rs",
+        "crates/furnace-rs-core/src/graph/plan.rs",
+        "crates/furnace-rs-core/src/graph/scope.rs",
+        "crates/furnace-rs-core/src/injector.rs",
+        "crates/furnace-rs-core/src/lib.rs",
+        "crates/furnace-rs-core/src/lifecycle.rs",
+        "crates/furnace-rs-core/src/preflight.rs",
+        "crates/furnace-rs-core/src/registry.rs",
+        "crates/furnace-rs-core/src/runtime.rs"
+      ],
+      "source_sha256": "0daf0f85f6b652d0663a8a1bd7eab88d324659a123d7045d43e242c618e39a4a"
+    },
+    {
+      "crate": "furnace-rs-core-macros",
+      "rust_source_files": [
+        "crates/furnace-rs-core-macros/src/cauldron.rs",
+        "crates/furnace-rs-core-macros/src/configuration/validate.rs",
+        "crates/furnace-rs-core-macros/src/configuration.rs",
+        "crates/furnace-rs-core-macros/src/lib.rs",
+        "crates/furnace-rs-core-macros/src/main.rs",
+        "crates/furnace-rs-core-macros/src/managed.rs",
+        "crates/furnace-rs-core-macros/src/path.rs",
+        "crates/furnace-rs-core-macros/src/test_fn.rs"
+      ],
+      "source_sha256": "bc1b543d45cf4daf9545b19ffaa1d86bfd0a7d1fc9c9ef34f1ea0d705135517a"
+    },
+    {
+      "crate": "furnace-rs-persistence",
+      "rust_source_files": [
+        "crates/furnace-rs-persistence/src/error.rs",
+        "crates/furnace-rs-persistence/src/factory.rs",
+        "crates/furnace-rs-persistence/src/lib.rs",
+        "crates/furnace-rs-persistence/src/sea_orm/config.rs",
+        "crates/furnace-rs-persistence/src/sea_orm/connector.rs",
+        "crates/furnace-rs-persistence/src/sea_orm/lifecycle.rs",
+        "crates/furnace-rs-persistence/src/sea_orm/mod.rs"
+      ],
+      "source_sha256": "5b3f0ea5bf29adc8426aa66313c93e76bdac660e66f8c9344a5a6910cce2b217"
+    },
+    {
+      "crate": "furnace-rs-common",
+      "rust_source_files": [
+        "crates/furnace-rs-common/src/cookie.rs",
+        "crates/furnace-rs-common/src/cors.rs",
+        "crates/furnace-rs-common/src/extract.rs",
+        "crates/furnace-rs-common/src/http_preflight.rs",
+        "crates/furnace-rs-common/src/http_scope.rs",
+        "crates/furnace-rs-common/src/inspection.rs",
+        "crates/furnace-rs-common/src/jwt/auto_configuration.rs",
+        "crates/furnace-rs-common/src/jwt/claims.rs",
+        "crates/furnace-rs-common/src/jwt/config.rs",
+        "crates/furnace-rs-common/src/jwt/crypto.rs",
+        "crates/furnace-rs-common/src/jwt/error.rs",
+        "crates/furnace-rs-common/src/jwt/keyring.rs",
+        "crates/furnace-rs-common/src/jwt/mod.rs",
+        "crates/furnace-rs-common/src/jwt/service.rs",
+        "crates/furnace-rs-common/src/lib.rs",
+        "crates/furnace-rs-common/src/logger/console_logger_service.rs",
+        "crates/furnace-rs-common/src/logger/logger_service.rs",
+        "crates/furnace-rs-common/src/logger/mod.rs",
+        "crates/furnace-rs-common/src/passport/context.rs",
+        "crates/furnace-rs-common/src/passport/error.rs",
+        "crates/furnace-rs-common/src/passport/guard.rs",
+        "crates/furnace-rs-common/src/passport/mod.rs",
+        "crates/furnace-rs-common/src/passport/principal.rs",
+        "crates/furnace-rs-common/src/passport/strategy.rs",
+        "crates/furnace-rs-common/src/response.rs",
+        "crates/furnace-rs-common/src/route.rs",
+        "crates/furnace-rs-common/src/router.rs",
+        "crates/furnace-rs-common/src/seal.rs",
+        "crates/furnace-rs-common/src/server.rs",
+        "crates/furnace-rs-common/src/server_config.rs",
+        "crates/furnace-rs-common/src/validation/error.rs",
+        "crates/furnace-rs-common/src/validation/extract.rs",
+        "crates/furnace-rs-common/src/validation/mod.rs",
+        "crates/furnace-rs-common/src/validation/nested.rs",
+        "crates/furnace-rs-common/src/validation/number.rs",
+        "crates/furnace-rs-common/src/validation/primitive.rs",
+        "crates/furnace-rs-common/src/validation/rejection.rs",
+        "crates/furnace-rs-common/src/validation/string.rs",
+        "crates/furnace-rs-common/src/validation/support.rs"
+      ],
+      "source_sha256": "bd7fed5cd53693fa8fd50553b74189e2eaf208dfe3bece77ea165c0bfcf13f5a"
+    },
+    {
+      "crate": "furnace-rs-common-macros",
+      "rust_source_files": [
+        "crates/furnace-rs-common-macros/src/controller/endpoints.rs",
+        "crates/furnace-rs-common-macros/src/controller/managed.rs",
+        "crates/furnace-rs-common-macros/src/controller.rs",
+        "crates/furnace-rs-common-macros/src/endpoint.rs",
+        "crates/furnace-rs-common-macros/src/guard.rs",
+        "crates/furnace-rs-common-macros/src/input/attributes.rs",
+        "crates/furnace-rs-common-macros/src/input/checks.rs",
+        "crates/furnace-rs-common-macros/src/input/serde_path.rs",
+        "crates/furnace-rs-common-macros/src/input.rs",
+        "crates/furnace-rs-common-macros/src/lib.rs",
+        "crates/furnace-rs-common-macros/src/passport_principal.rs",
+        "crates/furnace-rs-common-macros/src/passport_strategy.rs",
+        "crates/furnace-rs-common-macros/src/path.rs",
+        "crates/furnace-rs-common-macros/src/verb.rs"
+      ],
+      "source_sha256": "862dcc122b783e7b5326ed1ec98e0957073478ef22746aba95489b2981680dfe"
+    },
+    {
+      "crate": "furnace-rs-cli",
+      "rust_source_files": [
+        "crates/furnace-rs-cli/src/cargo.rs",
+        "crates/furnace-rs-cli/src/command.rs",
+        "crates/furnace-rs-cli/src/dev.rs",
+        "crates/furnace-rs-cli/src/dev_state.rs",
+        "crates/furnace-rs-cli/src/diagnostic.rs",
+        "crates/furnace-rs-cli/src/inspection.rs",
+        "crates/furnace-rs-cli/src/lib.rs",
+        "crates/furnace-rs-cli/src/main.rs",
+        "crates/furnace-rs-cli/src/output/human.rs",
+        "crates/furnace-rs-cli/src/output/json.rs",
+        "crates/furnace-rs-cli/src/output/mod.rs",
+        "crates/furnace-rs-cli/src/output/model.rs",
+        "crates/furnace-rs-cli/src/output/path.rs",
+        "crates/furnace-rs-cli/src/private_temp_dir.rs",
+        "crates/furnace-rs-cli/src/process.rs",
+        "crates/furnace-rs-cli/src/project.rs",
+        "crates/furnace-rs-cli/src/render.rs",
+        "crates/furnace-rs-cli/src/scaffold/mod.rs",
+        "crates/furnace-rs-cli/src/scaffold/name.rs",
+        "crates/furnace-rs-cli/src/scaffold/publish.rs",
+        "crates/furnace-rs-cli/src/scaffold/template.rs",
+        "crates/furnace-rs-cli/src/watch.rs"
+      ],
+      "source_sha256": "0fe067fce5f72eba07a9434435ed9798ceae910a0205bbbe6a26cda26335756c"
+    },
+    {
+      "crate": "furnace-rs-extra",
+      "rust_source_files": [
+        "crates/furnace-rs-extra/src/lib.rs"
+      ],
+      "source_sha256": "dc1aeab9bd0e5ec1fa7cf719a95c7eac246674552ebd03504eb01318bd3a70aa"
+    },
+    {
+      "crate": "furnace-rs-testing",
+      "rust_source_files": [
+        "crates/furnace-rs-testing/src/error.rs",
+        "crates/furnace-rs-testing/src/fixture.rs",
+        "crates/furnace-rs-testing/src/http.rs",
+        "crates/furnace-rs-testing/src/lib.rs",
+        "crates/furnace-rs-testing/src/response.rs"
+      ],
+      "source_sha256": "94288c64803fd9716b65b572ee2bf386f4709e47346d839a32b59393f9d3a7e1"
+    }
+  ],
+  "workspace_tests": {
+    "command": "cargo test --offline --locked --workspace --all-features",
+    "exit_code": 0,
+    "unfiltered_suite_passed": 769,
+    "nested_filtered_fixture_passed": 1,
+    "ignored": 4,
+    "postgres_rerun": false
+  },
+  "clippy": {
+    "command": "cargo clippy --offline --locked --workspace --all-targets --all-features -- -D warnings",
+    "exit_code": 0
+  },
+  "format": {
+    "command": "cargo fmt --all --check",
+    "exit_code": 0
+  },
+  "diff_whitespace": {
+    "command": "git diff --check",
+    "exit_code": 0
+  },
+  "benchmark_python": {
+    "run": 38,
+    "passed": 35,
+    "skipped": 3,
+    "failed": 0,
+    "skipped_tests": "live PostgreSQL tests; no database was configured in this final audit",
+    "build_target": "/tmp; test_build_furnace ROOT redirected to a temporary mirror"
+  },
+  "cli_security": {
+    "timestamp_utc": "2026-10-02T17:02:45.881356+00:00",
+    "git_head": "16413c65a8bae48ec774fb6aa6387cb03a647f05",
+    "source_sha256": "da5dcd4fb625b249929eb75977e46bd6b722f986edb5ccd1ff554ae5906cdc7f",
+    "profile": "stress",
+    "umasks": [
+      "000",
+      "002",
+      "022",
+      "077"
+    ],
+    "build_profile": "debug",
+    "database_required": false,
+    "elapsed_seconds_including_build": 4.564112,
+    "cargo_exit_code": 0,
+    "result": {
+      "rounds": 200,
+      "checks": 800,
+      "failures": 0,
+      "passed": true
+    },
+    "passed": true
+  },
+  "previous_live_postgres_evidence": {
+    "path": "benchmark/results/2026-10-02-infrastructure-postgres-validation.json",
+    "referenced_implementation_hash_matches": true,
+    "previous_postgres_tests_passed": 4,
+    "previous_python_tests_passed": 34,
+    "previous_python_skipped": 0
+  },
+  "dependency_audit": {
+    "path": "benchmark/results/2026-10-02-all-crates-dependency-audit.json",
+    "lockfiles_scanned": 7,
+    "known_vulnerabilities": 0,
+    "advisory_warnings": 0,
+    "yank_check": false
+  },
+  "independent_review": "No remaining blocking issue; reviewed atomic Unix permissions, child completion evidence, platform guards, and result integrity.",
+  "cleanup": {
+    "repository_target_directories_removed": true,
+    "repository_directories_removed": [
+      "target"
+    ],
+    "external_audit_build_artifacts_removed": true
+  }
+}

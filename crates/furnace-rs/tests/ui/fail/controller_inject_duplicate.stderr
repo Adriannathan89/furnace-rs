@@ -1,0 +1,5 @@
+error: duplicate #[inject] marker
+ --> tests/ui/fail/controller_inject_duplicate.rs:2:31
+  |
+2 | struct Controller { #[inject] #[inject] value: String }
+  |                               ^^^^^^^^^

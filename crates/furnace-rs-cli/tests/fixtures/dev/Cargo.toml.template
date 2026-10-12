@@ -1,0 +1,11 @@
+[package]
+name = "dev-loop-fixture"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+default-run = "dev-loop-fixture"
+
+[dependencies]
+furnace = { package = "furnace-rs", path = "@FURNACE_PATH@", default-features = false, features = ["http", "runtime-tokio"] }
+
+[workspace]

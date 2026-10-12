@@ -1,0 +1,5 @@
+error: capture names must use `[A-Za-z_][A-Za-z0-9_]*`
+ --> tests/ui/fail/routes_invalid_parameter.rs:9:23
+  |
+9 |     #[furnace_rs::get("/:9id")]
+  |                       ^^^^^^^

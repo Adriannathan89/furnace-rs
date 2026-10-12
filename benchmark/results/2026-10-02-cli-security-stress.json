@@ -1,0 +1,23 @@
+{
+  "timestamp_utc": "2026-10-02T17:02:45.881356+00:00",
+  "git_head": "16413c65a8bae48ec774fb6aa6387cb03a647f05",
+  "source_sha256": "da5dcd4fb625b249929eb75977e46bd6b722f986edb5ccd1ff554ae5906cdc7f",
+  "profile": "stress",
+  "umasks": [
+    "000",
+    "002",
+    "022",
+    "077"
+  ],
+  "build_profile": "debug",
+  "database_required": false,
+  "elapsed_seconds_including_build": 4.564112,
+  "cargo_exit_code": 0,
+  "result": {
+    "rounds": 200,
+    "checks": 800,
+    "failures": 0,
+    "passed": true
+  },
+  "passed": true
+}

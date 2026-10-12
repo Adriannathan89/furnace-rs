@@ -1,0 +1,15 @@
+error[E0277]: the trait bound `furnace_rs_core::__private::Nil: furnace_rs_core::__private::Lookup<Value, _>` is not satisfied
+ --> tests/ui/declarative_di/fail/stable/invalid_export.rs:3:1
+  |
+3 | #[cauldron(exports=[Value])] struct Module;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `furnace_rs_core::__private::Lookup<Value, _>` is not implemented for `furnace_rs_core::__private::Nil`
+  |
+note: required by a bound in `furnace_rs_core::__private::assert_has`
+ --> src/di_contract.rs
+  |
+  | pub fn assert_has<T, S, P>()
+  |        ---------- required by a bound in this function
+  | where
+  |     S: Lookup<T, P>,
+  |        ^^^^^^^^^^^^ required by this bound in `assert_has`
+  = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

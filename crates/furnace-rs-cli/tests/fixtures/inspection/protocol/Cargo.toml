@@ -1,0 +1,10 @@
+[package]
+name = "furnace-rs-inspection-protocol-fixture"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+
+[dependencies]
+furnace = { package = "furnace-rs", path = "../../../../../furnace-rs", default-features = false, features = ["http"] }
+furnace-rs-common = { path = "../../../../../furnace-rs-common", default-features = false, features = ["http"] }

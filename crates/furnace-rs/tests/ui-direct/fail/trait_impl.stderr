@@ -1,0 +1,5 @@
+error: endpoint controllers require a non-generic inherent implementation
+ --> tests/ui-direct/fail/trait_impl.rs:7:1
+  |
+7 | impl Methods for Controller { #[get] fn run(&self) {} }
+  | ^^^^

@@ -1,0 +1,10 @@
+// src/main.rs
+mod app;
+
+use app::AppCauldron;
+use furnace::prelude::*;
+
+#[furnace::main]
+async fn main() -> Result<(), HttpRuntimeError> {
+    Furnace::burn::<AppCauldron>().await
+}

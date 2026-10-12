@@ -1,0 +1,25 @@
+error: cannot find macro `Legacy` in this scope
+ --> tests/ui/declarative_di/fail/stable/legacy_import.rs:4:27
+  |
+4 | #[cauldron(root, imports=[Legacy])] struct App;
+  |                           ^^^^^^
+  |
+  = note: `Legacy` is in scope, but it is a struct, not a macro
+
+error[E0277]: the trait bound `Legacy: furnace_rs_core::__private::ModuleContract` is not satisfied
+ --> tests/ui/declarative_di/fail/stable/legacy_import.rs:4:1
+  |
+4 | #[cauldron(root, imports=[Legacy])] struct App;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `furnace_rs_core::__private::ModuleContract` is not implemented for `Legacy`
+ --> tests/ui/declarative_di/fail/stable/legacy_import.rs:2:13
+  |
+2 | #[cauldron] struct Legacy;
+  |             ^^^^^^^^^^^^^
+help: the trait `furnace_rs_core::__private::ModuleContract` is implemented for `App`
+ --> tests/ui/declarative_di/fail/stable/legacy_import.rs:4:1
+  |
+4 | #[cauldron(root, imports=[Legacy])] struct App;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

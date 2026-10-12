@@ -1,0 +1,5 @@
+error[E0425]: cannot find function `test_fixture` in this scope
+ --> tests/ui-test-attribute/outside.rs:1:21
+  |
+1 | fn main() { let _ = test_fixture(); }
+  |                     ^^^^^^^^^^^^ not found in this scope

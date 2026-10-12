@@ -1,0 +1,5 @@
+error: guard policies must be non-generic unit structs
+ --> tests/ui-seal/fail/generic.rs:5:14
+  |
+5 | struct Policy<T>(T);
+  |              ^

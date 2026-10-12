@@ -1,0 +1,10 @@
+[package]
+name = "matrix-single"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+
+[dependencies]
+furnace = { package = "furnace-rs", path = "../../../../../furnace-rs", default-features = false, features = ["http", "runtime-tokio"] }
+
+[workspace]

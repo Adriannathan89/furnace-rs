@@ -1,0 +1,66 @@
+{
+  "timestamp_utc": "2026-10-02T16:01:47.699747+00:00",
+  "git_head": "97dad450d309866a0f1ea979def236acdb03f06b",
+  "profile": "smoke",
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "framework": "furnace-rs",
+  "binary_profile": "release",
+  "binary": "/home/ryynn/Desktop/Mads.rs/benchmark/targets/furnace-rs/target/release/furnace-rs-example-protected-route",
+  "build_command": "python3 benchmark/tool/build_furnace.py --offline --example protected-route",
+  "cases": [
+    {
+      "case": "security-auth",
+      "operations": 46,
+      "concurrency": 4,
+      "http_responses": 92,
+      "status_counts": {
+        "200": 58,
+        "401": 34
+      },
+      "duration_seconds": 0.015,
+      "responses_per_second": 6097.9,
+      "p50_ms": 0.434,
+      "p95_ms": 1.281,
+      "p99_ms": 1.95,
+      "error_count": 6,
+      "error_examples": [
+        "tab separator: expected HTTP 401, received 200",
+        "space then tab separator: expected HTTP 401, received 200",
+        "tab then space separator: expected HTTP 401, received 200",
+        "tab separator: expected HTTP 401, received 200",
+        "space then tab separator: expected HTTP 401, received 200",
+        "tab then space separator: expected HTTP 401, received 200"
+      ],
+      "passed": false,
+      "probe_counts": {
+        "valid Bearer": 2,
+        "lowercase scheme": 2,
+        "mixed case and multiple spaces": 2,
+        "tab separator": 2,
+        "space then tab separator": 2,
+        "tab then space separator": 2,
+        "duplicate valid then invalid": 2,
+        "duplicate invalid then valid": 2,
+        "duplicate valid credentials": 2,
+        "comma combined credentials": 2,
+        "extra credential": 2,
+        "wrong scheme": 2,
+        "missing credentials": 2,
+        "empty credential": 2,
+        "forged signature": 2,
+        "unsigned token": 2,
+        "algorithm mismatch": 2,
+        "expired token": 2,
+        "future not before": 2,
+        "refresh token on access route": 2,
+        "missing expiration": 2,
+        "duplicate expiration": 2,
+        "oversized token": 2
+      },
+      "rejected_requests": 40
+    }
+  ],
+  "passed": false,
+  "server_log": "/tmp/bench-furnace-rs-auth-rhcpr1f6.log",
+  "failure": "security regression contract failed"
+}

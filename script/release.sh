@@ -2,10 +2,18 @@
 set -euo pipefail
 
 mode="stable"
-if [[ "${1:-}" == "--beta" ]]; then
-  mode="beta"
-  shift
-fi
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --beta)
+      mode="beta"
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 
 if [[ "$#" -ne 1 || ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   if [[ "$mode" == "beta" ]]; then
@@ -24,11 +32,11 @@ for command in git python3 cargo; do
 done
 
 repository_root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
-  echo "Run this script inside the MADS.rs Git repository." >&2
+  echo "Run this script inside the furnace-rs Git repository." >&2
   exit 1
 }
 if [[ ! -f "$repository_root/Cargo.toml" || ! -d "$repository_root/crates" ]]; then
-  echo "The Git repository is not a MADS.rs workspace." >&2
+  echo "The Git repository is not a furnace-rs workspace." >&2
   exit 1
 fi
 
@@ -45,13 +53,15 @@ root = Path(sys.argv[1])
 mode = sys.argv[2]
 base = sys.argv[3]
 packages = (
-    "mads-core-macros",
-    "mads-common-macros",
-    "mads-core",
-    "mads-extra",
-    "mads-common",
-    "mads",
-    "mads-cli",
+    "furnace-rs-core-macros",
+    "furnace-rs-common-macros",
+    "furnace-rs-core",
+    "furnace-rs-persistence",
+    "furnace-rs-extra",
+    "furnace-rs-common",
+    "furnace-rs-testing",
+    "furnace-rs",
+    "furnace-rs-cli",
 )
 
 root_manifest = root / "Cargo.toml"
@@ -86,7 +96,9 @@ for manifest in sorted((root / "crates").glob("*/Cargo.toml")):
     original = manifest.read_text(encoding="utf-8")
     output_lines = []
     for line in original.splitlines(keepends=True):
-        if re.match(r"\s*mads(?:-[a-z0-9-]+)?\s*=", line) and "path" in line:
+        is_framework_key = re.match(r"\s*furnace-rs(?:-[a-z0-9-]+)?\s*=", line)
+        is_framework_alias = re.search(r'\bpackage\s*=\s*"furnace-rs(?:-[a-z0-9-]+)?"', line)
+        if (is_framework_key or is_framework_alias) and "path" in line:
             updated, count = pin_pattern.subn(rf'\g<1>={target}\g<2>', line)
             if count != 1:
                 raise SystemExit(f"Expected one exact internal version pin in {manifest}: {line.strip()}")
@@ -95,20 +107,47 @@ for manifest in sorted((root / "crates").glob("*/Cargo.toml")):
         output_lines.append(line)
     changes[manifest] = "".join(output_lines)
 
-if pin_count == 0:
-    raise SystemExit("No internal MADS dependency pins were found.")
+cli_manifest = tomllib.loads(changes[root / "crates" / "furnace-rs-cli" / "Cargo.toml"])
+if cli_manifest["package"].get("version") != {"workspace": True}:
+    raise SystemExit("furnace-rs-cli must use version.workspace = true.")
 
-lockfile = root / "Cargo.lock"
-original_lock = lockfile.read_text(encoding="utf-8")
-updated_lock = original_lock
-for package in packages:
-    pattern = re.compile(
-        rf'(?m)(^\[\[package\]\]\nname = "{re.escape(package)}"\nversion = ")[^"]+("$)'
-    )
-    updated_lock, count = pattern.subn(rf'\g<1>{target}\g<2>', updated_lock)
-    if count != 1:
-        raise SystemExit(f"Cargo.lock must contain exactly one package record for {package}.")
-changes[lockfile] = updated_lock
+if pin_count == 0:
+    raise SystemExit("No internal FURNACE dependency pins were found.")
+
+root_lockfile = root / "Cargo.lock"
+for lockfile in sorted(root.rglob("Cargo.lock")):
+    original_lock = lockfile.read_text(encoding="utf-8")
+    updated_lock = original_lock
+    for package in packages:
+        manifest = root / "crates" / package / "Cargo.toml"
+        package_manifest = tomllib.loads(changes[manifest])
+        package_version = package_manifest["package"]["version"]
+        if isinstance(package_version, dict) and package_version.get("workspace") is True:
+            package_version = target
+        if not isinstance(package_version, str):
+            raise SystemExit(f"{manifest} must declare a literal version or version.workspace = true.")
+        pattern = re.compile(
+            rf'(?m)(^\[\[package\]\]\nname = "{re.escape(package)}"\nversion = ")[^"]+("$)'
+        )
+        updated_records = []
+
+        def update_record(match):
+            end = updated_lock.find("\n[[package]]", match.end())
+            record = updated_lock[match.start():end if end != -1 else len(updated_lock)]
+            if tomllib.loads(record)["package"][0].get("source") is not None:
+                # Registry and Git entries describe published dependencies, not
+                # workspace packages; their version/checksum must stay paired.
+                return match.group(0)
+            updated_records.append(match.group(0))
+            return f"{match.group(1)}{package_version}{match.group(2)}"
+
+        updated_lock = pattern.sub(update_record, updated_lock)
+        count = len(updated_records)
+        if count > 1 or (lockfile == root_lockfile and count != 1):
+            raise SystemExit(
+                f"{lockfile} must contain exactly one package record for {package}."
+            )
+    changes[lockfile] = updated_lock
 
 for path, contents in changes.items():
     tomllib.loads(contents)
@@ -116,7 +155,7 @@ for path, contents in changes.items():
 for path, contents in changes.items():
     if path.read_text(encoding="utf-8") == contents:
         continue
-    temporary = path.with_name(f".{path.name}.mads-release.tmp")
+    temporary = path.with_name(f".{path.name}.furnace-rs-release.tmp")
     temporary.write_text(contents, encoding="utf-8")
     os.replace(temporary, path)
 
@@ -127,5 +166,5 @@ PY
 cargo metadata --locked --format-version 1 --no-deps --manifest-path "$repository_root/Cargo.toml" >/dev/null
 cargo check --locked --workspace --all-targets --manifest-path "$repository_root/Cargo.toml"
 
-echo "Prepared MADS.rs workspace version $new_version"
+echo "Prepared furnace-rs workspace version $new_version"
 echo "Review Cargo.toml, crates/*/Cargo.toml, and Cargo.lock before committing."

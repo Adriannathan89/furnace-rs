@@ -1,5 +1,0 @@
-error: expected `trait`
- --> tests/ui/fail/routes_non_trait.rs:2:1
-  |
-2 | struct Routes;
-  | ^^^^^^

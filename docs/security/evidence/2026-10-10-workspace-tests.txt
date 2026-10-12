@@ -1,0 +1,2009 @@
+   Compiling furnace-rs-cli v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli)
+    Finished `test` profile [unoptimized] target(s) in 3.37s
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs-ade2870c49a9870d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/complete_catalog.rs (target/debug/deps/complete_catalog-fd2e098a6f6b6d9c)
+
+running 1 test
+test automatic_build_constructs_an_unreferenced_catalog_provider ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/configuration_facade.rs (target/debug/deps/configuration_facade-ff2588d7357de65e)
+
+running 3 tests
+test facade_and_prelude_expose_the_same_configuration_contract ... ok
+test unused_derive_does_not_register_a_startup_requirement ... ok
+test selected_provider_failure_prevents_dependent_construction ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/configuration_ui.rs (target/debug/deps/configuration_ui-8d7fa95c0f961d15)
+
+running 2 tests
+   Compiling furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.20s
+
+
+test tests/ui-configuration/pass/basic.rs ... ok
+test tests/ui-configuration/pass/generic.rs ... ok
+test tests/ui-configuration/pass/parse-with.rs ... ok
+
+
+test configuration_accepts_supported_shapes_and_minimal_generic_bounds ... ok
+    Checking furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.17s
+
+
+test tests/ui-configuration/fail/contradictory-length.rs ... ok
+test tests/ui-configuration/fail/float-overflow.rs ... ok
+test tests/ui-configuration/fail/integer-overflow.rs ... ok
+test tests/ui-configuration/fail/invalid-default.rs ... ok
+test tests/ui-configuration/fail/invalid-keys.rs ... ok
+test tests/ui-configuration/fail/invalid-validator.rs ... ok
+test tests/ui-configuration/fail/malformed-suppresses-bounds.rs ... ok
+test tests/ui-configuration/fail/unsupported-shape.rs ... ok
+test tests/ui-configuration/fail/stable/invalid-parser.rs ... ok
+test tests/ui-configuration/fail/stable/nested-bound.rs ... ok
+test tests/ui-configuration/fail/stable/secret-access.rs ... ok
+
+
+test configuration_rejects_helper_grammar_keys_shapes_and_parser_contracts ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.31s
+
+     Running tests/controller_conflicts.rs (target/debug/deps/controller_conflicts-caa2e4c7be2e47cd)
+
+running 3 tests
+test cross_controller_dynamic_conflicts_report_both_declarations ... ok
+test controller_construction_remains_independent_of_http_validation ... ok
+test router_validation_rejects_conflicts_before_any_registration ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/controller_missing.rs (target/debug/deps/controller_missing-4ba6696e826158f7)
+
+running 1 test
+test missing_controller_resolution_returns_core_diagnostic ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/direct_controller_ui.rs (target/debug/deps/direct_controller_ui-dfe6996e7831eb2b)
+
+running 1 test
+    Checking furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.15s
+
+
+test tests/ui-direct/fail/bare_verb.rs ... ok
+test tests/ui-direct/fail/body_order.rs ... ok
+test tests/ui-direct/fail/consuming.rs ... ok
+test tests/ui-direct/fail/generic_impl.rs ... ok
+test tests/ui-direct/fail/generic_method.rs ... ok
+test tests/ui-direct/fail/multiple_verbs.rs ... ok
+test tests/ui-direct/fail/mutable.rs ... ok
+test tests/ui-direct/fail/parameter.rs ... ok
+test tests/ui-direct/fail/reserved.rs ... ok
+test tests/ui-direct/fail/seal_duplicate.rs ... ok
+test tests/ui-direct/fail/seal_invalid.rs ... ok
+test tests/ui-direct/fail/seal_on_helper.rs ... ok
+test tests/ui-direct/fail/seal_outside_controller.rs ... ok
+test tests/ui-direct/fail/trait_impl.rs ... ok
+test tests/ui-direct/fail/wildcard.rs ... ok
+
+
+test direct_controller_rejects_invalid_declarations ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.92s
+
+     Running tests/facade.rs (target/debug/deps/facade-f1008e55d5bbdc4c)
+
+running 11 tests
+test controller_dependencies_follow_source_field_order ... ok
+test facade_attributes_register_stable_descriptors ... ok
+test service_dependencies_follow_source_field_order ... ok
+test prelude_exposes_core_types_and_bare_attributes ... ok
+test root_prefix_does_not_create_an_ambiguous_double_slash_path ... ok
+test controller_keeps_deterministic_route_metadata ... ok
+test prelude_exposes_the_http_runtime_surface ... ok
+test grouped_furnace_results_register_their_success_type ... ok
+test controller_constructs_after_multiple_usecases ... ok
+test cloned_service_handles_share_the_inner_allocation ... ok
+test prelude_exposes_cookie_types_through_native_axum ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/feature_matrix.rs (target/debug/deps/feature_matrix-def321e7c972d81e)
+
+running 5 tests
+test generated_minimal_project_selects_only_http_and_tokio ... ok
+test jwt_only_excludes_http_and_database_dependencies ... ok
+test http_includes_validation_and_rest_without_database_or_jwt ... ok
+test cookies_include_http_but_not_jwt_or_database ... ok
+test default_and_core_only_facades_exclude_diesel ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s
+
+     Running tests/furnace_api.rs (target/debug/deps/furnace_api-36e05f681bcdfb8b)
+
+running 2 tests
+test burn_rejects_an_application_without_routes_before_binding ... ok
+test imported_features_share_one_exported_storage_and_select_both_routes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/input_facade.rs (target/debug/deps/input_facade-3c97311464b3d80d)
+
+running 1 test
+test facade_and_prelude_expose_trait_and_derive ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/input_ui.rs (target/debug/deps/input_ui-12e67edcf0596c0b)
+
+running 2 tests
+   Compiling furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.28s
+
+
+test tests/ui-input/pass/custom-generic.rs ... ok
+test tests/ui-input/pass/structs-enums.rs ... ok
+
+
+test input_accepts_supported_shapes_and_minimal_generic_bounds ... ok
+    Checking furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.17s
+
+
+test tests/ui-input/fail/invalid-attributes.rs ... ok
+test tests/ui-input/fail/invalid-literals.rs ... ok
+test tests/ui-input/fail/invalid-types.rs ... ok
+test tests/ui-input/fail/malformed-suppresses-bounds.rs ... ok
+test tests/ui-input/fail/stable/custom-signature.rs ... ok
+test tests/ui-input/fail/stable/nested-bound.rs ... ok
+
+
+test input_rejects_helper_grammar_shapes_literals_and_callback_contracts ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.33s
+
+     Running tests/legacy_http_ui.rs (target/debug/deps/legacy_http_ui-ce817f7aaba8219f)
+
+running 1 test
+    Checking furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.17s
+
+
+test tests/ui-legacy/fail/stable/method_guard_skip.rs ... ok
+test tests/ui-legacy/fail/stable/route_traits.rs ... ok
+test tests/ui-legacy/fail/stable/trait_guard.rs ... ok
+
+
+test retired_http_api_is_rejected ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.73s
+
+     Running tests/logger.rs (target/debug/deps/logger-d18fe4c332fb20bc)
+
+running 1 test
+test facade_reexports_the_logger_contract_and_global_module ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_ui.rs (target/debug/deps/passport_ui-0e308fe7dd59ef9f)
+
+running 2 tests
+   Compiling furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.20s
+
+
+test tests/ui-passport/pass/guard.rs ... ok
+test tests/ui-passport/pass/guard_cfg.rs ... ok
+test tests/ui-passport/pass/principal.rs ... ok
+test tests/ui-passport/pass/principal_collections.rs ... ok
+test tests/ui-passport/pass/strategy.rs ... ok
+test tests/ui-passport/pass/strategy_cfg.rs ... ok
+
+
+test passport_principal_accepts_supported_shapes ... ok
+    Checking furnace-rs-common v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-common)
+    Checking furnace-rs-testing v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-testing)
+    Checking furnace-rs v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs)
+    Checking furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 1.57s
+
+
+test tests/ui-passport/fail/guard_both_policy_modes.rs ... ok
+test tests/ui-passport/fail/guard_controller.rs ... ok
+test tests/ui-passport/fail/guard_duplicate_scalar.rs ... ok
+test tests/ui-passport/fail/guard_invalid_cookie.rs ... ok
+test tests/ui-passport/fail/guard_invalid_strategy.rs ... ok
+test tests/ui-passport/fail/guard_missing_principal.rs ... ok
+test tests/ui-passport/fail/guard_policy.rs ... ok
+test tests/ui-passport/fail/guard_predicate.rs ... ok
+test tests/ui-passport/fail/guard_standalone.rs ... ok
+test tests/ui-passport/fail/guard_unknown_argument.rs ... ok
+test tests/ui-passport/fail/principal_duplicate_roles.rs ... ok
+test tests/ui-passport/fail/principal_policy_field_type.rs ... ok
+test tests/ui-passport/fail/principal_wrong_field.rs ... ok
+test tests/ui-passport/fail/strategy_future_send.rs ... ok
+test tests/ui-passport/fail/strategy_name.rs ... ok
+test tests/ui-passport/fail/strategy_trait.rs ... ok
+
+
+test passport_principal_rejects_unsupported_shapes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.46s
+
+     Running tests/path_resolution.rs (target/debug/deps/path_resolution-07d7ac9941ceb0b9)
+
+running 4 tests
+test automatic_run_consumer_compiles_through_the_facade ... ok
+test passport_without_cookies_reports_a_focused_cookie_source_error ... ok
+test conditional_routes_compile_and_register_in_both_feature_states ... ok
+test attributes_expand_for_supported_dependency_paths ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.91s
+
+     Running tests/provider.rs (target/debug/deps/provider-dad71c884c410630)
+
+running 4 tests
+test provider_visibility_matches_function_visibility ... ok
+test provider_dependencies_follow_parameter_order ... ok
+test construct_does_not_recursively_build_a_missing_provider_dependency ... ok
+test automatic_build_stores_direct_and_fallible_provider_outputs ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/seal_ui.rs (target/debug/deps/seal_ui-b7a8629ef8832262)
+
+running 2 tests
+   Compiling furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.21s
+
+
+test tests/ui-seal/pass/policy.rs ... ok
+
+
+test static_policies_accept_typed_sources_and_authorization ... ok
+    Checking furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.17s
+
+
+test tests/ui-seal/fail/fields.rs ... ok
+test tests/ui-seal/fail/generic.rs ... ok
+test tests/ui-seal/fail/managed.rs ... ok
+test tests/ui-seal/fail/missing_principal.rs ... ok
+test tests/ui-seal/fail/principal.rs ... ok
+test tests/ui-seal/fail/skip.rs ... ok
+test tests/ui-seal/fail/source.rs ... ok
+
+
+test static_policies_reject_invalid_declarations ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.30s
+
+     Running tests/test_attribute.rs (target/debug/deps/test_attribute-f63e9cc48f1f0211)
+
+running 3 tests
+test service_fixture_runs ... ok
+test controller_fixture_runs ... ok
+    Checking furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.17s
+
+
+test tests/ui-test-attribute/arguments.rs ... ok
+test tests/ui-test-attribute/generics.rs ... ok
+test tests/ui-test-attribute/macro_arguments.rs ... ok
+test tests/ui-test-attribute/module.rs ... ok
+test tests/ui-test-attribute/outside.rs ... ok
+test tests/ui-test-attribute/sync.rs ... ok
+
+
+test test_attribute_compile_fail ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.71s
+
+     Running tests/typed_dispatch.rs (target/debug/deps/typed_dispatch-df68df837537b364)
+
+running 1 test
+test facade_builds_a_router_with_typed_inherent_dispatch ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/ui.rs (target/debug/deps/ui-f2455d22abc99bf5)
+
+running 2 tests
+   Compiling furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.22s
+
+
+test tests/ui/pass/controller_routes.rs ... ok
+test tests/ui/pass/controller_without_sealable.rs ... ok
+test tests/ui/pass/http_extractors.rs ... ok
+test tests/ui/pass/injector.rs ... ok
+test tests/ui/pass/injector_public_managed_dependency.rs ... ok
+test tests/ui/pass/main.rs ... ok
+test tests/ui/pass/managed.rs ... ok
+test tests/ui/pass/managed_dependency.rs ... ok
+test tests/ui/pass/module_imports.rs ... ok
+test tests/ui/pass/provider.rs ... ok
+test tests/ui/pass/provider_lifecycle.rs ... ok
+test tests/ui/pass/routes_custom_extractors.rs ... ok
+
+WARNINGS:
+┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+warning: unused import: `furnace_rs::prelude`
+ --> tests/ui/pass/routes_custom_extractors.rs:5:5
+  |
+5 | use furnace_rs::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `body`
+  --> tests/ui/pass/routes_custom_extractors.rs:37:28
+   |
+37 |     async fn create(&self, body: Json, id: furnace_rs::common::Path<u64>) {
+   |                            ^^^^ help: if this is intentional, prefix it with an underscore: `_body`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `id`
+  --> tests/ui/pass/routes_custom_extractors.rs:37:40
+   |
+37 |     async fn create(&self, body: Json, id: furnace_rs::common::Path<u64>) {
+   |                                        ^^ help: if this is intentional, prefix it with an underscore: `_id`
+┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+
+STDERR:
+┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+warning: unused import: `furnace_rs::prelude`
+ --> /home/ryynn/Desktop/furnace-rs/crates/furnace-rs/tests/ui/pass/routes_custom_extractors.rs:5:5
+  |
+5 | use furnace_rs::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `body`
+  --> /home/ryynn/Desktop/furnace-rs/crates/furnace-rs/tests/ui/pass/routes_custom_extractors.rs:37:28
+   |
+37 |     async fn create(&self, body: Json, id: furnace_rs::common::Path<u64>) {
+   |                            ^^^^ help: if this is intentional, prefix it with an underscore: `_body`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `id`
+  --> /home/ryynn/Desktop/furnace-rs/crates/furnace-rs/tests/ui/pass/routes_custom_extractors.rs:37:40
+   |
+37 |     async fn create(&self, body: Json, id: furnace_rs::common::Path<u64>) {
+   |                                        ^^ help: if this is intentional, prefix it with an underscore: `_id`
+┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+
+test tests/ui/pass/self_const.rs ... ok
+test tests/ui/pass/self_type.rs ... ok
+
+
+test core_attributes_accept_supported_shapes ... ok
+    Checking furnace-rs-tests v0.0.0 (/home/ryynn/Desktop/furnace-rs/target/tests/trybuild/furnace-rs)
+    Finished `dev` profile [unoptimized] target(s) in 0.17s
+
+
+test tests/ui/fail/controller_empty_routes.rs ... ok
+test tests/ui/fail/controller_generic.rs ... ok
+test tests/ui/fail/controller_tuple.rs ... ok
+test tests/ui/fail/furnace_generic.rs ... ok
+test tests/ui/fail/furnace_missing_registration.rs ... ok
+test tests/ui/fail/injector_non_send_future.rs ... ok
+test tests/ui/fail/injector_private_managed_dependency.rs ... ok
+test tests/ui/fail/injector_wrong_output.rs ... ok
+test tests/ui/fail/main_sync.rs ... ok
+test tests/ui/fail/module_shape.rs ... ok
+test tests/ui/fail/module_unknown_argument.rs ... ok
+test tests/ui/fail/routes_body_extractor_order.rs ... ok
+test tests/ui/fail/routes_cfg_attr_verb.rs ... ok
+test tests/ui/fail/routes_control_character.rs ... ok
+test tests/ui/fail/routes_generic.rs ... ok
+test tests/ui/fail/routes_invalid_endpoint_path.rs ... ok
+test tests/ui/fail/routes_invalid_parameter.rs ... ok
+test tests/ui/fail/routes_invalid_path.rs ... ok
+test tests/ui/fail/routes_invalid_receiver.rs ... ok
+test tests/ui/fail/routes_multiple_body_extractors.rs ... ok
+test tests/ui/fail/routes_multiple_verbs.rs ... ok
+test tests/ui/fail/service_derive.rs ... ok
+test tests/ui/fail/service_field_attribute.rs ... ok
+test tests/ui/fail/service_generic.rs ... ok
+test tests/ui/fail/service_tuple.rs ... ok
+test tests/ui/fail/verb_standalone.rs ... ok
+test tests/ui/fail/pre-1.99/controller_dependency.rs ... ok
+test tests/ui/fail/pre-1.99/injector_non_clone_dependency.rs ... ok
+test tests/ui/fail/pre-1.99/injector_too_many_dependencies.rs ... ok
+test tests/ui/fail/pre-1.99/managed_dependency.rs ... ok
+test tests/ui/fail/stable/controller_duplicate_routes.rs ... ok
+test tests/ui/fail/stable/controller_plain_trait.rs ... ok
+test tests/ui/fail/stable/injector_removed_element.rs ... ok
+test tests/ui/fail/stable/legacy_registration.rs ... ok
+test tests/ui/fail/stable/module_non_module_import.rs ... ok
+
+
+test core_attributes_reject_unsupported_shapes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.67s
+
+     Running tests/v090_acceptance.rs (target/debug/deps/v090_acceptance-5e3aedcd856f84f9)
+
+running 3 tests
+test v090_facade_missing_typed_configuration_fails_before_construction ... ok
+test v090_facade_validates_before_service_invocation_and_preserves_native_json ... ok
+test v090_facade_preserves_named_errors_and_redacts_internal_values ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/validated_routes.rs (target/debug/deps/validated_routes-3dd925cbbca2f4d8)
+
+running 2 tests
+test ordinary_axum_extractors_keep_native_rejection_bodies ... ok
+test generated_validated_extractors_reject_before_every_handler ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_cli-3170f023a714893b)
+
+running 78 tests
+test command::tests::format_failures_keep_valid_json_and_canonical_command_context ... ok
+test command::tests::parses_dev_selectors_and_preserves_forwarded_arguments ... ok
+test command::tests::dev_rejects_duplicate_and_missing_selectors_like_run ... ok
+test command::tests::format_is_rejected_by_streaming_and_help_commands_but_not_after_separator ... ok
+test command::tests::format_is_accepted_before_or_after_every_finite_command ... ok
+test command::tests::parses_inspection_selectors_and_rejects_application_arguments ... ok
+test command::tests::parses_run_selectors_and_preserves_forwarded_arguments ... ok
+test command::tests::preserves_non_unicode_application_arguments_after_separator ... ok
+test command::tests::rejects_duplicate_missing_and_non_unicode_selector_values ... ok
+test command::tests::rejects_removed_top_level_commands ... ok
+test command::tests::rejects_unknown_top_level_arguments_precisely ... ok
+test command::tests::streaming_selector_values_are_not_mistaken_for_format_options ... ok
+test dev_state::tests::configuration_change_without_a_successful_binary_is_a_noop ... ok
+test dev_state::tests::failed_rebuild_keeps_the_active_application_available_for_restart ... ok
+test dev_state::tests::initial_build_failure_keeps_watching_without_an_application ... ok
+test dev_state::tests::merged_restart_events_result_in_one_restart ... ok
+test dev_state::tests::restart_queued_during_a_failed_build_does_not_trigger_another_build ... ok
+test dev_state::tests::rebuild_events_during_a_build_coalesce_to_one_follow_up_build ... ok
+test dev_state::tests::shutdown_stops_an_active_application_and_exits_even_while_building ... ok
+test dev_state::tests::unexpected_exit_retains_the_binary_for_later_relevant_changes ... ok
+test dev_state::tests::restart_during_a_build_is_consumed_by_the_replacement_start ... ok
+test dev_state::tests::starts_builds_restarts_and_rebuilds_an_application ... ok
+test diagnostic::tests::redacts_a_sourced_diagnostic_from_debug_output ... ok
+test dev_state::tests::successful_rebuild_stops_the_old_application_before_starting_the_new_one ... ok
+test diagnostic::tests::renders_a_stable_human_diagnostic ... ok
+test diagnostic::tests::reserves_furnace204_for_cli_syntax ... ok
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+test dev::tests::shutdown_awaits_the_active_build_cleanup ... ok
+test cargo::tests::build_command_selects_the_exact_cargo_binary ... ok
+test cargo::tests::artifact_collection_processes_messages_incrementally ... ok
+test cargo::tests::successful_build_without_the_requested_artifact_is_furnace201 ... ok
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Finished `dev` profile [unoptimized] target(s) in 0.41s
+test cargo::tests::builds_the_exact_single_application_artifact ... ok
+test output::model::tests::error_conversion_is_redacted_and_normalizes_its_location ... ok
+test output::model::tests::explicit_public_locations_preserve_the_given_schema_path ... ok
+test output::path::tests::normalizes_platform_separators_and_package_relative_paths ... ok
+test output::path::tests::retains_normalized_paths_outside_the_package_root ... ok
+test output::tests::renderer_failure_is_a_safe_json_operational_diagnostic ... ok
+test output::tests::renderer_failure_is_an_operational_furnace204_error ... ok
+test private_temp_dir::tests::an_absent_child_test_cannot_be_counted_as_a_security_check ... ok
+    Blocking waiting for file lock on package cache
+test private_temp_dir::tests::private_directories_exclude_other_users_under_each_umask ... ok
+test private_temp_dir::tests::private_directory_child ... ok
+test process::tests::forced_fixture_child ... ok
+test process::tests::graceful_fixture_child ... ok
+   Compiling furnace-rs-common v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-common)
+
+running 1 test
+test process::tests::graceful_fixture_child ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 77 filtered out; finished in 0.01s
+
+test process::tests::graceful_stop_notifies_and_reaps_the_child ... ok
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+test process::tests::spawn_retries_while_executable_is_temporarily_busy ... ok
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+test cargo::tests::selects_only_the_requested_executable_artifact ... ok
+
+running 1 test
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+test dev::tests::scripted_driver_rebuilds_without_stopping_the_last_good_application ... ok
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking    Blocking waiting for file lock on build directory
+ waiting for file lock on build directory
+    Blocking waiting for file lock on build directory
+    Blocking waiting for file lock on package cache
+test process::tests::timed_out_stop_forcibly_kills_and_reaps_the_child ... ok
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+test project::tests::a_virtual_workspace_requires_package_selection_when_default_members_are_ambiguous ... ok
+    Blocking waiting for file lock on build directory
+    Blocking waiting for file lock on build directory
+    Blocking waiting for file lock on build directory
+test project::tests::default_run_wins_and_explicit_bin_overrides_it ... ok
+test project::tests::one_package_and_one_binary_need_no_selectors ... ok
+test render::tests::failed_reports_keep_empty_partial_sections_visible ... ok
+test render::tests::renders_diagnostics_in_core_style_and_stable_order ... ok
+test render::tests::renders_doctor_groups_in_fixed_order ... ok
+test render::tests::renders_graph_sections_in_stable_order ... ok
+test render::tests::renders_routes_in_stable_order ... ok
+test scaffold::publish::tests::destination_race_preserves_the_competing_directory_and_cleans_staging ... ok
+test scaffold::publish::tests::directory_sync_propagates_supported_platform_errors ... ok
+test scaffold::publish::tests::preparation_failure_removes_the_private_staging_directory ... ok
+test scaffold::publish::tests::private_scaffold_child ... ok
+test project::tests::local_watch_roots_include_reachable_path_dependencies_only ... ok
+test scaffold::publish::tests::staging_sync_failure_removes_the_private_staging_directory ... ok
+test scaffold::publish::tests::write_failure_removes_only_the_owned_staging_directory ... ok
+test scaffold::template::tests::path_safety_rejects_root_parent_and_current_components ... ok
+test watch::tests::classifies_both_rename_paths_and_ignores_access_events ... ok
+test watch::tests::classifies_relevant_paths_and_ignores_generated_and_editor_paths ... ok
+test watch::tests::excluded_nested_package_owns_its_source_path ... ok
+test watch::tests::rebuild_dominates_restart_in_a_change_batch ... ok
+test scaffold::publish::tests::scaffold_directories_are_private_under_each_umask ... ok
+test process::tests::spawn_returns_an_error_when_executable_stays_busy ... ok
+   Compiling furnace-rs v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs)
+   Compiling furnace-rs-inspection-protocol-fixture v0.1.0 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli/tests/fixtures/inspection/protocol)
+    Finished `test` profile [unoptimized] target(s) in 2.10s
+     Running unittests src/lib.rs (tests/fixtures/inspection/protocol/target/debug/deps/furnace_rs_inspection_protocol_fixture-365f6025ae4d76ea)
+
+running 1 test
+test tests::output_is_hidden_until_the_writer_finishes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling furnace-rs-inspection-protocol-fixture v0.1.0 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli/tests/fixtures/inspection/protocol)
+test inspection::tests::protocol_fixture_publishes_complete_outputs_atomically ... ok
+    Finished `dev` profile [unoptimized] target(s) in 2.06s
+   Compiling furnace-rs-inspection-protocol-fixture v0.1.0 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli/tests/fixtures/inspection/protocol)
+test inspection::tests::accepts_matching_acknowledgement_and_report_from_current_furnace_version ... ok
+    Finished `dev` profile [unoptimized] target(s) in 2.15s
+   Compiling furnace-rs-inspection-protocol-fixture v0.1.0 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli/tests/fixtures/inspection/protocol)
+test inspection::tests::rejects_a_child_that_exits_before_acknowledging ... ok
+    Finished `dev` profile [unoptimized] target(s) in 2.35s
+    Finished `dev` profile [unoptimized] target(s) in 2.41s
+   Compiling furnace-rs-inspection-protocol-fixture v0.1.0 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli/tests/fixtures/inspection/protocol)
+test inspection::tests::accepts_output_published_between_the_file_check_and_child_exit ... ok
+    Finished `dev` profile [unoptimized] target(s) in 2.16s
+   Compiling furnace-rs-inspection-protocol-fixture v0.1.0 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli/tests/fixtures/inspection/protocol)
+test inspection::tests::terminates_a_child_that_acknowledges_without_reporting ... ok
+    Finished `dev` profile [unoptimized] target(s) in 2.41s
+   Compiling furnace-rs-inspection-protocol-fixture v0.1.0 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli/tests/fixtures/inspection/protocol)
+test inspection::tests::rejects_a_wrong_protocol_version ... ok
+test inspection::tests::accepts_valid_protocol_after_delayed_acknowledgement_and_report ... ok
+    Finished `dev` profile [unoptimized] target(s) in 2.60s
+   Compiling furnace-rs-inspection-protocol-fixture v0.1.0 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli/tests/fixtures/inspection/protocol)
+test inspection::tests::rejects_a_wrong_acknowledgement_token ... ok
+    Finished `dev` profile [unoptimized] target(s) in 2.68s
+test inspection::tests::rejects_malformed_report_data ... ok
+
+test result: ok. 78 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.52s
+
+     Running unittests src/main.rs (target/debug/deps/furnace-5b6dbd650da2604c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli.rs (target/debug/deps/cli-dd60ad22ab436ecb)
+
+running 10 tests
+test output_format_is_rejected_before_a_streaming_run_command ... ok
+test unknown_arguments_are_rejected_with_help ... ok
+test foundation_is_removed_with_usage_exit_two ... ok
+test help_is_printed_when_no_command_is_given ... ok
+test version_reports_the_workspace_version ... ok
+test retired_db_is_an_unknown_top_level_command ... ok
+test output_format_is_rejected_for_streaming_help_and_version_commands ... ok
+test run_forwards_a_format_looking_application_argument_after_the_separator ... ok
+test run_preserves_the_application_exit_code ... ok
+test run_needs_no_selector_for_one_application_and_forwards_arguments ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/command_matrix.rs (target/debug/deps/command_matrix-625b557796af3cde)
+
+running 5 tests
+test release_workflows_enforce_linux_full_and_cli_platform_split ... ok
+test cli_documentation_lists_the_exact_surface ... ok
+test finite_json_syntax_matrix_has_one_document_and_canonical_commands ... ok
+test complete_command_matrix_has_stable_usage_and_exit_classes ... ok
+test dev_starts_an_application_and_can_be_terminated ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.53s
+
+     Running tests/dev_cli.rs (target/debug/deps/dev_cli-fedf060e1c6d447e)
+
+running 3 tests
+test start_log_waits_for_complete_records_during_fragmented_writes ... ok
+test scripted_dev_command_is_advertised_by_the_cli ... ok
+test real_dev_loop ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 26.00s
+
+     Running tests/inspection_cli.rs (target/debug/deps/inspection_cli-81fd3742c5d38244)
+
+running 6 tests
+test a_binary_without_standard_run_is_killed_and_diagnosed ... ok
+test json_inspection_keeps_the_human_table_out_of_machine_stdout ... ok
+test one_standard_app_is_inspected_without_selectors_or_startup_effects ... ok
+test invalid_routes_preserve_partial_route_evidence ... ok
+test invalid_graph_preserves_partial_provider_evidence ... ok
+test graph_and_doctor_return_deterministic_framework_evidence ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.71s
+
+     Running tests/inspection_protocol.rs (target/debug/deps/inspection_protocol-204579858cfe3299)
+
+running 1 test
+test incompatible_direct_furnace_version_is_rejected_before_launch ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s
+
+     Running tests/json_cli.rs (target/debug/deps/json_cli-b440144bfc5f7be5)
+
+running 13 tests
+test model_serializes_unknown_syntax_command ... ok
+test model_serializes_nullable_diagnostics_and_normalized_locations ... ok
+test model_serializes_the_schema_v1_routes_success ... ok
+test retired_db_with_leading_json_format_is_an_unknown_command ... ok
+test syntax_failure_after_json_selection_writes_one_json_document_to_stdout ... ok
+test every_finite_json_syntax_failure_has_one_canonical_document ... ok
+test new_json_success_uses_the_full_schema_v2_snapshot_for_both_format_placements ... ok
+test inspection_failure_before_a_report_uses_null_data ... ok
+test inspection_doctor_json_uses_ordered_lowercase_statuses ... ok
+test inspection_routes_json_is_ordered_public_schema_data ... ok
+test inspection_graph_json_keeps_only_ordered_public_graph_fields ... ok
+test every_inspection_pre_report_failure_is_one_redacted_json_document ... ok
+test failed_inspection_reports_keep_ordered_safe_partial_json_data ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.83s
+
+     Running tests/library.rs (target/debug/deps/library-1d73e534a4eb819d)
+
+running 1 test
+test library_exposes_the_cli_runner ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/release_automation.rs (target/debug/deps/release_automation-2d3b8e20b4eedd75)
+
+running 22 tests
+test all_packages_use_v102_pins_and_workspace_version ... ok
+test persistence_release_gates_and_framework_publish_order ... ok
+test furnace_tooling_documents_schema_two_and_six_file_scaffolding ... ok
+test beta_and_stable_workflows_require_the_complete_v090_gate_set ... ok
+test current_docs_describe_native_persistence ... ok
+test release_workflows_verify_v090_feature_boundaries_and_package_contents ... ok
+test documentation_describes_validation_and_configuration_boundaries ... ok
+test stable_and_beta_publication_require_security_verification ... ok
+test furnace_migration_guide_documents_the_complete_breaking_surface ... ok
+test documentation_points_to_current_examples_and_released_version ... ok
+test stable_workflow_enforces_release_gates_and_dependency_order ... ok
+test release_scripts_reject_invalid_versions_without_modifying_the_workspace ... ok
+test stable_release_rejects_retired_keep_cli_version_option ... ok
+test stable_release_rejects_an_explicit_cli_version_without_changes ... ok
+test beta_release_starts_at_one_for_a_new_base ... ok
+test release_updates_matching_nested_lockfiles ... ok
+test release_preserves_sourced_versions_and_checksums_in_nested_lockfiles ... ok
+test release_updates_internal_pins_through_the_recommended_facade_alias ... ok
+test stable_release_sets_the_exact_stable_version ... ok
+test beta_release_advances_cli_with_workspace ... ok
+test beta_release_increments_a_matching_base_and_only_changes_versions ... ok
+test package_content_policy_checks_every_workspace_archive ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.91s
+
+     Running tests/scaffold_cli.rs (target/debug/deps/scaffold_cli-ced583baa86f25f4)
+
+running 12 tests
+test name_and_templates_accept_the_approved_project_names ... ok
+test name_and_templates_render_the_exact_minimal_project_manifest ... ok
+test generated_project_has_only_the_six_direct_controller_files ... ok
+test name_and_templates_reject_invalid_project_names ... ok
+test filesystem_refuses_ordinary_and_dangling_destination_symlinks ... ok
+test filesystem_refuses_existing_files_and_directories_without_touching_them ... ok
+test command_output_rejects_duplicate_and_invalid_output_format_as_syntax ... ok
+test command_output_keeps_json_syntax_and_operational_failures_distinct ... ok
+test command_output_uses_syntax_exit_two_for_missing_extra_and_invalid_names ... ok
+test filesystem_preserves_unrelated_siblings_during_publication ... ok
+test filesystem_publishes_the_complete_project_without_a_staging_sibling ... ok
+test command_output_publishes_a_project_with_the_documented_human_next_steps ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/scaffold_consumer.rs (target/debug/deps/scaffold_consumer-56f9353d95b52a01)
+
+running 1 test
+test generated_project_compiles_and_exposes_the_minimal_application_offline ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.19s
+
+     Running tests/scaffold_http.rs (target/debug/deps/scaffold_http-1af0730659cde35d)
+
+running 1 test
+test generated_application_serves_hello_world_on_the_overridden_localhost_port ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.79s
+
+     Running tests/v090_acceptance.rs (target/debug/deps/v090_acceptance-a8b0f1fe3900db0f)
+
+running 2 tests
+test v090_cli_json_failures_preserve_exit_classes ... ok
+test v090_cli_generates_a_registry_ready_project_and_inspects_it_in_both_formats ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 32.50s
+
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_common-1505c54dbf33633f)
+
+running 50 tests
+test inspection::tests::request_absence_does_not_enable_inspection ... ok
+test inspection::tests::request_non_unicode_text_values_are_rejected ... ok
+test inspection::tests::request_invalid_values_are_rejected ... ok
+test inspection::tests::request_partial_values_are_rejected ... ok
+test inspection::tests::request_paths_may_be_non_unicode ... ok
+test inspection::tests::request_complete_values_preserve_unicode_fields_and_paths ... ok
+test inspection::tests::atomic_rename_refuses_a_destination_created_after_preflight ... ok
+test inspection::tests::atomic_publication_refuses_to_overwrite_a_final_file ... ok
+test passport::guard::bearer_syntax_tests::rejects_duplicate_authorization_fields_in_either_order ... ok
+test passport::guard::bearer_syntax_tests::accepts_bearer_alphabet_padding_and_outer_http_whitespace ... ok
+test passport::guard::bearer_syntax_tests::rejects_non_bearer_token_characters_and_misplaced_padding ... ok
+test jwt::service::tests::expiration_at_current_time_is_expired_without_clock_skew ... ok
+test jwt::service::tests::expiration_at_skew_adjusted_current_time_is_expired ... ok
+test passport::context::tests::strategy_context_hides_the_raw_bearer_token ... ok
+test passport::context::tests::strategy_context_hides_the_selected_cookie_token ... ok
+test inspection::tests::report_analysis_does_not_construct_providers ... ok
+test inspection::tests::endpoint_seal_reports::reports_protection_for_each_method_and_public_default ... ok
+test inspection::tests::atomic_publication_creates_only_the_complete_final_file ... ok
+test server::tests::bind_failure_still_attempts_shutdown ... ok
+test inspection::tests::report_keeps_configuration_values_redacted_and_is_deterministic ... ok
+test route::tests::unowned_guarded_contracts_keep_each_controller_context_and_direct_import_boundary ... ok
+test server::tests::explicit_raw_router_ignores_automatic_binding_keys_and_applies_cors ... ok
+test server::tests::http1_socket_peer_is_available_to_native_extractors ... ok
+test server::tests::invalid_cors_configuration_prevents_lifecycle_start ... ok
+test server::tests::ipv6_automatic_server_binding_uses_a_host_port_tuple ... ok
+test server::tests::operational_and_shutdown_failures_are_both_retained ... ok
+test server::tests::body_deadline_preserves_valid_json_and_body_size_rejections ... ok
+test server::tests::preflight_failure_prevents_lifecycle_start_and_bind ... ok
+test server::tests::raw_router_preflight_precedes_lifecycle_binding_and_graceful_shutdown ... ok
+test server::tests::header_deadline_preserves_http2_requests ... ok
+test server::tests::http2_socket_peer_is_available_to_native_extractors ... ok
+test server::tests::standard_run_bind_and_shutdown_failures_are_both_retained ... ok
+test inspection::tests::inspection_run_publishes_token_bound_ack_and_response_without_construction ... ok
+test server::tests::standard_run_bind_failure_starts_then_stops_lifecycle_once ... ok
+test server::tests::standard_run_preparation_ignores_unreachable_jwt_requirements ... ok
+test server::tests::standard_run_preparation_rejects_roots_without_reachable_routes ... ok
+test server::tests::standard_run_preparation_redacts_malformed_conventional_configuration ... ok
+test server::tests::startup_summary_formats_owned_binding_and_validated_route_count ... ok
+test server::tests::startup_summary_lists_every_method_and_full_path ... ok
+test validation::rejection::tests::json_server_class_body_read_failure_is_a_redacted_internal_error ... ok
+test server::tests::standard_run_preparation_roots_and_configures_a_routed_application ... ok
+test server::body::tests::stalled_body_returns_a_terminal_timeout ... ok
+test server::body::tests::application_pauses_do_not_expire_ready_frames ... ok
+test server::body::tests::progressing_frames_reset_the_idle_deadline ... ok
+test server::tests::private_shutdown_file_completes_the_standard_shutdown_signal ... ok
+test server::tests::incomplete_headers_expire_without_stopping_the_server ... ok
+test server::tests::stalled_http2_body_does_not_stop_other_requests ... ok
+test server::tests::idle_connections_and_partial_protocol_prefaces_expire ... ok
+test server::tests::stalled_request_body_expires_and_server_remains_available ... ok
+test server::tests::header_deadline_does_not_cancel_handlers_or_graceful_drain ... ok
+
+test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.01s
+
+     Running tests/cauldron_http_preflight.rs (target/debug/deps/cauldron_http_preflight-7e7b449533fc1899)
+
+running 12 tests
+test failed_root_selection_does_not_validate_the_complete_inventory ... ok
+test security::cfg_disabled_endpoints_do_not_require_jwt_configuration ... ok
+test complete_catalog_builder_also_rejects_invalid_endpoint_metadata ... ok
+test roots_and_focused_fixtures_ignore_unselected_malformed_controllers ... ok
+test security::supplied_jwt_cannot_bypass_a_private_foreign_owner ... ok
+test missing_or_duplicate_endpoint_sets_are_metadata_errors ... ok
+test security::seals_follow_controller_visibility_and_are_evaluated_once_per_analysis ... ok
+test security::focused_custom_seals_require_the_selected_strategy_output ... ok
+test security::focused_seals_reject_a_missing_required_jwt_supply_even_without_configuration ... ok
+test security::custom_strategy_visibility_is_checked_from_the_controller_owner ... ok
+test security::multiple_seals_fail_before_defaults_and_providers ... ok
+test conflicts_reject_before_any_constructor ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/controller_seals.rs (target/debug/deps/controller_seals-ca2ec7fb2e614ca8)
+
+running 8 tests
+test entirely_skipped_controller_needs_no_jwt_output_or_configuration ... ok
+test focused_all_skipped_controller_needs_no_jwt_supply ... ok
+test scoped::sealed_requests_can_use_direct_and_global_exported_strategies ... ok
+test cookie_seal_uses_its_declared_source_and_installs_the_typed_principal ... ok
+test scoped::a_shared_policy_preserves_each_controller_cauldron_and_application_binding ... ok
+test focused_controller_uses_endpoint_bindings_for_every_route ... ok
+test seal_protects_get_by_id_base_get_and_post_before_any_handler ... ok
+test skipped_endpoint_bypasses_authentication_and_policy_without_exposing_other_verbs ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/cookie_request.rs (target/debug/deps/cookie_request-bd12233d870c549c)
+
+running 9 tests
+test no_cookie_headers_produces_an_empty_jar ... ok
+test non_utf8_header_bytes_are_rejected ... ok
+test invalid_percent_escapes_are_rejected ... ok
+test invalid_cookie_names_are_rejected ... ok
+test empty_headers_and_segments_are_rejected ... ok
+test parses_multiple_headers_and_tracks_duplicate_names ... ok
+test parses_multiple_pairs_and_percent_encoded_values ... ok
+test debug_and_errors_disclose_only_safe_structure ... ok
+test malformed_cookie_is_bad_request_instead_of_being_skipped ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cookie_response.rs (target/debug/deps/cookie_response-12a4614dfd3059e2)
+
+running 12 tests
+test removal_emits_an_expired_deletion_cookie ... ok
+test tuple_response_emits_each_cookie_with_all_attributes ... ok
+test domain_attribute_injection_is_rejected_for_removal ... ok
+test domain_attribute_injection_is_rejected_for_add ... ok
+test path_attribute_injection_is_rejected_for_removal ... ok
+test path_attribute_injection_is_rejected_for_add ... ok
+test cookie_names_and_values_are_percent_encoded_into_valid_headers ... ok
+test response_errors_are_redacted_and_stably_classified ... ok
+test malformed_set_cookie_header_values_are_rejected_without_disclosure ... ok
+test invalid_batch_is_atomic ... ok
+test same_site_none_requires_secure_unless_unspecified ... ok
+test ascii_controls_in_attributes_are_rejected_for_add_and_removal ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cors.rs (target/debug/deps/cors-726b4c3aeb56244f)
+
+running 5 tests
+test disallowed_preflight_has_no_matching_origin_or_furnace_forbidden_body ... ok
+test allowed_preflight_returns_configured_headers_without_reaching_the_handler ... ok
+test actual_requests_reach_the_handler_but_only_allowed_origins_receive_cors_headers ... ok
+test allowed_origins_receive_cors_headers_on_application_and_router_errors ... ok
+test passport::preflight_bypasses_passport_guard_and_strategy_before_actual_requests_run_them ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/debug_mode.rs (target/debug/deps/debug_mode-e0ddd4cdc4c2021a)
+
+running 3 tests
+test request_logging_fixture ... ok
+test requests_are_silent_without_debug_mode ... ok
+test debug_mode_logs_timestamp_final_status_and_path_for_each_request ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.03s
+
+     Running tests/direct_controller.rs (target/debug/deps/direct_controller-51cb48d644bc6ce7)
+
+running 6 tests
+test wildcard_and_parameter_tree_conflicts_are_rejected ... ok
+test canonical_capture_conflicts_are_rejected_before_router_registration ... ok
+test wildcard_conflicts_are_rejected_before_registration ... ok
+test capture_names_must_agree_across_verbs ... ok
+test divergent_capture_branches_preserve_native_parameter_names ... ok
+test inherent_handlers_use_registered_dependencies_and_native_extractors ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/extract.rs (target/debug/deps/extract-63d8e5010a6e61b0)
+
+running 1 test
+test common_exports_standard_http_types ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/focused_router.rs (target/debug/deps/focused_router-47faf675231663e5)
+
+running 6 tests
+test ordinary_rootless_preflight_still_rejects_invalid_catalog ... ok
+test rejects_invalid_selected_metadata ... ok
+test rejects_absent_controller_metadata ... ok
+test rejects_ambiguous_selected_controller_metadata ... ok
+test selected_guard_still_requires_its_strategy ... ok
+test builds_only_selected_controller_routes_and_ignores_invalid_unselected_metadata ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/furnace_http_scope.rs (target/debug/deps/furnace_http_scope-4f853c251dfff74e)
+
+running 2 tests
+test controller_roles_and_exports_are_validated_before_construction ... ok
+test only_registered_controllers_install_routes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/furnace_infrastructure.rs (target/debug/deps/furnace_infrastructure-d17c3b8bbc22ae93)
+
+running 1 test
+test logger_global_requires_reachable_import ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/furnace_passport_boundaries.rs (target/debug/deps/furnace_passport_boundaries-05f0371ef4e202b2)
+
+running 3 tests
+test registered_invalid_strategy_metadata_is_still_rejected ... ok
+test guards_cannot_consume_a_private_foreign_jwt_override ... ok
+test unregistered_strategy_metadata_does_not_poison_a_root ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/http_configuration.rs (target/debug/deps/http_configuration-292d8fb04f9e127a)
+
+running 29 tests
+test common_manifest_has_no_database_feature ... ok
+test conventional_sources_reject_a_malformed_present_dotenv_file ... ok
+test conventional_sources_allow_both_optional_files_to_be_absent ... ok
+test conventional_sources_do_not_search_parent_directories ... ok
+test automatic_cors_skips_present_invalid_configuration_without_managed_routes ... ok
+test absent_cors_configuration_is_skipped ... ok
+test cors_accepts_wildcard_origins_and_normalizes_methods ... ok
+test cors_accepts_ip_origin_authorities_with_valid_ports ... ok
+test cors_accepts_explicit_origins_with_credentials_and_defaults ... ok
+test cors_accepts_wildcard_headers_and_empty_explicit_header_lists ... ok
+test conventional_sources_reject_a_malformed_present_toml_file ... ok
+test cors_reports_only_approved_evidence_keys_and_sources ... ok
+test conventional_sources_apply_dotenv_toml_and_environment_precedence ... ok
+test cors_empty_table_is_present_and_requires_origins_and_methods ... ok
+test conventional_toml_source_is_labeled_in_http_diagnostics_and_evidence ... ok
+test cors_requires_both_origins_and_methods ... ok
+test cors_rejects_glob_and_regex_like_origin_authorities_without_exposing_them ... ok
+test rootless_automatic_mode_skips_without_parsing_server_values ... ok
+test low_level_builder_overrides_the_server_decision_without_parsing_server_values ... ok
+test cors_rejects_invalid_origins_and_headers_without_exposing_values ... ok
+test cors_rejects_ambiguous_and_credentialed_wildcards ... ok
+test cors_rejects_invalid_shapes_booleans_and_max_age ... ok
+test cors_reports_positions_for_invalid_array_values_without_exposing_them ... ok
+test server_automatic_mode_uses_defaults_and_contributes_a_binding ... ok
+test server_automatic_mode_skips_before_parsing_when_the_root_has_no_routes ... ok
+test furnace_sources_ignore_legacy_brand_and_preserve_precedence ... ok
+test server_automatic_mode_accepts_hostnames_ip_addresses_and_explicit_ports ... ok
+test server_invalid_automatic_configuration_is_failed_and_redacted ... ok
+test server_automatic_mode_rejects_invalid_host_syntax_without_exposing_it ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/injector_controller.rs (target/debug/deps/injector_controller-bebb9ed38433d043)
+
+running 1 test
+test controller_injector_retains_route_metadata_and_trait_binding ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/input_validation.rs (target/debug/deps/input_validation-b3272fd1e15b05c3)
+
+running 14 tests
+test custom_and_generic_accepts_arbitrary_borrowed_field_types ... ok
+test builtin_validator_matrix_uses_frozen_messages_without_rejected_values ... ok
+test builtin_validator_matrix_checks_numeric_widths_and_decimal_multiples ... ok
+test derive_matrix_frozen_email_policy_and_unicode_length ... ok
+test derive_matrix_nested_primitives_reject_nonfinite_elements ... ok
+test custom_and_generic_callbacks_preserve_paths_and_run_whole_value_last ... ok
+test builtin_validator_matrix_counts_codepoints_and_traverses_ordered_collections ... ok
+test derive_matrix_collects_ordered_named_option_and_numeric_issues ... ok
+test derive_matrix_serde_paths_and_all_data_forms ... ok
+test derive_matrix_serde_variant_renames_defaults_and_whole_enum_callback ... ok
+test public_model_preserves_relative_paths_and_issue_order_without_values ... ok
+test custom_and_generic_optional_callbacks_and_nonfinite_order ... ok
+test derive_matrix_recurses_through_composed_collections ... ok
+test derive_matrix_numeric_boundaries_and_primitive_fields ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/inspection.rs (target/debug/deps/inspection-c50e9316069301e0)
+
+running 2 tests
+test protocol_never_serializes_or_debugs_configuration_values ... ok
+test protocol_round_trip_preserves_the_inspection_envelope ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/jwt_algorithms.rs (target/debug/deps/jwt_algorithms-eca3fb94e144c772)
+
+running 1 test
+test every_configured_algorithm_signs_and_verifies_typed_access_claims ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/jwt_auto_configuration.rs (target/debug/deps/jwt_auto_configuration-e41a965df9c2bf73)
+
+running 4 tests
+test missing_required_configuration_is_furnace121_without_furnace003 ... ok
+test invalid_required_configuration_is_furnace121_and_redacted ... ok
+test direct_requirement_activates_the_jwt_default ... ok
+test build_injects_the_cloneable_auto_configured_service_into_its_consumer ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/jwt_auto_configuration_override.rs (target/debug/deps/jwt_auto_configuration_override-b874aab150f049a4)
+
+running 1 test
+test provided_service_overrides_invalid_defaults_before_passport_is_parsed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/jwt_auto_configuration_skip.rs (target/debug/deps/jwt_auto_configuration_skip-4eae05ade3f8e41b)
+
+running 1 test
+test unused_invalid_passport_configuration_is_skipped_without_validation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/jwt_config.rs (target/debug/deps/jwt_config-afd17a7dfaf22602)
+
+running 6 tests
+test secret_alone_means_hs256_with_strict_defaults ... ok
+test common_validation_policy_parses_and_deduplicates_in_order ... ok
+test simple_mode_rejects_incompatible_algorithm_and_named_key_settings ... ok
+test each_hmac_algorithm_enforces_its_utf8_byte_minimum ... ok
+test debug_and_errors_never_expose_secret_values ... ok
+test malformed_empty_and_wrong_shape_values_are_rejected ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/jwt_contract.rs (target/debug/deps/jwt_contract-4d4980247804e884)
+
+running 4 tests
+test errors_expose_kinds_without_exposing_context_values ... ok
+test algorithms_are_closed_and_case_sensitive ... ok
+test sign_and_validation_options_always_carry_a_kind ... ok
+test claim_and_option_debug_output_is_structural_and_redacted ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/jwt_keyring.rs (target/debug/deps/jwt_keyring-2e72fd7660d118f7)
+
+running 7 tests
+test key_material_errors_and_debug_do_not_expose_inline_pem ... ok
+test named_mode_requires_a_unique_non_empty_allowlist_and_eligible_algorithms ... ok
+test key_ring_graph_rules_reject_invalid_key_ids_and_selection ... ok
+test malformed_unreadable_and_wrong_curve_pem_are_invalid_key_material ... ok
+test valid_ec_key_material_is_accepted_for_the_matching_curve ... ok
+test active_and_previous_rsa_keys_resolve_from_toml_directory ... ok
+test key_material_shape_and_hmac_length_are_strict ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/jwt_rotation.rs (target/debug/deps/jwt_rotation-71108915ff60c326)
+
+running 3 tests
+test rsa_public_key_cannot_be_reinterpreted_as_an_hmac_secret ... ok
+test named_keys_and_algorithms_reject_confusion_before_signature_validation ... ok
+test current_key_signs_while_previous_key_remains_verify_only ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/jwt_service.rs (target/debug/deps/jwt_service-56629c6179825744)
+
+running 11 tests
+test oversized_input_is_rejected_before_any_decoding ... ok
+test signing_rejects_zero_lifetime_and_non_object_or_reserved_custom_claims ... ok
+test explicit_jwt_injector_uses_declared_configuration ... ok
+test refresh_tokens_cannot_pass_access_validation ... ok
+test explicit_untrusted_decoding_does_not_validate_the_signature ... ok
+test service_round_trips_typed_access_claims ... ok
+test public_diagnostics_redact_tokens_and_claim_values ... ok
+test malformed_headers_and_duplicate_claim_keys_are_rejected ... ok
+test header_type_and_token_use_must_be_a_matching_profile ... ok
+test issuer_audience_subject_and_jwt_id_requirements_are_enforced ... ok
+test required_times_and_time_boundaries_are_strict ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/logger.rs (target/debug/deps/logger-ee0d80524ff918a5)
+
+running 6 tests
+test logger_delegates_info_messages_to_the_configured_inner_logger ... ok
+test logger_delegates_messages_to_the_configured_inner_logger ... ok
+test logger_includes_context_details_in_fatal_messages ... ok
+test logger_includes_trace_and_context_details_in_trace_messages ... ok
+test global_logger_module_provides_the_default_logger_to_other_modules ... ok
+test application_can_manually_provide_a_custom_global_logger ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/optional_seals.rs (target/debug/deps/optional_seals-bedea1f4bf5cd6d8)
+
+running 1 test
+test controller_without_sealable_is_public_without_jwt_configuration ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_authorization.rs (target/debug/deps/passport_authorization-c7336c213c1b5d3f)
+
+running 1 test
+test policies_run_roles_then_permissions_then_predicates_and_short_circuit_failures ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/passport_bearer.rs (target/debug/deps/passport_bearer-f327a333fef23865)
+
+running 4 tests
+test guarded_bearer_route_accepts_multiple_spaces_and_case_insensitive_scheme ... ok
+test guarded_bearer_route_rejects_ambiguous_credentials_before_strategy_and_handler ... ok
+test guarded_bearer_route_rejects_missing_credentials_with_json_and_bearer_challenge ... ok
+test guarded_bearer_route_verifies_before_invoking_the_handler ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/passport_cookie.rs (target/debug/deps/passport_cookie-e9d5b0ba7f08c05f)
+
+running 1 test
+test cookie_guards_require_exactly_one_valid_refresh_cookie_without_bearer_fallback ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/passport_guard_catalog.rs (target/debug/deps/passport_guard_catalog-c22f0d615aed5198)
+
+running 2 tests
+test manual_guard_metadata_without_a_principal_fails_closed ... ok
+test static_policy_records_all_rules_and_public_controller_has_no_seal ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_native_axum.rs (target/debug/deps/passport_native_axum-2efbdfefda3b3f23)
+
+running 3 tests
+test native_guard_requires_an_available_jwt_service ... ok
+test built_in_native_guard_installs_a_typed_claims_principal ... ok
+test native_guard_matches_generated_guard_authentication_and_policy_behavior ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/passport_preflight.rs (target/debug/deps/passport_preflight-b739c5adba9fcec8)
+
+running 3 tests
+test preflight_rejects_a_guard_with_a_different_selected_principal_type ... ok
+test managed_custom_strategies_override_jwt_and_select_refresh_independently ... ok
+test missing_jwt_configuration_fails_before_provider_construction_or_lifecycle ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_preflight_builtin.rs (target/debug/deps/passport_preflight_builtin-6edaac6106ca31cd)
+
+running 3 tests
+test claims_principal_selects_the_built_in_jwt_adapter ... ok
+test guarded_route_activates_jwt_without_a_direct_provider_requirement ... ok
+test explicit_jwt_service_still_overrides_guard_driven_configuration_before_parsing ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_preflight_custom_builtin.rs (target/debug/deps/passport_preflight_custom_builtin-9f81f41f21f0a2b7)
+
+running 1 test
+test custom_jwt_strategy_overrides_an_eligible_claims_principal_adapter ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_preflight_duplicate.rs (target/debug/deps/passport_preflight_duplicate-71951c71c56ff6d9)
+
+running 1 test
+test duplicate_strategy_fails_before_construction_or_lifecycle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_preflight_jwt_kind.rs (target/debug/deps/passport_preflight_jwt_kind-66b5cd88c0e80c52)
+
+running 1 test
+test preflight_rejects_a_refresh_strategy_registered_as_jwt ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_preflight_missing.rs (target/debug/deps/passport_preflight_missing-377541ebe5499712)
+
+running 1 test
+test missing_strategy_fails_before_construction_or_lifecycle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_preflight_refresh_kind.rs (target/debug/deps/passport_preflight_refresh_kind-f7d0a2f4fc6d6c3f)
+
+running 1 test
+test preflight_rejects_an_access_strategy_registered_as_jwt_refresh ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_preflight_unmanaged.rs (target/debug/deps/passport_preflight_unmanaged-a6d15fb7d523cf6a)
+
+running 1 test
+test unmanaged_strategy_is_rejected_during_analysis ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_principal.rs (target/debug/deps/passport_principal-936bdaa2e39e8e4a)
+
+running 6 tests
+test principal_contract_can_be_implemented_manually ... ok
+test derive_delegates_role_and_permission_membership ... ok
+test internal_error_formatting_redacts_its_source ... ok
+test rejected_authentication_is_generic_and_advertises_bearer ... ok
+test unguarded_verified_token_extractor_returns_typed_internal_rejection ... ok
+test unguarded_authenticated_extractor_returns_typed_internal_rejection ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_strategy.rs (target/debug/deps/passport_strategy-639e17045bab71db)
+
+running 3 tests
+test catalog_orders_strategies_by_name ... ok
+test guard_and_strategy_descriptors_retain_optional_declaration_namespaces ... ok
+test descriptor_retains_static_strategy_types_and_kind ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/passport_strategy_errors.rs (target/debug/deps/passport_strategy_errors-c513ef538e763da9)
+
+running 2 tests
+test passport_rejections_retain_internal_sources_without_leaking_them_through_formatting ... ok
+test invalid_bearer_credentials_and_strategy_rejections_are_generic_401s ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.01s
+
+     Running tests/response.rs (target/debug/deps/response-968a3b97812b15ce)
+
+running 12 tests
+test http_result_alias_uses_http_error ... ok
+test standard_errors_remain_send_and_sync ... ok
+test created_and_no_content_set_exact_statuses ... ok
+test standard_debug_and_display_never_reveal_internal_sources ... ok
+test conflict_serializes_its_safe_message ... ok
+test bad_request_serializes_its_safe_message ... ok
+test internal_hides_its_source_in_the_response ... ok
+test database_errors_propagate_with_question_mark_and_hide_their_source ... ok
+test not_found_serializes_its_safe_message ... ok
+test sourced_issues_preserve_paths_order_and_explicit_sources ... ok
+test created_preserves_the_inner_response_headers_and_body ... ok
+test named_errors_and_conversions_share_the_standard_envelope ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/route_validation.rs (target/debug/deps/route_validation-11a37e318482b5e1)
+
+running 7 tests
+test descriptors_retain_optional_declaration_namespaces ... ok
+test rejects_empty_and_duplicate_controller_identities ... ok
+test rejects_wildcards_before_axum_router_construction_can_panic ... ok
+test rejects_axum_reserved_and_malformed_capture_syntax ... ok
+test validated_routes_translate_parameters_for_axum ... ok
+test rejects_invalid_route_paths_and_source_coordinates ... ok
+test validates_root_routes_and_reports_registrar_metadata_mismatches ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/router.rs (target/debug/deps/router-9902f869a8bce0f8)
+
+running 5 tests
+test raw_router_configuration_applies_cors_to_native_only_router ... ok
+test raw_router_stays_unlayered_until_configured_after_native_merge ... ok
+test typed_registrar_dispatches_same_named_trait_methods ... ok
+test router_preserves_axum_http_routing_policies ... ok
+test extractors_and_crud_responses_use_the_real_request ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/scoped_auto_configuration.rs (target/debug/deps/scoped_auto_configuration-866156ce84353b3a)
+
+running 2 tests
+test unreachable_guard_does_not_require_configuration ... ok
+test reachable_guard_still_requires_jwt_configuration ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/scoped_passport.rs (target/debug/deps/scoped_passport-09c6b9d752b747a5)
+
+running 9 tests
+test strategy_in_an_unimported_child_module_is_not_visible ... ok
+test private_direct_imported_strategy_is_not_visible ... ok
+test no_visible_custom_strategy_retains_the_builtin_jwt_adapter ... ok
+test duplicate_custom_strategies_are_rejected_only_when_visible_to_one_guard ... ok
+test one_visible_custom_overrides_the_builtin_adapter ... ok
+test rootless_scoped_preflight_retains_global_duplicate_validation ... ok
+test transitively_imported_strategy_is_not_visible ... ok
+test same_name_in_disjoint_contexts_is_allowed ... ok
+test request_uses_context_binding ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/scoped_router.rs (target/debug/deps/scoped_router-6c75b0f339647dde)
+
+running 7 tests
+test rooted_router_rejects_conflicting_routes_within_selected_modules ... ok
+test rootless_router_retains_complete_route_catalog_validation ... ok
+test rooted_router_inherits_unowned_route_contracts_from_selected_controllers ... ok
+test rooted_router_installs_only_controllers_owned_by_reachable_modules ... ok
+test rooted_router_excludes_unimported_child_controllers_under_a_reachable_parent_namespace ... ok
+test rooted_router_installs_routes_from_every_reachable_http_module ... ok
+test registered_controller_keeps_contracts_from_other_rust_namespaces ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/seal_registration.rs (target/debug/deps/seal_registration-fd577ab838630ad7)
+
+running 1 test
+test seal_recording_does_not_construct_values ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/server.rs (target/debug/deps/server-ae57f26a1fd2b548)
+
+running 3 tests
+test run_extension_is_available_for_root_cauldrons ... ok
+test runtime_errors_preserve_structured_sources ... ok
+test serve_router_is_available_for_raw_native_routers ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/unused_seal_policy.rs (target/debug/deps/unused_seal_policy-e10d50b6869becbd)
+
+running 1 test
+test unused_policy_does_not_require_a_strategy_or_jwt_default ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/validated_extractors.rs (target/debug/deps/validated_extractors-0b1d5ed94aaaec46)
+
+running 25 tests
+test json_valid_input_reaches_the_handler_once ... ok
+test json_missing_renamed_field_is_one_required_issue_at_its_containing_path ... ok
+test json_other_client_body_read_failure_is_a_safe_bad_request ... ok
+test path_missing_field_custom_error_does_not_disclose_private_text ... ok
+test json_configured_body_limit_overflow_is_a_safe_payload_too_large ... ok
+test json_nested_rejection_retains_structured_containing_path ... ok
+test json_type_conversion_is_one_sourced_validation_issue ... ok
+test json_malformed_syntax_is_one_sourced_validation_issue ... ok
+test json_missing_field_custom_error_does_not_disclose_private_text ... ok
+test json_missing_or_wrong_content_type_is_a_safe_unsupported_media_type ... ok
+test json_post_conversion_validation_returns_every_issue_in_derive_order ... ok
+test query_missing_field_custom_error_does_not_disclose_private_text ... ok
+test query_path_custom_deserializer_messages_do_not_leak_into_paths ... ok
+test query_path_path_missing_field_is_one_required_path_issue ... ok
+test query_path_path_honors_serde_deny_unknown_fields ... ok
+test query_path_path_invalid_utf8_is_one_redacted_syntax_issue ... ok
+test query_path_path_type_conversion_is_one_redacted_path_issue ... ok
+test query_path_query_honors_serde_deny_unknown_fields ... ok
+test query_path_query_missing_renamed_field_is_one_required_query_issue ... ok
+test query_path_path_validation_returns_every_path_issue_in_derive_order ... ok
+test query_path_query_type_conversion_is_one_redacted_query_issue ... ok
+test query_path_valid_query_uses_external_names_and_ignores_unknown_fields ... ok
+test query_path_server_configuration_errors_are_redacted_internal_errors ... ok
+test query_path_query_validation_returns_every_query_issue_in_derive_order ... ok
+test query_path_valid_path_uses_into_inner_external_names_and_unknown_field_defaults ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_common_macros-14c0ab850e68c7ab)
+
+running 14 tests
+test guard::tests::policies_require_strategy_and_principal ... ok
+test guard::tests::rejects_duplicate_and_mixed_skip_fields ... ok
+test controller::managed::tests::generated_suffix_is_stable_and_sensitive_to_the_struct_shape ... ok
+test guard::tests::parses_the_complete_guard_grammar ... ok
+test controller::managed::tests::normalizes_self_types_in_nested_fields_and_expressions ... ok
+test controller::managed::tests::classifies_controller_attributes ... ok
+test guard::tests::rejects_invalid_names_sources_and_policy_forms ... ok
+test controller::managed::tests::rejects_controller_shapes_before_resolving_paths ... ok
+test guard::tests::static_policy_metadata_preserves_all_rules_without_inventory_activation ... ok
+test controller::managed::tests::rejects_seventeen_controller_dependencies_with_a_focused_error ... ok
+test controller::managed::tests::records_a_managed_controller_and_its_static_seal_callback ... ok
+test path::tests::resolves_all_supported_crate_path_shapes ... ok
+test passport_strategy::tests::generated_strategy_descriptor_retains_the_declaration_namespace ... ok
+test path::tests::common_path_reports_missing_consumer_dependency ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_core-b222cdc56673ee1b)
+
+running 23 tests
+test graph::analysis::tests::different_providers_for_one_type_are_ambiguous_even_when_provided ... ok
+test auto_configuration::analysis::tests::override_precedes_absent_requirement_and_configuration_access ... ok
+test auto_configuration::analysis::tests::descriptors_are_evaluated_in_identifier_order ... ok
+test auto_configuration::analysis::tests::one_pass_does_not_turn_selected_outputs_into_new_requirements ... ok
+test auto_configuration::analysis::tests::absent_requirement_skips_without_configuration_access ... ok
+test auto_configuration::analysis::tests::failed_condition_covers_the_missing_output_and_retains_all_consumers ... ok
+test graph::analysis::tests::covered_missing_dependencies_suppress_only_their_own_diagnostic ... ok
+test auto_configuration::analysis::tests::duplicate_identifiers_fail_without_calling_evaluators ... ok
+test auto_configuration::analysis::tests::conflicting_active_defaults_fail_instead_of_using_priority ... ok
+test config::tests::unicode_process_environment_overrides_dotenv_variables ... ok
+test graph::analysis::tests::independent_nodes_use_stable_topological_tie_breaking ... ok
+test config::tests::non_unicode_process_environment_is_ignored_for_interpolation ... ok
+test graph::analysis::tests::provided_values_override_one_descriptor_and_remain_public ... ok
+test graph::analysis::tests::multi_node_cycle_is_canonical_regardless_of_input_order ... ok
+test graph::analysis::tests::repeated_exact_identity_is_duplicate_not_ambiguous ... ok
+test graph::analysis::tests::repeated_identity_group_emits_one_duplicate_diagnostic ... ok
+test graph::analysis::tests::satisfied_nodes_are_inspectable_but_absent_from_the_plan ... ok
+test graph::analysis::tests::self_cycle_renders_a_closed_path ... ok
+test graph::analysis::tests::unresolved_dependencies_are_aggregated_in_stable_type_order ... ok
+test graph::model::tests::edges_and_steps_expose_stable_metadata ... ok
+test graph::model::tests::immutable_graph_types_expose_stable_metadata ... ok
+test lifecycle::tests::resource_preserves_hook_order_and_erases_the_native_value ... ok
+test config::tests::optional_dotenv_resolves_exact_placeholders_without_becoming_config ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/architecture.rs (target/debug/deps/architecture-7bcfb1dd21be147f)
+
+running 3 tests
+test dependency_name_families_are_forbidden ... ok
+test core_configuration_has_no_direct_serialization_or_delivery_dependencies ... ok
+test core_normal_dependencies_stay_inside_the_core_boundary ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+
+     Running tests/auto_configuration_builder.rs (target/debug/deps/auto_configuration_builder-b9b6e772221dbad3)
+
+running 8 tests
+test failed_default_suppresses_only_its_redundant_missing_provider ... ok
+test analysis_selects_without_applying_or_constructing ... ok
+test failed_default_build_preserves_the_evaluator_error_source ... ok
+test rootless_scope_remains_absent_from_official_contexts ... ok
+test rooted_scope_reaches_evaluation_and_application_contexts ... ok
+test apply_failure_prevents_every_provider_constructor ... ok
+test provided_value_overrides_the_default ... ok
+test build_applies_default_before_constructing_consumers_and_retains_report ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/auto_configuration_report.rs (target/debug/deps/auto_configuration_report-a71e80d7d8d99c52)
+
+running 3 tests
+test report_construction_redacts_unknown_text ... ok
+test every_status_has_the_expected_debug_name ... ok
+test report_accessors_preserve_stable_redacted_evidence ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/builder.rs (target/debug/deps/builder-06c2cd0543e7bab0)
+
+running 10 tests
+test root_can_be_selected_only_once ... ok
+test builder_analysis_is_repeatable_and_side_effect_free ... ok
+test explicitly_constructs_a_provider_after_its_dependency_is_provided ... ok
+test explicit_and_preconstructed_values_have_distinct_states ... ok
+test build_constructs_the_complete_graph_in_dependency_order ... ok
+test construct_does_not_recursively_create_missing_dependencies ... ok
+test built_application_owns_and_runs_registered_lifecycle_hooks ... ok
+test builder_groups_infrastructure_before_application_regardless_of_call_order ... ok
+test supplied_values_suppress_matching_constructors ... ok
+test rooted_builder_constructs_only_the_selected_application ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/catalog.rs (target/debug/deps/catalog-9cc60d09341c8aa3)
+
+running 9 tests
+test provider_for_reports_a_missing_descriptor ... ok
+test provider_for_selects_the_matching_descriptor ... ok
+test modules_are_sorted_by_stable_name ... ok
+test cauldron_for_reports_missing_metadata ... ok
+test cauldron_for_reports_repeated_exact_identities ... ok
+test provider_for_reports_ambiguous_descriptors ... ok
+test cauldron_for_selects_the_annotated_cauldron_descriptor ... ok
+test manual_construction_rejects_ambiguous_provider_outputs ... ok
+test module_macro_requires_imports_to_implement_module ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.28s
+
+     Running tests/cauldron_graph.rs (target/debug/deps/cauldron_graph-6916f31279916e91)
+
+running 7 tests
+test missing_root_metadata_uses_a_stable_subject ... ok
+test same_namespace_furnaces_do_not_claim_each_others_declarations ... ok
+test duplicate_direct_import_reports_stable_subject_and_location ... ok
+test diamond_graph_is_deterministic_and_deduplicated ... ok
+test self_import_reports_the_cycle_and_source_location ... ok
+test rootless_provider_analysis_ignores_furnace_namespace_overlap ... ok
+test multi_module_cycle_reports_stable_chain_and_locations ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cauldron_registration.rs (target/debug/deps/cauldron_registration-1a685ac01effa4f9)
+
+running 3 tests
+test duplicate_members_and_nonlocal_exports_fail_before_construction ... ok
+test linked_factory_is_not_implicitly_registered ... ok
+test named_field_types_register_without_construction ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cauldron_scope.rs (target/debug/deps/cauldron_scope-5fceb105573b28e1)
+
+running 5 tests
+test independent_roots_keep_separate_ownership ... ok
+test repeated_imports_and_cycles_fail_but_diamonds_register_once ... ok
+test overrides_keep_ownership_and_cannot_supply_unregistered_outputs ... ok
+test global_exports_must_be_reachable ... ok
+test direct_import_requires_explicit_export ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/config.rs (target/debug/deps/config-24591bfe5ee770f0)
+
+running 32 tests
+test debug_redacts_document_and_resolved_string_array_values ... ok
+test environment_source_ignores_non_unicode_names_and_values ... ok
+test debug_redacts_all_configuration_values ... ok
+test iter_returns_keys_in_lexical_order ... ok
+test later_sources_override_values_and_retain_attribution ... ok
+test later_source_replaces_an_entry_across_value_shapes ... ok
+test later_dotenv_wins_and_variables_do_not_become_configuration ... ok
+test interpolation_is_exact_and_non_recursive ... ok
+test map_source_inserts_string_arrays_without_changing_scalar_access ... ok
+test missing_exact_variable_names_key_and_variable_without_config_value ... ok
+test malformed_dotenv_does_not_expose_the_line_or_parser_source ... ok
+test malformed_toml_is_redacted_and_has_no_parser_source ... ok
+test missing_optional_dotenv_is_ignored ... ok
+test missing_toml_reports_only_its_path ... ok
+test legacy_toml_load_remains_scalar_only ... ok
+test empty_toml_tables_remain_observable_without_becoming_values ... ok
+test inline_table_after_commented_header_reports_complete_flattened_subject ... ok
+test later_toml_table_declaration_supplies_the_table_source ... ok
+test missing_array_variable_names_only_the_key_and_variable ... ok
+test missing_optional_toml_is_empty_but_present_invalid_toml_fails ... ok
+test normalized_environment_key_collisions_use_the_later_variable ... ok
+test optional_toml_directory_is_an_unreadable_file_error ... ok
+test resolve_path_returns_none_for_missing_and_array_values ... ok
+test required_dotenv_and_present_directory_fail_safely ... ok
+test source_failures_preserve_their_diagnostic_code ... ok
+test resolve_path_preserves_absolute_values ... ok
+test toml_inline_table_detection_respects_quoted_keys_and_multiline_strings ... ok
+test toml_string_arrays_interpolate_each_exact_element ... ok
+test paths_use_the_winning_sources_structured_origin ... ok
+test toml_source_flattens_scalar_tables_and_allows_environment_override ... ok
+test unsupported_toml_values_name_the_key_without_exposing_secrets ... ok
+test toml_rejects_every_non_string_array_without_leaking_values ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/configuration.rs (target/debug/deps/configuration-bb1f99ef201d9cb3)
+
+running 14 tests
+test configuration_validator_matrix_email_policy_and_decimal_boundaries ... ok
+test structured_errors_and_secrets_preserve_order_and_safe_diagnostics ... ok
+test structured_errors_and_secrets_redact_without_inner_formatting_bounds ... ok
+test configuration_validator_matrix_float_defaults_ranges_and_custom_finiteness ... ok
+test derive_prefix_nested_and_default_matrix_aggregates_without_default_fallback ... ok
+test manual_configuration_and_scalar_matrix_checks_widths_and_finiteness ... ok
+test derive_prefix_nested_and_default_matrix_builds_optional_and_generic_fields ... ok
+test manual_configuration_and_scalar_matrix_preserves_manual_prefixes ... ok
+test configuration_validator_matrix_custom_parsers_keep_errors_private ... ok
+test configuration_validator_matrix_checks_strings_numbers_arrays_and_defaults ... ok
+test manual_configuration_and_scalar_matrix_preserves_shapes_and_table_presence ... ok
+test derive_prefix_nested_and_default_matrix_detects_empty_optional_tables_and_wrong_shapes ... ok
+test typed_configuration_uses_existing_dotenv_toml_and_environment_precedence ... ok
+test manual_configuration_and_scalar_matrix_resolves_paths_with_winning_origin ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/construction_failure.rs (target/debug/deps/construction_failure-7a5208f7152453a1)
+
+running 1 test
+test construction_failure_preserves_source_and_consumer_path ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cycle_validation.rs (target/debug/deps/cycle_validation-425463ab809c90d5)
+
+running 1 test
+test multi_node_cycle_reports_furnace005_before_any_constructor_runs ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/descriptor.rs (target/debug/deps/descriptor-e4de6ed37ecd1252)
+
+running 6 tests
+test cauldron_descriptor_preserves_namespace_and_imports ... ok
+test cauldron_descriptor_tracks_global_status ... ok
+test cauldron_descriptor_preserves_identity_and_location ... ok
+test provider_namespace_is_additive_and_optional ... ok
+test ordinary_descriptor_contract_remains_unchanged_and_lifecycle_is_additive ... ok
+test provider_descriptor_preserves_complete_construction_metadata ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/diagnostic.rs (target/debug/deps/diagnostic-6ec78123033cef94)
+
+running 6 tests
+test aggregated_errors_preserve_order_and_primary_code ... ok
+test graph_diagnostic_codes_are_stable ... ok
+test ordinary_error_formatting_redacts_retained_sources_at_every_depth ... ok
+test renders_a_structured_diagnostic ... ok
+test renders_multiple_suggestions_in_insertion_order ... ok
+test retains_a_source_error ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/focused_selection.rs (target/debug/deps/focused_selection-02f64c78e90ddfca)
+
+running 12 tests
+test focus_and_root_cannot_be_combined ... ok
+test focus_checks_ambiguous_target_even_when_supplied ... ok
+test focus_reports_missing_selected_provider ... ok
+test focus_reports_ambiguous_selected_provider ... ok
+test focus_reports_cycle_only_in_the_selected_chain ... ok
+test focus_requires_an_explicit_value_even_when_a_provider_is_registered ... ok
+test focus_required_supply_blocks_even_a_relevant_auto_configuration ... ok
+test focus_uses_supplied_value_instead_of_its_registered_constructor ... ok
+test focus_does_not_evaluate_unrelated_auto_configuration ... ok
+test focus_accepts_a_required_value_when_it_is_supplied ... ok
+test focus_builds_private_transitive_chain_without_module ... ok
+test focus_evaluates_only_auto_configuration_needed_by_selected_chain ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/graph.rs (target/debug/deps/graph-8ec6d377426b3577)
+
+running 1 test
+test analysis_exposes_nodes_edges_and_a_dependency_ordered_plan ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/injector.rs (target/debug/deps/injector-0ae288c51c4cc01d)
+
+running 7 tests
+test tuple_boundary_resolves_all_sixteen_dependencies ... ok
+test repeated_metadata_access_is_static_and_does_not_construct ... ok
+test managed_injectors_preserve_shared_fields_and_roles ... ok
+test zero_and_single_dependencies_construct_the_native_outputs ... ok
+test dependency_tuple_preserves_order_and_shared_handles ... ok
+test constructor_errors_are_propagated ... ok
+test focused_managed_construction_keeps_catalog_discovery ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/injector_lifecycle.rs (target/debug/deps/injector_lifecycle-ad28dc943f324086)
+
+running 5 tests
+test low_level_native_catalog_bridge_is_available_without_constructing ... ok
+test later_construction_failure_drops_resource_without_starting_hooks ... ok
+test supplied_resource_has_no_injector_hooks ... ok
+test failed_application_start_rolls_back_the_resource_hook ... ok
+test hooks_attach_once_and_wrap_application_lifecycle ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/injector_registration.rs (target/debug/deps/injector_registration-4ed92e7872d08597)
+
+running 7 tests
+test duplicate_bindings_and_owners_fail_and_unrelated_broken_roots_are_isolated ... ok
+test manual_injector_diagnostics_point_to_the_authored_registration ... ok
+test explicit_construction_uses_the_rooted_binding ... ok
+test supplied_output_skips_injection_and_lifecycle_attachment ... ok
+test invalid_graphs_fail_before_any_construction ... ok
+test direct_import_and_export_make_constructor_dependencies_accessible ... ok
+test explicit_binding_wins_over_linked_factory_and_does_not_register_implementer ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/inspection_snapshot.rs (target/debug/deps/inspection_snapshot-3e480ecd691561ad)
+
+running 1 test
+test snapshot_owns_rooted_graph_metadata_after_analysis_is_dropped ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/integration_preflight.rs (target/debug/deps/integration_preflight-82d07789197f4c2a)
+
+running 1 test
+test rejected_virtual_analysis_never_applies_defaults_or_constructs_providers ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/invalid_graph.rs (target/debug/deps/invalid_graph-f417e9262d9c47ad)
+
+running 1 test
+test invalid_graph_runs_zero_constructors ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/inventory_type_safety.rs (target/debug/deps/inventory_type_safety-d9517bce05acf242)
+
+running 1 test
+test inventory_constructor_type_mismatch_prevents_a_successful_build ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/lifecycle.rs (target/debug/deps/lifecycle-d5a6f4211324fdfd)
+
+running 6 tests
+test rejects_lifecycle_operations_from_invalid_states ... ok
+test infrastructure_sorts_by_owner_before_application_registration_order ... ok
+test failed_application_start_rolls_back_application_then_infrastructure ... ok
+test rolls_back_started_hooks_and_retains_the_startup_error ... ok
+test reports_rollback_failures_without_replacing_the_startup_cause ... ok
+test starts_in_registration_order_and_stops_in_reverse_order ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/provider_lifecycle.rs (target/debug/deps/provider_lifecycle-81abd2aeaaa8f59c)
+
+running 5 tests
+test later_construction_failure_starts_no_hook_and_drops_the_resource ... ok
+test hand_authored_ordinary_descriptor_still_constructs ... ok
+test automatic_build_registers_native_value_and_contributed_hook ... ok
+test explicit_construction_registers_the_contributed_hook_once ... ok
+test contributed_infrastructure_wraps_application_lifecycle ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/registry.rs (target/debug/deps/registry-22771c095d61e28f)
+
+running 3 tests
+test resolves_the_same_application_scoped_allocation ... ok
+test rejects_invalid_erased_provider_storage_without_poisoning_the_registry ... ok
+test contexts_resolve_shared_providers_and_expose_merged_configuration ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/runtime.rs (target/debug/deps/runtime-dc61121191fbc776)
+
+running 1 test
+test tokio_runtime_runs_a_future_to_completion ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_core_macros-f6fc49c59efb6b23)
+
+running 11 tests
+test main_attribute::tests::expansion_rejects_arguments_before_path_resolution ... ok
+test managed::tests::managed_kind_metadata_is_distinct ... ok
+test cauldron::tests::rejects_legacy_arguments_and_nonunit_shapes_before_path_resolution ... ok
+test managed::tests::normalizes_self_types_inside_managed_fields ... ok
+test path::tests::resolves_all_supported_crate_path_shapes ... ok
+test managed::tests::rejects_seventeen_managed_dependencies_with_a_focused_error ... ok
+test managed::tests::rejects_managed_provider_shapes_before_path_resolution ... ok
+test main_attribute::tests::validates_main_signature_constraints ... ok
+test test_fn::tests::test_fn_emits_scoped_cargo_test_and_preserves_return_type ... ok
+test managed::tests::managed_expansions_record_the_declaration_namespace ... ok
+test path::tests::core_path_reports_missing_consumer_dependency ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_extra-329d8777f28ac072)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_persistence-98730828da16b4c8)
+
+running 10 tests
+test sea_orm::connector::tests::scheme_matrix ... ok
+test sea_orm::config::tests::secret_url_stays_out_of_config_and_error_formatting ... ok
+test sea_orm::config::tests::zero_maintenance_deadlines_are_rejected_on_their_configuration_keys ... ok
+test sea_orm::config::tests::zero_counts_rejected_on_own_keys ... ok
+test sea_orm::config::tests::required_url_and_optional_defaults ... ok
+test sea_orm::config::tests::explicit_values_and_relationship_validation ... ok
+test factory::tests::factory_returns_the_connector_error ... ok
+test sea_orm::config::tests::overflowing_timeout_seconds_are_rejected_with_safe_key_and_source ... ok
+test error::tests::framework_conversion_retains_kind_without_rendering_the_source ... ok
+test sea_orm::lifecycle::tests::mock_database_is_resolved_for_start_and_stop ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/connector.rs (target/debug/deps/connector-2ce09e35cb0fcf81)
+
+running 7 tests
+test connector_debug_never_discloses_url ... ok
+test unsupported_schemes_fail_before_connecting ... ok
+test zero_maintenance_deadlines_are_rejected_before_creating_a_pool ... ok
+test native_options_reject_all_overflowing_deadlines_even_with_lazy_connections ... ok
+test unrepresentable_pool_deadline_is_rejected_without_panicking ... ok
+test valid_native_timeouts_and_disabled_reaping_preserve_lazy_connections ... ok
+test native_zero_pool_capacity_returns_a_typed_error_without_panicking ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/factory.rs (target/debug/deps/factory-689b091a6d4d4150)
+
+running 1 test
+test factory_returns_the_connector_native_type ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/module.rs (target/debug/deps/module-4a7878aa8f2f87e6)
+
+running 5 tests
+test native_database_injector_declares_inputs_and_lifecycle_without_io ... ok
+test duplicate_native_database_reports_conflicting_furnace_ownership ... ok
+test database_furnace_keeps_factory_and_connector_private ... ok
+test imported_module_selects_only_native_database_without_parsing_configuration ... ok
+test unimported_root_builds_without_database_configuration ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/postgres.rs (target/debug/deps/postgres-a5a0607341545f9c)
+
+running 4 tests
+test conventional_startup_checks_database_before_bind_and_handles_sigterm ... ignored, requires PostgreSQL through FURNACE_TEST_DATABASE_URL
+test invalid_credentials_keep_connection_error_and_redact_source ... ignored, requires PostgreSQL through FURNACE_TEST_DATABASE_URL
+test native_crud_transactions_and_shutdown ... ignored, requires PostgreSQL through FURNACE_TEST_DATABASE_URL
+test query_failure_still_closes_pool_after_application_stop_failure ... ignored, requires PostgreSQL through FURNACE_TEST_DATABASE_URL
+
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/recovery.rs (target/debug/deps/recovery-61727806cfac2641)
+
+running 3 tests
+test pool_acquisition_timeout_does_not_permanently_consume_capacity ... ignored, requires isolated PostgreSQL through FURNACE_TEST_DATABASE_URL
+test query_error_and_cancelled_query_leave_the_pool_usable ... ignored, requires isolated PostgreSQL through FURNACE_TEST_DATABASE_URL
+test terminated_idle_connection_is_replaced_without_rebuilding_the_application ... ignored, requires isolated PostgreSQL through FURNACE_TEST_DATABASE_URL
+
+test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/security_benchmark.rs (target/debug/deps/security_benchmark-9c7748c42004215e)
+
+running 1 test
+test core_and_database_security_contracts ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/tracing.rs (target/debug/deps/tracing-304e1f32ef0cc898)
+
+running 1 test
+test connection_trace_spans_do_not_record_credential_bearing_options ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_testing-bfb5ff79acfa4e1a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/http_fixture.rs (target/debug/deps/http_fixture-cef778f7037fae4f)
+
+running 4 tests
+test request_serialization_and_body_errors_are_results ... ok
+test controller_get_uses_selected_chain_and_compares_json ... ok
+test all_methods_and_json_dispatch ... ok
+test mismatch_reports_expected_actual_and_still_shuts_down ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/subject_fixture.rs (target/debug/deps/subject_fixture-71c2c40583cf8e4e)
+
+running 12 tests
+test duplicate_supply_is_rejected_before_construction ... ok
+test non_sqlite_mock_is_rejected ... ok
+test direct_database_supply_is_rejected ... ok
+test duplicate_mock_is_rejected ... ok
+test missing_mock_never_connects ... ok
+test start_and_stop_run_once ... ok
+test shutdown_failure_returns_furnace_source ... ok
+test startup_failure_rolls_back_without_body ... ok
+test synchronous_body_factory_panic_still_stops ... ok
+test panic_still_stops_and_preserves_original_panic ... ok
+test service_uses_mock_database_and_private_chain ... ok
+test panic_and_stop_failure_preserves_panic ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests furnace_rs
+
+running 4 tests
+test crates/furnace-rs/src/lib.rs - (line 16) - compile ... ok
+test crates/furnace-rs/src/lib.rs - (line 49) - compile ... ok
+test crates/furnace-rs/src/lib.rs - (line 136) ... ok
+test crates/furnace-rs/src/lib.rs - (line 83) ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 2.10s; merged doctests compilation took 2.09s
+   Doc-tests furnace_rs_cli
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests furnace_rs_common
+
+running 24 tests
+test crates/furnace-rs-common/src/passport/guard.rs - passport::guard::PassportGuard (line 455) - compile ... ok
+test crates/furnace-rs-common/src/lib.rs - passport (line 131) - compile ... ok
+test crates/furnace-rs-common/src/lib.rs - passport (line 74) - compile ... ok
+test crates/furnace-rs-common/src/response.rs - response::Created (line 349) ... ok
+test crates/furnace-rs-common/src/lib.rs - cookie (line 82) ... ok
+test crates/furnace-rs-common/src/lib.rs - cookie (line 70) ... ok
+test crates/furnace-rs-common/src/lib.rs - cookie (line 99) ... ok
+test crates/furnace-rs-common/src/response.rs - response::HttpError::bad_request (line 97) ... ok
+test crates/furnace-rs-common/src/logger/mod.rs - logger::LoggerCauldron (line 12) ... ok
+test crates/furnace-rs-common/src/response.rs - response::HttpError::conflict (line 125) ... ok
+test crates/furnace-rs-common/src/lib.rs - cookie (line 108) ... ok
+test crates/furnace-rs-common/src/response.rs - response::HttpResult (line 330) ... ok
+test crates/furnace-rs-common/src/router.rs - router::build_router (line 32) - compile ... ok
+test crates/furnace-rs-common/src/response.rs - response::HttpError::internal (line 143) ... ok
+test crates/furnace-rs-common/src/server.rs - server::serve (line 298) - compile ... ok
+test crates/furnace-rs-common/src/response.rs - response::HttpError::not_found (line 111) ... ok
+test crates/furnace-rs-common/src/lib.rs - jwt (line 69) ... ok
+test crates/furnace-rs-common/src/route.rs - route::HttpMethod::as_str (line 42) ... ok
+test crates/furnace-rs-common/src/response.rs - response::NoContent (line 378) ... ok
+test crates/furnace-rs-common/src/route.rs - route::RouteDescriptor::new (line 88) ... ok
+test crates/furnace-rs-common/src/route.rs - route::RouteCatalog::validate (line 686) ... ok
+test crates/furnace-rs-common/src/route.rs - route::RouteCatalog::routes_for (line 619) ... ok
+test crates/furnace-rs-common/src/route.rs - route::RouteCatalog::validate_controller (line 649) ... ok
+test crates/furnace-rs-common/src/validation/mod.rs - validation::Input (line 26) ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.46s
+
+all doctests ran in 2.44s; merged doctests compilation took 0.98s
+   Doc-tests furnace_rs_common_macros
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests furnace_rs_core
+
+running 3 tests
+test crates/furnace-rs-core/src/config.rs - config (line 6) - compile ... ok
+test crates/furnace-rs-core/src/injector.rs - injector::Injector (line 21) ... ok
+test crates/furnace-rs-core/src/configuration/mod.rs - configuration::Configuration (line 21) ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.30s; merged doctests compilation took 0.29s
+   Doc-tests furnace_rs_core_macros
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests furnace_rs_extra
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests furnace_rs_persistence
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests furnace_rs_testing
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

@@ -1,0 +1,5 @@
+error: a complete guard requires `principal = Type`
+ --> tests/ui-passport/fail/guard_missing_principal.rs:3:9
+  |
+3 | #[guard(strategy = "jwt")]
+  |         ^^^^^^^^

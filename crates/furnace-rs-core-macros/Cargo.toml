@@ -1,0 +1,23 @@
+[package]
+name = "furnace-rs-core-macros"
+autobins = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+readme = "README.md"
+description = "Procedural macros for the framework-neutral furnace-rs core"
+
+[dependencies]
+proc-macro-crate.workspace = true
+proc-macro2.workspace = true
+quote.workspace = true
+syn = { workspace = true, features = ["visit", "visit-mut"] }
+
+[lib]
+proc-macro = true
+
+[lints]
+workspace = true

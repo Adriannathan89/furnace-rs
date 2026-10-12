@@ -1,0 +1,322 @@
+# FURNACE HTTP stress benchmark
+
+## Security regression workload (local source)
+
+For database maintenance settings, core inventory output safety, JWT algorithm
+binding, and native PostgreSQL recovery, run the isolated before/after comparison:
+
+```sh
+python3 benchmark/tool/database_inventory_security.py \
+  --output /tmp/furnace-database-inventory-security.json
+```
+
+This requires Python 3.12+, cached Rust dependencies, local baseline history,
+PostgreSQL binaries (override the default with `--postgres-bin`), and loopback
+binding permission. The runner creates and removes its own local database.
+See [the measured database, JWT, and inventory results](DATABASE_INVENTORY_SECURITY.md).
+
+For incomplete HTTP headers and stalled request-body reads, compare historical
+production code with the patched runtime using isolated regression fixtures:
+
+```sh
+python3 benchmark/tool/http_runtime_security.py \
+  --output /tmp/furnace-http-runtime-security.json
+```
+
+The runner creates temporary Git archives of the two pre-fix revisions, adds
+the current regression fixtures without changing their production code, and
+requires the expected timeout failures before checking the patched runtime.
+It uses locked offline Cargo tests and loopback sockets, with no connection
+flood or resource exhaustion. Compilation time is recorded separately from
+Rust test duration. This is a correctness comparison, not a throughput or
+production latency benchmark. See the
+[HTTP runtime findings and results](HTTP_RUNTIME_SECURITY.md).
+
+For CLI inspection and development control directory isolation on Unix, run:
+
+```sh
+python3 benchmark/tool/cli_security.py --profile smoke
+python3 benchmark/tool/cli_security.py --profile stress \
+  --output /tmp/furnace-cli-security.json
+```
+
+Each round creates directories in separate children under umasks `000`, `002`,
+`022`, and `077`, checks owner-only `0700` permissions and owner read/write
+access, and requires proof that each child check executed. Smoke/stress/extended
+run 2/200/1,000 rounds. The runner uses locked offline Cargo tests and records a
+source hash; incomplete checks or nonzero exits fail. This is a filesystem
+correctness workload, not an HTTP performance measurement. See the
+[all-crate audit](ALL_CRATES_SECURITY_AUDIT.md).
+
+For core and PostgreSQL connector security contracts, run:
+
+```sh
+python3 benchmark/tool/infrastructure_security.py --profile smoke \
+  --output /tmp/furnace-infrastructure-smoke.json
+python3 benchmark/tool/infrastructure_security.py --profile stress \
+  --output /tmp/furnace-infrastructure-stress.json
+```
+
+This tool compiles and runs the persistence crate's `tests/security_benchmark.rs` against
+the local core and persistence crates using Cargo's locked, offline test build.
+No database is needed. Its 2/200/1,000 rounds check ordinary error-source
+redaction, overflowing typed/native database timeouts, connection trace
+redaction, preserved surrounding application tracing, and valid configuration
+controls. The JSON includes source hashes and per-case failures. Missing cases,
+failed Rust assertions, and nonzero Cargo exits cannot be reported as success.
+The reported elapsed time covers contract checks, excluding compilation; it is
+a correctness workload, not a database-throughput measurement. See
+[the infrastructure findings](INFRASTRUCTURE_SECURITY.md).
+
+The auth security workload builds and runs the implementation in this checkout.
+It uses the staged release binary from `build_furnace.py`, rather than the old
+stress runner's example target directories. Rebuild before each verification
+to ensure the binary contains your current changes:
+
+```sh
+python3 benchmark/tool/build_furnace.py --offline --example protected-route
+python3 benchmark/tool/security.py --profile smoke --output /tmp/furnace-security-smoke.json
+python3 benchmark/tool/security.py --profile stress --output /tmp/furnace-security-stress.json
+python3 -m unittest discover -s benchmark/tool -p 'test_*.py'
+```
+
+Omit `--offline` if the Cargo dependencies are not cached. No database is
+needed; port 3002 must be free. The runner supplies benchmark-only credentials
+and stops its server when finished. Never use its signing key in a deployment.
+
+Each of 23 probes runs twice in `smoke`, 200 times in `stress`, and 1,000
+times in `extended`, using 4/16/32 clients. Three probes check valid Bearer
+syntax, including case-insensitive schemes and multiple spaces. Twenty check
+tabs inside credentials, duplicate Authorization fields in both orders,
+combined/extra credentials, missing credentials, forged signatures, unsigned
+JWTs, algorithm mismatch, expired/future/refresh tokens, missing or duplicate
+expiration claims, and the 8 KiB JWT limit. Duplicate fields are sent as
+separate HTTP headers. Signed adversarial JWT fixtures use the benchmark key
+so claim rejections exercise validation after signature verification.
+
+Every rejection must be exactly the generic Passport 401 JSON response with
+`WWW-Authenticate: Bearer`. Every probe is followed by a valid authenticated
+request on the client's connection to check recovery. Transport failures,
+unexpected authentication, altered errors, or failed positive controls make
+the benchmark exit nonzero. JSON records per-probe operation counts, expected
+rejections, status totals, latency percentiles, throughput, and the tested
+binary's SHA-256. These measurements include client and application overhead;
+they do not establish a performance threshold or prove the absence of other
+vulnerabilities. See [the security finding and before/after evidence](SECURITY.md).
+
+This suite drives the three [FURNACE 1.0.0 example applications](../example/) over
+real loopback HTTP. It checks response content and status under load, then
+reports throughput and client-observed p50/p95/p99 latency. The applications
+use local FURNACE 1.0.0 path dependencies, as pinned in their `Cargo.lock` files.
+Historical reports retain the versions they actually measured.
+Python 3.11 or newer's standard library generates the traffic; no load-test package is
+required.
+
+## Workloads
+
+| Case | Stress profile | Contract checked |
+| --- | --- | --- |
+| `hello` | 12,000 GETs, 64 clients | Every response is 200 with `Hello, world!`. |
+| `connection-churn` | 2,000 GETs, 64 clients | A fresh connection for every request still returns the expected 200 body. |
+| `validation` | 3,000 POSTs, 32 clients | Empty fields, malformed JSON, and 128 KiB invalid bodies all return a validation error. |
+| `oversized` | 32 POSTs, 8 clients | 3 MiB JSON bodies exceed the default limit and return a structured 413 response. |
+| `oversized-reuse` | Eight POSTs, four clients | Each 413 signals `Connection: close`; clients can send the next request without a transport error. |
+| `body-limit-boundary` | 96 POSTs and 96 follow-up GETs, 8 clients | Valid JSON at 2 MiB − 1 and 2 MiB gets 422; at 2 MiB + 1 it gets 413 with `Connection: close`; each client then receives a 401 on its next request. |
+| `aborted-upload` | 256 partial uploads, 256 logins, and 256 protected GETs, 32 clients | Clients close a 1 KiB upload with a declared 1 MiB body; login and JWT-protected reads still succeed. |
+| `jwt` | 6,000 GETs, 64 clients | Valid JWT returns the demo profile; missing and malformed JWTs return 401 with a Bearer challenge. |
+| `posts` | 800 CRUD transactions, 32 clients | Each transaction creates, reads, updates, deletes, then confirms 404 for its own post (4,000 HTTP requests total). |
+| `database-failure` | One forced startup failure | An unavailable PostgreSQL endpoint fails startup within 10 seconds, never binds HTTP, and does not print the URL password. |
+| `database-connect-timeout` | One stalled PostgreSQL handshake | A local TCP server accepts the database connection but never replies; startup must fail near the configured 2-second timeout, before binding HTTP, without leaking credentials. |
+| `database-query-timeout-recovery` | One query timeout and recovery | An exclusive posts-table lock makes a query exceed PostgreSQL's 2-second `statement_timeout`; HTTP stays up, returns a safe 500 for that query, and resumes successful CRUD after lock release. |
+| `database-tcp-stall-recovery` | One TCP reply stall and recovery | A loopback proxy withholds a database reply on an established connection; requests hit the 2-second pool-acquire timeout, HTTP stays up, and CRUD succeeds after replies resume. |
+
+`smoke` uses 200/40/90/4/12/16/90/20 operations for
+hello/connection-churn/validation/oversized/body-limit-boundary/aborted-upload/JWT/posts.
+`extended` uses 50,000/5,000/10,000/64/192/512/25,000/2,000 operations
+for the same cases. Every profile also runs eight `oversized-reuse` requests.
+The runner starts and stops each application, reuses one HTTP connection per
+worker, and exits nonzero for unexpected status, incorrect response content,
+transport errors, or a failed startup. `database-failure` expects startup to
+fail and checks that its test credential is redacted. `database-connect-timeout`
+uses a local simulated PostgreSQL socket, not a real database, and requires the
+connection to be accepted before the timeout. Neither case needs
+`BENCH_DATABASE_URL`. The two recovery cases require a real, isolated
+`BENCH_DATABASE_URL` and the posts schema. The query-timeout case also requires
+`psql` on `PATH` and holds an exclusive table lock for about 2 seconds. The TCP
+case tests pool acquisition while an existing connection's reply is stalled;
+it does not claim a separate socket-read timeout. The suite does not impose
+arbitrary throughput thresholds. A run against `posts` writes and deletes rows,
+so use an isolated PostgreSQL database.
+The `oversized` case opens a new connection per request because the body-limit
+rejection closes its connection. The `oversized-reuse` case checks that the
+response signals this closure and that clients can continue on a new connection.
+It is included in the default run.
+
+## Prepare
+
+From the repository root, build optimized binaries:
+
+```sh
+cargo build --release --manifest-path example/hello-world/Cargo.toml
+cargo build --release --manifest-path example/protected-route/Cargo.toml
+cargo build --release --manifest-path example/posts-crud/Cargo.toml
+```
+
+Create a disposable PostgreSQL database and apply the example schema. Replace
+the URL with your local credentials and database name:
+
+```sh
+export BENCH_DATABASE_URL='postgres://postgres:postgres@127.0.0.1:5432/mads_benchmark'
+psql "$BENCH_DATABASE_URL" -f example/posts-crud/migrations/001_create_posts.sql
+```
+
+The database itself must already exist. The runner never creates or drops a
+database or schema. The three example servers use ports 3000, 3002, and 3001,
+which must be free. The runner supplies benchmark-only JWT/demo credentials to
+the protected-route example. It does not print the database URL or token.
+
+## Run
+
+```sh
+python3 -m unittest discover -s benchmark/tool -p 'test_*.py'
+python3 benchmark/tool/run.py --profile smoke --output /tmp/furnace-rs-smoke.json
+python3 benchmark/tool/run.py --profile stress --output /tmp/furnace-rs-stress.json
+python3 benchmark/tool/run.py --profile extended --output /tmp/furnace-rs-extended.json
+python3 benchmark/tool/run.py --case oversized-reuse --output /tmp/furnace-rs-reuse.json
+python3 benchmark/tool/run.py --case database-connect-timeout \
+  --output /tmp/furnace-rs-database-timeout.json
+python3 benchmark/tool/run.py --case database-query-timeout-recovery \
+  --output /tmp/furnace-rs-query-recovery.json
+python3 benchmark/tool/run.py --case database-tcp-stall-recovery \
+  --output /tmp/furnace-rs-tcp-recovery.json
+python3 benchmark/tool/run.py --profile stress \
+  --case connection-churn --case body-limit-boundary --case aborted-upload \
+  --output /tmp/furnace-rs-edges.json
+```
+
+To skip PostgreSQL, select only HTTP cases:
+
+```sh
+python3 benchmark/tool/run.py --profile stress \
+  --case hello --case connection-churn --case validation --case oversized \
+  --case oversized-reuse --case body-limit-boundary --case aborted-upload \
+  --case jwt --case database-failure --case database-connect-timeout
+```
+
+For a quick local check with existing debug binaries, add
+`--binary-profile debug`. Use release binaries for comparable performance
+numbers; the 0.9.1 edge-case follow-up explicitly reports debug builds.
+The JSON output includes the commit, OS, CPU count, profile, statuses, errors,
+request rate, and latency percentiles. A `posts` operation is a five-request
+transaction, whereas other operations are one HTTP request.
+
+These results measure the whole loopback path, including Python's client cost,
+FURNACE routing, application code, and optional PostgreSQL. They are useful for
+reproducible regression checks and failure discovery, but are not an isolated
+measurement of framework overhead or a guarantee for every deployment.
+See [the measured run and findings](REPORT.md).
+
+## FURNACE vs native Axum vs Go Fiber v2
+
+The separate [comparison report](COMPARISON.md) measures the three workloads
+from `example/`: Hello World (`GET /`), PostgreSQL posts CRUD (five HTTP
+requests per transaction), and login plus JWT-protected profile reads with
+input validation and logger output. The native Axum and Fiber counterparts
+live in `benchmark/targets/`. The old FURNACE-only stress and fault runner remains
+in `benchmark/tool/run.py`; all Python benchmark tools and their tests now live
+in `benchmark/tool/`.
+
+Build release binaries from the repository root:
+
+```sh
+python3 benchmark/tool/build_furnace.py
+cargo build --release --locked --manifest-path benchmark/targets/axum/Cargo.toml
+cd benchmark/targets/fiber && mkdir -p bin && go build -o bin/furnace-rs-bench-fiber . && cd ../../..
+```
+
+`build_furnace.py` copies each FURNACE example to a temporary directory and rewrites
+its local dependency paths to absolute paths in this checkout for the build. It
+does not edit the examples or their lockfiles. The reproducible local-source
+lockfiles are stored in `benchmark/targets/furnace-rs/locks/`; on a warm cache,
+`build_furnace.py --offline` avoids network access. The helper uses an existing
+lock from that directory with `--locked`, or saves the resolved lock after the
+first successful build. Results measure the **local FURNACE version in the current checkout**,
+not a published crate archive.
+
+For CRUD, provision three isolated PostgreSQL databases, apply the same
+`example/posts-crud/migrations/001_create_posts.sql` to each, and set:
+
+```sh
+export BENCH_FURNACE_DATABASE_URL='postgres://USER:PASSWORD@127.0.0.1:5432/mads_bench_mads?sslmode=disable'
+export BENCH_AXUM_DATABASE_URL='postgres://USER:PASSWORD@127.0.0.1:5432/mads_bench_axum?sslmode=disable'
+export BENCH_FIBER_DATABASE_URL='postgres://USER:PASSWORD@127.0.0.1:5432/mads_bench_fiber?sslmode=disable'
+```
+
+The runner does not query PostgreSQL version metadata separately. Set
+`BENCH_POSTGRES_VERSION` (for example, `16.15`) to include the known server
+version in the raw result; otherwise it is recorded as `not captured`.
+
+The runner does not create or drop databases. Only use disposable databases:
+the CRUD workload writes and deletes rows. The same schema is required in
+each database. The example's default ports 3000, 3001, and 3002 must be free.
+
+```sh
+python3 -m unittest discover -s benchmark/tool -p 'test_*.py'
+python3 benchmark/tool/compare.py --profile smoke --runs 1 --output /tmp/furnace-rs-compare-smoke.json
+python3 benchmark/tool/compare.py --profile stress --runs 5 --output /tmp/furnace-rs-compare-stress.json
+```
+
+Use `--framework furnace-rs|axum|fiber` and `--scenario hello|posts|auth` to run a
+subset. Each target is started one at a time. Contract checks and a warmup
+must pass before measured runs begin; an error makes the report fail rather
+than silently excluding the run. The JSON contains every run plus median
+responses/second and median p95 latency. Authentication performance covers
+one valid login and one valid protected read per operation. Invalid input,
+missing posts, and unsupported content types are checked by status and shared
+error code; detailed validation/not-found error bodies are not normalized
+across frameworks. Missing/malformed JWT checks also require the FURNACE Passport
+Bearer challenge and unauthorized JSON envelope, including case-insensitive
+Bearer schemes. A 3 MiB body-limit probe
+is recorded separately because Fiber v2 can close the connection before this
+Python client receives an HTTP response; its outcome does not invalidate
+the valid-request throughput run.
+
+These results include Python client overhead, different database access
+libraries (SeaORM, SQLx, and Go `database/sql`), JWT libraries, and logger
+costs. They are end-to-end application comparisons, not isolated router
+overhead; do not extrapolate them to TLS, HTTP/2, distributed deployments, or
+other hardware.
+
+### Randomized DI comparison and dependency graph size
+
+To compare FURNACE 1.0.2 from commit `8c08bba`, the current beta, and the
+existing Axum/Fiber targets with randomized trial order, build the binaries and
+synthetic graphs first:
+
+```sh
+python3 benchmark/tool/build_di_comparison.py \
+  --dependency-counts 1,16,64,256
+python3 benchmark/tool/di_comparison.py --profile stress --runs 5 \
+  --dependency-counts 1,16,64,256 --seed 20261012 \
+  --output /tmp/furnace-di-randomized.json
+```
+
+Omit `--seed` for a fresh random schedule; the generated seed and full trial
+order are stored in the JSON so the run can be reproduced. Independent
+transactions are shuffled per client, while request steps that depend on each
+other (login then profile, or create/read/update/delete) keep their required
+order. Each trial starts a fresh server, records startup as process launch to
+the first successful readiness response, warms it, then measures HTTP
+throughput and latency.
+
+The graph workload builds a balanced tree with the requested number of unique
+providers, all registered and reachable from the root controller. It measures
+two endpoints: a constant no-op that does not traverse the graph, and a
+traversal that recursively visits every dependency and returns the node count.
+The no-op comparison shows whether graph size changes HTTP behavior after
+startup; traversal shows the added application work when a request consumes
+the whole graph. The traversal includes one observable atomic visit per node
+so release optimization cannot fold the synthetic tree into a constant. This
+is not a per-request DI resolution benchmark: Furnace constructs dependencies
+at startup. PostgreSQL is not required for these workloads. Defaults are
+`1,16,64,256`; use `--dependency-counts` to select other unique positive sizes.

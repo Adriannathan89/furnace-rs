@@ -1,0 +1,5 @@
+error: `#[furnace_rs::test]` requires an asynchronous function
+ --> tests/ui-test-attribute/sync.rs:2:1
+  |
+2 | fn synchronous() {}
+  | ^^

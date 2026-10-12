@@ -1,0 +1,5 @@
+error: wildcard captures must be the final path segment
+ --> tests/ui-direct/fail/wildcard.rs:6:25
+  |
+6 | impl Controller { #[get("/{*path}/end")] fn run(&self) {} }
+  |                         ^^^^^^^^^^^^^^

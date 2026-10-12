@@ -1,0 +1,5 @@
+error: endpoint paths must start with `/`
+ --> tests/ui/fail/routes_invalid_path.rs:7:34
+  |
+7 | #[furnace_rs::controller(route = "users")]
+  |                                  ^^^^^^^

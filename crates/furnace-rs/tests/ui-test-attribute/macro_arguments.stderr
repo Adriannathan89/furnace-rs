@@ -1,0 +1,5 @@
+error: `#[furnace_rs::test]` does not accept arguments
+ --> tests/ui-test-attribute/macro_arguments.rs:1:20
+  |
+1 | #[furnace_rs::test(anything)]
+  |                    ^^^^^^^^

@@ -1,0 +1,5 @@
+error: guard source must be `bearer` or `cookie("literal-name")`
+ --> tests/ui-seal/fail/source.rs:4:62
+  |
+4 | #[guard(strategy = "custom", principal = Principal, source = header("secret"))]
+  |                                                              ^^^^^^

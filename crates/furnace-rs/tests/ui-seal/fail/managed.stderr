@@ -1,0 +1,5 @@
+error: guard policies cannot also be managed dependencies or controllers
+ --> tests/ui-seal/fail/managed.rs:5:1
+  |
+5 | #[furnace_rs::burner]
+  | ^

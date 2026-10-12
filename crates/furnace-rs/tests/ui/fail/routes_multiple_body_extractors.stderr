@@ -1,0 +1,5 @@
+error: known body extractors (`Json`, `ValidatedJson`, and `Request`) must be the final route parameter
+  --> tests/ui/fail/routes_multiple_body_extractors.rs:21:18
+   |
+21 |         payload: furnace_rs_common::ValidatedJson<CreateUser>,
+   |                  ^^^^^^^^^^^^^^^^^

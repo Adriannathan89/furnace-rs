@@ -1,0 +1,219 @@
+[
+  {
+    "lockfile": "Cargo.lock",
+    "exit_code": 0,
+    "report": {
+      "database": {
+        "advisory-count": 1280,
+        "last-commit": null,
+        "last-updated": null
+      },
+      "lockfile": {
+        "dependency-count": 317
+      },
+      "settings": {
+        "target_arch": [],
+        "target_os": [],
+        "severity": null,
+        "ignore": [],
+        "informational_warnings": [
+          "unmaintained",
+          "unsound",
+          "notice"
+        ]
+      },
+      "vulnerabilities": {
+        "found": false,
+        "count": 0,
+        "list": []
+      },
+      "warnings": {}
+    }
+  },
+  {
+    "lockfile": "benchmark/targets/axum/Cargo.lock",
+    "exit_code": 0,
+    "report": {
+      "database": {
+        "advisory-count": 1280,
+        "last-commit": null,
+        "last-updated": null
+      },
+      "lockfile": {
+        "dependency-count": 191
+      },
+      "settings": {
+        "target_arch": [],
+        "target_os": [],
+        "severity": null,
+        "ignore": [],
+        "informational_warnings": [
+          "unmaintained",
+          "unsound",
+          "notice"
+        ]
+      },
+      "vulnerabilities": {
+        "found": false,
+        "count": 0,
+        "list": []
+      },
+      "warnings": {}
+    }
+  },
+  {
+    "lockfile": "crates/furnace-rs-cli/tests/fixtures/matrix/single/Cargo.lock",
+    "exit_code": 0,
+    "report": {
+      "database": {
+        "advisory-count": 1280,
+        "last-commit": null,
+        "last-updated": null
+      },
+      "lockfile": {
+        "dependency-count": 95
+      },
+      "settings": {
+        "target_arch": [],
+        "target_os": [],
+        "severity": null,
+        "ignore": [],
+        "informational_warnings": [
+          "unmaintained",
+          "unsound",
+          "notice"
+        ]
+      },
+      "vulnerabilities": {
+        "found": false,
+        "count": 0,
+        "list": []
+      },
+      "warnings": {}
+    }
+  },
+  {
+    "lockfile": "crates/furnace-rs-cli/tests/fixtures/matrix/workspace/Cargo.lock",
+    "exit_code": 0,
+    "report": {
+      "database": {
+        "advisory-count": 1280,
+        "last-commit": null,
+        "last-updated": null
+      },
+      "lockfile": {
+        "dependency-count": 1
+      },
+      "settings": {
+        "target_arch": [],
+        "target_os": [],
+        "severity": null,
+        "ignore": [],
+        "informational_warnings": [
+          "unmaintained",
+          "unsound",
+          "notice"
+        ]
+      },
+      "vulnerabilities": {
+        "found": false,
+        "count": 0,
+        "list": []
+      },
+      "warnings": {}
+    }
+  },
+  {
+    "lockfile": "example/hello-world/Cargo.lock",
+    "exit_code": 0,
+    "report": {
+      "database": {
+        "advisory-count": 1280,
+        "last-commit": null,
+        "last-updated": null
+      },
+      "lockfile": {
+        "dependency-count": 95
+      },
+      "settings": {
+        "target_arch": [],
+        "target_os": [],
+        "severity": null,
+        "ignore": [],
+        "informational_warnings": [
+          "unmaintained",
+          "unsound",
+          "notice"
+        ]
+      },
+      "vulnerabilities": {
+        "found": false,
+        "count": 0,
+        "list": []
+      },
+      "warnings": {}
+    }
+  },
+  {
+    "lockfile": "example/posts-crud/Cargo.lock",
+    "exit_code": 0,
+    "report": {
+      "database": {
+        "advisory-count": 1280,
+        "last-commit": null,
+        "last-updated": null
+      },
+      "lockfile": {
+        "dependency-count": 239
+      },
+      "settings": {
+        "target_arch": [],
+        "target_os": [],
+        "severity": null,
+        "ignore": [],
+        "informational_warnings": [
+          "unmaintained",
+          "unsound",
+          "notice"
+        ]
+      },
+      "vulnerabilities": {
+        "found": false,
+        "count": 0,
+        "list": []
+      },
+      "warnings": {}
+    }
+  },
+  {
+    "lockfile": "example/protected-route/Cargo.lock",
+    "exit_code": 0,
+    "report": {
+      "database": {
+        "advisory-count": 1280,
+        "last-commit": null,
+        "last-updated": null
+      },
+      "lockfile": {
+        "dependency-count": 143
+      },
+      "settings": {
+        "target_arch": [],
+        "target_os": [],
+        "severity": null,
+        "ignore": [],
+        "informational_warnings": [
+          "unmaintained",
+          "unsound",
+          "notice"
+        ]
+      },
+      "vulnerabilities": {
+        "found": false,
+        "count": 0,
+        "list": []
+      },
+      "warnings": {}
+    }
+  }
+]

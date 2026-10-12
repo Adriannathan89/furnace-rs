@@ -1,0 +1,32 @@
+error[E0425]: cannot find type `MissingDependency` in this scope
+ --> /tmp/furnace-controller-cfg-probe/main.rs:4:15
+  |
+4 |     disabled: MissingDependency,
+  |               ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `AnotherMissingDependency` in this scope
+ --> /tmp/furnace-controller-cfg-probe/main.rs:6:25
+  |
+6 |     attribute_disabled: AnotherMissingDependency,
+  |                         ^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0560]: struct `__furnace_controller_inner_Controller_afd0ec611f2ae6d1` has no field named `disabled`
+ --> /tmp/furnace-controller-cfg-probe/main.rs:4:5
+  |
+4 |     disabled: MissingDependency,
+  |     ^^^^^^^^ `__furnace_controller_inner_Controller_afd0ec611f2ae6d1` does not have this field
+  |
+  = note: all struct fields are already assigned
+
+error[E0560]: struct `__furnace_controller_inner_Controller_afd0ec611f2ae6d1` has no field named `attribute_disabled`
+ --> /tmp/furnace-controller-cfg-probe/main.rs:6:5
+  |
+6 |     attribute_disabled: AnotherMissingDependency,
+  |     ^^^^^^^^^^^^^^^^^^ `__furnace_controller_inner_Controller_afd0ec611f2ae6d1` does not have this field
+  |
+  = note: all struct fields are already assigned
+
+error: aborting due to 4 previous errors
+
+Some errors have detailed explanations: E0425, E0560.
+For more information about an error, try `rustc --explain E0425`.

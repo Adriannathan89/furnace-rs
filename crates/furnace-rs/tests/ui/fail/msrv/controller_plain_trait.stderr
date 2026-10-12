@@ -1,0 +1,11 @@
+error: `#[controller]` struct arguments are unsupported; put `route` on the inherent implementation
+ --> tests/ui/fail/msrv/controller_plain_trait.rs:5:26
+  |
+5 | #[furnace_rs::controller(routes = [PlainRoute])]
+  |                          ^^^^^^^^^^^^^^^^^^^^^
+
+error[E0425]: cannot find type `Controller` in this scope
+ --> tests/ui/fail/msrv/controller_plain_trait.rs:8:21
+  |
+8 | impl PlainRoute for Controller {
+  |                     ^^^^^^^^^^ not found in this scope

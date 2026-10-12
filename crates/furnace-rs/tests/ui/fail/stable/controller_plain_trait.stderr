@@ -1,0 +1,5 @@
+error: `#[controller]` struct arguments are unsupported; put `route` on the inherent implementation
+ --> tests/ui/fail/stable/controller_plain_trait.rs:5:26
+  |
+5 | #[furnace_rs::controller(routes = [PlainRoute])]
+  |                          ^^^^^^^^^^^^^^^^^^^^^

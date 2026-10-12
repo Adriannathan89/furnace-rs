@@ -1,0 +1,24 @@
+{
+  "git_head": "16413c65a8bae48ec774fb6aa6387cb03a647f05",
+  "stage": "unchanged tempfile creation behavior, before owner-only mode patch",
+  "cargo_exit_code": 101,
+  "umasks": [
+    "000",
+    "002",
+    "022",
+    "077"
+  ],
+  "observed_baseline_modes": {
+    "000": "0777",
+    "002": "0775",
+    "022": "0755",
+    "077": "0700"
+  },
+  "result": {
+    "rounds": 1,
+    "checks": 4,
+    "failures": 3,
+    "passed": false
+  },
+  "passed": false
+}

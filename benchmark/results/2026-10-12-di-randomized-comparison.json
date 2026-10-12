@@ -1,0 +1,3849 @@
+{
+  "build_provenance": {
+    "baseline_revision": "8c08bbaff2e6cc468eadf7c9ce5991fd555e774b",
+    "built_at_utc": "2026-10-12T07:54:06.005200+00:00",
+    "current_revision": "53ed4192210c484e70396bce75ae2d628b606d59",
+    "dependency_counts": [
+      1,
+      16,
+      64,
+      256
+    ],
+    "source_lock_sha256": {
+      "baseline_1.0.2": {
+        "hello-world": "cabb9bab27c9fcc249fe5cba82dcdd75b6a6f7d42f2b5567f5157a00b526658a",
+        "protected-route": "3ca8c14baec98407c0830344650264e58221255df95edebbd0bd7531222bfd99"
+      },
+      "current_beta": {
+        "hello-world": "45ef187881b04518c54ab4ae006793b023ef395bfd205950322e5d71347f54b5",
+        "protected-route": "ff25a4cc68ebef999265e0b603dfcf8d218a8bf857a1f371ce5c4ed679ba9123"
+      }
+    },
+    "third_party_lock_versions_match": true
+  },
+  "dependency_graph": {
+    "counts": [
+      1,
+      16,
+      64,
+      256
+    ],
+    "request_modes": {
+      "di-graph-noop": "returns a constant without traversing the graph, isolating request-path impact of a larger constructed graph",
+      "di-graph-traverse": "recursively visits the complete injected graph and returns its node count; each node performs an observable atomic visit so release optimization cannot fold the traversal into a constant"
+    },
+    "shape": "balanced binary tree; every node is registered and reachable from the root controller"
+  },
+  "execution_order": [
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 16237192865537373428,
+      "run": 3,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 9618702450138135518,
+      "run": 4,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 1633412751031864530,
+      "run": 3,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 11796768739900930239,
+      "run": 2,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 12813017520749540902,
+      "run": 1,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 10334459768338388259,
+      "run": 1,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 8608767755369227644,
+      "run": 2,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 2942243724387708657,
+      "run": 1,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 6539573563686846589,
+      "run": 4,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 2036479977826537327,
+      "run": 2,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 14864473625956651645,
+      "run": 2,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 16688009927657449996,
+      "run": 1,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 4044877397507134963,
+      "run": 4,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 18165042104507613812,
+      "run": 3,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 5436535551534547777,
+      "run": 0,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 17887329458198146976,
+      "run": 4,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 1897345420211535543,
+      "run": 4,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 153666741056290997,
+      "run": 0,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 14735410646562295780,
+      "run": 1,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 17298414911518995755,
+      "run": 0,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 2157713576646101942,
+      "run": 1,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 4729893991423431847,
+      "run": 0,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 792935171499587977,
+      "run": 4,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 17895689051911261656,
+      "run": 0,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 16072416317147362787,
+      "run": 0,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 5364685922946680313,
+      "run": 4,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 12435537674741864114,
+      "run": 2,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 11787337706858211541,
+      "run": 1,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 13763312257658217214,
+      "run": 4,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 16769664179730409413,
+      "run": 2,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 2115493945321389089,
+      "run": 4,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 9453399400852409262,
+      "run": 4,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 1005044964761570274,
+      "run": 4,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 5644203774298079633,
+      "run": 0,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 6433814384664605085,
+      "run": 4,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 6411447219288881422,
+      "run": 1,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 11826366120723585975,
+      "run": 2,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 5769718114773743163,
+      "run": 0,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 10957167702554242145,
+      "run": 2,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 10079536602288741760,
+      "run": 0,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 8803661514460030461,
+      "run": 1,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 1548397360873162996,
+      "run": 4,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 7081652346989650048,
+      "run": 3,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 7331451821048303693,
+      "run": 2,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 1368298873556938330,
+      "run": 1,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 222685571417824185,
+      "run": 0,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 9387614822513258396,
+      "run": 3,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 4204946382859518931,
+      "run": 3,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 12891909156631227302,
+      "run": 0,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 9294974792923676978,
+      "run": 0,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 5100495000003684578,
+      "run": 0,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 8000620570351430572,
+      "run": 4,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 4898605072365631019,
+      "run": 0,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 12666760611059010793,
+      "run": 2,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 3058245063693044080,
+      "run": 3,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 15502873702725144529,
+      "run": 2,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 1782279031825139907,
+      "run": 1,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 5859719935395507277,
+      "run": 1,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 5522112833378204106,
+      "run": 2,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 2134808340554270958,
+      "run": 4,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 16603115216101327820,
+      "run": 2,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 8949096607495946280,
+      "run": 2,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 10482199796077556061,
+      "run": 3,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 15149202859483131816,
+      "run": 1,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 9074788770522380390,
+      "run": 1,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 3299787967789273702,
+      "run": 2,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 11449839312511417463,
+      "run": 0,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 5868391489259924830,
+      "run": 1,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 17130247525253211715,
+      "run": 3,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 1341680741480297967,
+      "run": 3,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 3863489745205689381,
+      "run": 4,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 13695326507916037092,
+      "run": 1,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 17370346274234941961,
+      "run": 3,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 4690559539352254875,
+      "run": 0,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 4210376295327556410,
+      "run": 4,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 1183748464258214972,
+      "run": 1,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 4415406570804715578,
+      "run": 2,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 1721408825129527306,
+      "run": 3,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 15519178519410979779,
+      "run": 0,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 16531640660598450396,
+      "run": 1,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 14449625192432750754,
+      "run": 0,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 16406741225838801065,
+      "run": 1,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 8829658137467083678,
+      "run": 0,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 5582673359155282974,
+      "run": 1,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 15262300576882268251,
+      "run": 2,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 13458764912639438766,
+      "run": 3,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 12730840251418644848,
+      "run": 0,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 13793444158763712412,
+      "run": 3,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 2139897575509228646,
+      "run": 2,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 9846418127538989208,
+      "run": 0,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 6960891116242805133,
+      "run": 3,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 12406756379847413321,
+      "run": 4,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 15666889966447702455,
+      "run": 0,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 3054507642565824677,
+      "run": 1,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 12526176030971631189,
+      "run": 2,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 4326855829565355562,
+      "run": 3,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 12437368536742396659,
+      "run": 0,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 12549180761489739651,
+      "run": 3,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 1381257716601305050,
+      "run": 2,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 15584482300562710571,
+      "run": 2,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 8056480546677644217,
+      "run": 4,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 3560567551494728222,
+      "run": 3,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 5467681026079936241,
+      "run": 4,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 8815999885482780561,
+      "run": 4,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 9231746500879159528,
+      "run": 0,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 9567745709051103564,
+      "run": 2,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 15376539809611332044,
+      "run": 1,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 3334525974131025181,
+      "run": 3,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 17341586468665059049,
+      "run": 3,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 3280831654197644356,
+      "run": 4,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 14049943874154199829,
+      "run": 4,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 1325006056867130404,
+      "run": 3,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 11390505922129192708,
+      "run": 2,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 10709952048503815669,
+      "run": 2,
+      "scenario": "auth"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "request_order_seed": 14308069196644168018,
+      "run": 3,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 5561683892692145771,
+      "run": 1,
+      "scenario": "di-graph-noop"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 16018702218900079347,
+      "run": 3,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 125178287805874519,
+      "run": 4,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 5645948935477422774,
+      "run": 1,
+      "scenario": "di-graph-traverse"
+    },
+    {
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "request_order_seed": 2166715589335550058,
+      "run": 3,
+      "scenario": "di-graph-traverse"
+    }
+  ],
+  "git_head": "53ed4192210c484e70396bce75ae2d628b606d59",
+  "logical_cpus": 12,
+  "machine": "x86_64",
+  "measured_runs": 5,
+  "passed": true,
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "profile": "stress",
+  "python": "3.12.3",
+  "random_seed": 20261012,
+  "request_randomization": {
+    "operation_order": "independent transactions shuffled per worker; request sequences within a transaction remain ordered",
+    "seed_derivation": "SHA-256 of master seed, workload, framework, run index, and dependency count",
+    "target_order": "one randomized process/workload trial per schedule entry"
+  },
+  "results": [
+    {
+      "contract_errors": [],
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.339,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.399,
+          "p95_ms": 16.654,
+          "p99_ms": 26.072,
+          "passed": true,
+          "request_order_seed": 16237192865537373428,
+          "request_order_sha256": "bb65ed49e48d1590a2b2157e6992bb260fc69fd752ca5d83c8d648a42ab892dc",
+          "responses_per_second": 8963.6,
+          "run_index": 3,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.361,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.228,
+          "p95_ms": 16.828,
+          "p99_ms": 25.373,
+          "passed": true,
+          "request_order_seed": 2036479977826537327,
+          "request_order_sha256": "0574f073557ec93ffaf382d70f3b72d387ff1cd61f6a59a7539a81daf7894293",
+          "responses_per_second": 8814.8,
+          "run_index": 2,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.639,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.764,
+          "p95_ms": 17.736,
+          "p99_ms": 30.106,
+          "passed": true,
+          "request_order_seed": 6433814384664605085,
+          "request_order_sha256": "2e67d11c6d724589e8ee0380bbb157dccf962f0449d42acba2b67e8f89d30755",
+          "responses_per_second": 7322.7,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.33,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.486,
+          "p95_ms": 16.932,
+          "p99_ms": 25.676,
+          "passed": true,
+          "request_order_seed": 6411447219288881422,
+          "request_order_sha256": "cb36fff82749bcfd3247784338c5a19ddd7ce0c7627b1029fbf39ba5c2c2be51",
+          "responses_per_second": 9025.3,
+          "run_index": 1,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.342,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.501,
+          "p95_ms": 16.841,
+          "p99_ms": 25.3,
+          "passed": true,
+          "request_order_seed": 9294974792923676978,
+          "request_order_sha256": "947e20c120ba07c8b5b8446a7d3b91f25b75f1f63ae6a69e77548317576785f6",
+          "responses_per_second": 8944.3,
+          "run_index": 0,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "hello",
+      "summary": {
+        "median_p50_ms": 4.486,
+        "median_p95_ms": 16.841,
+        "median_p99_ms": 25.676,
+        "median_responses_per_second": 8944.3,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.354,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.445,
+          "p95_ms": 17.06,
+          "p99_ms": 25.806,
+          "passed": true,
+          "request_order_seed": 9618702450138135518,
+          "request_order_sha256": "4f70d35853fa80e30f5899b5da462bdc7a12dc77bc8ed966ec69c453e50ad113",
+          "responses_per_second": 8860.0,
+          "run_index": 4,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.358,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.529,
+          "p95_ms": 16.919,
+          "p99_ms": 24.866,
+          "passed": true,
+          "request_order_seed": 18165042104507613812,
+          "request_order_sha256": "fd711d96bcf16a71676086fc874091d852a925110acb0529861ff3ba3686ff85",
+          "responses_per_second": 8836.8,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.385,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.292,
+          "p95_ms": 17.118,
+          "p99_ms": 26.164,
+          "passed": true,
+          "request_order_seed": 7331451821048303693,
+          "request_order_sha256": "0ce80d78695d449f4e4cbb7ac19ed707d3650b49e52489dcbf6bbee85977a0ab",
+          "responses_per_second": 8661.4,
+          "run_index": 2,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.372,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.758,
+          "p95_ms": 17.622,
+          "p99_ms": 26.752,
+          "passed": true,
+          "request_order_seed": 16406741225838801065,
+          "request_order_sha256": "3946e86dcacc2f6e8e395713c00f8b52cba87ebf44094d81f91205962e3cb6be",
+          "responses_per_second": 8744.6,
+          "run_index": 1,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.369,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.236,
+          "p95_ms": 17.24,
+          "p99_ms": 26.014,
+          "passed": true,
+          "request_order_seed": 12437368536742396659,
+          "request_order_sha256": "ac1a04c80a9582f13cf5df0d392c2813d9b438fba62a94768b76b84efec3b26d",
+          "responses_per_second": 8766.4,
+          "run_index": 0,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-noop",
+      "summary": {
+        "median_p50_ms": 4.445,
+        "median_p95_ms": 17.118,
+        "median_p99_ms": 26.014,
+        "median_responses_per_second": 8766.4,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.348,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.809,
+          "p95_ms": 17.424,
+          "p99_ms": 26.168,
+          "passed": true,
+          "request_order_seed": 1633412751031864530,
+          "request_order_sha256": "624c7e00465efee41cae7b4d8f33e9601aa30da1341cf50217fa63c23366644d",
+          "responses_per_second": 8898.8,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.386,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 5.002,
+          "p95_ms": 17.827,
+          "p99_ms": 26.585,
+          "passed": true,
+          "request_order_seed": 2157713576646101942,
+          "request_order_sha256": "26eade2ce9da34c461f6a06908e1f721b5cf05463129d1317a0e2402508af2d2",
+          "responses_per_second": 8655.5,
+          "run_index": 1,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.376,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.532,
+          "p95_ms": 17.607,
+          "p99_ms": 26.586,
+          "passed": true,
+          "request_order_seed": 2115493945321389089,
+          "request_order_sha256": "d0cddab5ed6fb884234d1cbab9463ab236dcf48bc3de94a6039a2f56f2c7de01",
+          "responses_per_second": 8720.2,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.419,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 5.052,
+          "p95_ms": 18.279,
+          "p99_ms": 27.886,
+          "passed": true,
+          "request_order_seed": 222685571417824185,
+          "request_order_sha256": "96e86e79647f8d0cc0d31dbcbe8bd444a5c5d39299660e265e83a9d1b9033114",
+          "responses_per_second": 8458.1,
+          "run_index": 0,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.353,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.626,
+          "p95_ms": 17.251,
+          "p99_ms": 25.871,
+          "passed": true,
+          "request_order_seed": 12526176030971631189,
+          "request_order_sha256": "87552f1df7161636f0b6178d8c5912fd376122458bf1fea4b09e3bfb569f97f7",
+          "responses_per_second": 8868.4,
+          "run_index": 2,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-traverse",
+      "summary": {
+        "median_p50_ms": 4.809,
+        "median_p95_ms": 17.607,
+        "median_p99_ms": 26.585,
+        "median_responses_per_second": 8720.2,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.363,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.409,
+          "p95_ms": 17.182,
+          "p99_ms": 25.449,
+          "passed": true,
+          "request_order_seed": 11796768739900930239,
+          "request_order_sha256": "c5d92b731f392bbc87ec740c866cce92528035f2791a70365dec5deba0e2246b",
+          "responses_per_second": 8805.6,
+          "run_index": 2,
+          "startup_seconds": 0.0055,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.375,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.573,
+          "p95_ms": 17.309,
+          "p99_ms": 25.84,
+          "passed": true,
+          "request_order_seed": 8000620570351430572,
+          "request_order_sha256": "2702708f48099d35cd3f393daca54698b505a5ce6a4e778de6c3a4fc85e97b36",
+          "responses_per_second": 8730.0,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.37,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.41,
+          "p95_ms": 17.146,
+          "p99_ms": 25.495,
+          "passed": true,
+          "request_order_seed": 4690559539352254875,
+          "request_order_sha256": "e2f377d4ccefbbaa1846beaa3c8f359cc7f169820ab7c79846e51d40d6bccb45",
+          "responses_per_second": 8760.2,
+          "run_index": 0,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.39,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.281,
+          "p95_ms": 18.046,
+          "p99_ms": 27.199,
+          "passed": true,
+          "request_order_seed": 1325006056867130404,
+          "request_order_sha256": "2d4061445df12cc1b9b15de6456a5e3aaa4b8974a8d8d4f2e96c3739ac1068e9",
+          "responses_per_second": 8635.5,
+          "run_index": 3,
+          "startup_seconds": 0.0053,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.347,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.473,
+          "p95_ms": 16.755,
+          "p99_ms": 25.803,
+          "passed": true,
+          "request_order_seed": 5561683892692145771,
+          "request_order_sha256": "c5893451e0ce679603b4f4d0af470d54c9d5b13e8e7ea1c2470e5058dd60a247",
+          "responses_per_second": 8908.9,
+          "run_index": 1,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-noop",
+      "summary": {
+        "median_p50_ms": 4.41,
+        "median_p95_ms": 17.182,
+        "median_p99_ms": 25.803,
+        "median_responses_per_second": 8760.2,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.375,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.414,
+          "p95_ms": 17.473,
+          "p99_ms": 26.383,
+          "passed": true,
+          "request_order_seed": 12813017520749540902,
+          "request_order_sha256": "b79181ea9e612b64759c42205a28124d57ab0b2b70a9fb7fb2f173b0b08edbdf",
+          "responses_per_second": 8724.8,
+          "run_index": 1,
+          "startup_seconds": 0.0052,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.361,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.959,
+          "p95_ms": 17.142,
+          "p99_ms": 26.061,
+          "passed": true,
+          "request_order_seed": 14864473625956651645,
+          "request_order_sha256": "4d4bf8794eb48abec09b1314f658a6a6f87bc109500cea5ab0111bb964e77c06",
+          "responses_per_second": 8818.7,
+          "run_index": 2,
+          "startup_seconds": 0.0076,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.344,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.836,
+          "p95_ms": 17.321,
+          "p99_ms": 25.797,
+          "passed": true,
+          "request_order_seed": 5644203774298079633,
+          "request_order_sha256": "1bba7374cfc6a64da391a2ecff8ec01724be8efe1d87c650314d1fecbdf191a8",
+          "responses_per_second": 8930.4,
+          "run_index": 0,
+          "startup_seconds": 0.0075,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.337,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.34,
+          "p95_ms": 17.041,
+          "p99_ms": 26.403,
+          "passed": true,
+          "request_order_seed": 13793444158763712412,
+          "request_order_sha256": "0241f731d2f7dd68256494c94f6b86593791964193cec319ddf3d363fdeac73c",
+          "responses_per_second": 8976.8,
+          "run_index": 3,
+          "startup_seconds": 0.0076,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.407,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.654,
+          "p95_ms": 18.16,
+          "p99_ms": 26.999,
+          "passed": true,
+          "request_order_seed": 125178287805874519,
+          "request_order_sha256": "f668aecae8fa688f1e6baf1e2b0d21439354a141f309039621cf2cb82a9c2b9a",
+          "responses_per_second": 8526.0,
+          "run_index": 4,
+          "startup_seconds": 0.0052,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-traverse",
+      "summary": {
+        "median_p50_ms": 4.654,
+        "median_p95_ms": 17.321,
+        "median_p99_ms": 26.383,
+        "median_responses_per_second": 8818.7,
+        "median_startup_seconds": 0.0075,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 16,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.401,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.631,
+          "p95_ms": 17.835,
+          "p99_ms": 27.723,
+          "passed": true,
+          "request_order_seed": 10334459768338388259,
+          "request_order_sha256": "6300777894bb174a5a633b17a87ca64d6921de36d41837d8db3e985c46c2efec",
+          "responses_per_second": 8562.6,
+          "run_index": 1,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.389,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.567,
+          "p95_ms": 17.127,
+          "p99_ms": 26.856,
+          "passed": true,
+          "request_order_seed": 4204946382859518931,
+          "request_order_sha256": "d6eca296462337e08c744640b5499a3a2e1fea6a919e1c51bbb91d9d8e00dfe3",
+          "responses_per_second": 8641.1,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.585,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 5.38,
+          "p95_ms": 19.648,
+          "p99_ms": 32.992,
+          "passed": true,
+          "request_order_seed": 3863489745205689381,
+          "request_order_sha256": "eb110cf013d4d56c41700a0c9ee60c60827fd427c1ee4208744e2a488c491430",
+          "responses_per_second": 7569.0,
+          "run_index": 4,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.346,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.482,
+          "p95_ms": 17.179,
+          "p99_ms": 25.999,
+          "passed": true,
+          "request_order_seed": 15519178519410979779,
+          "request_order_sha256": "17e93067279b8591dc8429da67e81a66cc3985b442b6f5993c1a0d006186b3c5",
+          "responses_per_second": 8914.5,
+          "run_index": 0,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.382,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.719,
+          "p95_ms": 17.639,
+          "p99_ms": 26.291,
+          "passed": true,
+          "request_order_seed": 15584482300562710571,
+          "request_order_sha256": "182e3a4b9f4633d65eb5493ec4100f3f5aa8e28123e5fa1d61f0e0a0d8cd0465",
+          "responses_per_second": 8680.9,
+          "run_index": 2,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-traverse",
+      "summary": {
+        "median_p50_ms": 4.631,
+        "median_p95_ms": 17.639,
+        "median_p99_ms": 26.856,
+        "median_responses_per_second": 8641.1,
+        "median_startup_seconds": 0.003,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.364,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.657,
+          "p95_ms": 17.354,
+          "p99_ms": 25.787,
+          "passed": true,
+          "request_order_seed": 8608767755369227644,
+          "request_order_sha256": "ce386504cd7dcb73574c6625759e4e18aa665e830f7434419ee433031c5c1947",
+          "responses_per_second": 8797.3,
+          "run_index": 2,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.357,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.668,
+          "p95_ms": 17.087,
+          "p99_ms": 26.26,
+          "passed": true,
+          "request_order_seed": 2942243724387708657,
+          "request_order_sha256": "3489baa7ad9a887bf22f3d569add416597a0d123af81ee41da65c955b7f44df5",
+          "responses_per_second": 8840.3,
+          "run_index": 1,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.32,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.57,
+          "p95_ms": 16.655,
+          "p99_ms": 24.85,
+          "passed": true,
+          "request_order_seed": 4044877397507134963,
+          "request_order_sha256": "6521278a239ff5d50176d26fc5e6191bca347bd1cf181bbd8f635c48144c94a0",
+          "responses_per_second": 9087.8,
+          "run_index": 4,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.358,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.115,
+          "p95_ms": 16.785,
+          "p99_ms": 25.53,
+          "passed": true,
+          "request_order_seed": 12891909156631227302,
+          "request_order_sha256": "3f9e231ab5608cdd73dedb7d5596278cc596fa70a40ff897211486cc1b037151",
+          "responses_per_second": 8836.3,
+          "run_index": 0,
+          "startup_seconds": 0.0029,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.339,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.116,
+          "p95_ms": 16.77,
+          "p99_ms": 25.992,
+          "passed": true,
+          "request_order_seed": 12549180761489739651,
+          "request_order_sha256": "c5446f822578cec8cd77d9b0c84ccf193f67858f168ca79f050ac6b9203dae17",
+          "responses_per_second": 8963.4,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "hello",
+      "summary": {
+        "median_p50_ms": 4.57,
+        "median_p95_ms": 16.785,
+        "median_p99_ms": 25.787,
+        "median_responses_per_second": 8840.3,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 64,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.383,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.509,
+          "p95_ms": 17.488,
+          "p99_ms": 26.649,
+          "passed": true,
+          "request_order_seed": 6539573563686846589,
+          "request_order_sha256": "00566e1b06eb27e6c1f3a5f6d8d3806a2673adbf76a361a0cfc10aaf936b4a6f",
+          "responses_per_second": 8675.0,
+          "run_index": 4,
+          "startup_seconds": 0.0053,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.356,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.739,
+          "p95_ms": 17.249,
+          "p99_ms": 26.151,
+          "passed": true,
+          "request_order_seed": 16603115216101327820,
+          "request_order_sha256": "d897cd1737662e6eec3934a63169f33e744c1358ab9bfa6c94bb80b99aefb4bb",
+          "responses_per_second": 8846.8,
+          "run_index": 2,
+          "startup_seconds": 0.0052,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.651,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.776,
+          "p95_ms": 17.694,
+          "p99_ms": 28.988,
+          "passed": true,
+          "request_order_seed": 8829658137467083678,
+          "request_order_sha256": "d59bca10b3c45dbe934d93a1198c26ad5ba18b15904c513680f9abd54fc14610",
+          "responses_per_second": 7267.9,
+          "run_index": 0,
+          "startup_seconds": 0.0053,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.34,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.704,
+          "p95_ms": 17.236,
+          "p99_ms": 25.567,
+          "passed": true,
+          "request_order_seed": 3054507642565824677,
+          "request_order_sha256": "189129cba11a3d97a1dfe0ee707a67f69e3d2fab53a91ad92874bc440d280e5b",
+          "responses_per_second": 8956.8,
+          "run_index": 1,
+          "startup_seconds": 0.0054,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.389,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.666,
+          "p95_ms": 17.618,
+          "p99_ms": 26.496,
+          "passed": true,
+          "request_order_seed": 2166715589335550058,
+          "request_order_sha256": "b824add88786965abb05c1fc76c9cd305453532138c3b9f3407da5cd9eec60d9",
+          "responses_per_second": 8638.5,
+          "run_index": 3,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-traverse",
+      "summary": {
+        "median_p50_ms": 4.704,
+        "median_p95_ms": 17.488,
+        "median_p99_ms": 26.496,
+        "median_responses_per_second": 8675.0,
+        "median_startup_seconds": 0.0053,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": null,
+      "framework": "axum",
+      "runs": [
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.305,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.138,
+          "p95_ms": 16.545,
+          "p99_ms": 24.966,
+          "passed": true,
+          "request_order_seed": 16688009927657449996,
+          "request_order_sha256": "f806f3dfb991d06f820b31145ed5354505391ecca483d3cc05bbb667ca688fa3",
+          "responses_per_second": 9197.3,
+          "run_index": 1,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.306,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.582,
+          "p95_ms": 16.978,
+          "p99_ms": 25.78,
+          "passed": true,
+          "request_order_seed": 1005044964761570274,
+          "request_order_sha256": "93d7ef4f926c72f38836451e1b5cb09ac33dbe553b10e1e2aca9a14183c9d4cc",
+          "responses_per_second": 9190.8,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.355,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.25,
+          "p95_ms": 17.37,
+          "p99_ms": 26.355,
+          "passed": true,
+          "request_order_seed": 9387614822513258396,
+          "request_order_sha256": "dabcfa66b873eb7a06b4eb5d2fdd07c8e856e1b52ae3d12da205804a1fc4a37a",
+          "responses_per_second": 8856.1,
+          "run_index": 3,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.308,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.619,
+          "p95_ms": 16.756,
+          "p99_ms": 24.407,
+          "passed": true,
+          "request_order_seed": 5522112833378204106,
+          "request_order_sha256": "d5325789b4b6fcf818879f7e921c523672f659a4efeb8b3813ce2e110601926f",
+          "responses_per_second": 9173.7,
+          "run_index": 2,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.31,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.241,
+          "p95_ms": 16.901,
+          "p99_ms": 25.67,
+          "passed": true,
+          "request_order_seed": 14449625192432750754,
+          "request_order_sha256": "5767466c34046b33a634fab29aff89dd944f31195325c948293ef796ebacaf91",
+          "responses_per_second": 9160.8,
+          "run_index": 0,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "hello",
+      "summary": {
+        "median_p50_ms": 4.25,
+        "median_p95_ms": 16.901,
+        "median_p99_ms": 25.67,
+        "median_responses_per_second": 9173.7,
+        "median_startup_seconds": 0.003,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "body_limit": {
+        "status": 413,
+        "transport_errors": []
+      },
+      "contract_errors": [],
+      "dependency_count": null,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.689,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.559,
+          "p95_ms": 19.944,
+          "p99_ms": 28.368,
+          "passed": true,
+          "request_order_seed": 5436535551534547777,
+          "request_order_sha256": "97b76960b553ce58012ac1710c80b79f0a8b5805dcc2a0f1a56b5326a9d163d2",
+          "responses_per_second": 7103.2,
+          "run_index": 0,
+          "startup_seconds": 0.0052,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.695,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.786,
+          "p95_ms": 20.524,
+          "p99_ms": 28.934,
+          "passed": true,
+          "request_order_seed": 17887329458198146976,
+          "request_order_sha256": "f7ee05271b1e31ed7e8a305eeb703cf5333e44b469af361f55dd9d775c542b99",
+          "responses_per_second": 7079.4,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.691,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.682,
+          "p95_ms": 20.282,
+          "p99_ms": 28.384,
+          "passed": true,
+          "request_order_seed": 16769664179730409413,
+          "request_order_sha256": "8defc9c31a511a81c5d24018afea58ab255f8a0a3062a8a857815e3b0609d3f6",
+          "responses_per_second": 7095.3,
+          "run_index": 2,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.976,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 7.023,
+          "p95_ms": 21.304,
+          "p99_ms": 30.629,
+          "passed": true,
+          "request_order_seed": 17370346274234941961,
+          "request_order_sha256": "627f2f52e235167ec06ea53c774f3aea016f8c357a16852de02f284689d5961c",
+          "responses_per_second": 6072.0,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.703,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.552,
+          "p95_ms": 19.847,
+          "p99_ms": 28.412,
+          "passed": true,
+          "request_order_seed": 16531640660598450396,
+          "request_order_sha256": "79d36a39d4d0e04e817ac9eee5ed908fc454079de4fd01cc7d8df50fbc4967f9",
+          "responses_per_second": 7045.5,
+          "run_index": 1,
+          "startup_seconds": 0.0052,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "auth",
+      "summary": {
+        "median_p50_ms": 6.682,
+        "median_p95_ms": 20.282,
+        "median_p99_ms": 28.412,
+        "median_responses_per_second": 7079.4,
+        "median_startup_seconds": 0.0032,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.365,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.579,
+          "p95_ms": 17.308,
+          "p99_ms": 26.599,
+          "passed": true,
+          "request_order_seed": 1897345420211535543,
+          "request_order_sha256": "32007b41982380c31b9c30aeccf9592851eea7b9a9e268fa3af01e85dddb741e",
+          "responses_per_second": 8789.8,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.4,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.552,
+          "p95_ms": 17.913,
+          "p99_ms": 26.929,
+          "passed": true,
+          "request_order_seed": 9074788770522380390,
+          "request_order_sha256": "af508cecc691f769da59395e885f812de8bef01cfa0e3f590db89206cabdde8d",
+          "responses_per_second": 8571.1,
+          "run_index": 1,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.38,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.309,
+          "p95_ms": 17.604,
+          "p99_ms": 26.493,
+          "passed": true,
+          "request_order_seed": 1341680741480297967,
+          "request_order_sha256": "e264dac9c1256e2a31a3e65f07fd0a6c226279f3c3d6e95a856fdea2e5d5b719",
+          "responses_per_second": 8693.0,
+          "run_index": 3,
+          "startup_seconds": 0.0052,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.331,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.436,
+          "p95_ms": 17.19,
+          "p99_ms": 26.278,
+          "passed": true,
+          "request_order_seed": 12730840251418644848,
+          "request_order_sha256": "648a2778d2f54016f9c02bfadd86a24651811dcbbc2f9e20f0f17be0d1037dcf",
+          "responses_per_second": 9012.6,
+          "run_index": 0,
+          "startup_seconds": 0.0053,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.357,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.343,
+          "p95_ms": 17.218,
+          "p99_ms": 26.441,
+          "passed": true,
+          "request_order_seed": 9567745709051103564,
+          "request_order_sha256": "6c323f1e50c3ee9d779b4f3d22737d09adaf71c9cf29c5ab2355f3eb84ef8c9a",
+          "responses_per_second": 8842.6,
+          "run_index": 2,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-noop",
+      "summary": {
+        "median_p50_ms": 4.436,
+        "median_p95_ms": 17.308,
+        "median_p99_ms": 26.493,
+        "median_responses_per_second": 8789.8,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": null,
+      "framework": "fiber",
+      "runs": [
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.34,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.186,
+          "p95_ms": 16.818,
+          "p99_ms": 25.045,
+          "passed": true,
+          "request_order_seed": 153666741056290997,
+          "request_order_sha256": "c76c76678e707db160bb8ca4664a1e8b196d3ba8959947d6eca5b872f80a6754",
+          "responses_per_second": 8956.4,
+          "run_index": 0,
+          "startup_seconds": 0.0054,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.342,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.68,
+          "p95_ms": 17.214,
+          "p99_ms": 26.317,
+          "passed": true,
+          "request_order_seed": 5364685922946680313,
+          "request_order_sha256": "e3692325b053b9b5df4f5860a947b8cce0a4239f24d211d2264e8af7574572f3",
+          "responses_per_second": 8941.3,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.341,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.295,
+          "p95_ms": 17.284,
+          "p99_ms": 26.736,
+          "passed": true,
+          "request_order_seed": 8803661514460030461,
+          "request_order_sha256": "73031805d85c61ae1ad6ac39b0a74d9673c5960cc6b4776e3fe5943d6a1de7e7",
+          "responses_per_second": 8945.9,
+          "run_index": 1,
+          "startup_seconds": 0.0054,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.385,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.339,
+          "p95_ms": 17.764,
+          "p99_ms": 26.858,
+          "passed": true,
+          "request_order_seed": 12666760611059010793,
+          "request_order_sha256": "f4ebba9f31578538ecada1a5b5c7866b8f03c38d2f1793928280f3f90fa1b9b2",
+          "responses_per_second": 8666.3,
+          "run_index": 2,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.347,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.241,
+          "p95_ms": 17.175,
+          "p99_ms": 25.616,
+          "passed": true,
+          "request_order_seed": 17341586468665059049,
+          "request_order_sha256": "bbff320d8c5df25701d53bcbf413a78736a72c83abc777a8afb01987645652f1",
+          "responses_per_second": 8908.1,
+          "run_index": 3,
+          "startup_seconds": 0.0054,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "hello",
+      "summary": {
+        "median_p50_ms": 4.295,
+        "median_p95_ms": 17.214,
+        "median_p99_ms": 26.317,
+        "median_responses_per_second": 8941.3,
+        "median_startup_seconds": 0.0054,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.354,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.798,
+          "p95_ms": 17.185,
+          "p99_ms": 26.396,
+          "passed": true,
+          "request_order_seed": 14735410646562295780,
+          "request_order_sha256": "19e1646b0eea491d5676d96d47e6fe848b851e5738e9c93073e8a94161df8473",
+          "responses_per_second": 8863.3,
+          "run_index": 1,
+          "startup_seconds": 0.0074,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.416,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 5.126,
+          "p95_ms": 18.48,
+          "p99_ms": 30.337,
+          "passed": true,
+          "request_order_seed": 13763312257658217214,
+          "request_order_sha256": "fdd3017450be8fe55e322a1d8bfd0e3d8f0e0706de8285c803b0922f475de41c",
+          "responses_per_second": 8474.5,
+          "run_index": 4,
+          "startup_seconds": 0.0073,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.555,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 5.036,
+          "p95_ms": 18.201,
+          "p99_ms": 30.162,
+          "passed": true,
+          "request_order_seed": 11449839312511417463,
+          "request_order_sha256": "e80aedb4146f37c1c27048443b611228d80ec5ceba63bcb853d9c752d046f5d9",
+          "responses_per_second": 7718.9,
+          "run_index": 0,
+          "startup_seconds": 0.0074,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.621,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.531,
+          "p95_ms": 17.543,
+          "p99_ms": 28.264,
+          "passed": true,
+          "request_order_seed": 2139897575509228646,
+          "request_order_sha256": "244ddb890d803d1afe5441c9e624e25c05c8c3fd40f9ff8d1fa8f860b28a84ba",
+          "responses_per_second": 7403.5,
+          "run_index": 2,
+          "startup_seconds": 0.0075,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.393,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.854,
+          "p95_ms": 17.896,
+          "p99_ms": 27.283,
+          "passed": true,
+          "request_order_seed": 3560567551494728222,
+          "request_order_sha256": "145a6b5047bb3c71fe0429f349a7640c6e55938a79aaee41249adb2bd0aac6e7",
+          "responses_per_second": 8611.5,
+          "run_index": 3,
+          "startup_seconds": 0.0075,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-traverse",
+      "summary": {
+        "median_p50_ms": 4.854,
+        "median_p95_ms": 17.896,
+        "median_p99_ms": 28.264,
+        "median_responses_per_second": 8474.5,
+        "median_startup_seconds": 0.0074,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "body_limit": {
+        "status": null,
+        "transport_errors": [
+          "oversized body: transport failure: ConnectionResetError: [Errno 104] Connection reset by peer"
+        ]
+      },
+      "contract_errors": [],
+      "dependency_count": null,
+      "framework": "fiber",
+      "runs": [
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.764,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 7.111,
+          "p95_ms": 20.441,
+          "p99_ms": 28.795,
+          "passed": true,
+          "request_order_seed": 17298414911518995755,
+          "request_order_sha256": "9dcc98195fde549c5f68dca560f79bedff5668c0bd7461f26191eaf13c35c420",
+          "responses_per_second": 6803.9,
+          "run_index": 0,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.733,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.96,
+          "p95_ms": 20.714,
+          "p99_ms": 28.938,
+          "passed": true,
+          "request_order_seed": 792935171499587977,
+          "request_order_sha256": "5d685722dd63bfe0311c416cabb8658430ac94984b8a0d85df51dc2947b5ff8e",
+          "responses_per_second": 6924.2,
+          "run_index": 4,
+          "startup_seconds": 0.0033,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.75,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.986,
+          "p95_ms": 20.272,
+          "p99_ms": 29.202,
+          "passed": true,
+          "request_order_seed": 10482199796077556061,
+          "request_order_sha256": "61e14111a5b5047cb63572573389ee2e7fe97ae3f8268200367ed42b44642a43",
+          "responses_per_second": 6858.7,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.793,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.96,
+          "p95_ms": 21.216,
+          "p99_ms": 30.042,
+          "passed": true,
+          "request_order_seed": 15149202859483131816,
+          "request_order_sha256": "a3daa8341367546ecad34db850f01c26b75b1467e8c7b418b62b66cf8a081bf2",
+          "responses_per_second": 6693.2,
+          "run_index": 1,
+          "startup_seconds": 0.0056,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.78,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 7.265,
+          "p95_ms": 21.431,
+          "p99_ms": 29.439,
+          "passed": true,
+          "request_order_seed": 10709952048503815669,
+          "request_order_sha256": "eb0562cc5fa6025f8e57883a1297d697de4e104a2bc6a55a620f37dc0b4919c5",
+          "responses_per_second": 6740.5,
+          "run_index": 2,
+          "startup_seconds": 0.0033,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "auth",
+      "summary": {
+        "median_p50_ms": 6.986,
+        "median_p95_ms": 20.714,
+        "median_p99_ms": 29.202,
+        "median_responses_per_second": 6803.9,
+        "median_startup_seconds": 0.0033,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.389,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.792,
+          "p95_ms": 17.757,
+          "p99_ms": 26.512,
+          "passed": true,
+          "request_order_seed": 4729893991423431847,
+          "request_order_sha256": "2124d1f539ecba2e7ad4ccb7b66c2bbcc1ef957ec7901599b3ebc4d398d58196",
+          "responses_per_second": 8637.7,
+          "run_index": 0,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.367,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.373,
+          "p95_ms": 17.123,
+          "p99_ms": 25.328,
+          "passed": true,
+          "request_order_seed": 8949096607495946280,
+          "request_order_sha256": "d910383728197adc2036a244454d7e16f8d07096359e713d976306b7007b9e49",
+          "responses_per_second": 8780.9,
+          "run_index": 2,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.383,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.392,
+          "p95_ms": 17.134,
+          "p99_ms": 25.502,
+          "passed": true,
+          "request_order_seed": 5868391489259924830,
+          "request_order_sha256": "3616ab8bdad15f3cf527e8cce4f133e48d357d561f6174cbf6364fbd836d0cb5",
+          "responses_per_second": 8677.5,
+          "run_index": 1,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.381,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.333,
+          "p95_ms": 17.372,
+          "p99_ms": 26.189,
+          "passed": true,
+          "request_order_seed": 6960891116242805133,
+          "request_order_sha256": "4d723e26a6651975ec8d3cbeb12ebb5cad6b0648d468cbf4b1b228d85d7a8df9",
+          "responses_per_second": 8687.7,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.392,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.372,
+          "p95_ms": 17.966,
+          "p99_ms": 27.627,
+          "passed": true,
+          "request_order_seed": 3280831654197644356,
+          "request_order_sha256": "4e76273447c5f50c0ea2971050ae818d0f46abda111d68cf5c700cd990899bbd",
+          "responses_per_second": 8619.9,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-noop",
+      "summary": {
+        "median_p50_ms": 4.373,
+        "median_p95_ms": 17.372,
+        "median_p99_ms": 26.189,
+        "median_responses_per_second": 8677.5,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "body_limit": {
+        "status": 413,
+        "transport_errors": []
+      },
+      "contract_errors": [],
+      "dependency_count": null,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.723,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.866,
+          "p95_ms": 20.121,
+          "p99_ms": 29.156,
+          "passed": true,
+          "request_order_seed": 17895689051911261656,
+          "request_order_sha256": "155e4abed6247db8a87b3033071806ed35dcba3dc049b3dba280f55dc3f0e602",
+          "responses_per_second": 6963.4,
+          "run_index": 0,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.748,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 7.096,
+          "p95_ms": 20.695,
+          "p99_ms": 28.943,
+          "passed": true,
+          "request_order_seed": 5859719935395507277,
+          "request_order_sha256": "53d67a2e817729e62a881a619c1fddfd7c978dc93516ad7b9e74e3006957d98a",
+          "responses_per_second": 6865.1,
+          "run_index": 1,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.991,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 7.349,
+          "p95_ms": 21.957,
+          "p99_ms": 33.833,
+          "passed": true,
+          "request_order_seed": 4415406570804715578,
+          "request_order_sha256": "68f1b244e7b2d556d77304f43280ea79e471128dc6e1d1f546316104ba592b65",
+          "responses_per_second": 6026.6,
+          "run_index": 2,
+          "startup_seconds": 0.0052,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.779,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 7.218,
+          "p95_ms": 21.299,
+          "p99_ms": 30.136,
+          "passed": true,
+          "request_order_seed": 8056480546677644217,
+          "request_order_sha256": "ed95e45e30456147bc9936346351b96f3cf2c6bc36c4f302be1bbfeec70166e6",
+          "responses_per_second": 6744.5,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.712,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.708,
+          "p95_ms": 20.478,
+          "p99_ms": 29.897,
+          "passed": true,
+          "request_order_seed": 3334525974131025181,
+          "request_order_sha256": "b42e3a08c24612cec70b50fc4c18a071e04cb1597b01e7e98c851a97d175f2ef",
+          "responses_per_second": 7009.2,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "auth",
+      "summary": {
+        "median_p50_ms": 7.096,
+        "median_p95_ms": 20.695,
+        "median_p99_ms": 29.897,
+        "median_responses_per_second": 6865.1,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.548,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.15,
+          "p95_ms": 17.39,
+          "p99_ms": 28.887,
+          "passed": true,
+          "request_order_seed": 16072416317147362787,
+          "request_order_sha256": "ad4b63b3e6f742274d5f67d791b1278c23a7c4692d85be19da32ce7b19c7b884",
+          "responses_per_second": 7752.6,
+          "run_index": 0,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.346,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.501,
+          "p95_ms": 17.251,
+          "p99_ms": 25.009,
+          "passed": true,
+          "request_order_seed": 11787337706858211541,
+          "request_order_sha256": "f2a7d0226dbbe9e91399cf013655792ac27d7e71837da83c8f3f0b875c9b0931",
+          "responses_per_second": 8915.1,
+          "run_index": 1,
+          "startup_seconds": 0.0029,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.361,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.157,
+          "p95_ms": 17.306,
+          "p99_ms": 25.88,
+          "passed": true,
+          "request_order_seed": 10957167702554242145,
+          "request_order_sha256": "fb3d71e0651bd18c26003d47323bbe2af7b3ff28ee1fe299a1503584f5364bfd",
+          "responses_per_second": 8818.1,
+          "run_index": 2,
+          "startup_seconds": 0.0033,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.377,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.451,
+          "p95_ms": 17.465,
+          "p99_ms": 26.73,
+          "passed": true,
+          "request_order_seed": 17130247525253211715,
+          "request_order_sha256": "8f87fcb0ea236d64a83da3f8f66494b1986f7b9a981b2494136ff32060be8819",
+          "responses_per_second": 8712.4,
+          "run_index": 3,
+          "startup_seconds": 0.0033,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.394,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.8,
+          "p95_ms": 17.709,
+          "p99_ms": 27.456,
+          "passed": true,
+          "request_order_seed": 12406756379847413321,
+          "request_order_sha256": "8e58a0925c7de69f6759d6db313eeb3fd1ef1421e3574aabd261280200cbe382",
+          "responses_per_second": 8609.3,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-noop",
+      "summary": {
+        "median_p50_ms": 4.451,
+        "median_p95_ms": 17.39,
+        "median_p99_ms": 26.73,
+        "median_responses_per_second": 8712.4,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 1,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.355,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.419,
+          "p95_ms": 17.212,
+          "p99_ms": 26.314,
+          "passed": true,
+          "request_order_seed": 12435537674741864114,
+          "request_order_sha256": "140ce846ccf5b30247bfddc1c90cd25252b8702ccf1ab5200b4fe9b705889eb9",
+          "responses_per_second": 8858.7,
+          "run_index": 2,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.344,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.731,
+          "p95_ms": 17.236,
+          "p99_ms": 25.872,
+          "passed": true,
+          "request_order_seed": 10079536602288741760,
+          "request_order_sha256": "8b6e7c65c316a4afa1a45e5e892847d269e2bde6bdd94303f080f9cdeebee800",
+          "responses_per_second": 8928.3,
+          "run_index": 0,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.35,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.234,
+          "p95_ms": 17.063,
+          "p99_ms": 26.434,
+          "passed": true,
+          "request_order_seed": 2134808340554270958,
+          "request_order_sha256": "141c597be5bbe4616a0bd9137449f55f68a7e813d954e305718a4c543ad6ba38",
+          "responses_per_second": 8889.2,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.402,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.419,
+          "p95_ms": 17.872,
+          "p99_ms": 31.152,
+          "passed": true,
+          "request_order_seed": 16018702218900079347,
+          "request_order_sha256": "50d8297b3f4ab0132454302c4a60c6bdb028c03d6be227a0edf3a48323f52e12",
+          "responses_per_second": 8558.0,
+          "run_index": 3,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.383,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.727,
+          "p95_ms": 17.571,
+          "p99_ms": 26.417,
+          "passed": true,
+          "request_order_seed": 5645948935477422774,
+          "request_order_sha256": "286edd877d7a1118d8e681c6d13dd4b5c37afcaa7441ee5fb526373676906400",
+          "responses_per_second": 8675.6,
+          "run_index": 1,
+          "startup_seconds": 0.0033,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-traverse",
+      "summary": {
+        "median_p50_ms": 4.419,
+        "median_p95_ms": 17.236,
+        "median_p99_ms": 26.417,
+        "median_responses_per_second": 8858.7,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 16,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.355,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.621,
+          "p95_ms": 17.282,
+          "p99_ms": 26.301,
+          "passed": true,
+          "request_order_seed": 9453399400852409262,
+          "request_order_sha256": "2dcad7a18f3089c7f8f72611248d504756d545ecdb9176e80c38c98fb5d06270",
+          "responses_per_second": 8853.1,
+          "run_index": 4,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.358,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.752,
+          "p95_ms": 17.314,
+          "p99_ms": 26.012,
+          "passed": true,
+          "request_order_seed": 5769718114773743163,
+          "request_order_sha256": "f0eda71ff91d7ff211024ad401b6145d02ca118606ede6a5d20ab2f642f5de48",
+          "responses_per_second": 8835.2,
+          "run_index": 0,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.389,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.754,
+          "p95_ms": 17.794,
+          "p99_ms": 26.427,
+          "passed": true,
+          "request_order_seed": 7081652346989650048,
+          "request_order_sha256": "d9dd035108b7a4c0f7671bfb1ad3bad3664d1a2c2931d760a67b7183af80a105",
+          "responses_per_second": 8640.3,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.365,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.48,
+          "p95_ms": 17.344,
+          "p99_ms": 25.795,
+          "passed": true,
+          "request_order_seed": 5582673359155282974,
+          "request_order_sha256": "c353cfee163fd3ce2c3ff61c28715181a4f8dfc30b45bae72da5e6caa7849169",
+          "responses_per_second": 8791.5,
+          "run_index": 1,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.348,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.377,
+          "p95_ms": 16.862,
+          "p99_ms": 25.302,
+          "passed": true,
+          "request_order_seed": 15262300576882268251,
+          "request_order_sha256": "642c9dce48e757498c8ff61da34d142def7afb1f23b783251e6062c4c2d08f99",
+          "responses_per_second": 8902.0,
+          "run_index": 2,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-traverse",
+      "summary": {
+        "median_p50_ms": 4.621,
+        "median_p95_ms": 17.314,
+        "median_p99_ms": 26.012,
+        "median_responses_per_second": 8835.2,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 256,
+      "framework": "furnace-rs-1.0.2",
+      "runs": [
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.341,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.658,
+          "p95_ms": 16.972,
+          "p99_ms": 25.231,
+          "passed": true,
+          "request_order_seed": 11826366120723585975,
+          "request_order_sha256": "2cb4d57215ae000bbdada6a279743348e936888a29d40ca208f9ed0b57d029c0",
+          "responses_per_second": 8946.7,
+          "run_index": 2,
+          "startup_seconds": 0.0075,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.392,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.67,
+          "p95_ms": 17.311,
+          "p99_ms": 25.836,
+          "passed": true,
+          "request_order_seed": 1368298873556938330,
+          "request_order_sha256": "ffa83d08caaf4efb94016ab46695c15ee6535804951cd96eabd018258baa4179",
+          "responses_per_second": 8619.9,
+          "run_index": 1,
+          "startup_seconds": 0.0074,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.37,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.766,
+          "p95_ms": 17.257,
+          "p99_ms": 26.495,
+          "passed": true,
+          "request_order_seed": 1721408825129527306,
+          "request_order_sha256": "7344d27f24b92780a6385dbb5a737566f8ad963c794ed5f41d3715343e35751d",
+          "responses_per_second": 8758.6,
+          "run_index": 3,
+          "startup_seconds": 0.0076,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.336,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.245,
+          "p95_ms": 17.074,
+          "p99_ms": 25.964,
+          "passed": true,
+          "request_order_seed": 9231746500879159528,
+          "request_order_sha256": "2ca08643b6abad5af6eaa19fa175a455002a215d914d1e660e44c0c4fb8a5f6a",
+          "responses_per_second": 8980.8,
+          "run_index": 0,
+          "startup_seconds": 0.0074,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.399,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.729,
+          "p95_ms": 17.681,
+          "p99_ms": 26.582,
+          "passed": true,
+          "request_order_seed": 14049943874154199829,
+          "request_order_sha256": "70a4a037fbfe367cb1c2fce905c1b8ff0a7aee2036dbd7842d26f0ab01ef11ea",
+          "responses_per_second": 8576.2,
+          "run_index": 4,
+          "startup_seconds": 0.0075,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-noop",
+      "summary": {
+        "median_p50_ms": 4.67,
+        "median_p95_ms": 17.257,
+        "median_p99_ms": 25.964,
+        "median_responses_per_second": 8758.6,
+        "median_startup_seconds": 0.0075,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 256,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.361,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.649,
+          "p95_ms": 17.168,
+          "p99_ms": 25.481,
+          "passed": true,
+          "request_order_seed": 1548397360873162996,
+          "request_order_sha256": "c19dd2021488263f6ee55eb72d50195355e8943ceeb089d244c8c20a151de6e3",
+          "responses_per_second": 8813.9,
+          "run_index": 4,
+          "startup_seconds": 0.0074,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.384,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 5.004,
+          "p95_ms": 17.937,
+          "p99_ms": 26.833,
+          "passed": true,
+          "request_order_seed": 3299787967789273702,
+          "request_order_sha256": "b837507b188d6659475381cb12f0c759d4b4d5a69d29d0154428b62641a13668",
+          "responses_per_second": 8668.2,
+          "run_index": 2,
+          "startup_seconds": 0.0074,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.4,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.869,
+          "p95_ms": 17.733,
+          "p99_ms": 26.479,
+          "passed": true,
+          "request_order_seed": 13695326507916037092,
+          "request_order_sha256": "6a5bca46476b78c7d8861bbf7ad8f7ee74bed6cfc95702ead7172b136a172744",
+          "responses_per_second": 8573.7,
+          "run_index": 1,
+          "startup_seconds": 0.0075,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.374,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.709,
+          "p95_ms": 17.321,
+          "p99_ms": 26.401,
+          "passed": true,
+          "request_order_seed": 13458764912639438766,
+          "request_order_sha256": "73b5394816b586fd25ccc44a2d3b28a85291fc0cc1945663f78098c4e1264c37",
+          "responses_per_second": 8732.0,
+          "run_index": 3,
+          "startup_seconds": 0.0074,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.62,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 5.327,
+          "p95_ms": 19.317,
+          "p99_ms": 31.333,
+          "passed": true,
+          "request_order_seed": 15666889966447702455,
+          "request_order_sha256": "8892027e30e248a77573ff0db94dc28f49d14d4ed490303e8ca38b5dab0299da",
+          "responses_per_second": 7409.4,
+          "run_index": 0,
+          "startup_seconds": 0.0075,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-noop",
+      "summary": {
+        "median_p50_ms": 4.869,
+        "median_p95_ms": 17.733,
+        "median_p99_ms": 26.479,
+        "median_responses_per_second": 8668.2,
+        "median_startup_seconds": 0.0074,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "body_limit": {
+        "status": 413,
+        "transport_errors": []
+      },
+      "contract_errors": [],
+      "dependency_count": null,
+      "framework": "axum",
+      "runs": [
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.684,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.744,
+          "p95_ms": 20.289,
+          "p99_ms": 28.379,
+          "passed": true,
+          "request_order_seed": 5100495000003684578,
+          "request_order_sha256": "17fc4d18dc4d798360cd1b1fb862eae1c0d54a3eedf060613105ec4dde29d463",
+          "responses_per_second": 7127.5,
+          "run_index": 0,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.729,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.999,
+          "p95_ms": 20.519,
+          "p99_ms": 28.44,
+          "passed": true,
+          "request_order_seed": 3058245063693044080,
+          "request_order_sha256": "17e032e65a401a2cc917998615282943da4fec62ca6d6a41833046cbef1db232",
+          "responses_per_second": 6941.4,
+          "run_index": 3,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.703,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.749,
+          "p95_ms": 20.011,
+          "p99_ms": 29.001,
+          "passed": true,
+          "request_order_seed": 1381257716601305050,
+          "request_order_sha256": "090d18b2658ddcd7affc6f02012735f9638b5888d1cd03b3e5a4bb9412c0b527",
+          "responses_per_second": 7048.2,
+          "run_index": 2,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.753,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 7.04,
+          "p95_ms": 21.098,
+          "p99_ms": 30.245,
+          "passed": true,
+          "request_order_seed": 8815999885482780561,
+          "request_order_sha256": "5e4bb354a83479e84f45f6d75acd1e4ca90eaa6102c2964f6f0d25df8ca6ffd5",
+          "responses_per_second": 6844.0,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.676,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.667,
+          "p95_ms": 20.144,
+          "p99_ms": 28.697,
+          "passed": true,
+          "request_order_seed": 15376539809611332044,
+          "request_order_sha256": "f51e6783dafcedc9cbd490d32e50da3237b589b89908d263a274c727403719bd",
+          "responses_per_second": 7158.7,
+          "run_index": 1,
+          "startup_seconds": 0.0033,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "auth",
+      "summary": {
+        "median_p50_ms": 6.749,
+        "median_p95_ms": 20.289,
+        "median_p99_ms": 28.697,
+        "median_responses_per_second": 7048.2,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 64,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.387,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.794,
+          "p95_ms": 16.98,
+          "p99_ms": 26.4,
+          "passed": true,
+          "request_order_seed": 4898605072365631019,
+          "request_order_sha256": "c3aee2a7bb1501602d8af419c93181b0539385ea3d4efdc0dfdbba213ad2e678",
+          "responses_per_second": 8650.0,
+          "run_index": 0,
+          "startup_seconds": 0.0054,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.399,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.758,
+          "p95_ms": 17.603,
+          "p99_ms": 26.486,
+          "passed": true,
+          "request_order_seed": 4210376295327556410,
+          "request_order_sha256": "1600ba8210919689fbef4bece238d474d81beeb720d20f674540356de5fcc7dd",
+          "responses_per_second": 8579.4,
+          "run_index": 4,
+          "startup_seconds": 0.0053,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.391,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.404,
+          "p95_ms": 17.626,
+          "p99_ms": 26.929,
+          "passed": true,
+          "request_order_seed": 1183748464258214972,
+          "request_order_sha256": "0ea56470e8e3b0f121a108e4fb47965cf690c07e05ac48fdb8cc2653960f42b5",
+          "responses_per_second": 8628.6,
+          "run_index": 1,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.399,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.655,
+          "p95_ms": 16.794,
+          "p99_ms": 26.241,
+          "passed": true,
+          "request_order_seed": 11390505922129192708,
+          "request_order_sha256": "dc3a12f3e1159e778f0ca2a82bb06176ed0ae8245a42b00cd42501adbe07f1f6",
+          "responses_per_second": 8575.5,
+          "run_index": 2,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-traverse",
+          "concurrency": 64,
+          "duration_seconds": 1.373,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.497,
+          "p95_ms": 17.4,
+          "p99_ms": 26.777,
+          "passed": true,
+          "request_order_seed": 14308069196644168018,
+          "request_order_sha256": "953034d592f5bd1cefebc36bd1dac4dc4d72cdd7c030dcbe673e049f0af57f77",
+          "responses_per_second": 8737.5,
+          "run_index": 3,
+          "startup_seconds": 0.0052,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-traverse",
+      "summary": {
+        "median_p50_ms": 4.655,
+        "median_p95_ms": 17.4,
+        "median_p99_ms": 26.486,
+        "median_responses_per_second": 8628.6,
+        "median_startup_seconds": 0.0052,
+        "passed": true,
+        "runs": 5
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": 1,
+      "framework": "furnace-rs-beta",
+      "runs": [
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.379,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.48,
+          "p95_ms": 17.143,
+          "p99_ms": 25.446,
+          "passed": true,
+          "request_order_seed": 15502873702725144529,
+          "request_order_sha256": "7d62258b5ad4b7d2e283cd13314373f3ddaa57b11f8aefd5dff17cc56219cb06",
+          "responses_per_second": 8700.5,
+          "run_index": 2,
+          "startup_seconds": 0.0032,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.403,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.689,
+          "p95_ms": 17.657,
+          "p99_ms": 26.444,
+          "passed": true,
+          "request_order_seed": 1782279031825139907,
+          "request_order_sha256": "c7fef2f518f96bf116356f84a9d0311fa357343e757c2d43d5f8b4de45bb40b5",
+          "responses_per_second": 8554.5,
+          "run_index": 1,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.342,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.247,
+          "p95_ms": 16.761,
+          "p99_ms": 25.83,
+          "passed": true,
+          "request_order_seed": 9846418127538989208,
+          "request_order_sha256": "bac4cf9b9eee859bd2c1d9b9d2f096d20f81b3f32903b083429fbc297aea3f38",
+          "responses_per_second": 8942.0,
+          "run_index": 0,
+          "startup_seconds": 0.003,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.774,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.445,
+          "p95_ms": 17.24,
+          "p99_ms": 29.504,
+          "passed": true,
+          "request_order_seed": 4326855829565355562,
+          "request_order_sha256": "166a52a6695f07346ca1fae6ce4431e64a4658a494097ad650263e3e789e3fd1",
+          "responses_per_second": 6764.4,
+          "run_index": 3,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "di-graph-noop",
+          "concurrency": 64,
+          "duration_seconds": 1.386,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.47,
+          "p95_ms": 17.227,
+          "p99_ms": 26.212,
+          "passed": true,
+          "request_order_seed": 5467681026079936241,
+          "request_order_sha256": "c0a7304e0426b31ffd137bd40bd50af4a6a4e507dc79f1a3b0060d833cbd1089",
+          "responses_per_second": 8660.9,
+          "run_index": 4,
+          "startup_seconds": 0.0031,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "scenario": "di-graph-noop",
+      "summary": {
+        "median_p50_ms": 4.47,
+        "median_p95_ms": 17.227,
+        "median_p99_ms": 26.212,
+        "median_responses_per_second": 8660.9,
+        "median_startup_seconds": 0.0031,
+        "passed": true,
+        "runs": 5
+      }
+    }
+  ],
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "timestamp_utc": "2026-10-12T07:57:44.500740+00:00",
+  "versions": {
+    "axum": "0.8.9",
+    "fiber": "2.52.15",
+    "furnace-rs-1.0.2": "1.0.2",
+    "furnace-rs-beta": "1.1.0-beta.1"
+  }
+}

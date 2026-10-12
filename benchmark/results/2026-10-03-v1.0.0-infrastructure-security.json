@@ -1,0 +1,35 @@
+{
+  "timestamp_utc": "2026-10-02T17:23:57.859658+00:00",
+  "git_head": "a055683758df49f2841ab3e9b8d3004e4a180da5",
+  "profile": "smoke",
+  "build_profile": "debug",
+  "database_required": false,
+  "source_sha256": "4a9dc134c8b48c3d7e82ae125946bbea285f5d5860cd3cb545a9ae2026bf6d1d",
+  "cargo_exit_code": 0,
+  "result": {
+    "rounds": 2,
+    "elapsed_ms": 17.231,
+    "core_source_redaction": {
+      "checks": 2,
+      "failures": 0
+    },
+    "database_config_timeouts": {
+      "checks": 8,
+      "failures": 0
+    },
+    "database_native_timeout": {
+      "checks": 2,
+      "failures": 0
+    },
+    "valid_config_controls": {
+      "checks": 8,
+      "failures": 0
+    },
+    "database_connection_trace": {
+      "checks": 2,
+      "failures": 0
+    },
+    "passed": true
+  },
+  "passed": true
+}
