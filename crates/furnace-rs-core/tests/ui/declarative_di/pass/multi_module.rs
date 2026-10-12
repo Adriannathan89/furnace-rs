@@ -19,6 +19,6 @@ use furnace_rs_core::{burner, cauldron};
 #[cauldron(imports=[Level4])] struct Left5;
 #[cauldron(imports=[Level4])] struct Right5;
 #[cauldron(imports=[Left5, Right5])] struct Level5;
-#[burner] struct Consumer { value: Value }
+#[burner] struct Consumer { #[inject] value: Value }
 #[cauldron(root, imports=[Level5], providers=[Consumer])] struct App;
 fn main() {}

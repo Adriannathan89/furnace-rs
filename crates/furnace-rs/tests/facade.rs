@@ -290,7 +290,9 @@ struct CommandUsecase;
 
 #[furnace_rs::controller]
 struct FacadeController {
+    #[inject]
     query: QueryUsecase,
+    #[inject]
     command: CommandUsecase,
 }
 
@@ -346,7 +348,9 @@ furnace_rs::core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_
 
 #[furnace_rs::burner]
 struct FacadeService {
+    #[inject]
     repository: FacadeRepository,
+    #[inject]
     clock: Clock,
 }
 

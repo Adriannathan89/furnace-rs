@@ -9,6 +9,7 @@ use furnace_rs_core::{
 
 #[furnace_rs_core::burner]
 struct OverrideConsumer {
+    #[inject]
     jwt: JwtService,
 }
 

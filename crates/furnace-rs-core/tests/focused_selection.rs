@@ -481,6 +481,7 @@ async fn focus_does_not_evaluate_unrelated_auto_configuration() {
 struct FocusedDefault(u32);
 #[furnace_rs_core::burner]
 struct DefaultConsumer {
+    #[inject]
     value: FocusedDefault,
 }
 fn focused_default_id() -> TypeId {

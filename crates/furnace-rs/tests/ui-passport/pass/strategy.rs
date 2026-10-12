@@ -22,6 +22,7 @@ struct UserLookup;
 
 #[core::burner]
 struct AppJwtStrategy {
+    #[inject]
     users: UserLookup,
 }
 

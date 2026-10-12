@@ -2,6 +2,7 @@
 
 #[furnace_rs::burner]
 struct BufferedService {
+    #[inject]
     bytes: [u8; Self::CAPACITY],
 }
 

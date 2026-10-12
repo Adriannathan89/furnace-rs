@@ -28,6 +28,7 @@ impl Injector<Arc<dyn Greeting>> for Implementation {
 }
 #[controller]
 struct Controller {
+    #[inject]
     greeting: Arc<dyn Greeting>,
 }
 #[controller(route = "/injector")]

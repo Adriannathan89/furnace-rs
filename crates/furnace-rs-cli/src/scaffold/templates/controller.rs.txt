@@ -5,6 +5,7 @@ use super::service::AppService;
 
 #[controller]
 pub struct AppController {
+    #[inject]
     service: AppService,
 }
 

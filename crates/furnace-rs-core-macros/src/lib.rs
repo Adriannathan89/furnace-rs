@@ -70,6 +70,7 @@ pub fn __di_collect(input: TokenStream) -> TokenStream {
 }
 
 /// Declares a named-field or unit struct as an application service.
+/// Every named dependency field requires parameterless `#[inject]`.
 #[proc_macro_attribute]
 pub fn burner(arguments: TokenStream, item: TokenStream) -> TokenStream {
     managed::expand(managed::ManagedKind::Service, arguments.into(), item.into())
@@ -78,6 +79,7 @@ pub fn burner(arguments: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// Declares a named-field or unit struct as a persistence repository.
+/// Every named dependency field requires parameterless `#[inject]`.
 #[proc_macro_attribute]
 pub fn storage(arguments: TokenStream, item: TokenStream) -> TokenStream {
     managed::expand(

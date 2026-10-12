@@ -64,14 +64,17 @@ impl Injector for Counted {
 
 #[furnace_rs_core::storage]
 struct ManagedStorage {
+    #[inject]
     state: Shared,
 }
 #[furnace_rs_core::burner]
 struct ManagedBurner {
+    #[inject]
     storage: ManagedStorage,
 }
 #[furnace_rs_core::burner]
 struct Recursive {
+    #[inject]
     previous: Arc<Self>,
 }
 

@@ -21,6 +21,7 @@ impl framework::Cauldron for AppCauldron {
 
 #[storage]
 struct RenamedRepository {
+    #[inject]
     value: u32,
 }
 

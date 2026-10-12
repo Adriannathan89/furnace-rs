@@ -73,6 +73,7 @@ struct UserLookup;
 
 #[furnace_rs_core::burner]
 struct AppJwtStrategy {
+    #[inject]
     users: UserLookup,
 }
 

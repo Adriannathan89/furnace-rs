@@ -92,6 +92,7 @@ mod consumer {
 
     #[furnace_rs_core::burner]
     pub struct LoggingService {
+        #[inject]
         _logger: Logger,
     }
 

@@ -11,6 +11,7 @@ use std::sync::{
 struct Consumer {
     #[inject]
     database: DatabaseConnection,
+    #[inject]
     logger: Logger,
 }
 #[cauldron(imports=[DatabaseCauldron, LoggerCauldron])]

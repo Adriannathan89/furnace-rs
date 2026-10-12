@@ -4,6 +4,7 @@ use furnace_rs_common::{Logger, LoggerCauldron};
 use furnace_rs_core::{Cauldron, CauldronRegistration, Furnace};
 #[furnace_rs_core::burner]
 struct Consumer {
+    #[inject]
     _logger: Logger,
 }
 #[furnace_rs_core::cauldron]

@@ -21,6 +21,7 @@ pub struct UserRepository;
 #[furnace_rs::burner]
 pub struct UserService {
     /// Repository used by service methods.
+    #[inject]
     pub repository: UserRepository,
 }
 

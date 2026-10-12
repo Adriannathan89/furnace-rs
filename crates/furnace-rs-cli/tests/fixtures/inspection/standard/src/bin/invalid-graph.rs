@@ -5,6 +5,7 @@ struct MissingProvider;
 
 #[furnace::burner]
 struct NeedsMissing {
+    #[inject]
     _missing: MissingProvider,
 }
 

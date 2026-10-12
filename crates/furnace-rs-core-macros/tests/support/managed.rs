@@ -97,6 +97,7 @@
                         quote::quote!(),
                         quote::quote!(
                             struct Managed {
+                                #[inject]
                                 #[allow(dead_code)]
                                 value: i32,
                             }

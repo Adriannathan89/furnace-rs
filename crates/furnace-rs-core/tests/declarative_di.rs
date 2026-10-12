@@ -21,6 +21,7 @@ impl Injector<Arc<String>> for NativeInjector {
 
 #[furnace_rs_core::burner]
 struct Service {
+    #[inject]
     _native: Arc<String>,
 }
 

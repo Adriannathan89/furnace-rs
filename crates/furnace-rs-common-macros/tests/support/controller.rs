@@ -99,6 +99,7 @@ fn rejects_controller_shapes_before_resolving_paths() {
         ),
         quote!(
             struct Controller {
+                #[inject]
                 #[derive(Clone)]
                 value: i32,
             }

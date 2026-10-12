@@ -3,10 +3,12 @@
 use furnace_rs_testing::sea_orm::{DatabaseConnection, DbBackend, MockDatabase};
 #[furnace_rs::storage]
 struct Repository {
+    #[inject]
     database: DatabaseConnection,
 }
 #[furnace_rs::burner]
 struct Service {
+    #[inject]
     repository: Repository,
 }
 #[furnace_rs::test]

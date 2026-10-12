@@ -15,6 +15,7 @@ static DEFAULTS: AtomicUsize = AtomicUsize::new(0);
 struct DefaultResource;
 #[burner]
 struct Consumer {
+    #[inject]
     _default: DefaultResource,
 }
 

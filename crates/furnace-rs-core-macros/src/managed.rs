@@ -35,7 +35,7 @@ impl ManagedKind {
     fn supported_form(&self) -> String {
         let attribute = self.attribute_name();
         format!(
-            "`#[furnace_rs::{attribute}]` supports only non-generic named-field or unit structs, such as `#[furnace_rs::{attribute}] struct Managed {{ dependency: Dependency }}` or `#[furnace_rs::{attribute}] struct Managed;`"
+            "`#[furnace_rs::{attribute}]` supports only non-generic named-field or unit structs, such as `#[furnace_rs::{attribute}] struct Managed {{ #[inject] dependency: Dependency }}` or `#[furnace_rs::{attribute}] struct Managed;`"
         )
     }
 }
@@ -77,7 +77,7 @@ fn expand_managed(kind: ManagedKind, mut item: ItemStruct) -> syn::Result<TokenS
         return Err(Error::new(
             attribute.span(),
             format!(
-                "`#[furnace_rs::{}]` managed providers support documentation attributes only in v0.2; remove this struct attribute",
+                "`#[furnace_rs::{}]` managed providers support documentation attributes only; remove this struct attribute",
                 kind.attribute_name()
             ),
         ));
@@ -91,12 +91,13 @@ fn expand_managed(kind: ManagedKind, mut item: ItemStruct) -> syn::Result<TokenS
             ));
         }
         for field in &mut fields.named {
-            consume_inject(&mut field.attrs)?;
+            let span = field.span();
+            consume_inject(&mut field.attrs, span)?;
             if let Some(attribute) = field.attrs.iter().find(|attribute| !is_doc(attribute)) {
                 return Err(Error::new(
                     attribute.span(),
                     format!(
-                        "`#[furnace_rs::{}]` managed-provider fields support documentation attributes only in v0.2; remove this field attribute",
+                        "`#[furnace_rs::{}]` managed-provider fields support documentation attributes only; remove this field attribute",
                         kind.attribute_name()
                     ),
                 ));
@@ -309,8 +310,8 @@ impl VisitMut for SelfTypeNormalizer<'_> {
 }
 
 // Field helpers belong to the enclosing managed macro and must not survive
-// expansion. Unmarked fields deliberately retain legacy injection semantics.
-fn consume_inject(attributes: &mut Vec<Attribute>) -> syn::Result<()> {
+// expansion. Every managed dependency must declare its injection intent.
+fn consume_inject(attributes: &mut Vec<Attribute>, span: proc_macro2::Span) -> syn::Result<()> {
     let mut seen = false;
     for attribute in attributes.iter().filter(|a| a.path().is_ident("inject")) {
         if seen {
@@ -323,6 +324,9 @@ fn consume_inject(attributes: &mut Vec<Attribute>) -> syn::Result<()> {
             ));
         }
         seen = true;
+    }
+    if !seen {
+        return Err(Error::new(span, "dependency fields require #[inject]"));
     }
     attributes.retain(|a| !a.path().is_ident("inject"));
     Ok(())

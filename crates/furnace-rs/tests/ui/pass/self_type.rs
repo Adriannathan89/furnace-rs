@@ -2,6 +2,7 @@
 
 #[furnace_rs::burner]
 struct RecursiveService {
+    #[inject]
     parent: Box<Self>,
 }
 

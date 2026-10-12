@@ -4,7 +4,7 @@ use furnace_rs_core::{burner, cauldron};
 type Alias = Value;
 #[cauldron(providers=[Value], exports=[Alias])]
 struct Module;
-#[burner] struct Consumer { value: Alias }
+#[burner] struct Consumer { #[inject] value: Alias }
 #[cauldron(root, imports=[Module], providers=[Consumer])]
 struct r#type;
 fn main() {}

@@ -55,6 +55,7 @@ mod scope_fixture {
 
         #[furnace_rs_core::burner]
         pub struct ReachableConsumer {
+            #[inject]
             _output: ScopedOutput,
         }
     }
@@ -74,6 +75,7 @@ mod scope_fixture {
 
         #[furnace_rs_core::burner]
         pub struct UnreachableConsumer {
+            #[inject]
             _output: ScopedOutput,
         }
     }

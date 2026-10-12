@@ -7,6 +7,7 @@ static CONSTRUCTIONS: AtomicUsize = AtomicUsize::new(0);
 
 #[furnace_rs_core::burner]
 struct NamedService {
+    #[inject]
     _dependency: Dependency,
 }
 #[derive(Clone)]

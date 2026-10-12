@@ -13,7 +13,7 @@ struct Left;
 #[cauldron(imports = [Infrastructure])]
 struct Right;
 #[burner]
-struct Consumer { native: Arc<String> }
+struct Consumer { #[inject] native: Arc<String> }
 #[cauldron(root, imports = [Left, Right, Infra], providers = [Consumer])]
 struct App;
 fn main() {}

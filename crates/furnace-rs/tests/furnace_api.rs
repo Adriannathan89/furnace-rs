@@ -35,6 +35,7 @@ impl Cauldron for PrivateShared {
 
 #[controller]
 struct FirstController {
+    #[inject]
     _storage: SharedStorage,
 }
 
@@ -54,6 +55,7 @@ impl FirstController {
 
 #[controller]
 struct SecondController {
+    #[inject]
     _storage: SharedStorage,
 }
 

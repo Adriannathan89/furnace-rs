@@ -3,7 +3,7 @@ use furnace_rs_core::{burner, cauldron};
 mod hidden {
     use super::*;
     #[burner] struct Private;
-    #[burner] struct Consumer { private: Private }
+    #[burner] struct Consumer { #[inject] private: Private }
     #[burner] pub struct Exported;
     #[cauldron(providers=[Private, Consumer, Exported], exports=[Exported])]
     struct PrivateModule;
