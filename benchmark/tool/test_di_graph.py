@@ -37,6 +37,13 @@ class DependencyGraphTests(unittest.TestCase):
         self.assertIn("fetch_add(1, Ordering::Relaxed)", source)
         self.assertEqual(source.count("touch_graph_node();"), 5)
 
+    def test_current_graph_marks_dependencies_without_changing_the_baseline_api(self):
+        current = render_source(7, declarative=True)
+        baseline = render_source(7, declarative=False)
+        # Six tree edges plus the controller's root dependency.
+        self.assertEqual(current.count("#[inject]"), 7)
+        self.assertNotIn("#[inject]", baseline)
+
     def test_non_positive_dependency_counts_are_rejected(self):
         for count in (0, -1):
             with self.subTest(count=count), self.assertRaises(ValueError):
