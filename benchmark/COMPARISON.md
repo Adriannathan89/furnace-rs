@@ -100,3 +100,39 @@ The FURNACE versions ran in five paired rounds with order alternated. Each round
 In the paired runs, beta median throughput was **2.5% higher** for Hello World and **0.8% higher** for JWT than 1.0.2. Their per-run throughput ranges overlap for both workloads; p95 also overlaps. This small sample found no material runtime change from the DI release. It does not establish that every application graph has zero overhead. The DI assertions are compile-time checks; this HTTP run measures end-to-end framework and application work, not compiler cost or an isolated injector lookup.
 
 PostgreSQL CRUD is omitted because no local server or disposable `BENCH_*_DATABASE_URL` databases were available. The pre-existing 2026-09-25 comparison table above remains historical: it measures FURNACE 0.9.1 and should not be conflated with this beta rerun. The refreshed Fiber oversized-body probe again reset the connection; this is recorded separately by the existing runner and is outside the valid-request throughput samples.
+
+## 2026-10-12 — randomized DI graph-size comparison
+
+This rerun uses FURNACE **1.0.2** from `8c08bba` and **1.1.0-beta.1** from `53ed419`, plus the existing Axum 0.8.9 and Fiber 2.52.15 targets for Hello and Auth. The [raw result](results/2026-10-12-di-randomized-comparison.json) records seed `20261012`, all 120 randomized trial entries, per-worker request-order seeds and hashes, lockfile hashes, contract results, and all five measurements per target. The old and beta builds use lockfiles with the same third-party package versions.
+
+Every target ran five stress measurements at 64 clients. Hello sends 12,000 requests per run. Auth performs 6,000 valid login/profile pairs (12,000 HTTP responses) per run. Each graph measurement sends 12,000 requests. The graph sizes are 1, 16, 64, and 256 registered providers in a balanced tree. Its no-op endpoint returns a constant after graph construction; its traversal endpoint visits every node and performs one observable relaxed atomic increment per node so release optimization cannot collapse the traversal. The latter measures application work over the injected graph, not repeated DI resolution. Furnace constructs the graph at startup.
+
+The trial order and independent transactions were randomized with the recorded seed. Required request sequences stayed ordered within a transaction: login before profile, and create/read/update/delete in CRUD workloads. Startup is measured from process launch through the first successful readiness response, using a 2 ms readiness polling interval. It therefore includes process launch, readiness polling, and one loopback request; values at this scale are sensitive to host scheduling.
+
+| Workload | Framework | Median responses/s | Median p95 | Median startup |
+| --- | --- | ---: | ---: | ---: |
+| Hello | FURNACE 1.0.2 | 8,840.3 | 16.785 ms | 3.1 ms |
+| Hello | FURNACE 1.1.0-beta.1 | 8,944.3 | 16.841 ms | 3.1 ms |
+| Hello | Axum 0.8.9 | 9,173.7 | 16.901 ms | 3.0 ms |
+| Hello | Fiber v2.52.15 | 8,941.3 | 17.214 ms | 5.4 ms |
+| Login + protected profile | FURNACE 1.0.2 | 6,865.1 | 20.695 ms | 3.1 ms |
+| Login + protected profile | FURNACE 1.1.0-beta.1 | 7,079.4 | 20.282 ms | 3.2 ms |
+| Login + protected profile | Axum 0.8.9 | 7,048.2 | 20.289 ms | 3.1 ms |
+| Login + protected profile | Fiber v2.52.15 | 6,803.9 | 20.714 ms | 3.3 ms |
+
+The beta median throughput is 1.2% higher for Hello and 3.1% higher for Auth than 1.0.2, but their five-run throughput ranges overlap. This sample does not show a material runtime regression from the DI change.
+
+| Graph nodes | FURNACE version | No-op median responses/s | Traversal median responses/s | Startup median across both modes |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | 1.0.2 | 8,677.5 | 8,858.7 | 3.1 ms (3.0–3.3) |
+| 1 | 1.1.0-beta.1 | 8,660.9 | 8,720.2 | 3.1 ms (3.0–3.2) |
+| 16 | 1.0.2 | 8,712.4 | 8,835.2 | 3.1 ms (2.9–3.3) |
+| 16 | 1.1.0-beta.1 | 8,766.4 | 8,641.1 | 3.1 ms (3.0–3.2) |
+| 64 | 1.0.2 | 8,760.2 | 8,675.0 | 5.2 ms (3.0–5.5) |
+| 64 | 1.1.0-beta.1 | 8,789.8 | 8,628.6 | 4.2 ms (3.0–5.4) |
+| 256 | 1.0.2 | 8,758.6 | 8,818.7 | 7.5 ms (5.2–7.6) |
+| 256 | 1.1.0-beta.1 | 8,668.2 | 8,474.5 | 7.4 ms (7.3–7.5) |
+
+No-op HTTP throughput and p95 remain similar across graph sizes, so the constructed graph does not add request-path DI work after startup. Traversal adds explicit application work but its run ranges overlap substantially; this benchmark does not establish a throughput trend by graph size. Startup medians rise from about 3.1 ms at 1–16 nodes to about 7.4 ms at 256 nodes. The old and beta startup ranges overlap, and the 64-node runs show more host-timing variation, so these measurements indicate scale rather than a precise version difference.
+
+All 120 target runs passed their response contracts with zero measured request errors. The 3 MiB body-limit probe returned HTTP 413 for both FURNACE versions and Axum; Fiber again reset the connection, as in the earlier comparison. PostgreSQL CRUD was not run because no disposable benchmark databases were available.

@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import random
 import signal
 import statistics
 import subprocess
@@ -19,7 +20,7 @@ import tomllib
 
 from run import (
     Client, Measurements, ROOT, DEMO_USERNAME, DEMO_PASSWORD, DEMO_SECRET,
-    PROFILES, json_body, json_error, port_is_open, run_workers,
+    PROFILES, json_body, json_error, operation_order, port_is_open, run_workers,
 )
 
 
@@ -40,9 +41,31 @@ def warmup_size(operations: int, concurrency: int) -> tuple[int, int]:
     return min(operations, max(200, concurrency * 10)), concurrency
 
 
+def build_run_schedule(
+    scenarios: tuple[str, ...], frameworks: tuple[str, ...], runs: int, seed: int,
+) -> list[tuple[str, str, int]]:
+    if runs < 1:
+        raise ValueError("runs must be positive")
+    schedule = [
+        (scenario, framework, run_index)
+        for scenario in scenarios
+        for framework in frameworks
+        for run_index in range(runs)
+    ]
+    random.Random(seed).shuffle(schedule)
+    return schedule
+
+
 SCENARIOS = ("hello", "posts", "auth")
 FRAMEWORKS = ("furnace-rs", "axum", "fiber")
-PORTS = {"hello": 3000, "posts": 3001, "auth": 3002}
+FRAMEWORK_CHOICES = (*FRAMEWORKS, "furnace-rs-1.0.2", "furnace-rs-beta")
+# Generated graph apps use the hello-world configuration and therefore bind to
+# its established benchmark port. Only one target runs at a time.
+PORTS = {
+    "hello": 3000, "posts": 3001, "auth": 3002,
+    "di-graph-noop": 3000, "di-graph-traverse": 3000,
+}
+STARTUP_POLL_INTERVAL_SECONDS = 0.002
 FURNACE_BINARIES = {
     "hello": ("hello-world", "furnace-rs-example-hello-world"),
     "posts": ("posts-crud", "furnace-rs-example-posts-crud"),
@@ -50,11 +73,31 @@ FURNACE_BINARIES = {
 }
 
 
-def target_command(framework: str, scenario: str) -> tuple[list[str], Path]:
-    if framework == "furnace-rs":
+def target_command(
+    framework: str, scenario: str, dependency_count: int | None = None,
+) -> tuple[list[str], Path]:
+    is_furnace = framework in ("furnace-rs", "furnace-rs-beta", "furnace-rs-1.0.2")
+    if is_furnace:
+        version = "1.0.2" if framework == "furnace-rs-1.0.2" else "beta"
+        if scenario.startswith("di-graph-"):
+            if dependency_count is None:
+                raise ValueError("di-graph requires a dependency count")
+            binary = (
+                ROOT / "benchmark" / "targets" / "furnace-rs" / "target"
+                / "di-comparison" / "graph" / version / f"nodes-{dependency_count}"
+                / FURNACE_BINARIES["hello"][1]
+            )
+            return [str(binary)], ROOT / "example" / "hello-world"
         directory, binary = FURNACE_BINARIES[scenario]
         project = ROOT / "example" / directory
-        return [str(ROOT / "benchmark" / "targets" / "furnace-rs" / "target" / "release" / binary)], project
+        if version == "1.0.2":
+            binary = (
+                ROOT / "benchmark" / "targets" / "furnace-rs" / "target"
+                / "di-comparison" / "baseline-1.0.2" / binary
+            )
+        else:
+            binary = ROOT / "benchmark" / "targets" / "furnace-rs" / "target" / "release" / binary
+        return [str(binary)], project
     if framework == "axum":
         project = ROOT / "benchmark" / "targets" / "axum"
         return [str(project / "target" / "release" / "furnace-rs-bench-axum")], project
@@ -63,9 +106,15 @@ def target_command(framework: str, scenario: str) -> tuple[list[str], Path]:
 
 
 @contextmanager
-def server(framework: str, scenario: str, database_url: str | None):
+def server(
+    framework: str,
+    scenario: str,
+    database_url: str | None,
+    dependency_count: int | None = None,
+    include_startup: bool = False,
+):
     port = PORTS[scenario]
-    command, directory = target_command(framework, scenario)
+    command, directory = target_command(framework, scenario, dependency_count)
     if not Path(command[0]).is_file():
         raise RuntimeError(f"missing binary: {command[0]}")
     if port_is_open(port):
@@ -80,9 +129,15 @@ def server(framework: str, scenario: str, database_url: str | None):
         environment["DATABASE_URL"] = database_url
     with tempfile.NamedTemporaryFile(prefix=f"bench-{framework}-{scenario}-", suffix=".log", delete=False) as log:
         log_path = Path(log.name)
+        process_started = time.perf_counter()
         process = subprocess.Popen(command, cwd=directory, env=environment, stdout=log, stderr=subprocess.STDOUT)
         try:
-            ready_path, ready_status = ("/auth/me", 401) if scenario == "auth" else (("/posts", 200) if scenario == "posts" else ("/", 200))
+            ready_path, ready_status = {
+                "auth": ("/auth/me", 401), "posts": ("/posts", 200),
+                "di-graph-noop": ("/graph/noop", 200),
+                "di-graph-traverse": ("/graph/traverse", 200),
+                "hello": ("/", 200),
+            }[scenario]
             deadline = time.monotonic() + 30
             while time.monotonic() < deadline:
                 if process.poll() is not None:
@@ -91,13 +146,14 @@ def server(framework: str, scenario: str, database_url: str | None):
                 try:
                     response = client.request(Measurements(), "readiness", "GET", ready_path)
                     if response is not None and response.status == ready_status:
+                        startup_seconds = time.perf_counter() - process_started
                         break
                 finally:
                     client.close()
-                time.sleep(0.1)
+                time.sleep(STARTUP_POLL_INTERVAL_SECONDS)
             else:
                 raise RuntimeError(f"{framework}/{scenario} was not ready; log: {log_path}")
-            yield port, log_path
+            yield (port, log_path, startup_seconds) if include_startup else (port, log_path)
         except Exception:
             raise
         else:
@@ -120,7 +176,9 @@ def request_checked(client: Client, stats: Measurements, label: str, method: str
     return response
 
 
-def contract_checks(scenario: str, port: int) -> list[str]:
+def contract_checks(
+    scenario: str, port: int, expected_dependency_count: int | None = None,
+) -> list[str]:
     errors = []
     client = Client(port)
     try:
@@ -129,6 +187,15 @@ def contract_checks(scenario: str, port: int) -> list[str]:
             response = request_checked(client, stats, "hello", "GET", "/", 200)
             if response is not None and response.body != b"Hello, world!":
                 errors.append("hello response body differs")
+        elif scenario.startswith("di-graph-"):
+            if expected_dependency_count is None:
+                errors.append("dependency count was not provided")
+            else:
+                path = "/graph/noop" if scenario == "di-graph-noop" else "/graph/traverse"
+                response = request_checked(client, stats, "dependency graph", "GET", path, 200)
+                expected_body = b"ok" if scenario == "di-graph-noop" else str(expected_dependency_count).encode()
+                if response is not None and response.body != expected_body:
+                    errors.append("dependency graph response differs")
         elif scenario == "auth":
             for label, headers in (
                 ("missing token", None),
@@ -207,7 +274,14 @@ def body_limit_probe(port: int) -> dict[str, object]:
         client.close()
 
 
-def measure(scenario: str, port: int, operations: int, concurrency: int) -> dict[str, object]:
+def measure(
+    scenario: str,
+    port: int,
+    operations: int,
+    concurrency: int,
+    seed: int | None = None,
+    expected_dependency_count: int | None = None,
+) -> dict[str, object]:
     headers = {"Content-Type": "application/json"}
 
     def operation(client: Client, stats: Measurements, worker: int, index: int) -> None:
@@ -215,6 +289,12 @@ def measure(scenario: str, port: int, operations: int, concurrency: int) -> dict
             response = request_checked(client, stats, "hello", "GET", "/", 200)
             if response is not None and response.body != b"Hello, world!":
                 stats.error("hello response body differs")
+        elif scenario.startswith("di-graph-"):
+            path = "/graph/noop" if scenario == "di-graph-noop" else "/graph/traverse"
+            response = request_checked(client, stats, "dependency graph", "GET", path, 200)
+            expected_body = b"ok" if scenario == "di-graph-noop" else str(expected_dependency_count).encode()
+            if response is not None and response.body != expected_body:
+                stats.error("dependency graph response differs")
         elif scenario == "auth":
             login = request_checked(client, stats, "login", "POST", "/auth/login", 200,
                                     json.dumps({"username": DEMO_USERNAME, "password": DEMO_PASSWORD}).encode(), headers)
@@ -267,12 +347,12 @@ def measure(scenario: str, port: int, operations: int, concurrency: int) -> dict
             request_checked(client, stats, "confirm deletion", "GET", path, 404,
                             body_check=json_error("not_found"))
 
-    return run_workers(scenario, operations, concurrency, port, operation)
+    return run_workers(scenario, operations, concurrency, port, operation, seed=seed)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--framework", action="append", choices=FRAMEWORKS)
+    parser.add_argument("--framework", action="append", choices=FRAMEWORK_CHOICES)
     parser.add_argument("--scenario", action="append", choices=SCENARIOS)
     parser.add_argument("--profile", choices=PROFILES, default="smoke")
     parser.add_argument("--runs", type=int, default=3)

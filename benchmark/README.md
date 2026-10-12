@@ -286,3 +286,37 @@ libraries (SeaORM, SQLx, and Go `database/sql`), JWT libraries, and logger
 costs. They are end-to-end application comparisons, not isolated router
 overhead; do not extrapolate them to TLS, HTTP/2, distributed deployments, or
 other hardware.
+
+### Randomized DI comparison and dependency graph size
+
+To compare FURNACE 1.0.2 from commit `8c08bba`, the current beta, and the
+existing Axum/Fiber targets with randomized trial order, build the binaries and
+synthetic graphs first:
+
+```sh
+python3 benchmark/tool/build_di_comparison.py \
+  --dependency-counts 1,16,64,256
+python3 benchmark/tool/di_comparison.py --profile stress --runs 5 \
+  --dependency-counts 1,16,64,256 --seed 20261012 \
+  --output /tmp/furnace-di-randomized.json
+```
+
+Omit `--seed` for a fresh random schedule; the generated seed and full trial
+order are stored in the JSON so the run can be reproduced. Independent
+transactions are shuffled per client, while request steps that depend on each
+other (login then profile, or create/read/update/delete) keep their required
+order. Each trial starts a fresh server, records startup as process launch to
+the first successful readiness response, warms it, then measures HTTP
+throughput and latency.
+
+The graph workload builds a balanced tree with the requested number of unique
+providers, all registered and reachable from the root controller. It measures
+two endpoints: a constant no-op that does not traverse the graph, and a
+traversal that recursively visits every dependency and returns the node count.
+The no-op comparison shows whether graph size changes HTTP behavior after
+startup; traversal shows the added application work when a request consumes
+the whole graph. The traversal includes one observable atomic visit per node
+so release optimization cannot fold the synthetic tree into a constant. This
+is not a per-request DI resolution benchmark: Furnace constructs dependencies
+at startup. PostgreSQL is not required for these workloads. Defaults are
+`1,16,64,256`; use `--dependency-counts` to select other unique positive sizes.
