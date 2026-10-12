@@ -18,7 +18,7 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 cargo install furnace-rs-cli --version 1.0.2 --locked
 ```
 
-This checkout and its local examples target **1.1.0-beta.1**, with [declarative DI and compile-time root checking](docs/declarative-di.md). The beta has not been published. To install the CLI
+This checkout and its local examples target **2.0.0-beta.1**, with [declarative DI and compile-time root checking](docs/declarative-di.md). Version 2.0.0-beta.1 is prepared for release. To install the CLI
 from this checkout instead, use:
 
 ```sh
@@ -695,7 +695,7 @@ struct UserPrincipal {
 }
 
 #[burner]
-struct AppJwtStrategy { users: UserService }
+struct AppJwtStrategy { #[inject] users: UserService }
 
 #[passport_strategy(name = "jwt")]
 impl PassportStrategy for AppJwtStrategy {

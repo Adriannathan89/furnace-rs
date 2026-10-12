@@ -136,4 +136,4 @@ one guard; `#[seal(skip)]` on an endpoint bypasses that guard's authentication
 and policy checks. Protection applies per HTTP method, including when public
 and protected methods share a path.
 
-The `1.1.0-beta.1` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
+The `2.0.0-beta.1` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.

@@ -1,6 +1,6 @@
 # Compile-time DI example
 
-This standalone beta example uses an existing burner, optional `#[inject]`, a local feature module, and global LoggerCauldron. No HTTP server or database is needed.
+This standalone beta example uses an existing burner, required `#[inject]`, a local feature module, and global LoggerCauldron. No HTTP server or database is needed.
 
 ```sh
 cargo run --manifest-path example/compile-time-di/Cargo.toml

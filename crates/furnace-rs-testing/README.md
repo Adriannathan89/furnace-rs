@@ -9,10 +9,10 @@ Rust privacy still applies. Supplied values replace matching constructors.
 
 ```toml
 [dependencies]
-furnace-rs = "=1.1.0-beta.1"
+furnace-rs = "=2.0.0-beta.1"
 
 [dev-dependencies]
-furnace-rs-testing = "=1.1.0-beta.1"
+furnace-rs-testing = "=2.0.0-beta.1"
 ```
 
 Apply `#[furnace_rs::test]` to a zero-argument, nongeneric `async fn`. Cargo discovers
@@ -28,11 +28,13 @@ use furnace_rs_testing::sea_orm::{DatabaseConnection, DbBackend, MockDatabase};
 
 #[furnace_rs::storage]
 struct UserRepository {
+    #[inject]
     database: DatabaseConnection,
 }
 
 #[furnace_rs::burner]
 struct UserService {
+    #[inject]
     repository: UserRepository,
 }
 

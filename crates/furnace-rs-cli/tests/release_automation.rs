@@ -375,16 +375,12 @@ fn package_content_policy_checks_every_workspace_archive() {
 }
 
 #[test]
-fn all_packages_use_beta_pins_and_workspace_version() {
-    const VERSION: &str = "1.1.0-beta.1";
-
+fn all_packages_use_exact_pins_and_workspace_version() {
     let root = workspace_root();
     let workspace_manifest =
         fs::read_to_string(root.join("Cargo.toml")).expect("workspace manifest should exist");
-    assert!(
-        workspace_manifest.contains(&format!("version = \"{VERSION}\"")),
-        "the workspace must remain at the approved beta version"
-    );
+    let version = env!("CARGO_PKG_VERSION");
+    assert!(workspace_manifest.contains(&format!("version = \"{version}\"")));
 
     let lockfile =
         fs::read_to_string(root.join("Cargo.lock")).expect("workspace lockfile should exist");
@@ -393,7 +389,7 @@ fn all_packages_use_beta_pins_and_workspace_version() {
             .unwrap_or_else(|error| panic!("{package} manifest should exist: {error}"));
         assert!(
             manifest.contains("version.workspace = true"),
-            "{package} must inherit the workspace beta version"
+            "{package} must inherit the workspace version"
         );
 
         for dependency in manifest
@@ -401,15 +397,15 @@ fn all_packages_use_beta_pins_and_workspace_version() {
             .filter(|line| line.contains("path = \"../"))
         {
             assert!(
-                dependency.contains(&format!("version = \"={VERSION}\"")),
-                "{package} internal dependency must use an exact beta pin: {dependency}"
+                dependency.contains(&format!("version = \"={version}\"")),
+                "{package} internal dependency must use an exact version pin: {dependency}"
             );
         }
 
-        let record = format!("name = \"{package}\"\nversion = \"{VERSION}\"");
+        let record = format!("name = \"{package}\"\nversion = \"{version}\"");
         assert!(
             lockfile.contains(&record),
-            "lockfile must contain {package} at {VERSION}"
+            "lockfile must contain {package} at {version}"
         );
     }
 
@@ -421,12 +417,12 @@ fn all_packages_use_beta_pins_and_workspace_version() {
         .filter(|line| line.contains("path = \"../"))
     {
         assert!(
-            dependency.contains(&format!("version = \"={VERSION}\"")),
+            dependency.contains(&format!("version = \"={version}\"")),
             "furnace-rs-cli must pin the updated framework dependency: {dependency}"
         );
     }
     assert!(lockfile.contains(&format!(
-        "name = \"furnace-rs-cli\"\nversion = \"{VERSION}\""
+        "name = \"furnace-rs-cli\"\nversion = \"{version}\""
     )));
 }
 

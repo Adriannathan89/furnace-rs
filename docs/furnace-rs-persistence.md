@@ -29,6 +29,7 @@ use furnace_rs_persistence::sea_orm::{DatabaseCauldron, DatabaseConnection};
 
 #[storage]
 struct PostRepository {
+    #[inject]
     database: DatabaseConnection,
 }
 

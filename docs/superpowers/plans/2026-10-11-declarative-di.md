@@ -20,7 +20,7 @@
 - Globals are visible only inside the marked root's reachable graph and only through exported outputs.
 - Declarative imports support cauldron declarations, qualified paths, re-exports, and `use` aliases; module `type` aliases retain support only in legacy fluent registration.
 - Zero-argument cauldron attributes retain legacy behavior; empty declarative modules use `providers = []`.
-- Beta target is `1.1.0-beta.1`; do not publish, tag, merge, or push.
+- Beta target is `2.0.0-beta.1`; do not publish, tag, merge, or push.
 
 ## Review Focus
 
@@ -90,10 +90,10 @@ This task is a feasibility gate, not a distributable feature. Do not copy a fail
 
 **Interfaces:** Consumes parameterless field `#[inject]`; produces the same generated `Injector::Dependencies`, managed handle, descriptor, and lifecycle as the existing field injection model.
 
-- [x] Add fixtures for marked burner/storage/controller dependencies, mixed marked/unmarked fields, fully unmarked legacy declarations, repeated markers, and rejected `#[inject(token = ...)]` arguments.
+- [x] Add fixtures for marked burner/storage/controller dependencies, missing markers rejected by all three managed macros, repeated markers, and rejected `#[inject(token = ...)]` arguments.
 - [x] Run the targeted facade UI suite and macro unit tests; confirm valid markers currently fail at field-attribute validation.
 - [x] Accept and consume one parameterless marker per field. Keep every managed field in the constructor tuple; retain documentation attributes and existing diagnostics for other unsupported attributes. Preserve automatic controller dependencies and HTTP metadata.
-- [x] Add runtime coverage comparing marked/unmarked handles, dependency values, and lifecycle behavior; retain HTTP preflight-before-construction tests. A controller dependency supplied only by runtime auto-configuration is not a static capability unless the root contract declares it.
+- [x] Add runtime coverage checking marked handles, shared dependency values, and lifecycle behavior; retain HTTP preflight-before-construction tests. A controller dependency supplied only by runtime auto-configuration is not a static capability unless the root contract declares it.
 - [x] Run core injector/lifecycle tests, facade UI tests with HTTP enabled, and common HTTP preflight tests. Verify the macro removes helpers before emitting field definitions.
 - [x] Commit injection-marker support and compatibility tests.
 
@@ -121,16 +121,20 @@ This task is a feasibility gate, not a distributable feature. Do not copy a fail
 - [x] First run the compile-fail harness against a valid fixture to prove it rejects unexpected compilation; then remove the dependency registration/import and run it normally. A passing test means the invalid application failed compilation for the intended DI reason.
 - [x] Run `cargo run --manifest-path example/compile-time-di/Cargo.toml` and `cargo test --manifest-path example/compile-time-di/Cargo.toml` on stable and Rust 1.94. Keep fixture failures out of ordinary example builds.
 - [x] Update docs with `root`, global reachability, explicit markers, native bindings, compatibility, static override restrictions, and runtime failure boundaries. Test public examples and update the existing persistence example to show database/logger root imports where features permit.
-- [x] Prepare `1.1.0-beta.1` workspace versions and exact internal pins, regenerate relevant lockfiles, and update existing release-policy tests only where they intentionally assert version alignment. Add beta release notes; do not publish.
+- [x] Prepare `2.0.0-beta.1` workspace versions and exact internal pins, regenerate relevant lockfiles, and update existing release-policy tests only where they intentionally assert version alignment. Add beta release notes; do not publish.
 - [x] Run `cargo fmt --all --check`, `cargo test --workspace --all-features`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, and `RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps`.
 - [x] Run the relevant MSRV UI/runtime suites with `cargo +1.94.0`, core `--no-default-features` build, existing facade feature matrix, renamed dependency tests, and existing standalone example checks. Distinguish environment failures from DI regressions.
 - [x] Review the whole diff for graph parity, visibility changes, macro hygiene, proof ambiguity, beta pins, and unsupported guarantees. Use an independent reviewer only when explicitly authorized; fix confirmed findings and rerun affected checks.
 - [x] Commit the example, docs, and beta preparation with verification evidence. Leave the branch ready for review without publishing or integration actions.
 
-**Execution status:** Tasks 1–6 complete. See [beta verification and TDD history](../../releases/1.1.0-beta.1-verification.md) for final test evidence and review resolution. The branch remains local and separate; no publication or integration action was performed.
+**Execution status:** Tasks 1–6 complete. See [beta verification and TDD history](../../releases/2.0.0-beta.1-verification.md) for final test evidence and review resolution. The branch remains local and separate; no publication or integration action was performed.
 
 ## Handoff and completion criteria
 
 This plan describes implementation work; creating these documents does not execute it. The `root` syntax and the feasibility gate are explicit review items. All six tasks map to the spec's acceptance criteria; any change to graph semantics or application syntax must update both documents before proceeding.
 
 Native execution is the default recommendation because tasks share one macro/type-contract implementation and should proceed sequentially. Delegated execution is optional if the user requests it. Completion requires recorded red/green evidence, passing relevant checks, reproducible negative examples, and a beta-ready branch; startup success under arbitrary external conditions is not a completion claim.
+
+## 2026-10-12 approved 2.0 prerelease amendment
+
+The user replaced the additive beta policy with a major release: managed burner, storage and controller dependency fields now require `#[inject]`. Unmarked fields are compile errors. Preserve unit structs, manual `Injector::Dependencies`, runtime construction, and fluent registrations. Synchronize workspace and local dependency pins to 2.0.0-beta.1, migrate examples/templates/fixtures, and review checker soundness before committing the release preparation. Historical benchmark reports retain their measured version labels; obsolete release notes are removed.

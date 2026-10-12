@@ -6,12 +6,19 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
-### Declarative DI beta (1.1.0-beta.1)
+## [2.0.0-beta.1] - 2026-10-12
+
+### Breaking
+
+- Require parameterless `#[inject]` on every dependency field of burner, storage and managed controller structs. Unmarked fields now fail compilation; unit structs and manual `Injector` implementations are unchanged.
+
+### Declarative DI
 
 - Add registration in the existing cauldron attribute and root-scoped compile-time dependency/visibility checks, including reachable globals and native injector outputs.
-- Add optional parameterless injection markers on burner, storage and controller fields; retain unmarked injection and legacy fluent registration.
+- Retain legacy fluent registration alongside declarative cauldron registration.
 - Adopt declarative contracts for DatabaseCauldron and LoggerCauldron while retaining native overrides and lifecycle behavior.
-- Add a standalone compile-time DI example with a missing-logger compile-fail Cargo test. See [beta notes](docs/releases/1.1.0-beta.1.md).
+- Add a standalone compile-time DI example with a missing-logger compile-fail Cargo test. See [2.0 release notes](docs/releases/2.0.0-beta.1.md).
+- Make checker callback names independent of the checkout directory so compile-fail diagnostics remain reproducible.
 
 ### Security
 
