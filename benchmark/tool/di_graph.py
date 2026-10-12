@@ -32,11 +32,12 @@ def render_source(node_count: int, declarative: bool) -> str:
     layout = dependency_layout(node_count)
     nodes: list[str] = []
     implementations: list[str] = []
+    marker = "#[inject] " if declarative else ""
     for index, children in enumerate(layout):
         name = f"Dependency{index:04}"
         if children:
             fields = ",\n".join(
-                f"    child_{position}: Dependency{child:04}"
+                f"    {marker}child_{position}: Dependency{child:04}"
                 for position, child in enumerate(children)
             )
             nodes.append(f"#[burner]\nstruct {name} {{\n{fields},\n}}")
@@ -82,7 +83,7 @@ def render_source(node_count: int, declarative: bool) -> str:
         "fn touch_graph_node() { GRAPH_VISITS.fetch_add(1, Ordering::Relaxed); }",
         *nodes,
         *implementations,
-        "#[controller]\nstruct GraphController { root: Dependency0000 }\n\n"
+        f"#[controller]\nstruct GraphController {{ {marker}root: Dependency0000 }}\n\n"
         "#[controller(route = \"/graph\")]\nimpl GraphController {\n"
         "    #[get(\"/noop\")]\n"
         "    async fn noop(&self) -> &'static str { \"ok\" }\n"
