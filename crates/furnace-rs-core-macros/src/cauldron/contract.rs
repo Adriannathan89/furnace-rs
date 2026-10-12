@@ -21,6 +21,10 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
         span.column(),
         ident
     );
+    let callback = callback_name(
+        &std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default(),
+        &span.file(), span.line(), span.column(), ident,
+    );
     let uid = LitStr::new(&uid, ident.span());
     let meta = format_ident!("__Furnace{}Metadata", ident.unraw());
     let private: Path = syn::parse_quote!(#core::__private);
@@ -89,6 +93,7 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
         core: private.clone(),
         ident: ident.clone(),
         uid: uid.clone(),
+        callback,
         members: (0..d.providers.len() + d.controllers.len()).collect(),
         exports: (d.providers.len() + d.controllers.len()..outputs.len()).collect(),
         global: d.global,
@@ -114,6 +119,7 @@ struct Bootstrap {
     core: Path,
     ident: Ident,
     uid: LitStr,
+    callback: Ident,
     members: Vec<usize>,
     exports: Vec<usize>,
     global: bool,
@@ -137,6 +143,7 @@ impl Parse for Bootstrap {
         let ident = input.parse()?;
         input.parse::<Token![;]>()?;
         let uid = input.parse()?;
+        let callback = input.parse()?;
         let members = indices(input)?;
         let exports = indices(input)?;
         let global = input.parse::<LitBool>()?.value;
@@ -152,6 +159,7 @@ impl Parse for Bootstrap {
             core,
             ident,
             uid,
+            callback,
             members,
             exports,
             global,
@@ -167,6 +175,7 @@ impl Bootstrap {
             core,
             ident,
             uid,
+            callback,
             global,
             root,
             pending,
@@ -176,7 +185,7 @@ impl Bootstrap {
         let members = self.members.iter().map(|i| Index::from(*i));
         let exports = self.exports.iter().map(|i| Index::from(*i));
         let records = records.iter().map(Record::tokens);
-        quote!(#core; #ident; #uid (#(#members),*) (#(#exports),*) #global #root [#(#pending),*] [#(#records)*])
+        quote!(#core; #ident; #uid #callback (#(#members),*) (#(#exports),*) #global #root [#(#pending),*] [#(#records)*])
     }
     fn advance(mut self) -> TokenStream {
         if self.pending.is_empty() {
@@ -196,14 +205,11 @@ impl Bootstrap {
             core,
             ident,
             uid,
+            callback,
             global,
             root,
             ..
         } = &self;
-        let hash = uid.value().bytes().fold(0xcbf29ce484222325u64, |h, b| {
-            (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
-        });
-        let callback = format_ident!("__furnace_di_{hash:016x}", span = ident.span());
         let meta = format_ident!("__Furnace{}Metadata", ident.unraw());
         let members = self.members.iter().map(|i| Index::from(*i));
         let exports = self.exports.iter().map(|i| Index::from(*i));
@@ -260,6 +266,30 @@ impl Bootstrap {
             const _: fn() = || { #dedup_guards };
             #checks
         }
+    }
+}
+
+fn callback_name(manifest: &str, source: &str, line: usize, column: usize, ident: &Ident) -> Ident {
+    let key = format!("{manifest}:{source}:{line}:{column}:{ident}");
+    let hash = key.bytes().fold(0xcbf29ce484222325u64, |h, b| {
+        (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
+    });
+    format_ident!("__furnace_di_{hash:016x}", span = ident.span())
+}
+
+#[cfg(test)]
+mod callback_tests {
+    use super::*;
+
+    #[test]
+    fn callback_diagnostics_are_independent_of_checkout_directory() {
+        let ident = syn::parse_str("App").unwrap();
+        let first = callback_name("/work/one", "/work/one/src/app.rs", 4, 12, &ident);
+        let second = callback_name("/tmp/two", "/tmp/two/src/app.rs", 4, 12, &ident);
+        assert_eq!(first, second);
+        assert_eq!(first, callback_name("/tmp/two", "src/app.rs", 4, 12, &ident));
+        assert_ne!(first, callback_name("/work/one", "src/other/app.rs", 4, 12, &ident));
+        assert_ne!(first, callback_name("/work/one", "src/app.rs", 5, 12, &ident));
     }
 }
 // Replace only reserved protocol placeholders in macro data. This is token
