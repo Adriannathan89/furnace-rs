@@ -23,7 +23,10 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
     );
     let callback = callback_name(
         &std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default(),
-        &span.file(), span.line(), span.column(), ident,
+        &span.file(),
+        span.line(),
+        span.column(),
+        ident,
     );
     let uid = LitStr::new(&uid, ident.span());
     let meta = format_ident!("__Furnace{}Metadata", ident.unraw());
@@ -270,28 +273,44 @@ impl Bootstrap {
 }
 
 fn callback_name(manifest: &str, source: &str, line: usize, column: usize, ident: &Ident) -> Ident {
-    let key = format!("{manifest}:{source}:{line}:{column}:{ident}");
+    // Exported macro names are crate-scoped. Keep source-relative uniqueness
+    // without exposing the checkout directory in compiler diagnostics. Metadata
+    // UIDs retain their original identity for graph deduplication.
+    let source_path = std::path::Path::new(source);
+    let manifest_path = std::path::Path::new(manifest);
+    let source = if source_path.has_root() && manifest_path.has_root() {
+        // #[path] modules and compile-test sources may be outside the manifest
+        // directory. Relativize them against their common ancestor as well.
+        let source_parts = source_path.components().collect::<Vec<_>>();
+        let manifest_parts = manifest_path.components().collect::<Vec<_>>();
+        let common = source_parts
+            .iter()
+            .zip(&manifest_parts)
+            .take_while(|(a, b)| a == b)
+            .count();
+        if common == 0 {
+            source_path.to_path_buf()
+        } else {
+            let mut relative = std::path::PathBuf::new();
+            for _ in common..manifest_parts.len() {
+                relative.push("..");
+            }
+            for component in &source_parts[common..] {
+                relative.push(component.as_os_str());
+            }
+            relative
+        }
+    } else {
+        source_path.to_path_buf()
+    };
+    let source = source.to_string_lossy().replace('\\', "/");
+    let key = format!("{source}:{line}:{column}:{ident}");
     let hash = key.bytes().fold(0xcbf29ce484222325u64, |h, b| {
         (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
     });
     format_ident!("__furnace_di_{hash:016x}", span = ident.span())
 }
 
-#[cfg(test)]
-mod callback_tests {
-    use super::*;
-
-    #[test]
-    fn callback_diagnostics_are_independent_of_checkout_directory() {
-        let ident = syn::parse_str("App").unwrap();
-        let first = callback_name("/work/one", "/work/one/src/app.rs", 4, 12, &ident);
-        let second = callback_name("/tmp/two", "/tmp/two/src/app.rs", 4, 12, &ident);
-        assert_eq!(first, second);
-        assert_eq!(first, callback_name("/tmp/two", "src/app.rs", 4, 12, &ident));
-        assert_ne!(first, callback_name("/work/one", "src/other/app.rs", 4, 12, &ident));
-        assert_ne!(first, callback_name("/work/one", "src/app.rs", 5, 12, &ident));
-    }
-}
 // Replace only reserved protocol placeholders in macro data. This is token
 // substitution, not type matching: all membership remains Rust trait checking.
 fn substitute(tokens: TokenStream, ident: &Ident) -> TokenStream {
@@ -451,8 +470,11 @@ pub(crate) fn collect(input: TokenStream) -> syn::Result<TokenStream> {
     let state: Collection = syn::parse2(input)?;
     for record in state.records.iter().skip(1) {
         if record.root {
-            return Err(syn::Error::new_spanned(
-                &record.module,
+            // Point to the importing root's collector invocation. Reusing a
+            // child metadata span exposes the callback's generated name in the
+            // diagnostic, making snapshots depend on build-directory layout.
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
                 "a marked root cauldron cannot be imported into another marked root",
             ));
         }
@@ -543,5 +565,40 @@ fn balanced_value(items: &[TokenStream], core: &Path) -> TokenStream {
             let r = balanced_value(&items[middle..], core);
             quote!(#core::branch(#l, #r))
         }
+    }
+}
+
+#[cfg(test)]
+mod callback_tests {
+    use super::*;
+
+    #[test]
+    fn callback_diagnostics_are_independent_of_checkout_directory() {
+        let ident = syn::parse_str("App").unwrap();
+        let first = callback_name("/work/one", "/work/one/src/app.rs", 4, 12, &ident);
+        let second = callback_name("/tmp/two", "/tmp/two/src/app.rs", 4, 12, &ident);
+        assert_eq!(first, second);
+        assert_eq!(
+            first,
+            callback_name("/tmp/two", "src/app.rs", 4, 12, &ident)
+        );
+        assert_ne!(
+            first,
+            callback_name("/work/one", "src/other/app.rs", 4, 12, &ident)
+        );
+        assert_ne!(
+            first,
+            callback_name("/work/one", "src/app.rs", 5, 12, &ident)
+        );
+        assert_eq!(
+            callback_name(
+                "/work/one/project",
+                "/work/one/shared/app.rs",
+                4,
+                12,
+                &ident
+            ),
+            callback_name("/tmp/two/project", "/tmp/two/shared/app.rs", 4, 12, &ident),
+        );
     }
 }

@@ -1,9 +1,7 @@
 error: a marked root cauldron cannot be imported into another marked root
- --> tests/ui/declarative_di/fail/stable/imported_root.rs:2:26
+ --> tests/ui/declarative_di/fail/stable/imported_root.rs:3:1
   |
-2 | #[cauldron(root)] struct First;
-  |                          ^^^^^
 3 | #[cauldron(root, imports=[First])] struct Second;
-  | ---------------------------------- in this attribute macro expansion
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the macro `__furnace_di_14adff1ecf039aeb` which comes from the expansion of the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the macro `::furnace_rs_core::__private::__di_collect` (in Nightly builds, run with -Z macro-backtrace for more info)
