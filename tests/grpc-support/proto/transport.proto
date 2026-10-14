@@ -1,8 +1,8 @@
 syntax = "proto3";
 package furnace.test.v1;
+import "shared.proto";
 
 message Item { uint64 value = 1; }
-message Summary { uint64 count = 1; uint64 total = 2; }
 
 service Transport {
   rpc Unary(Item) returns (Item);

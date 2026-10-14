@@ -13,6 +13,7 @@ struct Service;
 impl pb::hidden_server::Hidden for Service {
     async fn secret(&self, request: tonic::Request<pb::Item>) -> Result<tonic::Response<pb::Item>, tonic::Status> { rpc::grpc_authenticated::<ClaimsPrincipal<Claims>, _>(&request)?; Ok(tonic::Response::new(request.into_inner())) }
 }
+#[rpc::grpc_reflection(guard = Protection)]
 #[cauldron(root, grpc_services = [Service])]
 struct App;
 fn main() {}

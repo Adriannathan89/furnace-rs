@@ -325,6 +325,15 @@ mod tests {
     }
 
     #[test]
+    fn matching_descriptor_files_are_deduplicated() {
+        let first = descriptor(|| "furnace.test.v1.Transport", FILE_DESCRIPTOR_SET, &[]);
+        let second = descriptor(|| "furnace.test.v1.Hidden", FILE_DESCRIPTOR_SET, &[]);
+        let scope = GrpcApplicationScope::validate(&[first, second], None).unwrap();
+        assert_eq!(scope.files().len(), 2);
+        assert_eq!(scope.services().len(), 2);
+    }
+
+    #[test]
     fn descriptor_conflicts_fail_preconstruction() {
         let first = descriptor(|| "furnace.test.v1.Hidden", FILE_DESCRIPTOR_SET, &[]);
         let mut fds = prost_types::FileDescriptorSet::decode(FILE_DESCRIPTOR_SET).unwrap();

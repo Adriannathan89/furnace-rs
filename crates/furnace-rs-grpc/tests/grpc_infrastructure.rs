@@ -302,6 +302,25 @@ async fn reflection_file_by_name_and_symbol_exclude_hidden_service() {
                 .any(|message| message.name.as_deref() == Some("Item"))
         );
     }
+    let response = reflect(
+        &server,
+        Some(server.token(true)),
+        MessageRequest::FileByFilename("shared.proto".into()),
+    )
+    .await
+    .unwrap();
+    let Some(MessageResponse::FileDescriptorResponse(files)) = response.message_response else {
+        panic!("missing imported descriptor")
+    };
+    let imported =
+        prost_types::FileDescriptorProto::decode(files.file_descriptor_proto[0].as_slice())
+            .unwrap();
+    assert!(
+        imported
+            .message_type
+            .iter()
+            .any(|message| message.name.as_deref() == Some("Summary"))
+    );
     let error = reflect(
         &server,
         Some(server.token(true)),

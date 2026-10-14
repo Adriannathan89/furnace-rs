@@ -38,7 +38,13 @@ fn server_config(certs: &Certificates) -> Config {
         ),
     ])
 }
-async fn trusted_call(custom_only: bool, name: &str, trust: bool) -> bool {
+#[derive(Clone, Copy, PartialEq)]
+enum Trust {
+    None,
+    ServerCa,
+    UnrelatedCa,
+}
+async fn trusted_call(custom_only: bool, name: &str, trust: Trust) -> bool {
     let certs = Certificates::new();
     let server_options = GrpcServerConfig::parse(&server_config(&certs)).unwrap();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -67,7 +73,13 @@ async fn trusted_call(custom_only: bool, name: &str, trust: bool) -> bool {
             ("grpc.clients.remote.connect_timeout_ms", "1000".into()),
         ],
     ));
-    if trust {
+    let unrelated = Certificates::new();
+    let ca = if trust == Trust::UnrelatedCa {
+        &unrelated.ca
+    } else {
+        &certs.ca
+    };
+    if trust != Trust::None {
         builder = builder.source(
             MapSource::new(
                 "ca",
@@ -78,7 +90,7 @@ async fn trusted_call(custom_only: bool, name: &str, trust: bool) -> bool {
             )
             .with_string_array(
                 "grpc.clients.remote.tls.custom_ca_files",
-                [certs.ca.to_str().unwrap()],
+                [ca.to_str().unwrap()],
             ),
         );
     }
@@ -107,19 +119,19 @@ async fn trusted_call(custom_only: bool, name: &str, trust: bool) -> bool {
 }
 #[tokio::test]
 async fn trusted_custom_ca_and_additive_webpki_roots() {
-    assert!(trusted_call(false, "localhost", true).await);
+    assert!(trusted_call(false, "localhost", Trust::ServerCa).await);
 }
 #[tokio::test]
 async fn custom_ca_only_roots_are_isolated() {
-    assert!(trusted_call(true, "localhost", true).await);
+    assert!(trusted_call(true, "localhost", Trust::ServerCa).await);
 }
 #[tokio::test]
 async fn wrong_hostname_is_rejected() {
-    assert!(!trusted_call(true, "wrong.invalid", true).await);
+    assert!(!trusted_call(true, "wrong.invalid", Trust::ServerCa).await);
 }
 #[tokio::test]
 async fn untrusted_ca_is_rejected() {
-    assert!(!trusted_call(false, "localhost", false).await);
+    assert!(!trusted_call(false, "localhost", Trust::None).await);
 }
 #[tokio::test]
 async fn mismatched_server_key_is_rejected_and_redacted() {
@@ -179,6 +191,57 @@ async fn tls_handshake_is_bounded_when_peer_never_replies() {
             .unwrap()
             .is_err()
     );
+    stop.send(()).unwrap();
+    task.await.unwrap();
+}
+
+#[tokio::test]
+async fn custom_ca_only_rejects_a_different_private_ca() {
+    assert!(!trusted_call(true, "localhost", Trust::UnrelatedCa).await);
+}
+#[tokio::test]
+async fn plaintext_helpers_preserve_native_transport() {
+    let server_options = GrpcServerConfig::parse(&Config::default()).unwrap();
+    let mut native = configure_grpc_server(tonic::transport::Server::builder(), &server_options)
+        .await
+        .unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("http://{}", listener.local_addr().unwrap());
+    let (stop, signal) = tokio::sync::oneshot::channel();
+    let task = tokio::spawn(async move {
+        native
+            .add_service(pb::hidden_server::HiddenServer::new(Service))
+            .serve_with_incoming_shutdown(
+                tonic::codegen::tokio_stream::wrappers::TcpListenerStream::new(listener),
+                async {
+                    let _ = signal.await;
+                },
+            )
+            .await
+            .unwrap();
+    });
+    let options = GrpcClientConfig::parse(
+        &config([("grpc.clients.remote.endpoint".into(), endpoint)]),
+        "remote",
+    )
+    .unwrap();
+    let channel = client_endpoint(&options)
+        .await
+        .unwrap()
+        .connect()
+        .await
+        .unwrap();
+    let mut client = pb::hidden_client::HiddenClient::new(channel);
+    assert_eq!(
+        client
+            .secret(pb::Item { value: 7 })
+            .await
+            .unwrap()
+            .into_inner()
+            .value,
+        7
+    );
+    drop(client);
     stop.send(()).unwrap();
     task.await.unwrap();
 }
