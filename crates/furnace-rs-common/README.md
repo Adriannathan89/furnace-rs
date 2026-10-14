@@ -8,7 +8,7 @@ validation, REST-error, and CORS behavior.
 Application authors normally use the
 [`furnace-rs` facade](../furnace-rs/README.md). Depend on `furnace-rs-common` directly when
 building or testing an integration boundary, or when a tool needs the private
-HTTP inspection contract used by `furnace-rs-cli`.
+transport-neutral inspection contract used by `furnace-rs-cli`.
 
 ## Feature model
 
@@ -18,6 +18,9 @@ facade disables those defaults and maps its own features explicitly.
 | Feature | Adds | Requires |
 | --- | --- | --- |
 | `http` | Axum 0.8 routing/server delivery, route/controller contracts, extractors, validation, REST errors, CORS, and native Axum/Tower re-exports. | `furnace-rs-core` and the HTTP dependency set. |
+| `transport-metadata` | Shared request metadata used by transport adapters. | HTTP types; no native server dependency. |
+| `transport-runtime` | Shared selection, lifecycle coordinator, inspection, and task supervision. | Tokio and neutral runtime dependencies; no Tonic/Prost. |
+| `passport` | Shared Passport contracts and derives. | JWT and shared metadata; no Axum. |
 | `logger` | Timestamped console application logging. | Chrono dependency. |
 | `jwt` | `JwtService`, claims, validation profiles, algorithms, keyrings, and JWT auto-configuration. | No Axum or database dependency. |
 | `cookies` | Strict cookie extraction and checked response-cookie composition. | Implies `http` and enables the cookie/Passport macro support. |
@@ -137,3 +140,10 @@ and policy checks. Protection applies per HTTP method, including when public
 and protected methods share a path.
 
 The `2.0.0-beta.1` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
+
+The standalone [`furnace-rs-grpc`](../furnace-rs-grpc/README.md) crate owns all
+native gRPC APIs and dependencies. Common supplies shared Passport contracts,
+transport selection, lifecycle coordination, supervised tasks, neutral runtime
+errors, and static inspection. `ApplicationRuntimeError` is shared;
+`HttpRuntimeError` remains its compatibility alias. See the
+[gRPC guide](../../docs/grpc.md) for automatic selection and manual composition.

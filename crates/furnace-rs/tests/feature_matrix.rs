@@ -200,3 +200,72 @@ fn grpc_implementation_is_owned_by_dedicated_packages() {
         assert!(!tree.contains("tonic v"));
     }
 }
+
+#[test]
+fn grpc_feature_and_consumer_matrix_keeps_build_tools_out_of_runtime() {
+    for features in [
+        "",
+        "http",
+        "grpc",
+        "grpc,jwt",
+        "grpc,grpc-tls",
+        "http,grpc,jwt,grpc-tls",
+    ] {
+        let tree = dependency_tree(features);
+        assert_eq!(
+            tree.contains("furnace-rs-grpc v"),
+            features.contains("grpc")
+        );
+        assert_eq!(tree.contains("jsonwebtoken v"), features.contains("jwt"));
+        assert_eq!(
+            tree.contains("tokio-rustls v"),
+            features.contains("grpc-tls")
+        );
+        for forbidden in [
+            "tonic-prost-build v",
+            "prost-build v",
+            "protoc-bin-vendored v",
+        ] {
+            assert!(!tree.contains(forbidden), "{features}: {forbidden}\n{tree}");
+        }
+    }
+}
+
+#[test]
+fn core_retains_toml_without_transport_or_direct_serde_dependencies() {
+    let output = Command::new(env!("CARGO"))
+        .current_dir(workspace_root())
+        .args([
+            "tree",
+            "--locked",
+            "-e",
+            "normal",
+            "-p",
+            "furnace-rs-core",
+            "--no-default-features",
+        ])
+        .output()
+        .expect("cargo tree should start");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let tree = String::from_utf8(output.stdout).unwrap();
+    assert!(tree.contains("toml v"));
+    for forbidden in [
+        "tonic v",
+        "prost v",
+        "axum v",
+        "http v",
+        "jsonwebtoken v",
+        "cookie v",
+    ] {
+        assert!(!tree.contains(forbidden), "{forbidden} in {tree}");
+    }
+    let manifest =
+        std::fs::read_to_string(workspace_root().join("crates/furnace-rs-core/Cargo.toml"))
+            .unwrap();
+    assert!(!manifest.contains("serde.workspace"));
+    assert!(!manifest.contains("serde ="));
+}

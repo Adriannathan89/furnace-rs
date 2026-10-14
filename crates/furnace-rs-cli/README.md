@@ -16,6 +16,7 @@ run the produced `furnace` binary; contributors work in `crates/furnace-rs-cli/s
 | `furnace run` | Resolve the selected package/binary through Cargo metadata, build it, and execute the emitted artifact while preserving application streams. |
 | `furnace dev` | Watch relevant files, debounce changes, rebuild when needed, restart safely, and keep the last successful process alive across compile failures. |
 | `furnace routes` | Inspect selected route metadata without normal provider construction or server startup. |
+| `furnace grpc` | Inspect selected protobuf methods, streaming shapes, and effective policies without startup. |
 | `furnace graph` | Inspect rooted cauldrons, providers, dependencies, and construction order. |
 | `furnace doctor` | Render grouped health/diagnostic evidence for server, graph, routes, and auto-configuration. |
 
@@ -38,7 +39,7 @@ package/binary selection
 Cargo build + artifact discovery
       │
       ├── run/dev → process supervisor
-      └── routes/graph/doctor → private child inspection protocol
+      └── routes/grpc/graph/doctor → private child inspection protocol
 ~~~
 
 Package and binary selection honors the current package, `default-run`, single
@@ -100,7 +101,7 @@ on application internals.
 - `src/inspection.rs` — private child protocol and report acquisition.
 - `src/private_temp_dir.rs` — owner-only Unix transport/control directories.
 - `src/output/` and `src/render.rs` — human output, JSON v2 records, paths,
-  routes, graph, and doctor rendering.
+  routes, gRPC, graph, and doctor rendering.
 - `src/scaffold/` — names, templates, validation, staging, and publication.
 - `src/diagnostic.rs` — CLI-owned diagnostics and redaction.
 
@@ -121,3 +122,9 @@ syntax failure).
 See the [CLI reference](../../docs/CLI.md), the
 [workspace contribution guide](../../CONTRIBUTING.md), and the
 [inspection architecture](../../docs/ARCHITECTURE.md).
+
+Unreleased: `furnace grpc` inspects protobuf services, RPC shapes, and effective
+Passport policies. It supports the usual target selectors and `--format json`,
+retains public schema version 2, and uses private application protocol 3.
+Inspection constructs no providers, connects no eager clients, and reads no TLS
+material. `routes` remains HTTP-only. See the [gRPC guide](../../docs/grpc.md).

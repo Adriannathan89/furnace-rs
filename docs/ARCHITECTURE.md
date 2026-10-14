@@ -1,7 +1,7 @@
 # furnace-rs architecture
 
 FURNACE separates framework-neutral construction and configuration from Axum HTTP
-delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
+delivery, standalone protobuf gRPC delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
 The current implementation retains the validation, REST-error, typed configuration,
 compiler-diagnostic, machine-output, and minimal-scaffolding surface while
 removing the former Diesel and CLI migration integrations.
@@ -28,7 +28,7 @@ application cauldrons, typed injectors, providers, inherent endpoints, controlle
 `furnace-rs-core` owns module/provider graphs, lifecycle, diagnostics, the existing
 source-attributed `Config`, `#[derive(Configuration)]`, `Config::parse`,
 configuration issues, and `Secret<T>`. It has no Axum, SeaORM, JWT, cookie, or
-Serde dependency. Typed configuration is a view over an already loaded Config;
+direct Serde dependency. Existing TOML parsing brings transitive Serde. Typed configuration is a view over an already loaded Config;
 it does not replace loading or discover types globally.
 
 `furnace-rs-common` owns the `http` boundary: route registration, `Input` and
@@ -48,7 +48,7 @@ connector retains typed `PersistenceError` causes while redacting public
 formatting. It checks readiness before serving and closes on graceful shutdown.
 
 ~~~text
-core                         no HTTP/database/JWT/cookie/Serde
+core                         no HTTP/database/JWT/cookie or direct Serde
 http                         Axum + validation + standard REST errors
 logger                       application logging and console backend
 jwt                          JWT service/configuration, no Axum
@@ -226,3 +226,25 @@ JWT/strategy requirements or receive Passport bindings.
 Each endpoint binding retains its controller, method, canonical path, handler,
 and owning cauldron context. The Passport layer wraps each protected method router before methods are merged, preserving native extractor behavior and local strategy visibility.
 See [the breaking migration guide](importance/furnace-rs-migration.md).
+
+
+## Unreleased gRPC and shared runtime
+
+`furnace-rs-grpc` owns native Tonic/Prost service registration, scope validation,
+client wrappers, TLS, Passport admission adapters, health, reflection, and gRPC
+inspection metadata. Its dedicated proc-macro companion resolves direct,
+renamed, and facade dependency paths. Common keeps shared Passport/JWT and
+transport-neutral runtime coordination, without importing Tonic or Prost.
+
+Linked adapters validate selected metadata before construction and finalize native
+routes before startup. The common coordinator starts one application lifecycle,
+waits for eager infrastructure readiness, binds all selected listeners, then opens
+admission. gRPC's bounded drain cancels and joins supervised Hyper connection and
+stream tasks before provider shutdown. HTTP continues using its existing guarded
+connection server. Raw composition uses shared builders and a standalone gRPC
+extension trait, with no second lifecycle owner.
+
+Inspection uses graph analysis and static adapter callbacks, never runtime
+preparation. The private report includes protobuf service/method/policy records;
+the public CLI retains schema version 2 and HTTP report fields. See the
+[gRPC guide](grpc.md) for the public APIs and configuration.

@@ -121,7 +121,7 @@ Extend inspection to list protobuf service names, method names, RPC paths, strea
 
 Inspection must work for gRPC-only and mixed applications without constructing providers, starting lifecycle hooks, reading secret material, binding sockets, or connecting outbound clients. Continue existing HTTP inspection behavior.
 
-Add `furnace grpc` with the existing package/binary selectors and `--json` support. Keep `furnace routes` HTTP-only. Extend `furnace doctor` using its existing check-record structure. Retain public JSON schema version 2 and existing command-specific shapes, adding a new `grpc` command data shape. The private application/CLI protocol may advance independently with explicit compatibility checks.
+Add `furnace grpc` with the existing package/binary selectors and `--format json` support. Keep `furnace routes` HTTP-only. Extend `furnace doctor` using its existing check-record structure. Retain public JSON schema version 2 and existing command-specific shapes, adding a new `grpc` command data shape. The private application/CLI protocol may advance independently with explicit compatibility checks.
 
 ## Concrete API proposals for written-spec approval
 
@@ -283,7 +283,7 @@ Client default request timeouts bound call establishment to response headers; th
 
 ### CLI records and errors
 
-The `furnace grpc --json` envelope retains `schema_version: 2` and `command: "grpc"`. Its data is `{ "services": [...] }`. Each service record contains `name`, `implementation`, `location`, and `methods`. Each method contains `name`, `path`, `client_streaming`, `server_streaming`, and `protection`. Protection is either null for public RPCs or a record of `strategy`, `principal`, `roles`, `permissions`, and `predicates`. Roles/permissions use `{ "mode": "any" | "all", "values": [...] }` when present. Predicates expose authored function identities only. No configuration values or credentials enter the public output.
+The `furnace grpc --format json` envelope retains `schema_version: 2` and `command: "grpc"`. Its data is `{ "services": [...] }`. Each service record contains `name`, `implementation`, `location`, and `methods`. Each method contains `name`, `path`, `client_streaming`, `server_streaming`, and `protection`. Protection is either null for public RPCs or a record of `strategy`, `principal`, `roles`, `permissions`, and `predicates`. Roles/permissions use `{ "mode": "any" | "all", "values": [...] }` when present. Predicates expose authored function identities only. No configuration values or credentials enter the public output.
 
 Sort services by fully qualified protobuf name and methods by protobuf method name. Keep existing command selector, diagnostic, exit-code, and path-normalization rules. `doctor` adds gRPC checks to its existing check array; HTTP route data and other public command shapes remain unchanged. Inspection on a valid root without selected gRPC services returns an empty service array rather than starting a runtime.
 

@@ -1,0 +1,23 @@
+[package]
+name = "furnace-rs-example-grpc-transport"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+publish = false
+[workspace]
+[features]
+default = []
+http = ["furnace/http"]
+[dependencies]
+furnace = { package = "furnace-rs", path = "../../crates/furnace-rs", version = "=2.0.0-beta.1", default-features = false, features = ["grpc", "grpc-tls", "jwt", "runtime-tokio"] }
+tonic = { version = "=0.14.6", default-features = false, features = ["transport", "codegen"] }
+tonic-prost = "=0.14.6"
+prost = "=0.14.4"
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
+[build-dependencies]
+tonic-prost-build = "=0.14.6"
+protoc-bin-vendored = "=3.3.0"
+[dev-dependencies]
+tonic-health = "=0.14.6"
+tonic-reflection = "=0.14.6"

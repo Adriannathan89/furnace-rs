@@ -1,5 +1,17 @@
 # furnace-rs-grpc
 
-Managed protobuf services and named generated clients for Furnace, with native Tonic requests, responses, statuses, and streams. gRPC is available directly; enable `jwt` for Passport protection and `tls` for verified TLS. The `furnace-rs` facade exposes these through `grpc` and `grpc-tls`.
+Standalone protobuf serving and named generated clients for Furnace, with native
+Tonic requests, responses, statuses, and streams. Optional features are `jwt` for
+shared Passport admission and `tls` for verified TLS. The facade maps these to
+`grpc`, shared `jwt`, and `grpc-tls`.
 
-Applications own their `.proto` files and generated client/server code. Detailed usage documentation is completed with the transport feature's example and compatibility verification task.
+Applications own their `.proto` code generation and descriptor bytes. Register
+concrete trait implementations with `#[grpc_service]` and `grpc_services` in a
+cauldron. Register named wrappers with `#[grpc_client]`. Import `FurnaceBurnExt`
+for configuration-selected automatic startup, or compose raw native routes with
+`RuntimeRoutes`, `RuntimeBindings`, `RuntimeGrpcExt`, and `serve_transports`.
+
+See the [transport guide](../../docs/grpc.md) and
+[independent example](../../example/grpc-transport/) for all four RPC shapes,
+Passport/JWT, per-call credentials, deadlines, cancellation, health/reflection,
+TLS roots, shared lifecycle, and static CLI inspection.

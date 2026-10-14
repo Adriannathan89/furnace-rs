@@ -30,6 +30,11 @@ conversion, simpler CRUD examples with an optional service, debug request
 logging, the expanded route summary, and validated-extractor error redaction.
 Future changes belong under **Unreleased** in the changelog.
 
+Unreleased protobuf gRPC serving and consumption are available through the new
+standalone transport package or opt-in facade features. See the [gRPC guide](docs/grpc.md)
+and [all-shape example](example/grpc-transport/) for shared runtime, Passport/JWT,
+named clients, TLS, and static inspection.
+
 See the [documentation index](docs/README.md), [changelog](CHANGELOG.md),
 [migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
 [release notes and verification](docs/releases/1.0.2.md),
@@ -89,7 +94,7 @@ See the [authoritative CLI reference](docs/CLI.md) for target selectors,
 forwarded application arguments, diagnostics, watcher behavior, and inspection
 limits.
 
-The [four independent example projects](example/) use local workspace crates.
+The [independent example projects](example/) use local workspace crates.
 Run commands from each example directory so configuration loads there.
 
 | Example | Implementation | Routes | Port |
@@ -185,6 +190,9 @@ application
     ├── furnace-rs-common (optional)
     │   ├── furnace-rs-core
     │   └── furnace-rs-common-macros
+    ├── furnace-rs-grpc (optional)
+    │   ├── furnace-rs-common
+    │   └── furnace-rs-grpc-macros
     └── furnace-rs-extra (optional)
         └── furnace-rs-core
 
@@ -199,7 +207,7 @@ application tests
 
 furnace-rs-cli
 ├── furnace-rs
-└── furnace-rs-common (http-only private inspection contract)
+└── furnace-rs-common (transport-neutral private inspection contract)
 ~~~
 
 | Crate | Responsibility | Contributor guide |
@@ -208,6 +216,8 @@ furnace-rs-cli
 | `furnace-rs-core` | Framework-neutral configuration, graph, providers, lifecycle, diagnostics, and module scope. | [crates/furnace-rs-core/README.md](crates/furnace-rs-core/README.md) |
 | `furnace-rs-core-macros` | Procedural macros that generate core metadata and constructors. | [crates/furnace-rs-core-macros/README.md](crates/furnace-rs-core-macros/README.md) |
 | `furnace-rs-common` | Optional HTTP, validation, CORS, JWT, cookie, and Passport integrations. | [crates/furnace-rs-common/README.md](crates/furnace-rs-common/README.md) |
+| `furnace-rs-grpc` | Protobuf serving/clients, Passport admission, TLS, health, and reflection. | [crates/furnace-rs-grpc/README.md](crates/furnace-rs-grpc/README.md) |
+| `furnace-rs-grpc-macros` | Managed protobuf service/client and reflection attributes. | [crates/furnace-rs-grpc-macros/README.md](crates/furnace-rs-grpc-macros/README.md) |
 | `furnace-rs-persistence` | Explicit native SeaORM PostgreSQL connector and lifecycle integration. | [crates/furnace-rs-persistence/README.md](crates/furnace-rs-persistence/README.md) |
 | `furnace-rs-common-macros` | Procedural macros for routes, controllers, validation, and Passport. | [crates/furnace-rs-common-macros/README.md](crates/furnace-rs-common-macros/README.md) |
 | `furnace-rs-cli` | Cargo-native execution, inspection, development loop, and scaffolding. | [crates/furnace-rs-cli/README.md](crates/furnace-rs-cli/README.md) |

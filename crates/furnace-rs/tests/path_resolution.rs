@@ -128,3 +128,28 @@ fn passport_without_cookies_reports_a_focused_cookie_source_error() {
         String::from_utf8_lossy(&output.stderr),
     );
 }
+
+#[test]
+fn grpc_automatic_run_and_native_overrides_work_with_both_http_feature_states() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let manifest = root.join("tests/consumers/grpc_automatic/Cargo.toml");
+    for features in [None, Some("http")] {
+        let mut command = Command::new(env!("CARGO"));
+        command
+            .args(["run", "--offline", "--manifest-path"])
+            .arg(&manifest)
+            .env(
+                "CARGO_TARGET_DIR",
+                root.join("../../target/macro-consumers"),
+            );
+        if let Some(features) = features {
+            command.args(["--features", features]);
+        }
+        let output = command.output().unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}

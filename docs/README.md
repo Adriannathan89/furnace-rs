@@ -7,6 +7,7 @@ define behavior.
 
 | Guide | Purpose |
 | --- | --- |
+| [gRPC transport (Unreleased)](grpc.md) | Protobuf services, named clients, Passport/JWT, shared runtime, TLS, and static inspection |
 | [Declarative DI beta](declarative-di.md) | Compile-time roots, API, visibility and migration |
 | [2.0.0-beta.1 release preparation](releases/2.0.0-beta.1.md) | Mandatory injection markers, migration and checker verification |
 | [Architecture](ARCHITECTURE.md) | Crate boundaries, graph selection, construction, and lifecycle |

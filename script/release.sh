@@ -55,10 +55,12 @@ base = sys.argv[3]
 packages = (
     "furnace-rs-core-macros",
     "furnace-rs-common-macros",
+    "furnace-rs-grpc-macros",
     "furnace-rs-core",
     "furnace-rs-persistence",
     "furnace-rs-extra",
     "furnace-rs-common",
+    "furnace-rs-grpc",
     "furnace-rs-testing",
     "furnace-rs",
     "furnace-rs-cli",

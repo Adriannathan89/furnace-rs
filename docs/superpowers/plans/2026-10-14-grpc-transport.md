@@ -15,7 +15,7 @@
 
 - Branch: `feat/grpc-method`; preserve the user's selected branch. Check for concurrent edits before each task.
 - Rust 1.94 and edition 2024; workspace version `2.0.0-beta.1`; unsafe code forbidden; public documentation required.
-- Core acquires no HTTP, Axum, Tonic, protobuf, JWT, cookie, or Serde dependency.
+- Core acquires no HTTP, Axum, Tonic, protobuf, JWT, cookie, or direct Serde dependency; retain existing TOML parsing and its transitive Serde.
 - Default facade features stay unchanged; `grpc`, `grpc + jwt`, and optional `grpc-tls` compose independently from Furnace `http`.
 - Contracts come from `.proto`; applications own build-time generation. Repository tests/example use a vendored compiler only at build time.
 - Preserve existing HTTP entry-point/error signatures, Passport strategy signatures, cookies, deadlines, trusted peer addresses, and public CLI schema version 2.
@@ -219,39 +219,39 @@ Test processes use loopback port-zero listeners, explicit shutdown channels, bou
 
 **Interfaces:** Produce `ApplicationRuntimeError` with existing HTTP variants and new `TransportBind { transport, source: std::io::Error }`, `TransportServe { transport, source: Box<dyn std::error::Error + Send + Sync> }`, `DrainTimeout`, and retained operation-plus-shutdown causes; `HttpRuntimeError` aliases it under `http`. `FurnaceBurnExt::burn<M: Cauldron>() -> impl Future<Output = Result<(), ApplicationRuntimeError>> + Send` works with either transport feature. `RuntimeRoutes::new()`, `with_http(axum::Router)` (HTTP gate), `RuntimeGrpcExt::with_grpc(tonic::service::Routes)` (standalone extension trait); `RuntimeBindings::new().with_http(SocketAddr).with_grpc(GrpcServerConfig)`; `serve_transports(Furnace, RuntimeRoutes, RuntimeBindings, impl Future<Output = ()> + Send) -> impl Future<Output = Result<(), ApplicationRuntimeError>> + Send` is the explicit lifecycle-owning escape hatch. A private variant accepts async binders for deterministic bind-failure tests.
 
-- [ ] Add `burn_configuration_selects_http_grpc_or_both`, `missing_transports_retains_http`, `uncompiled_transport_and_empty_application_fail_before_start`, and `mixed_transports_share_provider_identity`. Assert the provider reached by HTTP/gRPC handlers is the same instance, startup count 1, shutdown count 1. Run `cargo test -p furnace-rs-grpc --all-features --test grpc_runtime`; initially fails before the coordinator.
-- [ ] Add `second_listener_bind_failure_releases_first_and_stops_once`, `first_server_failure_stops_sibling`, `eager_client_failure_binds_no_listener`, `partial_startup_retains_operational_and_shutdown_errors`, `shutdown_drains_then_cancels_after_30000ms`, and `health_changes_to_not_serving_before_drain`. Use injected binders, explicit shutdown, paused-time deadline checks, and rebind assertions; no timing guesses.
+- [x] Add `burn_configuration_selects_http_grpc_or_both`, `missing_transports_retains_http`, `uncompiled_transport_and_empty_application_fail_before_start`, and `mixed_transports_share_provider_identity`. Assert the provider reached by HTTP/gRPC handlers is the same instance, startup count 1, shutdown count 1. Run `cargo test -p furnace-rs-grpc --all-features --test grpc_runtime`; initially fails before the coordinator.
+- [x] Add `second_listener_bind_failure_releases_first_and_stops_once`, `first_server_failure_stops_sibling`, `eager_client_failure_binds_no_listener`, `partial_startup_retains_operational_and_shutdown_errors`, `shutdown_drains_then_cancels_after_30000ms`, and `health_changes_to_not_serving_before_drain`. Use injected binders, explicit shutdown, paused-time deadline checks, and rebind assertions; no timing guesses.
 
   ```rust
   assert_eq!(starts.load(std::sync::atomic::Ordering::SeqCst), 1);
   assert_eq!(stops.load(std::sync::atomic::Ordering::SeqCst), 1);
   assert!(tokio::net::TcpListener::bind(first_address).await.is_ok());
   ```
-- [ ] Implement a common conventional source-loading/inspection path and selection preflight before `build`. Configure only selected listeners/infrastructure; preserve validation of registered managed-service metadata. Build routes, start shared infrastructure/application hooks exactly once, wait for eager readiness, bind both addresses, then admit requests. Print readiness only after successful binds; startup output identifies both protocols and their methods.
-- [ ] On signal/error, mark health not-serving, stop admission, send graceful shutdown to both servers, wait for gRPC's configured drain deadline, cancel outstanding calls/tasks when it expires, then stop providers in reverse order once. Supervise active connection/call tasks and await their termination; dropping only the top-level serve future is insufficient evidence of cancellation. A bind failure releases any acquired listener and unwinds started providers. Preserve the original operation and any shutdown error. Do not introduce a timeout that prevents provider shutdown from being awaited.
-- [ ] Preserve existing HTTP low-level `serve`/`serve_router`, trusted peer extensions, HTTP header/body read deadlines and router/CORS composition. Reuse the custom HTTP connection server rather than replacing it with a default Axum server. On gRPC connections, ensure native trusted peer address reaches the shared Passport context.
-- [ ] Run `grpc_runtime`, existing server unit/security tests, and automatic HTTP/gRPC/mixed consumers on Rust 1.94. Expected: exact-once counters, listener release, deadline ordering, prior HTTP safeguards and source-compatible `Result<(), HttpRuntimeError>` examples pass.
-- [ ] Commit `feat(runtime): select HTTP and gRPC with one lifecycle coordinator`.
+- [x] Implement a common conventional source-loading/inspection path and selection preflight before `build`. Configure only selected listeners/infrastructure; preserve validation of registered managed-service metadata. Build routes, start shared infrastructure/application hooks exactly once, wait for eager readiness, bind both addresses, then admit requests. Print readiness only after successful binds; startup output identifies both protocols and their methods.
+- [x] On signal/error, mark health not-serving, stop admission, send graceful shutdown to both servers, wait for gRPC's configured drain deadline, cancel outstanding calls/tasks when it expires, then stop providers in reverse order once. Supervise active connection/call tasks and await their termination; dropping only the top-level serve future is insufficient evidence of cancellation. A bind failure releases any acquired listener and unwinds started providers. Preserve the original operation and any shutdown error. Do not introduce a timeout that prevents provider shutdown from being awaited.
+- [x] Preserve existing HTTP low-level `serve`/`serve_router`, trusted peer extensions, HTTP header/body read deadlines and router/CORS composition. Reuse the custom HTTP connection server rather than replacing it with a default Axum server. On gRPC connections, ensure native trusted peer address reaches the shared Passport context.
+- [x] Run `grpc_runtime`, existing server unit/security tests, and automatic HTTP/gRPC/mixed consumers on Rust 1.94. Expected: exact-once counters, listener release, deadline ordering, prior HTTP safeguards and source-compatible `Result<(), HttpRuntimeError>` examples pass.
+- [x] Commit `feat(runtime): select HTTP and gRPC with one lifecycle coordinator`.
 
 ### Task 9: Add offline gRPC CLI inspection without changing public JSON contracts
 
 **Files:** Modify common `src/inspection.rs`, `src/runtime/{mod,coordinator}.rs`, `src/lib.rs`; modify CLI `Cargo.toml`, `src/{command,inspection,render,main}.rs`, `src/output/{model,human,json}.rs`; create CLI `tests/grpc_inspection.rs`, fixtures `tests/fixtures/inspection/grpc/{Cargo.toml,build.rs,src/main.rs,proto/service.proto,furnace.toml}`; extend existing protocol/JSON tests.
 
-**Interfaces:** Existing hidden `InspectionKind` adds `Grpc`; private `INSPECTION_PROTOCOL_VERSION` advances from 2 to 3 (public JSON stays 2). `InspectionReport` adds `grpc_services: Vec<GrpcServiceReport>` with fields matching the spec. Produce public CLI data `GrpcData { services: Vec<GrpcServiceData> }`, nested `GrpcMethodData`/`GrpcProtectionData`, and `CommandData::Grpc`. Common inspection is compiled with either transport; HTTP report construction is gated separately. CLI may enable common `grpc` privately to deserialize reports; it need not enable TLS/JWT to display static policy records.
+**Interfaces:** Existing hidden `InspectionKind` adds `Grpc`; private `INSPECTION_PROTOCOL_VERSION` advances from 2 to 3 (public JSON stays 2). `InspectionReport` adds `grpc_services: Vec<GrpcServiceReport>` with fields matching the spec. Produce public CLI data `GrpcData { services: Vec<GrpcServiceData> }`, nested `GrpcMethodData`/`GrpcProtectionData`, and `CommandData::Grpc`. Common inspection is compiled with either transport; HTTP report construction is gated separately. CLI uses the neutral common inspection protocol; it need not enable gRPC/TLS/JWT to display static policy records.
 
-- [ ] Add `grpc_command_human_and_json_report_all_shapes_and_policies`: assert public envelope version 2, command `grpc`, exact field names, protobuf paths, streaming flags, sorted order, null public protection and guarded role/permission records. Add target-selector/unknown-argument/nonzero-diagnostic tests matching existing CLI rules.
+- [x] Add `grpc_command_human_and_json_report_all_shapes_and_policies`: assert public envelope version 2, command `grpc`, exact field names, protobuf paths, streaming flags, sorted order, null public protection and guarded role/permission records. Add target-selector/unknown-argument/nonzero-diagnostic tests matching existing CLI rules.
 
   ```rust
   assert_eq!(json["schema_version"], 2);
   assert_eq!(json["command"], "grpc");
   assert!(json["data"]["services"].is_array());
   ```
-- [ ] Add `grpc_inspection_never_constructs_or_connects_or_reads_tls_material`: fixture has a panicking constructor, eager unreachable clients, nonexistent TLS file paths, and public inspection metadata. `grpc`, `graph`, and `doctor` must return static results without executing the constructor or network/certificate loading. Invalid static configuration remains a diagnostic. Add `grpc_without_registered_services_reports_empty_array`.
-- [ ] Run `cargo test -p furnace-rs-cli --test grpc_inspection`; confirm unsupported-command/missing-record failures before parser/output changes.
-- [ ] Refactor inspection to use analysis, memoized selected metadata, neutral Passport preflight and pure config parsing. Extend protocol negotiation, retaining private tokens, owner-only temp directories, safe-file writes and explicit version-mismatch diagnostics. Older linked applications stay detectable: report a clear unsupported private protocol rather than executing them as a server.
-- [ ] Add the new command and schema records; keep HTTP routes shape byte-for-byte compatible. `doctor` uses existing check records for gRPC selection/config/registration/policy findings; no new top-level JSON fields. Human output shows service, method, streaming shape and effective protection.
-- [ ] Run new target, `inspection_protocol`, `inspection_cli`, and `json_cli`. Expected: new static reports pass, current HTTP JSON/selector behavior passes, and the mismatched private protocol is rejected clearly. Run platform-safe unit/parser tests on CI's existing Linux/macOS/Windows matrix.
-- [ ] Commit `feat(cli): inspect gRPC methods and protection without startup I/O`.
+- [x] Add `grpc_inspection_never_constructs_or_connects_or_reads_tls_material`: fixture has a panicking constructor, eager unreachable clients, nonexistent TLS file paths, and public inspection metadata. `grpc`, `graph`, and `doctor` must return static results without executing the constructor or network/certificate loading. Invalid static configuration remains a diagnostic. Add `grpc_without_registered_services_reports_empty_array`.
+- [x] Run `cargo test -p furnace-rs-cli --test grpc_inspection`; confirm unsupported-command/missing-record failures before parser/output changes.
+- [x] Refactor inspection to use analysis, memoized selected metadata, neutral Passport preflight and pure config parsing. Extend protocol negotiation, retaining private tokens, owner-only temp directories, safe-file writes and explicit version-mismatch diagnostics. Older linked applications stay detectable: report a clear unsupported private protocol rather than executing them as a server.
+- [x] Add the new command and schema records; keep HTTP routes shape byte-for-byte compatible. `doctor` uses existing check records for gRPC selection/config/registration/policy findings; no new top-level JSON fields. Human output shows service, method, streaming shape and effective protection.
+- [x] Run new target, `inspection_protocol`, `inspection_cli`, and `json_cli`. Expected: new static reports pass, current HTTP JSON/selector behavior passes, and the mismatched private protocol is rejected clearly. Run platform-safe unit/parser tests on CI's existing Linux/macOS/Windows matrix.
+- [x] Commit `feat(cli): inspect gRPC methods and protection without startup I/O`.
 
 ### Task 10: Ship the example, docs, feature matrix, and complete verification
 
@@ -259,11 +259,12 @@ Test processes use loopback port-zero listeners, explicit shutdown channels, bou
 
 **Interfaces:** Document exactly the approved attributes, wrapper `client()`, Bearer helper/provider, configuration, runtime error alias, native routes escape hatch, health/reflection policies and stream/deadline semantics. Example defaults to gRPC-only with all four shapes; document switching to mixed mode and TLS using locally generated certificates. Include a consumer path that uses the generated client wrappers against the serving example. JWT demo credentials are runtime-provided or clearly scoped synthetic test keys; no private keys or tokens are committed.
 
-- [ ] Add `grpc_feature_and_consumer_matrix` cases: no-default/core-only; unchanged default/HTTP-only; `grpc`; `grpc,jwt`; `grpc,grpc-tls`; mixed `http,grpc,jwt,grpc-tls`; direct/renamed common/facade; generic client type shared across distinct wrappers; explicit native provider overrides. Assert core dependency tree excludes transport/JWT/Serde and vendored compiler/build tools stay out of Furnace normal dependencies. Include compile-fail policy/descriptor grammar acceptance targets in CI.
+- [ ] Add `grpc_feature_and_consumer_matrix` cases: no-default/core-only; unchanged default/HTTP-only; `grpc`; `grpc,jwt`; `grpc,grpc-tls`; mixed `http,grpc,jwt,grpc-tls`; direct/renamed common/facade; generic client type shared across distinct wrappers; explicit native provider overrides. Assert core dependency tree excludes transport/JWT and the Core manifest has no direct Serde dependency and vendored compiler/build tools stay out of Furnace normal dependencies. Include compile-fail policy/descriptor grammar acceptance targets in CI.
 
   ```rust
   assert!(!core_normal_tree.contains("tonic v"));
-  assert!(!core_normal_tree.contains("serde v"));
+  // TOML retains its baseline transitive Serde dependency.
+  assert!(!core_manifest.contains("serde.workspace"));
   assert!(!facade_normal_tree.contains("protoc-bin-vendored v"));
   ```
 - [ ] Run the matrix target and record failing missing scenarios before finishing exports/docs/consumer wiring. Implement the example using application-owned `tonic-prost-build` plus vendored compiler configured safely through `Config::protoc_executable`. Exercise all shapes, protected calls, explicit client tokens, token provider, health and guarded reflection in a deterministic example integration test.
