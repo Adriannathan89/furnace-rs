@@ -1,6 +1,6 @@
 # gRPC server and client transport
 
-Status: approved by the user on 2026-10-14. The user approved the confirmed requirements and concrete API, validation, diagnostic, and compatibility design. Implementation has not started; the implementation plan is awaiting review.
+Status: approved by the user on 2026-10-14. The user approved the confirmed requirements and concrete API, validation, diagnostic, and compatibility design. The user selected native execution after plan review. Implementation is in progress.
 
 Branch: `feat/grpc-method`.
 

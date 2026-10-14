@@ -120,13 +120,14 @@ mod authentication;
 mod context;
 mod error;
 mod guard;
+#[cfg(feature = "http")]
 mod http;
 mod policy;
 mod principal;
 pub(crate) mod scope;
 mod strategy;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "http"))]
 mod shared_tests;
 
 pub use context::PassportContext;
@@ -135,11 +136,15 @@ pub use context::PassportCookies;
 pub use error::{PassportError, PassportErrorKind, PassportResult};
 pub use guard::{
     BuiltinGuardAdapter, GuardCatalog, GuardDescriptor, GuardPolicy, GuardPredicate,
-    GuardPredicateAdapter, NativePassportGuardService, PassportGuard, PassportGuardBuilder,
-    PassportGuardLayer, PassportGuardService, PassportGuardState, PolicyClause, PolicyMode,
-    TokenSource,
+    GuardPredicateAdapter, PolicyClause, PolicyMode, TokenSource,
 };
+#[cfg(feature = "http")]
 pub use http::PassportRejection;
+#[cfg(feature = "http")]
+pub use http::{
+    NativePassportGuardService, PassportGuard, PassportGuardBuilder, PassportGuardLayer,
+    PassportGuardService, PassportGuardState,
+};
 pub use principal::{Authenticated, ClaimsPrincipal, PassportPrincipal, VerifiedToken};
 pub use strategy::{
     ErasedAuthentication, PassportStrategy, PassportStrategyAdapter, PassportStrategyBinding,

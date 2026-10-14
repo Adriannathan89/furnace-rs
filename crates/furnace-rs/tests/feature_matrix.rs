@@ -81,6 +81,35 @@ fn jwt_only_excludes_http_and_database_dependencies() {
 }
 
 #[test]
+fn grpc_jwt_does_not_enable_http_adapter_or_cookie_dependencies() {
+    let tree = dependency_tree("grpc,jwt");
+    assert!(tree.contains("tonic v"));
+    assert!(tree.contains("jsonwebtoken v"));
+    for forbidden in [
+        "axum-extra v",
+        "tower-http v",
+        "cookie v",
+        "sea-orm v",
+        "protoc-bin-vendored v",
+    ] {
+        assert!(
+            !tree.contains(forbidden),
+            "unexpected dependency: {forbidden}\n{tree}"
+        );
+    }
+}
+
+#[test]
+fn grpc_stays_opt_in_for_default_and_jwt_only_consumers() {
+    for tree in [default_dependency_tree(), dependency_tree("jwt")] {
+        assert!(
+            !tree.contains("tonic v"),
+            "unexpected gRPC dependency\n{tree}"
+        );
+    }
+}
+
+#[test]
 fn http_includes_validation_and_rest_without_database_or_jwt() {
     let tree = dependency_tree("http");
     for required in [

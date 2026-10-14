@@ -1,6 +1,6 @@
 # gRPC Transport Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking. Execution method is pending user selection; do not implement before plan review.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking. Execution method: native, approved by the user. Implementer works in this session; independent whole-branch review follows verification.
 
 **Goal:** Serve and consume all four protobuf-defined gRPC shapes through Furnace DI, configuration-selected runtimes, Passport/JWT, TLS, and offline CLI inspection.
 
@@ -69,17 +69,17 @@ Test processes use loopback port-zero listeners, explicit shutdown channels, bou
 
 **Interfaces:** Preserve `PassportStrategy::validate(&self, &PassportContext<'_>, &JwtClaims<Self::Claims>)`, existing principal/token wrappers, and public HTTP guard APIs. Produce neutral `ScopedGuard` carrying static guard, occurrence identity and requester `TypeId`; neutral `GuardOccurrence { provider: TypeId, operation: String }`; `authenticate_bearer(&ApplicationContext, PassportStrategyAdapter, &http::HeaderMap, &http::Method, &http::Uri, Option<SocketAddr>) -> impl Future<Output = PassportResult<ErasedAuthentication>> + Send`; `authorizes(&GuardDescriptor, &ErasedAuthentication) -> bool`. Keep `PassportStrategyCatalog::preflight_scoped` signature over neutral `ScopedGuard`.
 
-- [ ] Write focused neutral-context tests: `bearer_context_strips_credentials` asserts no Authorization/Proxy-Authorization/Cookie; `shared_policy_keeps_and_clauses` asserts role-any AND permission-all AND predicates; `http_adapter_retains_typed_extensions` verifies the same principal/token allocations. Existing custom-strategy, cookie, visibility, rejection and Send-future tests remain unchanged.
+- [x] Write focused neutral-context tests: `bearer_context_strips_credentials` asserts no Authorization/Proxy-Authorization/Cookie; `shared_policy_keeps_and_clauses` asserts role-any AND permission-all AND predicates; `http_adapter_retains_typed_extensions` verifies the same principal/token allocations. Existing custom-strategy, cookie, visibility, rejection and Send-future tests remain unchanged.
 
   Assertion excerpt for the sanitized context test:
   ```rust
   assert!(context.headers().get(http::header::AUTHORIZATION).is_none());
   assert!(context.headers().get(http::header::COOKIE).is_none());
   ```
-- [ ] Run `cargo test -p furnace-rs-common --all-features passport`; the new neutral entry points initially fail to compile. Record the failure before moving code.
-- [ ] Add optional workspace `http` 1.x metadata dependency, initially enabled by Furnace `http`, and extract shared units using its metadata/Extensions directly. Keep Axum `FromRequestParts`, response rendering, CookieJar access, HTTP request extraction, and HTTP route occurrence conversion in `passport/http.rs` or feature-gated adapter portions. Adapt existing hidden macro paths without changing application signatures. Preserve credential sanitation and exact Bearer parsing. Task 2 enables the neutral metadata dependency for gRPC too.
-- [ ] Run `cargo test -p furnace-rs-common --all-features passport`, `cargo test -p furnace-rs --all-features --test passport_ui`, and `cargo test -p furnace-rs --test feature_matrix`. Expected: shared tests pass, existing HTTP UI diagnostics/contracts pass, JWT-only normal dependencies still exclude Axum.
-- [ ] Stage only Task 1 files and commit `refactor(passport): separate authentication policy from HTTP adapters`.
+- [x] Run `cargo test -p furnace-rs-common --all-features passport`; the new neutral entry points initially fail to compile. Record the failure before moving code.
+- [x] Add optional workspace `http` 1.x metadata dependency, initially enabled by Furnace `http`, and extract shared units using its metadata/Extensions directly. Keep Axum `FromRequestParts`, response rendering, CookieJar access, HTTP request extraction, and HTTP route occurrence conversion in `passport/http.rs` or feature-gated adapter portions. Adapt existing hidden macro paths without changing application signatures. Preserve credential sanitation and exact Bearer parsing. Task 2 enables the neutral metadata dependency for gRPC too.
+- [x] Run `cargo test -p furnace-rs-common --all-features passport`, `cargo test -p furnace-rs --all-features --test passport_ui`, and `cargo test -p furnace-rs --test feature_matrix`. Expected: shared tests pass, existing HTTP UI diagnostics/contracts pass, JWT-only normal dependencies still exclude Axum.
+- [x] Stage only Task 1 files and commit `refactor(passport): separate authentication policy from HTTP adapters`.
 
 ### Task 2: Add gRPC features, configuration, errors, and generated test contracts
 
@@ -277,4 +277,4 @@ Test processes use loopback port-zero listeners, explicit shutdown channels, bou
 
 Published release/API checks support the chosen library lines: [Tonic 0.14.6 and its declared Rust floor](https://docs.rs/crate/tonic/0.14.6), [Prost 0.14.4](https://docs.rs/crate/prost/0.14.4), [Tonic Prost build APIs](https://docs.rs/tonic-prost-build/latest/tonic_prost_build/struct.Builder.html), [safe protoc executable configuration](https://docs.rs/prost-build/0.14.3/prost_build/struct.Config.html#method.protoc_executable), and [vendored compiler 3.3.0](https://docs.rs/crate/protoc-bin-vendored/3.3.0). These checks are not a substitute for locked dependency builds on Rust 1.94.
 
-**Plan review required:** The user approved the spec, not this plan's execution. Recommend subagent-driven execution because changes to authentication, streaming and shared lifecycle warrant separate task reviews; it costs additional agent contexts. Native execution is available if the user prefers one implementer and a final independent review. Preserve the user's selection, and continue on their specified feature branch.
+**Execution approved:** The user selected native execution after receiving the plan. Implement the tasks in this session, obtain a final independent review, and preserve `feat/grpc-method`. Raise newly discovered requirement ambiguity before choosing behavior.

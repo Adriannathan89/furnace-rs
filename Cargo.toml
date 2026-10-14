@@ -10,6 +10,7 @@ members = [
     "crates/furnace-rs-cli",
     "crates/furnace-rs-extra",
     "crates/furnace-rs-testing",
+    "tests/grpc-support",
 ]
 
 [workspace.package]
@@ -53,6 +54,14 @@ toml_edit = "=0.22.27"
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors"] }
 tracing = "0.1"
+tonic = { version = "0.14.6", default-features = false }
+tonic-prost = "0.14.6"
+tonic-prost-build = "0.14.6"
+tonic-health = "0.14.6"
+tonic-reflection = "0.14.6"
+prost = "0.14.4"
+prost-types = "0.14.4"
+protoc-bin-vendored = "3.3.0"
 trybuild = "1"
 
 [workspace.lints.rust]

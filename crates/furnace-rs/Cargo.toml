@@ -23,6 +23,8 @@ tower.workspace = true
 trybuild.workspace = true
 
 [features]
+grpc = ["dep:furnace-rs-common", "furnace-rs-common/grpc"]
+grpc-tls = ["grpc", "furnace-rs-common/grpc-tls"]
 default = ["common", "runtime-tokio"]
 common = ["http", "logger"]
 http = ["dep:furnace-rs-common", "furnace-rs-common/http"]

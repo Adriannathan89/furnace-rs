@@ -1,0 +1,14 @@
+syntax = "proto3";
+package furnace.test.v1;
+
+message Item { uint64 value = 1; }
+message Summary { uint64 count = 1; uint64 total = 2; }
+
+service Transport {
+  rpc Unary(Item) returns (Item);
+  rpc ServerStream(Item) returns (stream Item);
+  rpc ClientStream(stream Item) returns (Summary);
+  rpc Bidi(stream Item) returns (stream Item);
+}
+
+service Hidden { rpc Secret(Item) returns (Item); }

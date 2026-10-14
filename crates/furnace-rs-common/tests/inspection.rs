@@ -1,4 +1,5 @@
 //! Integration coverage for the hidden inspection protocol.
+#![cfg(feature = "http")]
 
 use furnace_rs_common::__private::{
     DoctorCheck, GraphReport, INSPECTION_PROTOCOL_VERSION, InspectionEnvelope, InspectionKind,

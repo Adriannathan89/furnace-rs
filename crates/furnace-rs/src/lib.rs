@@ -196,9 +196,12 @@ pub use furnace_rs_core::{
 };
 
 /// Static guard policy metadata used by generated controller registration.
+#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+#[doc(hidden)]
+pub use furnace_rs_common::GuardPolicy;
 #[cfg(all(feature = "http", feature = "jwt"))]
 #[doc(hidden)]
-pub use furnace_rs_common::{GuardPolicy, SealEntry};
+pub use furnace_rs_common::SealEntry;
 /// Re-exports static controller protection declarations.
 #[cfg(feature = "http")]
 pub use furnace_rs_common::{SealDefinition, SealRegistration, Sealable};
@@ -232,7 +235,8 @@ pub use furnace_rs_core::{
     feature = "http",
     feature = "jwt",
     feature = "cookies",
-    feature = "logger"
+    feature = "logger",
+    feature = "grpc"
 ))]
 pub use furnace_rs_common as common;
 
@@ -291,12 +295,22 @@ pub use furnace_rs_common::{
 };
 
 /// Re-exports guarded Passport authentication and policy contracts.
-#[cfg(all(feature = "http", feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
 pub use furnace_rs_common::{
     Authenticated, ClaimsPrincipal, FURNACE130, FURNACE131, PassportContext, PassportError,
-    PassportErrorKind, PassportGuard, PassportGuardBuilder, PassportPrincipal, PassportRejection,
-    PassportResult, PassportStrategy, TokenSource, VerifiedToken, guard, passport_strategy,
+    PassportErrorKind, PassportPrincipal, PassportResult, PassportStrategy, TokenSource,
+    VerifiedToken, guard, passport_strategy,
 };
+
+/// gRPC configuration and native Tonic types.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_common::{
+    GrpcClientConfig, GrpcClientError, GrpcClientResult, GrpcConnectionMode, GrpcServerConfig,
+    grpc, tonic,
+};
+/// HTTP-specific Passport middleware and rejections.
+#[cfg(all(feature = "http", feature = "jwt"))]
+pub use furnace_rs_common::{PassportGuard, PassportGuardBuilder, PassportRejection};
 
 /// Re-exports the managed-controller declaration attribute.
 #[cfg(feature = "http")]
@@ -328,6 +342,16 @@ pub use furnace_rs_extra as extra;
 
 /// Collects application-facing furnace-rs imports.
 pub mod prelude {
+    /// gRPC configuration and native protobuf transport contracts.
+    #[cfg(feature = "grpc")]
+    pub use furnace_rs_common::{
+        GrpcClientConfig, GrpcClientError, GrpcClientResult, GrpcConnectionMode, GrpcServerConfig,
+        tonic,
+    };
+    /// HTTP-specific Passport middleware and rejections.
+    #[cfg(all(feature = "http", feature = "jwt"))]
+    pub use furnace_rs_common::{PassportGuard, PassportGuardBuilder, PassportRejection};
+
     /// Static controller protection declarations.
     #[cfg(feature = "http")]
     pub use furnace_rs_common::{SealRegistration, Sealable};
@@ -374,12 +398,11 @@ pub mod prelude {
     };
 
     /// Re-exports application-facing Passport guards, strategies, and extractors.
-    #[cfg(all(feature = "http", feature = "jwt"))]
+    #[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
     pub use furnace_rs_common::{
         Authenticated, ClaimsPrincipal, FURNACE130, FURNACE131, PassportContext, PassportError,
-        PassportErrorKind, PassportGuard, PassportGuardBuilder, PassportPrincipal,
-        PassportRejection, PassportResult, PassportStrategy, TokenSource, VerifiedToken, guard,
-        passport_strategy,
+        PassportErrorKind, PassportPrincipal, PassportResult, PassportStrategy, TokenSource,
+        VerifiedToken, guard, passport_strategy,
     };
 
     /// Re-exports the standard logger façade, backend contract, and global module.
