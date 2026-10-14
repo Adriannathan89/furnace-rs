@@ -292,7 +292,10 @@ mod tests {
         let mut output = client.server_stream(request()).await.unwrap().into_inner();
         NOW.store(decoded.registered.expires_at, Ordering::SeqCst);
         tokio::time::pause();
-        tokio::time::advance(Duration::from_secs(decoded.registered.expires_at - decoded.registered.issued_at)).await;
+        tokio::time::advance(Duration::from_secs(
+            decoded.registered.expires_at - decoded.registered.issued_at,
+        ))
+        .await;
         tokio::time::resume();
         send.send(Ok(pb::Item { value: 13 })).await.unwrap();
         drop(send);
