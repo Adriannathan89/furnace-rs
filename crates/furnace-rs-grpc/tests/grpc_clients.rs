@@ -717,3 +717,83 @@ async fn establishment_deadline_bounds_remote_response_wait() {
     app.shutdown().await.unwrap();
     server.stop().await;
 }
+
+#[test]
+fn bearer_helper_redacts_credentials_from_native_request_debug() {
+    let mut request = tonic::Request::new(());
+    set_grpc_bearer_token(&mut request, "private-credential-sentinel").unwrap();
+    assert!(!format!("{request:?}").contains("private-credential-sentinel"));
+}
+
+#[tokio::test]
+async fn bearer_sources_use_http2_never_indexed_encoding() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    for provider in [true, false] {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!("http://{}", listener.local_addr().unwrap());
+        let capture = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut preface = [0; 24];
+            socket.read_exact(&mut preface).await.unwrap();
+            assert_eq!(&preface, b"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n");
+            socket
+                .write_all(&[0, 0, 0, 4, 0, 0, 0, 0, 0])
+                .await
+                .unwrap();
+            loop {
+                let mut frame = [0; 9];
+                socket.read_exact(&mut frame).await.unwrap();
+                let length = (usize::from(frame[0]) << 16)
+                    | (usize::from(frame[1]) << 8)
+                    | usize::from(frame[2]);
+                let mut payload = vec![0; length];
+                socket.read_exact(&mut payload).await.unwrap();
+                if frame[3] == 4 && frame[4] & 1 == 0 {
+                    socket
+                        .write_all(&[0, 0, 0, 4, 1, 0, 0, 0, 0])
+                        .await
+                        .unwrap();
+                }
+                if frame[3] == 1 {
+                    assert_ne!(
+                        frame[4] & 4,
+                        0,
+                        "small test metadata unexpectedly used CONTINUATION"
+                    );
+                    return payload;
+                }
+            }
+        });
+        let mut app = app(
+            &endpoint,
+            &endpoint,
+            &[("grpc.clients.alpha.request_timeout_ms", "1000")],
+        )
+        .await;
+        app.start().await.unwrap();
+        let mut request = tonic::Request::new(pb::Item { value: 0 });
+        if !provider {
+            request.metadata_mut().insert(
+                "authorization",
+                "Bearer explicit-sensitive-credential".parse().unwrap(),
+            );
+        }
+        // The capture peer closes after receiving headers, without returning an RPC response.
+        assert!(
+            app.context()
+                .resolve::<Alpha>()
+                .unwrap()
+                .client()
+                .secret(request)
+                .await
+                .is_err()
+        );
+        let headers = capture.await.unwrap();
+        // HPACK literal never-indexed (four-bit prefix), static name index 23 = authorization.
+        assert!(
+            headers.windows(2).any(|pair| pair == [0x1f, 0x08]),
+            "authorization was not encoded never-indexed: {headers:02x?}"
+        );
+        app.shutdown().await.unwrap();
+    }
+}

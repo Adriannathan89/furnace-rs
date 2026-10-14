@@ -24,7 +24,7 @@ pub(super) type Tls = ();
 pub(super) async fn prepare_tls(config: &crate::GrpcServerConfig) -> furnace_rs_core::Result<Tls> {
     #[cfg(feature = "tls")]
     {
-        use tokio_rustls::rustls::{
+        use rustls::{
             self,
             pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
         };

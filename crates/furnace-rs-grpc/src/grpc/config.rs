@@ -225,6 +225,9 @@ impl GrpcClientConfig {
                 if value.is_empty() || value.chars().any(char::is_control) {
                     return Err(invalid(config, &domain_key, "invalid server name"));
                 }
+                #[cfg(feature = "tls")]
+                rustls::pki_types::ServerName::try_from(value.to_owned())
+                    .map_err(|_| invalid(config, &domain_key, "invalid server name"))?;
                 Some(value.to_owned())
             } else {
                 None

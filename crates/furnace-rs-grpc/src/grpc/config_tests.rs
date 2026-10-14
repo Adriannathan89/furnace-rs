@@ -146,3 +146,16 @@ fn grpc_config_rejects_scalar_tables() {
         );
     }
 }
+
+#[cfg(feature = "tls")]
+#[test]
+fn invalid_tls_server_name_is_rejected_without_startup_io() {
+    let settings = config(&[
+        ("grpc.clients.remote.endpoint", "https://localhost:50051"),
+        (
+            "grpc.clients.remote.tls.domain_name",
+            "not a valid server name",
+        ),
+    ]);
+    assert!(GrpcClientConfig::parse(&settings, "remote").is_err());
+}

@@ -54,9 +54,12 @@ fn bearer_value(
     if crate::common::__transport::parse_bearer(&headers) != Some(token) {
         return Err(GrpcClientError::invalid_credential());
     }
-    format!("Bearer {token}")
-        .parse()
-        .map_err(|_| GrpcClientError::invalid_credential())
+    let mut value: tonic::metadata::MetadataValue<tonic::metadata::Ascii> =
+        format!("Bearer {token}")
+            .parse()
+            .map_err(|_| GrpcClientError::invalid_credential())?;
+    value.set_sensitive(true);
+    Ok(value)
 }
 struct State {
     config: GrpcClientConfig,
@@ -164,6 +167,11 @@ impl Service<http::Request<Body>> for GrpcChannel {
                         http::HeaderValue::from_bytes(value.as_encoded_bytes())
                             .expect("validated bearer metadata"),
                     );
+                }
+                // Preserve privacy through debug formatting and HPACK never-index encoding,
+                // including credentials supplied directly by applications.
+                if let Some(value) = request.headers_mut().get_mut(http::header::AUTHORIZATION) {
+                    value.set_sensitive(true);
                 }
                 let mut channel = this.channel().await?;
                 channel.ready().await.map_err(GrpcClientError::transport)?;
