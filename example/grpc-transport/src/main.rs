@@ -1,24 +1,24 @@
 use furnace::prelude::*;
 use furnace_rs_example_grpc_transport::{
     app::{App, Consumer},
+    auth::DemoClaims,
     client::{Remote, exercise},
 };
+use std::time::Duration;
 
 #[furnace::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if std::env::args().nth(1).as_deref() != Some("client") {
+    let command = std::env::args().nth(1);
+    if command.as_deref() == Some("token") {
+        issue_demo_token().await?;
+        return Ok(());
+    }
+    if command.as_deref() != Some("client") {
         Furnace::burn::<App>().await?;
         return Ok(());
     }
-    let config = ConfigBuilder::new()
-        .dotenv(furnace::core::DotenvSource::optional(".env"))
-        .source(furnace::core::TomlSource::optional("furnace.toml"))
-        .source(furnace::core::EnvSource::new("FURNACE_"))
-        .source(furnace::core::MapSource::new(
-            "client mode",
-            [("grpc.reflection.enabled", "false")],
-        ))
-        .build()?;
+
+    let config = consumer_config()?;
     let mut builder = Furnace::builder_with_config(config);
     builder.root::<Consumer>()?;
     let mut app = builder.build().await?;
@@ -29,5 +29,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     result?;
     shutdown?;
     println!("Unary, server stream, client stream, and bidirectional calls passed.");
+    Ok(())
+}
+
+fn consumer_config() -> furnace::core::Result<furnace::core::Config> {
+    ConfigBuilder::new()
+        .dotenv(furnace::core::DotenvSource::optional(".env"))
+        .source(furnace::core::TomlSource::optional("furnace.toml"))
+        .source(furnace::core::EnvSource::new("FURNACE_"))
+        .source(furnace::core::MapSource::new(
+            "client mode",
+            [("grpc.reflection.enabled", "false")],
+        ))
+        .build()
+}
+
+async fn issue_demo_token() -> Result<(), Box<dyn std::error::Error>> {
+    let mut builder = Furnace::builder_with_config(consumer_config()?);
+    builder.root::<Consumer>()?;
+    let app = builder.build().await?;
+    let jwt = app.context().resolve::<JwtService>()?;
+    let token = jwt.sign(
+        DemoClaims::reader(),
+        JwtSignOptions::access(Duration::from_secs(300)),
+    )?;
+    println!("{token}");
     Ok(())
 }

@@ -52,11 +52,19 @@ fn prepare<'a>(
         };
         let scope = crate::http_scope::HttpApplicationScope::for_application(app)
             .map_err(RuntimeError::Bootstrap)?;
-        let summary = scope
+        let routes = scope
             .route_records()
-            .map(|(_, r)| format!("{}  {}", r.method().as_str(), r.full_path()))
-            .collect::<Vec<_>>()
-            .join("\n");
+            .map(|(_, route)| route)
+            .collect::<Vec<_>>();
+        let mut summary = format!("Routes  {}", routes.len());
+        if !routes.is_empty() {
+            let rows = routes
+                .iter()
+                .map(|route| format!("{:<6}  {}", route.method().as_str(), route.full_path()))
+                .collect::<Vec<_>>()
+                .join("\n");
+            summary.push_str(&format!("\n\nMETHOD  PATH\n──────  ────\n{rows}"));
+        }
         let debug = app.context().config().get("furnace.mode") == Some("debug");
         Ok(PreparedTransport {
             name: "http",

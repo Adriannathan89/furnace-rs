@@ -2,7 +2,7 @@
 use super::{ApplicationRuntimeError, RuntimeTasks};
 use furnace_rs_core::{Diagnostic, DiagnosticCode, Error, Furnace};
 use futures_util::future::BoxFuture;
-use std::{future::Future, time::Duration};
+use std::{future::Future, io::IsTerminal, time::Duration};
 use tokio::{net::TcpListener, sync::watch};
 /// Prepared transport's supervised serving operation.
 #[doc(hidden)]
@@ -92,8 +92,16 @@ where
             transition(true).await;
         }
     }
-    println!("\nFURNACE · Application ready");
-    for (transport, listener) in transports.iter().zip(&listeners) {
+    let clear = if std::io::stdout().is_terminal() {
+        "\x1b[2J\x1b[H"
+    } else {
+        ""
+    };
+    println!("{clear}\n\nFURNACE · Application ready\n────────────────────────────");
+    for (index, (transport, listener)) in transports.iter().zip(&listeners).enumerate() {
+        if index > 0 {
+            println!();
+        }
         println!(
             "Server  {}://{}\n{}",
             transport.name,
@@ -104,6 +112,7 @@ where
             transport.summary
         );
     }
+    println!();
     let deadline = transports.iter().filter_map(|t| t.drain_timeout).min();
     let tasks = RuntimeTasks::new();
     let (stop, stopped) = watch::channel(false);

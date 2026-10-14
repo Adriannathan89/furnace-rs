@@ -1,5 +1,5 @@
 [furnace]
-transports = ["grpc"]
+transports = ["http", "grpc"]
 
 [grpc.server]
 host = "127.0.0.1"

@@ -71,15 +71,39 @@ fn prepare<'a>(
             .await
             .map_err(ApplicationRuntimeError::Bootstrap)?;
         let handshake = config.tls_handshake_timeout();
+        let methods = scope
+            .services()
+            .iter()
+            .flat_map(|service| {
+                service
+                    .methods()
+                    .iter()
+                    .map(move |method| (service.name(), method.name.as_str()))
+            })
+            .collect::<Vec<_>>();
+        let service_width = methods
+            .iter()
+            .map(|(service, _)| service.len())
+            .max()
+            .unwrap_or(0)
+            .max("SERVICE".len());
+        let mut summary = format!("Methods  {}", methods.len());
+        if !methods.is_empty() {
+            let rows = methods
+                .iter()
+                .map(|(service, method)| format!("{service:service_width$}  {method}"))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let service_header = format!("{:<service_width$}", "SERVICE");
+            let service_rule = "─".repeat(service_width);
+            summary.push_str(&format!(
+                "\n\n{service_header}  METHOD\n{service_rule}  ──────\n{rows}"
+            ));
+        }
         Ok(PreparedTransport {
             name: "grpc",
             address: config.address().to_string(),
-            summary: scope
-                .services()
-                .iter()
-                .flat_map(|s| s.methods().iter().map(|m| m.path.clone()))
-                .collect::<Vec<_>>()
-                .join("\n"),
+            summary,
             drain_timeout: Some(config.shutdown_timeout()),
             transition: Some(Box::new(move |serving| {
                 let mut health = health.clone();

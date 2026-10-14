@@ -9,7 +9,7 @@ From this directory, create a local signing secret and start the server:
 ```sh
 umask 077
 printf 'DEMO_JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env
-cargo run
+cargo run --features http
 ```
 
 In another terminal, from the same directory:
@@ -22,12 +22,67 @@ The client resolves `Remote` through DI, calls its native generated `client()` A
 and obtains a fresh Bearer credential from `Tokens` for each call. This example
 mints local demo credentials with the same application key. Production token
 providers can retrieve credentials from their issuer using the same async trait.
-Credentials are never printed or committed.
+The client keeps credentials in memory. The `token` command writes a short-lived
+demo credential to stdout so a shell can capture it; do not echo or commit it.
 
 `Unary` is explicitly public. The other three methods require the reader role,
 `demo:use` permission, and an authored predicate, then receive the typed principal.
 Health Check/Watch is public. Reflection is explicitly enabled and uses the same
 root guard; reflection authorization does not authorize invoking business methods.
+
+## Call the RPCs with grpcurl
+
+Install [grpcurl](https://github.com/fullstorydev/grpcurl#installation), then keep
+the server running in another terminal. From this directory, capture a five-minute
+demo token in a shell variable:
+
+```sh
+TOKEN="$(cargo run --quiet -- token)"
+```
+
+The commands use the local proto file, so they do not need to call the guarded
+reflection service. `Unary` is public:
+
+```sh
+grpcurl -plaintext -import-path proto -proto transport.proto \
+  -d '{"value": 7}' \
+  127.0.0.1:50051 demo.v1.Transport/Unary
+```
+
+The other methods require the Bearer token. `ServerStream` returns values 0, 1,
+and 2 for this request:
+
+```sh
+grpcurl -plaintext -import-path proto -proto transport.proto \
+  -H "authorization: Bearer ${TOKEN}" \
+  -d '{"value": 3}' \
+  127.0.0.1:50051 demo.v1.Transport/ServerStream
+```
+
+For client streaming, provide one JSON request per line on stdin. The server
+returns a count of 2 and a total of 7:
+
+```sh
+grpcurl -plaintext -import-path proto -proto transport.proto \
+  -H "authorization: Bearer ${TOKEN}" \
+  -d @ \
+  127.0.0.1:50051 demo.v1.Transport/ClientStream <<'EOF'
+{"value": 2}
+{"value": 5}
+EOF
+```
+
+The bidirectional method echoes each streamed value:
+
+```sh
+grpcurl -plaintext -import-path proto -proto transport.proto \
+  -H "authorization: Bearer ${TOKEN}" \
+  -d @ \
+  127.0.0.1:50051 demo.v1.Transport/Bidi <<'EOF'
+{"value": 11}
+{"value": 13}
+EOF
+```
 
 ```sh
 cargo test
@@ -40,15 +95,10 @@ Only synthetic test signing material appears in the test source.
 
 ## Mixed HTTP/gRPC mode
 
-Change `[furnace]` to `transports = ["http", "grpc"]`, then run:
-
-```sh
-cargo run --features http
-```
-
-The same application serves HTTP `/health` on port 3000 and gRPC on port 50051.
-Both listeners share one DI graph and lifecycle. Missing transport selection in
-an HTTP build preserves the HTTP-only default.
+The included configuration selects both transports. The same application serves
+HTTP `/health` on port 3000 and gRPC on port 50051. Both listeners share one DI
+graph and lifecycle. Missing transport selection in an HTTP build preserves the
+HTTP-only default.
 
 ## Local verified TLS
 
