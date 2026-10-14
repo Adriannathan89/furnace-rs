@@ -1,5 +1,5 @@
 error: dependency fields require #[inject]
- --> tests/ui-grpc/fail/missing-inject.rs:7:18
+ --> tests/ui-grpc/fail/stable/missing-inject.rs:7:18
   |
 7 | struct Service { dependency: Dependency }
   |                  ^^^^^^^^^^

@@ -1,5 +1,5 @@
-error[E0277]: the trait bound `Ordinary: furnace_rs_core::__private::TransportProvider` is not satisfied
- --> tests/ui-grpc/fail/no-service-metadata.rs:4:29
+error[E0277]: the trait bound `Ordinary: TransportProvider` is not satisfied
+ --> tests/ui-grpc/fail/msrv/no-service-metadata.rs:4:29
   |
 4 | #[cauldron(grpc_services = [Ordinary])]
   | ----------------------------^^^^^^^^---
@@ -7,8 +7,8 @@ error[E0277]: the trait bound `Ordinary: furnace_rs_core::__private::TransportPr
   | |                           unsatisfied trait bound
   | required by a bound introduced by this call
   |
-help: the trait `furnace_rs_core::__private::TransportProvider` is not implemented for `Ordinary`
- --> tests/ui-grpc/fail/no-service-metadata.rs:2:1
+help: the trait `TransportProvider` is not implemented for `Ordinary`
+ --> tests/ui-grpc/fail/msrv/no-service-metadata.rs:2:1
   |
 2 | #[burner]
   | ^^^^^^^^^

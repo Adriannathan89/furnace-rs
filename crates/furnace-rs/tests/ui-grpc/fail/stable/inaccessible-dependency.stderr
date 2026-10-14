@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, __FurnaceSharedSlot0>>>>: furnace_rs_core::__private::Lookup<Dependency, _>` is not satisfied
-  --> tests/ui-grpc/fail/inaccessible-dependency.rs:20:8
+  --> tests/ui-grpc/fail/stable/inaccessible-dependency.rs:20:8
    |
 20 | struct App;
    |        ^^^ unsatisfied trait bound
@@ -14,7 +14,7 @@ help: `furnace_rs_core::__private::Branch<L, R>` implements trait `furnace_rs_co
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::Lookup<T, furnace_rs_core::__private::Right<P>>`
    = note: required for `(Dependency,)` to implement `furnace_rs_core::__private::CheckDependencies<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, __FurnaceSharedSlot0>>>>, (_,)>`
 note: required for `__FurnaceAppMetadata` to implement `furnace_rs_core::__private::CheckModule<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<false, __FurnaceSharedSlot0>>>>, ((_,),)>`
-  --> tests/ui-grpc/fail/inaccessible-dependency.rs:19:1
+  --> tests/ui-grpc/fail/stable/inaccessible-dependency.rs:19:1
    |
 19 | #[cauldron(root, imports = [Shared], grpc_services = [Service])]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound introduced here
