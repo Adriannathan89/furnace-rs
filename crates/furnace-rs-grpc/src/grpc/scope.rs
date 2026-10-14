@@ -309,6 +309,15 @@ fn metadata_error(descriptor: Option<&GrpcServiceDescriptor>, message: &'static 
     Error::new(diagnostic)
 }
 
+fn rust_method_name(wire_name: &str) -> String {
+    use heck::ToSnakeCase;
+    let mut name = wire_name.to_snake_case();
+    if matches!(name.as_str(), "self" | "super" | "crate" | "extern" | "_") {
+        name.push('_');
+    }
+    name
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::GrpcMethodOverride;
@@ -371,13 +380,4 @@ mod tests {
             FURNACE150
         );
     }
-}
-
-fn rust_method_name(wire_name: &str) -> String {
-    use heck::ToSnakeCase;
-    let mut name = wire_name.to_snake_case();
-    if matches!(name.as_str(), "self" | "super" | "crate" | "extern" | "_") {
-        name.push('_');
-    }
-    name
 }
