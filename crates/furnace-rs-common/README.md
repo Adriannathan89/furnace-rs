@@ -139,7 +139,7 @@ one guard; `#[seal(skip)]` on an endpoint bypasses that guard's authentication
 and policy checks. Protection applies per HTTP method, including when public
 and protected methods share a path.
 
-The `2.0.0-beta.1` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
+The `2.0.0-beta.2` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
 
 The standalone [`furnace-rs-grpc`](../furnace-rs-grpc/README.md) crate owns all
 native gRPC APIs and dependencies. Common supplies shared Passport contracts,

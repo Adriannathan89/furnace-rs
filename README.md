@@ -18,7 +18,7 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 cargo install furnace-rs-cli --version 1.0.2 --locked
 ```
 
-This checkout and its local examples target **2.0.0-beta.1**, with [declarative DI and compile-time root checking](docs/declarative-di.md). Version 2.0.0-beta.1 is prepared for release. To install the CLI
+This checkout and its local examples target **2.0.0-beta.2**, with [declarative DI and compile-time root checking](docs/declarative-di.md). Version 2.0.0-beta.2 is prepared for release. See the [beta.2 release notes](docs/releases/2.0.0-beta.2.md). To install the CLI
 from this checkout instead, use:
 
 ```sh
@@ -30,7 +30,7 @@ conversion, simpler CRUD examples with an optional service, debug request
 logging, the expanded route summary, and validated-extractor error redaction.
 Future changes belong under **Unreleased** in the changelog.
 
-Unreleased protobuf gRPC serving and consumption are available through the new
+Protobuf gRPC serving and consumption are available through the new
 standalone transport package or opt-in facade features. See the [gRPC guide](docs/grpc.md)
 and [all-shape example](example/grpc-transport/) for shared runtime, Passport/JWT,
 named clients, TLS, and static inspection.

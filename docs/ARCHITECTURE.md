@@ -228,7 +228,7 @@ and owning cauldron context. The Passport layer wraps each protected method rout
 See [the breaking migration guide](importance/furnace-rs-migration.md).
 
 
-## Unreleased gRPC and shared runtime
+## gRPC and shared runtime in 2.0.0-beta.2
 
 `furnace-rs-grpc` owns native Tonic/Prost service registration, scope validation,
 client wrappers, TLS, Passport admission adapters, health, reflection, and gRPC

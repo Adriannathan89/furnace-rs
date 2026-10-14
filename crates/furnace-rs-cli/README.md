@@ -123,7 +123,7 @@ See the [CLI reference](../../docs/CLI.md), the
 [workspace contribution guide](../../CONTRIBUTING.md), and the
 [inspection architecture](../../docs/ARCHITECTURE.md).
 
-Unreleased: `furnace grpc` inspects protobuf services, RPC shapes, and effective
+In FURNACE 2.0.0-beta.2, `furnace grpc` inspects protobuf services, RPC shapes, and effective
 Passport policies. It supports the usual target selectors and `--format json`,
 retains public schema version 2, and uses private application protocol 3.
 Inspection constructs no providers, connects no eager clients, and reads no TLS
