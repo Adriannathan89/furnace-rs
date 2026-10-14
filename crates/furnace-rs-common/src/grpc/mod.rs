@@ -27,3 +27,8 @@ pub use error::{
 };
 /// Native Tonic contracts for requests, responses, statuses, and streams.
 pub use tonic;
+
+#[cfg(feature = "jwt")]
+mod passport;
+#[cfg(feature = "jwt")]
+pub use passport::{GrpcPassportService, grpc_authenticated, grpc_verified_token, passport_status};

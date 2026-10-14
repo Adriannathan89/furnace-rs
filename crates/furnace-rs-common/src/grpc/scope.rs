@@ -61,11 +61,24 @@ impl GrpcApplicationScope {
     /// Selects and validates registrations without constructing providers or reading files.
     #[allow(clippy::result_large_err)]
     pub fn for_cauldron_graph(graph: Option<&CauldronGraph>) -> Result<Self> {
+        Self::select(graph, None)
+    }
+    /// Selects one managed implementation for focused fixtures.
+    #[doc(hidden)]
+    #[allow(clippy::result_large_err)]
+    pub fn for_focus(target: TypeId) -> Result<Self> {
+        Self::select(None, Some(target))
+    }
+    #[allow(clippy::result_large_err)]
+    fn select(graph: Option<&CauldronGraph>, focus: Option<TypeId>) -> Result<Self> {
         let mut descriptors: Vec<_> =
             furnace_rs_core::__private::inventory::iter::<GrpcServiceRegistration>
                 .into_iter()
                 .map(|entry| entry.descriptor)
                 .collect();
+        if let Some(target) = focus {
+            descriptors.retain(|d| d.provider_type_id() == target);
+        }
         if let Some(graph) = graph {
             let selected: BTreeSet<_> = graph.registered_transport_providers("grpc").collect();
             descriptors.retain(|d| selected.contains(&d.provider_type_id()));
@@ -90,6 +103,26 @@ impl GrpcApplicationScope {
     /// Returns selected services in fully qualified protobuf-name order.
     pub fn services(&self) -> &[ScopedGrpcService] {
         &self.services
+    }
+    #[cfg(feature = "jwt")]
+    pub(crate) fn guards(&self) -> Vec<crate::passport::scope::ScopedGuard> {
+        self.services
+            .iter()
+            .flat_map(|service| {
+                service.methods.iter().filter_map(move |method| {
+                    method
+                        .guard
+                        .map(|guard| crate::passport::scope::ScopedGuard {
+                            guard: guard.descriptor(),
+                            occurrence: Some(crate::passport::scope::GuardOccurrence {
+                                provider: service.descriptor.provider_type_id(),
+                                operation: method.path.clone(),
+                            }),
+                            context_cauldron: service.owner,
+                        })
+                })
+            })
+            .collect()
     }
     /// Returns merged descriptor files; service filtering is applied by reflection.
     #[doc(hidden)]
@@ -188,6 +221,12 @@ impl GrpcApplicationScope {
                 #[cfg(feature = "jwt")]
                 if let Some(guard) = guard {
                     crate::GuardCatalog::validate_descriptors(&[guard.descriptor()])?;
+                    if guard.descriptor().source() != crate::TokenSource::Bearer {
+                        return Err(metadata_error(
+                            Some(descriptor),
+                            "gRPC guards support authorization bearer metadata only",
+                        ));
+                    }
                 }
                 methods.push(GrpcMethodRecord {
                     path: format!("/{}/{name}", descriptor.name()),

@@ -6,6 +6,8 @@ use std::{any::TypeId, fmt};
 #[doc(hidden)]
 #[derive(Clone, Copy)]
 pub struct GrpcGuard {
+    #[cfg(not(feature = "jwt"))]
+    _private: (),
     #[cfg(feature = "jwt")]
     descriptor: fn() -> &'static crate::GuardDescriptor,
 }

@@ -489,6 +489,7 @@ impl PassportStrategyCatalog {
 ///
 /// This record contains no application-owned values. Its adapter obtains a
 /// managed strategy only after ordinary application construction has succeeded.
+#[derive(Clone)]
 pub struct PassportStrategyBinding<'a> {
     occurrence: Option<GuardOccurrence>,
     provider_type_id: Option<TypeId>,

@@ -357,6 +357,8 @@ pub mod prelude {
     /// HTTP-specific Passport middleware and rejections.
     #[cfg(all(feature = "http", feature = "jwt"))]
     pub use furnace_rs_common::{PassportGuard, PassportGuardBuilder, PassportRejection};
+    #[cfg(all(feature = "grpc", feature = "jwt"))]
+    pub use furnace_rs_common::{grpc_authenticated, grpc_verified_token};
 
     /// Static controller protection declarations.
     #[cfg(feature = "http")]
@@ -444,3 +446,6 @@ pub mod prelude {
         ProviderVisibility, Secret, SourceLocation,
     };
 }
+
+#[cfg(all(feature = "grpc", feature = "jwt"))]
+pub use furnace_rs_common::{grpc_authenticated, grpc_verified_token, passport_status};

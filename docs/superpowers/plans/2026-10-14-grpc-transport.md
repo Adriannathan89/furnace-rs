@@ -143,7 +143,7 @@ Test processes use loopback port-zero listeners, explicit shutdown channels, bou
 
 **Interfaces:** Consume Task 1 neutral authentication/policy and Task 3 static overrides. Produce `GrpcPassportService<S>` implementing the generated-server Tower service contract, `grpc_authenticated<P: PassportPrincipal, T>(&tonic::Request<T>) -> Result<Authenticated<P>, tonic::Status>`, `grpc_verified_token<C: Send + Sync + 'static, T>(&tonic::Request<T>) -> Result<VerifiedToken<C>, tonic::Status>`, and `passport_status(PassportError) -> tonic::Status`. Wrapped service preserves `NamedService::NAME` and clones safely.
 
-- [ ] Parameterize `grpc_guard_admission` over all four shapes and assert: missing/malformed/duplicate/expired/wrong-profile/invalid-signature credentials return `UNAUTHENTICATED`; role/permission/predicate rejection returns `PERMISSION_DENIED`; strategy operational failure returns generic `INTERNAL`. Handler/message-consumption counters remain zero for every rejection. Accessors return the exact principal and verified claims on success.
+- [x] Parameterize `grpc_guard_admission` over all four shapes and assert: missing/malformed/duplicate/expired/wrong-profile/invalid-signature credentials return `UNAUTHENTICATED`; role/permission/predicate rejection returns `PERMISSION_DENIED`; strategy operational failure returns generic `INTERNAL`. Handler/message-consumption counters remain zero for every rejection. Accessors return the exact principal and verified claims on success.
 
   Credential-rejection assertions:
   ```rust
@@ -151,11 +151,11 @@ Test processes use loopback port-zero listeners, explicit shutdown channels, bou
   assert_eq!(handler_calls.load(std::sync::atomic::Ordering::SeqCst), 0);
   assert_eq!(consumed_messages.load(std::sync::atomic::Ordering::SeqCst), 0);
   ```
-- [ ] Add `method_policy_replaces_service_policy`, `explicit_public_method_bypasses_service_guard`, `admitted_stream_survives_token_expiry_but_next_call_fails`, `grpc_strategy_context_is_sanitized`, `cookie_guard_rejected_during_preflight`, and `unreachable_strategy_cannot_satisfy_grpc_guard`. Run the target and confirm failures before middleware.
-- [ ] Implement async admission before invoking the generated server; use request HTTP method POST, canonical RPC URI, sanitized metadata and trusted socket peer for PassportContext. Convert errors with fixed messages `unauthenticated`, `permission denied`, `internal server error`, never HTTP JSON/status codes. Preserve typed extensions through Tonic conversion.
-- [ ] Extend JWT auto-configuration requirements to the union of selected HTTP/gRPC guards, preserving explicit JWT providers, strategy type/profile checks and cauldron visibility. Task 7 adds selected reflection guards to the same union. Static validation must run before provider construction. Admission validates once per call and does not insert stream-expiry timers.
-- [ ] Run `cargo test -p furnace-rs-common --all-features --test grpc_passport`, existing Passport tests/UI, and the gRPC/JWT-only consumer on Rust 1.94. Expected: all guards work with Furnace `http` disabled and existing cookie/HTTP behavior remains intact.
-- [ ] Commit `feat(grpc): enforce Passport JWT policies at RPC admission`.
+- [x] Add `method_policy_replaces_service_policy`, `explicit_public_method_bypasses_service_guard`, `admitted_stream_survives_token_expiry_but_next_call_fails`, `grpc_strategy_context_is_sanitized`, `cookie_guard_rejected_during_preflight`, and `unreachable_strategy_cannot_satisfy_grpc_guard`. Run the target and confirm failures before middleware.
+- [x] Implement async admission before invoking the generated server; use request HTTP method POST, canonical RPC URI, sanitized metadata and trusted socket peer for PassportContext. Convert errors with fixed messages `unauthenticated`, `permission denied`, `internal server error`, never HTTP JSON/status codes. Preserve typed extensions through Tonic conversion.
+- [x] Extend JWT auto-configuration requirements to the union of selected HTTP/gRPC guards, preserving explicit JWT providers, strategy type/profile checks and cauldron visibility. Task 7 adds selected reflection guards to the same union. Static validation must run before provider construction. Admission validates once per call and does not insert stream-expiry timers.
+- [x] Run `cargo test -p furnace-rs-common --all-features --test grpc_passport`, existing Passport tests/UI, and the gRPC/JWT-only consumer on Rust 1.94. Expected: all guards work with Furnace `http` disabled and existing cookie/HTTP behavior remains intact.
+- [x] Commit `feat(grpc): enforce Passport JWT policies at RPC admission`.
 
 ### Task 6: Build injectable named clients with readiness and outgoing credentials
 

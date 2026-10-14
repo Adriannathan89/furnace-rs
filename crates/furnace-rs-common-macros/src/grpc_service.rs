@@ -210,7 +210,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             let server = #server::from_arc(implementation)
                 .max_encoding_message_size(context.config.max_encoding_message_bytes())
                 .max_decoding_message_size(context.config.max_decoding_message_bytes());
-            Ok(routes.add_service(server))
+            context.add_service::<#ty, _>(server, routes)
         }
         #(#cfg)*
         #[doc(hidden)]

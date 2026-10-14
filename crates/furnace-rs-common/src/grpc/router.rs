@@ -44,3 +44,60 @@ pub fn build_grpc_routes(application: &Furnace) -> Result<Routes> {
     }
     Ok(routes)
 }
+
+impl GrpcRegistrationContext<'_> {
+    /// Installs a generated server with its already validated method policies.
+    #[doc(hidden)]
+    #[allow(clippy::result_large_err)]
+    pub fn add_service<T: super::GrpcService, S>(&self, server: S, routes: Routes) -> Result<Routes>
+    where
+        S: tower::Service<
+                http::Request<tonic::body::Body>,
+                Response = http::Response<tonic::body::Body>,
+                Error = std::convert::Infallible,
+            > + tonic::server::NamedService
+            + Clone
+            + Send
+            + Sync
+            + 'static,
+        S::Future: Send + 'static,
+    {
+        #[cfg(feature = "jwt")]
+        {
+            use crate::passport::scope::GuardOccurrence;
+            let guards = self.scope.guards();
+            let preflight = crate::PassportStrategyCatalog::preflight_scoped(
+                self.application.cauldron_graph(),
+                &guards,
+            )?;
+            let selected = self
+                .scope
+                .services()
+                .iter()
+                .find(|service| {
+                    service.descriptor().provider_type_id() == std::any::TypeId::of::<T>()
+                })
+                .expect("registrar is selected from scope");
+            let mut bindings = std::collections::BTreeMap::new();
+            for method in selected.methods() {
+                if method.guard.is_some() {
+                    let occurrence = GuardOccurrence {
+                        provider: std::any::TypeId::of::<T>(),
+                        operation: method.path.clone(),
+                    };
+                    let binding = preflight
+                        .binding_for_occurrence(&occurrence, selected.owner())
+                        .expect("selected guarded method has a preflight binding");
+                    bindings.insert(method.path.clone(), binding.clone());
+                }
+            }
+            Ok(routes.add_service(super::GrpcPassportService::new(
+                server,
+                self.application.context().clone(),
+                bindings,
+            )))
+        }
+        #[cfg(not(feature = "jwt"))]
+        Ok(routes.add_service(server))
+    }
+}

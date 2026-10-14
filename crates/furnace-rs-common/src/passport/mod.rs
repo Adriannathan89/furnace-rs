@@ -1,7 +1,6 @@
 //! Typed Passport principals, request context, and normalized failures.
 //!
-//! Passport is available only when both the `http` and `jwt` features are
-//! enabled. Guards install [`Authenticated`] principals and [`VerifiedToken`]
+//! Passport is available with `jwt` and either the `http` or `grpc` transport. Guards install [`Authenticated`] principals and [`VerifiedToken`]
 //! values into request extensions for typed handler extraction.
 //!
 //! A managed access strategy receives verified claims and returns the current
@@ -116,13 +115,13 @@
 //! permissions, and every synchronous `fn(&Principal) -> bool` predicate are
 //! separate AND clauses.
 
-mod authentication;
+pub(crate) mod authentication;
 mod context;
 mod error;
 mod guard;
 #[cfg(feature = "http")]
 mod http;
-mod policy;
+pub(crate) mod policy;
 mod principal;
 pub(crate) mod scope;
 mod strategy;

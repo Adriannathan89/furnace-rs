@@ -9,18 +9,87 @@ use furnace_rs_core::{
 #[derive(Clone)]
 pub(crate) struct SelectedGrpcMetadata(pub(crate) Result<GrpcApplicationScope, Vec<Diagnostic>>);
 impl SelectedGrpcMetadata {
-    pub(crate) fn select(graph: Option<&furnace_rs_core::CauldronGraph>) -> Self {
+    pub(crate) fn select(
+        graph: Option<&furnace_rs_core::CauldronGraph>,
+        focus: Option<std::any::TypeId>,
+    ) -> Self {
         Self(
-            GrpcApplicationScope::for_cauldron_graph(graph)
+            focus
+                .map_or_else(
+                    || GrpcApplicationScope::for_cauldron_graph(graph),
+                    GrpcApplicationScope::for_focus,
+                )
                 .map_err(|error| error.diagnostics().to_vec()),
         )
+    }
+    pub(crate) fn scope(self) -> furnace_rs_core::Result<GrpcApplicationScope> {
+        self.0.map_err(|diagnostics| {
+            let mut diagnostics = diagnostics.into_iter();
+            furnace_rs_core::Error::from_diagnostics(
+                diagnostics.next().expect("metadata error diagnostic"),
+                diagnostics,
+            )
+        })
     }
 }
 /// Validates selected protobuf metadata before provider construction.
 #[doc(hidden)]
 pub fn preflight_grpc(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
-    let selected = context.memoize(|| SelectedGrpcMetadata::select(context.cauldron_graph()));
-    selected.0.err().unwrap_or_default()
+    let result = context
+        .memoize(|| SelectedGrpcMetadata::select(context.cauldron_graph(), context.focus_type_id()))
+        .scope()
+        .and_then(|scope| {
+            #[cfg(feature = "jwt")]
+            {
+                let guards = scope.guards();
+                let strategies = if context.focus_type_id().is_some() {
+                    crate::PassportStrategyCatalog::preflight_for_test(&guards, |id| {
+                        context.has_output_type_id(id)
+                    })?
+                } else {
+                    crate::PassportStrategyCatalog::preflight_scoped(
+                        context.cauldron_graph(),
+                        &guards,
+                    )?
+                };
+                for binding in strategies.bindings() {
+                    if binding
+                        .provider_type_id()
+                        .is_some_and(|id| !context.has_output_type_id(id))
+                    {
+                        return Err(furnace_rs_core::Error::new(
+                            Diagnostic::new(
+                                crate::FURNACE130,
+                                "missing selected strategy output",
+                                "selected gRPC strategy must be available in the application scope",
+                            )
+                            .with_subject(binding.strategy())
+                            .with_location(binding.guard().location()),
+                        ));
+                    }
+                }
+                if !guards.is_empty()
+                    && !context.has_output::<crate::JwtService>()
+                    && !context
+                        .diagnostics()
+                        .iter()
+                        .any(|d| d.code() == crate::FURNACE121)
+                {
+                    return Err(furnace_rs_core::Error::new(Diagnostic::new(
+                        crate::FURNACE130,
+                        "missing selected JWT output",
+                        "selected gRPC policies require JwtService before construction",
+                    )));
+                }
+            }
+            #[cfg(not(feature = "jwt"))]
+            let _ = scope;
+            Ok(())
+        });
+    result
+        .err()
+        .map(|error| error.diagnostics().to_vec())
+        .unwrap_or_default()
 }
 furnace_rs_core::__private::inventory::submit! {
     PreflightDescriptor::new("furnace.common.grpc.preflight", SourceLocation::new(file!(), line!(), column!()), preflight_grpc)

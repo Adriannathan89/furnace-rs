@@ -74,7 +74,9 @@ where
     }
 }
 
-/// An Axum extractor for the principal installed by a successful guard.
+/// The typed principal installed by a successful guard.
+///
+/// Use HTTP extraction or `grpc_authenticated` with the corresponding transport.
 pub struct Authenticated<P>(Arc<P>);
 
 impl<P> Authenticated<P> {
@@ -107,7 +109,7 @@ impl<P> fmt::Debug for Authenticated<P> {
     }
 }
 
-/// An Axum extractor for the complete token installed by a successful guard.
+/// The complete verified token installed by a successful guard.
 pub struct VerifiedToken<C>(Arc<VerifiedJwt<C>>);
 
 impl<C> VerifiedToken<C> {
