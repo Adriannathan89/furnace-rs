@@ -1,0 +1,10 @@
+[furnace]
+transports = ["grpc"]
+[passport]
+secret = "inspection-secret-sentinel-which-must-never-be-rendered"
+[grpc.server.tls]
+certificate = "missing-certificate.pem"
+private_key = "missing-private-key.pem"
+[grpc.clients.remote]
+endpoint = "http://127.0.0.1:9"
+connect = "eager"

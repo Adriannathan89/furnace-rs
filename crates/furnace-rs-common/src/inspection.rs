@@ -11,16 +11,14 @@ use furnace_rs_core::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::cors::{CORS_AUTO_CONFIGURATION_ID, enable_automatic_cors};
+#[cfg(feature = "http")]
 use crate::http_scope::HttpApplicationScope;
+#[cfg(feature = "http")]
 use crate::route::validate_scoped_descriptors;
-use crate::server_config::{
-    SERVER_AUTO_CONFIGURATION_ID, enable_automatic_server, load_standard_config_from,
-};
-
+use crate::runtime::load_standard_config as load_standard_config_from;
 /// Version of the private application-inspection transport.
 #[doc(hidden)]
-pub const INSPECTION_PROTOCOL_VERSION: u32 = 2;
+pub const INSPECTION_PROTOCOL_VERSION: u32 = 3;
 /// Environment key carrying the requested private transport version.
 #[doc(hidden)]
 pub const INSPECTION_VERSION_ENV: &str = "FURNACE_INTERNAL_INSPECTION_VERSION";
@@ -49,6 +47,8 @@ static TEMPORARY_FILE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 pub enum InspectionKind {
     /// Selected HTTP routes.
     Routes,
+    /// Selected protobuf services and methods.
+    Grpc,
     /// The analyzed application graph.
     Graph,
     /// Grouped readiness checks.
@@ -139,6 +139,7 @@ impl InspectionRequest {
         }
         let kind = match unicode_field(kind.unwrap(), "inspection kind")?.as_str() {
             "routes" => InspectionKind::Routes,
+            "grpc" => InspectionKind::Grpc,
             "graph" => InspectionKind::Graph,
             "doctor" => InspectionKind::Doctor,
             _ => return Err(inspection_error("the private inspection kind is invalid")),
@@ -311,15 +312,20 @@ fn run_inspection<M: Cauldron>(
 
 pub(crate) fn try_run_inspection<M: Cauldron>(
     root: &Path,
-) -> Option<Result<(), crate::server::HttpRuntimeError>> {
+) -> Option<Result<(), crate::runtime::ApplicationRuntimeError>> {
     let request = match InspectionRequest::from_environment() {
         Ok(None) => return None,
         Ok(Some(request)) => request,
         Err(error) => {
-            return Some(Err(crate::server::HttpRuntimeError::Bootstrap(error)));
+            return Some(Err(crate::runtime::ApplicationRuntimeError::Bootstrap(
+                error,
+            )));
         }
     };
-    Some(run_inspection::<M>(root, request).map_err(crate::server::HttpRuntimeError::Bootstrap))
+    Some(
+        run_inspection::<M>(root, request)
+            .map_err(crate::runtime::ApplicationRuntimeError::Bootstrap),
+    )
 }
 
 /// An owned source location carried by the private inspection transport.
@@ -535,6 +541,8 @@ pub struct InspectionReport {
     pub graph: GraphReport,
     /// Selected route evidence.
     pub routes: Vec<RouteReport>,
+    /// Selected protobuf service evidence.
+    pub grpc_services: Vec<GrpcServiceReport>,
     /// Doctor checks.
     pub checks: Vec<DoctorCheck>,
     /// Framework diagnostics.
@@ -588,7 +596,7 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
     root: &Path,
     kind: InspectionKind,
 ) -> InspectionReport {
-    let (config, mut diagnostics, configuration_ok) = match load_standard_config_from(root) {
+    let (config, mut diagnostics, mut configuration_ok) = match load_standard_config_from(root) {
         Ok(config) => (config, Vec::new(), true),
         Err(error) => (
             Config::empty(),
@@ -597,7 +605,20 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
         ),
     };
 
-    let mut builder = Furnace::builder_with_config(config);
+    let adapters: Vec<_> =
+        furnace_rs_core::__private::inventory::iter::<crate::runtime::RuntimeTransportDescriptor>
+            .into_iter()
+            .collect();
+    let selection = crate::runtime::RuntimeSelection::parse(
+        &config,
+        adapters.iter().any(|a| a.name == "http"),
+        adapters.iter().any(|a| a.name == "grpc"),
+    );
+    if let Err(error) = &selection {
+        diagnostics.extend(diagnostic_reports(error.diagnostics()));
+        configuration_ok = false;
+    }
+    let mut builder = Furnace::builder_with_config(config.clone());
     let root_ok = match builder.root::<M>() {
         Ok(_) => true,
         Err(error) => {
@@ -605,15 +626,21 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
             false
         }
     };
-    let server_input_registered = enable_automatic_server(&mut builder);
-    debug_assert!(server_input_registered);
-    let cors_input_registered = enable_automatic_cors(&mut builder);
-    debug_assert!(cors_input_registered);
+    if let Ok(selection) = selection {
+        for adapter in adapters {
+            if (adapter.name == "http" && selection.http)
+                || (adapter.name == "grpc" && selection.grpc)
+            {
+                (adapter.configure)(&mut builder);
+            }
+        }
+    }
 
     let analysis = builder.analyze();
     let snapshot = GraphInspectionSnapshot::from_analysis(&analysis);
     diagnostics.extend(diagnostic_reports(snapshot.diagnostics()));
 
+    #[cfg(feature = "http")]
     let (routes, route_ok, guard_ok) =
         match HttpApplicationScope::for_rooted_inspection(analysis.cauldron_graph()) {
             Ok(scope) => inspect_scope(&scope, analysis.cauldron_graph(), &mut diagnostics),
@@ -623,10 +650,30 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
             }
         };
 
+    #[cfg(not(feature = "http"))]
+    let (routes, route_ok, guard_ok) = (Vec::new(), true, true);
+    let mut grpc_services = Vec::new();
+    let mut transport_checks = Vec::new();
+    for adapter in furnace_rs_core::__private::inventory::iter::<InspectionTransportDescriptor> {
+        match (adapter.inspect)(analysis.cauldron_graph(), &config) {
+            Ok((services, checks)) => {
+                grpc_services.extend(services);
+                transport_checks.extend(checks);
+            }
+            Err(error) => {
+                diagnostics.extend(diagnostic_reports(error.diagnostics()));
+                transport_checks.push(DoctorCheck::failed(
+                    adapter.name,
+                    "selected transport metadata or configuration is invalid",
+                ));
+            }
+        }
+    }
+    grpc_services.sort_by(|a, b| a.name.cmp(&b.name));
     diagnostics.sort_by(diagnostic_report_order);
     diagnostics.dedup();
     let graph = graph_report(&snapshot);
-    let checks = doctor_checks(
+    let mut checks = doctor_checks(
         configuration_ok,
         root_ok,
         &snapshot,
@@ -634,6 +681,7 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
         guard_ok,
         &graph.auto_configurations,
     );
+    checks.extend(transport_checks);
     let failed = !diagnostics.is_empty()
         || checks
             .iter()
@@ -643,12 +691,14 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
         kind,
         graph,
         routes,
+        grpc_services,
         checks,
         diagnostics,
         failed,
     }
 }
 
+#[cfg(feature = "http")]
 fn inspect_scope(
     scope: &HttpApplicationScope,
     _cauldron_graph: Option<&CauldronGraph>,
@@ -777,7 +827,7 @@ fn doctor_checks(
     let providers_ok = snapshot.construction_order().is_some();
     let (server_status, server_summary) = auto_configuration_group(
         auto_configurations,
-        &[SERVER_AUTO_CONFIGURATION_ID, CORS_AUTO_CONFIGURATION_ID],
+        &["furnace.common.http.server", "furnace.common.http.cors"],
         "no automatic server or CORS configuration applied",
     );
     let (auto_status, auto_summary) =
@@ -956,7 +1006,76 @@ fn auto_configuration_status(status: AutoConfigurationStatus) -> &'static str {
     }
 }
 
-#[cfg(test)]
+/// Static protobuf service evidence exchanged over the private inspection protocol.
+#[doc(hidden)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct GrpcServiceReport {
+    /// Fully qualified protobuf service name.
+    pub name: String,
+    /// Managed Rust implementation identity.
+    pub implementation: String,
+    /// Registration source location.
+    pub location: SourceReport,
+    /// Methods sorted by authored protobuf name.
+    pub methods: Vec<GrpcMethodReport>,
+}
+/// One protobuf RPC and its effective protection policy.
+#[doc(hidden)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct GrpcMethodReport {
+    /// Protobuf method name.
+    pub name: String,
+    /// Canonical RPC path.
+    pub path: String,
+    /// Whether input is streamed.
+    pub client_streaming: bool,
+    /// Whether output is streamed.
+    pub server_streaming: bool,
+    /// Effective policy; public methods have no protection.
+    pub protection: Option<GrpcProtectionReport>,
+}
+/// Authored Passport policy metadata without credentials or configuration values.
+#[doc(hidden)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct GrpcProtectionReport {
+    /// Strategy identity.
+    pub strategy: String,
+    /// Rust principal type identity.
+    pub principal: String,
+    /// Role requirements.
+    pub roles: Option<GrpcPolicyReport>,
+    /// Permission requirements.
+    pub permissions: Option<GrpcPolicyReport>,
+    /// Authored predicate function identities.
+    pub predicates: Vec<String>,
+}
+/// A role or permission matching clause.
+#[doc(hidden)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct GrpcPolicyReport {
+    /// Any or all matching.
+    pub mode: String,
+    /// Authored requirement names.
+    pub values: Vec<String>,
+}
+/// Side-effect-free transport inspection callback.
+#[doc(hidden)]
+pub type TransportInspect =
+    fn(
+        Option<&CauldronGraph>,
+        &Config,
+    ) -> furnace_rs_core::Result<(Vec<GrpcServiceReport>, Vec<DoctorCheck>)>;
+/// Linked transport metadata adapter, without native protocol dependencies.
+#[doc(hidden)]
+pub struct InspectionTransportDescriptor {
+    /// Doctor check group for adapter failures.
+    pub name: &'static str,
+    /// Pure metadata and configuration analysis.
+    pub inspect: TransportInspect,
+}
+furnace_rs_core::__private::inventory::collect!(InspectionTransportDescriptor);
+
+#[cfg(all(test, feature = "http"))]
 mod tests {
     use std::ffi::OsString;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -1141,7 +1260,7 @@ mod tests {
         let ack = directory.path().join("ack.json");
         let response = directory.path().join("response.json");
         let request = InspectionRequest::from_values([
-            (INSPECTION_VERSION_ENV, OsString::from("2")),
+            (INSPECTION_VERSION_ENV, OsString::from("3")),
             (INSPECTION_KIND_ENV, OsString::from("doctor")),
             (INSPECTION_TOKEN_ENV, OsString::from("tökén-1")),
             (INSPECTION_ACK_ENV, ack.clone().into_os_string()),
@@ -1164,7 +1283,7 @@ mod tests {
         let ack = std::path::PathBuf::from(OsString::from_vec(vec![b'a', 0x80]));
         let response = std::path::PathBuf::from(OsString::from_vec(vec![b'r', 0x81]));
         let request = InspectionRequest::from_values([
-            (INSPECTION_VERSION_ENV, OsString::from("2")),
+            (INSPECTION_VERSION_ENV, OsString::from("3")),
             (INSPECTION_KIND_ENV, OsString::from("routes")),
             (INSPECTION_TOKEN_ENV, OsString::from("token-1")),
             (INSPECTION_ACK_ENV, ack.clone().into_os_string()),
@@ -1180,7 +1299,7 @@ mod tests {
     #[test]
     fn request_partial_values_are_rejected() {
         let fields = [
-            (INSPECTION_VERSION_ENV, OsString::from("2")),
+            (INSPECTION_VERSION_ENV, OsString::from("3")),
             (INSPECTION_KIND_ENV, OsString::from("graph")),
             (INSPECTION_TOKEN_ENV, OsString::from("token-1")),
             (INSPECTION_ACK_ENV, OsString::from("ack.json")),
@@ -1228,7 +1347,7 @@ mod tests {
         use std::os::unix::ffi::OsStringExt;
 
         let error = InspectionRequest::from_values([
-            (INSPECTION_VERSION_ENV, OsString::from("2")),
+            (INSPECTION_VERSION_ENV, OsString::from("3")),
             (INSPECTION_KIND_ENV, OsString::from("doctor")),
             (INSPECTION_TOKEN_ENV, OsString::from_vec(vec![0x80])),
             (INSPECTION_ACK_ENV, OsString::from("ack.json")),
@@ -1286,7 +1405,7 @@ mod tests {
         let ack = output.path().join("ack.json");
         let response = output.path().join("response.json");
         let request = InspectionRequest::from_values([
-            (INSPECTION_VERSION_ENV, OsString::from("2")),
+            (INSPECTION_VERSION_ENV, OsString::from("3")),
             (INSPECTION_KIND_ENV, OsString::from("doctor")),
             (INSPECTION_TOKEN_ENV, OsString::from("token-1")),
             (INSPECTION_ACK_ENV, ack.clone().into_os_string()),
@@ -1299,7 +1418,7 @@ mod tests {
 
         assert_eq!(
             std::fs::read_to_string(ack).unwrap(),
-            r#"{"protocol_version":2,"token":"token-1"}"#
+            r#"{"protocol_version":3,"token":"token-1"}"#
         );
         let envelope: InspectionEnvelope =
             serde_json::from_slice(&std::fs::read(response).unwrap()).unwrap();

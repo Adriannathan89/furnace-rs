@@ -27,7 +27,6 @@ impl FurnaceBurnExt for Furnace {
                 ))
             })?;
             // The inspection path is static and never reaches preparation/startup.
-            #[cfg(feature = "http")]
             if let Some(result) = crate::inspection::try_run_inspection::<M>(&root) {
                 return result;
             }

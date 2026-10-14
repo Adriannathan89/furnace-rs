@@ -1,0 +1,16 @@
+[package]
+name = "inspection-grpc-fixture"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+[dependencies]
+furnace = { package = "furnace-rs-grpc", path = "../../../../../furnace-rs-grpc", features = ["jwt", "tls"] }
+tonic = { version = "0.14.6", features = ["transport", "codegen"] }
+tonic-prost = "0.14.6"
+prost = "0.14.4"
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+[build-dependencies]
+tonic-prost-build = "0.14.6"
+protoc-bin-vendored = "3.3.0"
+[workspace]

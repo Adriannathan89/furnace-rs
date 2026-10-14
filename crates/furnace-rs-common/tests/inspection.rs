@@ -1,5 +1,5 @@
 //! Integration coverage for the hidden inspection protocol.
-#![cfg(feature = "http")]
+#![cfg(feature = "transport-runtime")]
 
 use furnace_rs_common::__private::{
     DoctorCheck, GraphReport, INSPECTION_PROTOCOL_VERSION, InspectionEnvelope, InspectionKind,
@@ -14,6 +14,7 @@ fn protocol_round_trip_preserves_the_inspection_envelope() {
             kind: InspectionKind::Doctor,
             graph: GraphReport::default(),
             routes: Vec::new(),
+            grpc_services: Vec::new(),
             checks: vec![DoctorCheck::pass("configuration", "sources loaded")],
             diagnostics: Vec::new(),
             failed: false,
@@ -52,6 +53,7 @@ fn protocol_never_serializes_or_debugs_configuration_values() {
                 ..GraphReport::default()
             },
             routes: Vec::new(),
+            grpc_services: Vec::new(),
             checks: vec![DoctorCheck::pass("configuration", "sources loaded")],
             diagnostics: Vec::new(),
             failed: false,

@@ -12,7 +12,7 @@ description = "HTTP, JWT, cookies, and Passport integrations for furnace-rs"
 [features]
 default = ["http"]
 transport-metadata = ["dep:http"]
-transport-runtime = ["dep:tokio", "dep:futures-util"]
+transport-runtime = ["dep:tokio", "dep:futures-util", "dep:serde", "dep:serde_json", "dep:rustix"]
 passport = ["jwt", "transport-metadata", "dep:furnace-rs-common-macros", "furnace-rs-common-macros/passport"]
 http = [
     "transport-runtime",

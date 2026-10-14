@@ -18,7 +18,7 @@ mod extract;
 mod http_preflight;
 #[cfg(feature = "http")]
 mod http_scope;
-#[cfg(feature = "http")]
+#[cfg(feature = "transport-runtime")]
 mod inspection;
 #[cfg(feature = "http")]
 mod response;
@@ -192,16 +192,21 @@ pub use route::{
 
 /// Implementation details used by generated HTTP route adapters.
 #[doc(hidden)]
-#[cfg(feature = "http")]
+#[cfg(feature = "transport-runtime")]
 pub mod __private {
+    #[cfg(feature = "http")]
     pub use crate::http_preflight::preflight_http;
+    #[cfg(feature = "http")]
     pub use crate::router::build_test_router_for;
+    #[cfg(feature = "http")]
     pub use crate::validation::support as input_validation;
     /// Environment variable used by the development supervisor for graceful shutdown.
     #[doc(hidden)]
     pub const DEV_SHUTDOWN_ENV: &str = "FURNACE_INTERNAL_DEV_SHUTDOWN_PATH";
 
+    #[cfg(feature = "http")]
     pub use axum::Router;
+    #[cfg(feature = "http")]
     pub use axum::routing::{delete, get, patch, post, put};
 
     /// Loads conventional sources with an injected environment source for tests.
@@ -215,17 +220,20 @@ pub mod __private {
     }
 
     /// Enables the private automatic HTTP server mode for integration tests.
+    #[cfg(feature = "http")]
     pub fn enable_automatic_server_for_test(builder: &mut furnace_rs_core::FurnaceBuilder) -> bool {
         crate::server_config::enable_automatic_server(builder)
     }
 
     /// Enables the private automatic CORS mode for integration tests.
+    #[cfg(feature = "http")]
     pub fn enable_automatic_cors_for_test(builder: &mut furnace_rs_core::FurnaceBuilder) -> bool {
         crate::cors::enable_automatic_cors(builder)
     }
 
     /// Returns the automatic server binding as an owned address tuple for integration tests.
     #[allow(clippy::result_large_err)]
+    #[cfg(feature = "http")]
     pub fn server_binding_address_for_test(
         application: &furnace_rs_core::Furnace,
     ) -> furnace_rs_core::Result<(String, u16)> {
@@ -236,9 +244,9 @@ pub mod __private {
         Ok((host.to_owned(), port))
     }
 
-    #[cfg(feature = "jwt")]
+    #[cfg(all(feature = "http", feature = "jwt"))]
     pub use crate::passport::{PassportGuardLayer, PassportGuardState};
-    #[cfg(feature = "jwt")]
+    #[cfg(all(feature = "http", feature = "jwt"))]
     #[allow(clippy::result_large_err)]
     pub fn preflight_scoped(
         cauldron_graph: Option<&furnace_rs_core::CauldronGraph>,
@@ -246,16 +254,20 @@ pub mod __private {
         let scope = crate::http_scope::HttpApplicationScope::for_cauldron_graph(cauldron_graph)?;
         crate::passport::PassportStrategyCatalog::preflight_scoped(cauldron_graph, scope.guards())
     }
+    #[cfg(feature = "http")]
     pub use crate::route::{RouterBuildContext, ValidatedRouteIter, validate_descriptors};
+    #[cfg(feature = "http")]
     pub use crate::seal::{OptionalSeal, SealProbe};
 
     #[doc(hidden)]
     pub use crate::inspection::{
         AutoConfigurationReport, CauldronImportReport, CauldronReport, ConfigurationEvidenceReport,
         DependencyReport, DiagnosticReport, DoctorCheck, DoctorStatus, FURNACE032, GraphReport,
+        GrpcMethodReport, GrpcPolicyReport, GrpcProtectionReport, GrpcServiceReport,
         INSPECTION_ACK_ENV, INSPECTION_KIND_ENV, INSPECTION_PROTOCOL_VERSION,
         INSPECTION_RESPONSE_ENV, INSPECTION_TOKEN_ENV, INSPECTION_VERSION_ENV, InspectionEnvelope,
-        InspectionKind, InspectionReport, ProviderReport, RouteReport, SourceReport,
+        InspectionKind, InspectionReport, InspectionTransportDescriptor, ProviderReport,
+        RouteReport, SourceReport,
     };
 }
 
