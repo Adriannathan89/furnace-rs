@@ -35,13 +35,14 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             }
         });
         let controllers = d.controllers.iter().map(|t| quote!(.controller::<#t>()));
+        let grpc_services = d.grpc_services.iter().map(|t| quote!(.transport_provider::<#t>()));
         let imports = d.imports.iter().map(|t| quote!(.import(#t)));
         let exports = d.exports.iter().map(|t| quote!(.export::<#t>()));
         let global = d.global.then(|| quote!(.global()));
         quote! {
             impl #core::Cauldron for #ident {
                 fn register(self) -> #core::CauldronRegistration<Self> {
-                    #core::CauldronRegistration::new(self) #(#providers)* #(#controllers)* #(#imports)* #(#exports)* #global
+                    #core::CauldronRegistration::new(self) #(#providers)* #(#grpc_services)* #(#controllers)* #(#imports)* #(#exports)* #global
                 }
             }
         }

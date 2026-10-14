@@ -28,6 +28,7 @@ impl Parse for Provider {
 pub(super) struct Declaration {
     pub providers: Vec<Provider>,
     pub controllers: Vec<Type>,
+    pub grpc_services: Vec<Type>,
     pub imports: Vec<Path>,
     pub exports: Vec<Type>,
     pub global: bool,
@@ -57,7 +58,7 @@ impl Parse for Declaration {
             match option.as_str() {
                 "root" => declaration.root = true,
                 "global" => declaration.global = true,
-                "providers" | "controllers" | "imports" | "exports" => {
+                "providers" | "controllers" | "grpc_services" | "imports" | "exports" => {
                     input.parse::<Token![=]>()?;
                     let list;
                     bracketed!(list in input);
@@ -82,6 +83,13 @@ impl Parse for Declaration {
                                 .collect();
                             unique(&declaration.controllers)?;
                         }
+                        "grpc_services" => {
+                            declaration.grpc_services = list
+                                .parse_terminated(Type::parse, Token![,])?
+                                .into_iter()
+                                .collect();
+                            unique(&declaration.grpc_services)?;
+                        }
                         "imports" => {
                             declaration.imports = list
                                 .parse_terminated(Path::parse, Token![,])?
@@ -102,7 +110,7 @@ impl Parse for Declaration {
                 _ => {
                     return Err(Error::new_spanned(
                         name,
-                        "unknown cauldron option; expected providers, controllers, imports, exports, global, or root",
+                        "unknown cauldron option; expected providers, controllers, grpc_services, imports, exports, global, or root",
                     ));
                 }
             }

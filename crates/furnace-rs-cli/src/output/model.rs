@@ -67,6 +67,8 @@ pub enum CommandData {
     New(NewData),
     /// `furnace routes` inspection data.
     Routes(RoutesData),
+    /// `furnace grpc` inspection data.
+    Grpc(GrpcData),
     /// `furnace graph` inspection data.
     Graph(GraphData),
     /// `furnace doctor` inspection data.
@@ -465,3 +467,26 @@ mod tests {
         );
     }
 }
+
+/// Selected protobuf service inspection data.
+#[derive(Clone, Debug, Serialize)]
+pub struct GrpcData {
+    /// Services ordered by fully qualified protobuf name.
+    pub services: Vec<GrpcServiceData>,
+}
+/// One protobuf service and managed implementation.
+#[derive(Clone, Debug, Serialize)]
+pub struct GrpcServiceData {
+    /// Fully qualified protobuf service name.
+    pub name: String,
+    /// Managed Rust implementation type identity.
+    pub implementation: String,
+    /// Normalized registration location.
+    pub location: SourceLocation,
+    /// Methods ordered by protobuf name.
+    pub methods: Vec<GrpcMethodData>,
+}
+/// Static protobuf method shape and effective protection.
+pub type GrpcMethodData = furnace_rs_common::__private::GrpcMethodReport;
+/// Authored Passport admission policy without runtime configuration values.
+pub type GrpcProtectionData = furnace_rs_common::__private::GrpcProtectionReport;

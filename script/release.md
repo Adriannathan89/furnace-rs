@@ -21,7 +21,7 @@ internal FURNACE crate dependency to `=1.0.2`, updates matching FURNACE package
 records in every `Cargo.lock`, then runs locked Cargo metadata and workspace
 checks.
 
-All nine packages, including `furnace-rs-testing` and `furnace-rs-cli`, inherit the
+All eleven distributable packages, including `furnace-rs-testing` and `furnace-rs-cli`, inherit the
 workspace version. The script rejects a CLI manifest that pins its own version.
 
 It does not edit README or changelog content, commit, tag, push, or publish.
@@ -41,3 +41,7 @@ The workflow publishes `furnace-rs-testing` after `furnace-rs-common` and before
 
 Version updates apply to local workspace package records. Registry and Git
 dependency records retain their published versions and checksums.
+
+The gRPC macro companion publishes with the macro packages, and `furnace-rs-grpc`
+publishes after common and before the facade. The unpublished protobuf test fixture
+is excluded from publication and release version updates.

@@ -14,10 +14,12 @@ use tempfile::{TempDir, tempdir};
 const PACKAGES: &[&str] = &[
     "furnace-rs-core-macros",
     "furnace-rs-common-macros",
+    "furnace-rs-grpc-macros",
     "furnace-rs-core",
     "furnace-rs-persistence",
     "furnace-rs-extra",
     "furnace-rs-common",
+    "furnace-rs-grpc",
     "furnace-rs-testing",
     "furnace-rs",
     "furnace-rs-cli",
@@ -26,9 +28,11 @@ const PACKAGES: &[&str] = &[
 const PUBLISH_ORDER: &[&str] = &[
     "furnace-rs-core-macros",
     "furnace-rs-common-macros",
+    "furnace-rs-grpc-macros",
     "furnace-rs-core",
     "furnace-rs-extra",
     "furnace-rs-common",
+    "furnace-rs-grpc",
     "furnace-rs-testing",
     "furnace-rs",
     "furnace-rs-persistence",
@@ -370,7 +374,7 @@ fn package_content_policy_checks_every_workspace_archive() {
         .expect("package-content policy should start");
     assert_success(&output);
     assert!(
-        String::from_utf8_lossy(&output.stdout).contains("verified package contents for 9 crates")
+        String::from_utf8_lossy(&output.stdout).contains("verified package contents for 11 crates")
     );
 }
 
@@ -394,7 +398,7 @@ fn all_packages_use_exact_pins_and_workspace_version() {
 
         for dependency in manifest
             .lines()
-            .filter(|line| line.contains("path = \"../"))
+            .filter(|line| line.contains("path = \"../furnace-rs"))
         {
             assert!(
                 dependency.contains(&format!("version = \"={version}\"")),
@@ -414,7 +418,7 @@ fn all_packages_use_exact_pins_and_workspace_version() {
     assert!(cli_manifest.contains("version.workspace = true"));
     for dependency in cli_manifest
         .lines()
-        .filter(|line| line.contains("path = \"../"))
+        .filter(|line| line.contains("path = \"../furnace-rs"))
     {
         assert!(
             dependency.contains(&format!("version = \"={version}\"")),

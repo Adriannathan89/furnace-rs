@@ -1,0 +1,5 @@
+error: grpc_client name must start with a lowercase ASCII letter and contain only [a-z0-9_-]
+ --> tests/ui-grpc/fail/client-invalid-name.rs:2:22
+  |
+2 | #[grpc_client(name = "1users", client = MissingClient)]
+  |                      ^^^^^^^^

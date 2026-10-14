@@ -1,6 +1,6 @@
 # Declarative dependency injection
 
-The `2.0.0-beta.1` API registers modules and checks a selected root graph at compile time. The executable [example](../example/compile-time-di/) includes a missing-dependency test run by `cargo test`.
+The `2.0.0-beta.2` API registers modules and checks a selected root graph at compile time. The executable [example](../example/compile-time-di/) includes a missing-dependency test run by `cargo test`.
 
 ```rust
 use furnace_rs::{burner, cauldron, Logger, LoggerCauldron};

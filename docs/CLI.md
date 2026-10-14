@@ -69,6 +69,7 @@ ambiguous:
 furnace run [--package <package>] [--bin <binary>] [-- <app-args>...]
 furnace dev [--package <package>] [--bin <binary>] [-- <app-args>...]
 furnace routes [--package <package>] [--bin <binary>]
+furnace grpc [--package <package>] [--bin <binary>]
 furnace graph [--package <package>] [--bin <binary>]
 furnace doctor [--package <package>] [--bin <binary>]
 ```
@@ -84,6 +85,7 @@ The following finite commands accept `--format human|json`:
 ```text
 furnace new <name>
 furnace routes
+furnace grpc
 furnace graph
 furnace doctor
 ```
@@ -117,7 +119,7 @@ Every document has this version-2 envelope:
 }
 ```
 
-`command` is the canonical spelling (`new`, `routes`, `graph`, or `doctor`)
+`command` is the canonical spelling (`new`, `routes`, `grpc`, `graph`, or `doctor`)
 and is `null` only when syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
 completion. `data` is the command object, safe partial inspection data, or
 `null`. `diagnostics` is an ordered list of FURNACE-owned records:
@@ -139,7 +141,7 @@ intentional. Schema version 2 may add fields, and consumers must ignore unknown
 object fields. Removing, renaming, changing the type of, or changing the
 meaning of an existing field requires a new `schema_version`.
 
-The finite schema owners are `new`, `routes`, `graph`, and `doctor`. A non-null source location has
+The finite schema owners are `new`, `routes`, `grpc`, `graph`, and `doctor`. A non-null source location has
 one-based line and column numbers:
 
 ```json
@@ -204,6 +206,14 @@ construction plan exists.
 }
 ```
 
+`grpc` returns `{ "services": [...] }`. Services contain `name`,
+`implementation`, `location`, and `methods`. Each method contains `name`, `path`,
+`client_streaming`, `server_streaming`, and `protection`. Public RPCs have null
+protection; protected RPCs report strategy/principal identities, role and
+permission clauses, and predicate identities. Configuration values and
+credentials are omitted. Use `furnace grpc --format json` for this schema.
+`routes` continues to report HTTP routes only.
+
 `doctor` returns `{ "checks": [...] }`, where each check contains `group`,
 `status`, and `summary`. Status is `pass`, `skipped`, `overridden`, or `failed`;
 the existing group and summary ordering remains authoritative.
@@ -241,12 +251,15 @@ furnace dev -p api --bin server -- --log=debug
 
 ## Inspection commands
 
-`furnace routes`, `furnace graph`, and `furnace doctor` compile the selected standard
+`furnace routes`, `furnace grpc`, `furnace graph`, and `furnace doctor` compile the selected standard
 `Furnace::burn::<AppCauldron>()` application and obtain private inspection metadata
 without normal provider construction, lifecycle startup, database connection,
 migration, listener binding, or traffic serving. Human output remains the
 existing table/section/check rendering; JSON exposes only the public schema
-described above, never the private inspection protocol or its tokens.
+described above, never the private inspection protocol or its tokens. The private
+protocol is version 3 and rejects incompatible application reports explicitly.
+gRPC inspection is static: eager clients do not connect, and TLS material is
+not read. See the [gRPC guide](grpc.md) for configuration and service declarations.
 
 ## Persistence
 

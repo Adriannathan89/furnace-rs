@@ -507,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs"
-version = "2.0.0-beta.1"
+version = "2.0.0-beta.2"
 dependencies = [
  "furnace-rs-common",
  "furnace-rs-core",
@@ -515,13 +515,15 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common"
-version = "2.0.0-beta.1"
+version = "2.0.0-beta.2"
 dependencies = [
  "axum",
  "axum-extra",
  "chrono",
  "furnace-rs-common-macros",
  "furnace-rs-core",
+ "futures-util",
+ "http",
  "hyper",
  "hyper-util",
  "rustix",
@@ -537,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common-macros"
-version = "2.0.0-beta.1"
+version = "2.0.0-beta.2"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -547,7 +549,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core"
-version = "2.0.0-beta.1"
+version = "2.0.0-beta.2"
 dependencies = [
  "dotenvy",
  "furnace-rs-core-macros",
@@ -559,7 +561,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core-macros"
-version = "2.0.0-beta.1"
+version = "2.0.0-beta.2"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -579,7 +581,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-persistence"
-version = "2.0.0-beta.1"
+version = "2.0.0-beta.2"
 dependencies = [
  "furnace-rs-core",
  "sea-orm",
@@ -620,6 +622,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53c0fa8157de1303bfffdaa1cc2a673bfffb60102f76b0ef4441659124373fed"
 
 [[package]]
+name = "futures-macro"
+version = "0.3.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fb9654ba8355388abeb8dcb4fc62f511300867002afc858860463bdd9fe0c44"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.6",
+]
+
+[[package]]
 name = "futures-sink"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -639,6 +652,7 @@ checksum = "0d50a92467f8ba5dd6e3ee5d4bd04d73ab2e4e1c44474a0674821dfce14b79bc"
 dependencies = [
  "futures-core",
  "futures-io",
+ "futures-macro",
  "futures-sink",
  "futures-task",
  "memchr",

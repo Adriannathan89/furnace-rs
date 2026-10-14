@@ -14,6 +14,10 @@ pub(crate) fn core_path() -> syn::Result<Path> {
         return found_path(found, true);
     }
 
+    if let Ok(found) = crate_name("furnace-rs-grpc") {
+        return found_path(found, true);
+    }
+
     Err(Error::new(
         Span::call_site(),
         "FURNACE attributes require a dependency on `furnace-rs-core` or `furnace_rs`",

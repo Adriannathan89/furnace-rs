@@ -1,0 +1,10 @@
+[package]
+name = "furnace-grpc-standalone-consumer"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.94"
+[dependencies]
+rpc = { package = "furnace-rs-grpc", path = "../../../../furnace-rs-grpc", features = ["jwt", "tls"] }
+furnace-grpc-test-support = { path = "../../../../../tests/grpc-support" }
+serde = { version = "1", features = ["derive"] }
+[workspace]

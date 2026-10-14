@@ -4,7 +4,7 @@
 most application authors should depend on. The facade composes the
 framework-neutral [`furnace-rs-core`](../furnace-rs-core/README.md) with optional
 [furnace-rs-common integrations](../furnace-rs-common/README.md) and re-exports the
-macros, types, native Axum APIs, and prelude used by application code.
+macros, types, native Axum and Tonic APIs, and prelude used by application code.
 
 The facade is intentionally thin: it owns public naming, feature composition,
 and re-exports, while graph, HTTP, and authentication behavior stays
@@ -14,6 +14,7 @@ in the crate that implements it.
 
 - `furnace-rs-core` is always enabled.
 - `furnace-rs-common` is optional and is selected with default features disabled.
+- `furnace-rs-grpc` is optional and owns the gRPC transport and its dedicated macros.
 - `furnace-rs-extra` is optional and is selected by the `extra` feature.
 - Application crates and `furnace-rs-cli` depend on this facade.
 
@@ -27,12 +28,15 @@ application
     ├── furnace-rs-common
     │   ├── furnace-rs-core
     │   └── furnace-rs-common-macros
+    ├── furnace-rs-grpc
+    │   ├── furnace-rs-common
+    │   └── furnace-rs-grpc-macros
     └── furnace-rs-extra
         └── furnace-rs-core
 
 furnace-rs-cli
 ├── furnace-rs
-└── furnace-rs-common (http-only inspection contract)
+└── furnace-rs-common (transport-neutral inspection contract)
 ~~~
 
 The arrow points from a consumer to its dependency. `furnace-rs-common` is
@@ -46,6 +50,8 @@ its own manifest.
 | `default` | `common` + `runtime-tokio` | Conventional HTTP application with the Tokio entry point. |
 | `common` | `http` + `logger` | HTTP and logger aggregate; authentication remains opt-in. |
 | `http` | `furnace-rs-common/http` | Axum routing/server, validation, CORS, and REST errors. |
+| `grpc` | `furnace-rs-grpc` | Protobuf services, named clients, shared runtime, health, and optional reflection. |
+| `grpc-tls` | `grpc` + `furnace-rs-grpc/tls` | Verified TLS client/server support. |
 | `logger` | `furnace-rs-common/logger` | Tracing-based application logging. |
 | `jwt` | `furnace-rs-common/jwt` | JWT service, claims, profiles, algorithms, and key handling without Axum. |
 | `cookies` | `http` + `furnace-rs-common/cookies` | Cookie extraction/response support; cookies imply HTTP. |
@@ -53,7 +59,8 @@ its own manifest.
 | `runtime-tokio` | `furnace-rs-core/runtime-tokio` | Tokio support for `#[furnace_rs::main]`. |
 | `extra` | `furnace-rs-extra` | Reserved extension boundary. |
 
-Passport guards and strategies require `http + jwt`. Cookie guards add
+Shared Passport strategies require `jwt`; managed guards select `http + jwt`
+or `grpc + jwt`. Cookie guards add
 `cookies`. Database access is a separate opt-in through the
 [`furnace-rs-persistence`](../furnace-rs-persistence/README.md) crate.
 
@@ -61,7 +68,7 @@ For an HTTP-only application, use:
 
 ~~~toml
 [dependencies]
-furnace-rs = { version = "2.0.0-beta.1", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs = { version = "2.0.0-beta.2", default-features = false, features = ["http", "runtime-tokio"] }
 ~~~
 
 The workspace crates use exact internal version pins. External dependency
@@ -81,6 +88,8 @@ The facade re-exports:
   `HttpResult`, standard REST errors, router builders, and serving functions.
 - Authentication/cookies: `JwtService`, claims/options, Passport types,
   `CookieJar`, and cookie response composition.
+- gRPC types: `grpc_service`, `grpc_client`, `grpc_reflection`, generated-client
+  wrappers, Bearer metadata helpers, and native `furnace_rs::tonic`/`prost`.
 - Native escape hatches: `furnace_rs::axum` and Tower-compatible router composition.
 
 Use `furnace_rs::prelude` for the normal application surface. Reach into `furnace_rs::core`
@@ -95,10 +104,10 @@ The recommended path is:
 Furnace::burn::<AppCauldron>()
         │
         ├── loads .env/furnace.toml/FURNACE_* from the current directory
-        ├── selects the rooted module scope
+        ├── selects [furnace].transports (absent means HTTP) and the rooted module scope
         ├── analyzes auto-configuration and the provider graph
         ├── validates selected endpoints, seals, and virtual dependency outputs
-        ├── constructs providers and finalizes the Axum router
+        ├── constructs providers and finalizes selected HTTP/gRPC routes
         ├── starts lifecycle and registered resource readiness
         ├── binds and serves
         └── shuts down in reverse order
@@ -119,7 +128,8 @@ runtime infrastructure.
 - Axum, logger, JWT, cookie, and Passport export wiring;
 - documentation examples that must remain valid for external consumers.
 
-Behavior changes belong in `furnace-rs-core` or `furnace-rs-common`, not in the facade.
+Behavior changes belong in `furnace-rs-core`, `furnace-rs-common`, or
+`furnace-rs-grpc`.
 When adding an API, update the owning crate first, then expose it here with the
 smallest compatible feature gate.
 
@@ -140,4 +150,6 @@ See the [root workspace guide](../../README.md#workspace-crates),
 [architecture reference](../../docs/ARCHITECTURE.md), and
 [contribution guide](../../CONTRIBUTING.md).
 
-The `2.0.0-beta.1` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
+The `2.0.0-beta.2` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
+
+See the [gRPC guide](../../docs/grpc.md) and [standalone crate](../furnace-rs-grpc/README.md).

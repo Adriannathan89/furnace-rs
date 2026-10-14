@@ -176,7 +176,10 @@ impl CargoProject {
             self.metadata
                 .packages
                 .iter()
-                .find(|candidate| candidate.id == dependency.pkg && candidate.name == "furnace-rs")
+                .find(|candidate| {
+                    candidate.id == dependency.pkg
+                        && matches!(candidate.name.as_str(), "furnace-rs" | "furnace-rs-grpc")
+                })
                 .map(|candidate| candidate.version.clone())
         })
     }

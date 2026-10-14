@@ -1,3 +1,4 @@
+use crate::output::model::{GrpcData, GrpcServiceData};
 use std::{
     fs,
     path::Path,
@@ -110,6 +111,7 @@ pub(crate) fn inspection_outcome(report: &InspectionReport, package_root: &Path)
     let diagnostics = inspection_diagnostics(report, package_root);
     let body = match report.kind {
         InspectionKind::Routes => render::render_routes(report),
+        InspectionKind::Grpc => render::render_grpc(report),
         InspectionKind::Graph => render::render_graph(report),
         InspectionKind::Doctor => render::render_doctor(report),
     };
@@ -145,6 +147,18 @@ pub(crate) fn inspection_failure_outcome(kind: InspectionKind, error: &CliError)
 
 fn inspection_data(report: &InspectionReport, package_root: &Path) -> CommandData {
     match report.kind {
+        InspectionKind::Grpc => CommandData::Grpc(GrpcData {
+            services: report
+                .grpc_services
+                .iter()
+                .map(|service| GrpcServiceData {
+                    name: service.name.clone(),
+                    implementation: service.implementation.clone(),
+                    location: source_location(&service.location, package_root),
+                    methods: service.methods.clone(),
+                })
+                .collect(),
+        }),
         InspectionKind::Routes => CommandData::Routes(RoutesData::new(
             render::ordered_routes(report)
                 .into_iter()
@@ -249,6 +263,7 @@ const fn doctor_status(status: InspectionDoctorStatus) -> DoctorStatus {
 const fn inspection_command_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
+        InspectionKind::Grpc => "grpc",
         InspectionKind::Graph => "graph",
         InspectionKind::Doctor => "doctor",
     }
@@ -369,6 +384,7 @@ fn inspection_command(
 const fn inspection_kind_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
+        InspectionKind::Grpc => "grpc",
         InspectionKind::Graph => "graph",
         InspectionKind::Doctor => "doctor",
     }
@@ -385,7 +401,9 @@ async fn supervise(
     let handshake_deadline = Instant::now() + timeouts.handshake;
     loop {
         if acknowledgement.exists() {
-            let acknowledgement = read_json::<InspectionAcknowledgement>(acknowledgement)?;
+            let value = read_json::<serde_json::Value>(acknowledgement)?;
+            ensure_private_protocol_version(&value)?;
+            let acknowledgement: InspectionAcknowledgement = decode_json(value)?;
             if acknowledgement.protocol_version != INSPECTION_PROTOCOL_VERSION
                 || acknowledgement.token != token
             {
@@ -399,9 +417,9 @@ async fn supervise(
             continue;
         }
         if Instant::now() >= handshake_deadline {
-            return Err(inspection_error(
-                "the application did not acknowledge the inspection request in time; private inspection requires the standard Furnace::burn::<AppCauldron>() entry point",
-            ));
+            return Err(inspection_error(format!(
+                "the application did not acknowledge the inspection request in time; private inspection requires protocol version {INSPECTION_PROTOCOL_VERSION} and the standard Furnace::burn::<AppCauldron>() entry point",
+            )));
         }
         tokio::time::sleep(timeouts.poll).await;
     }
@@ -409,7 +427,9 @@ async fn supervise(
     let report_deadline = Instant::now() + timeouts.report;
     let envelope = loop {
         if response.exists() {
-            let envelope = read_json::<InspectionEnvelope>(response)?;
+            let value = read_json::<serde_json::Value>(response)?;
+            ensure_private_protocol_version(&value)?;
+            let envelope: InspectionEnvelope = decode_json(value)?;
             if envelope.protocol_version() != INSPECTION_PROTOCOL_VERSION
                 || envelope.token() != token
                 || envelope.report().kind != kind
@@ -443,7 +463,7 @@ fn output_published_on_exit(child: &mut Child, output: &Path) -> Result<bool, Cl
         // Once exit is observed, its final file must get normal protocol validation.
         Some(_) if output.exists() => Ok(true),
         Some(status) => Err(inspection_error(format!(
-            "the application exited before completing private inspection ({status}); private inspection requires the standard Furnace::burn::<AppCauldron>() entry point"
+            "the application exited before completing private inspection ({status}); private inspection requires protocol version {INSPECTION_PROTOCOL_VERSION} and the standard Furnace::burn::<AppCauldron>() entry point"
         ))),
         None => Ok(false),
     }
@@ -472,6 +492,25 @@ async fn wait_for_successful_exit(
             None => tokio::time::sleep(poll).await,
         }
     }
+}
+
+fn ensure_private_protocol_version(value: &serde_json::Value) -> Result<(), CliError> {
+    if let Some(version) = value
+        .get("protocol_version")
+        .and_then(serde_json::Value::as_u64)
+        && version != u64::from(INSPECTION_PROTOCOL_VERSION)
+    {
+        return Err(inspection_error(format!(
+            "unsupported private inspection protocol: application returned version {version}; CLI requires version {INSPECTION_PROTOCOL_VERSION}"
+        )));
+    }
+    Ok(())
+}
+fn decode_json<T: for<'de> Deserialize<'de>>(value: serde_json::Value) -> Result<T, CliError> {
+    serde_json::from_value(value).map_err(|error| {
+        inspection_error("the application returned malformed private inspection output")
+            .with_source(error)
+    })
 }
 
 fn read_json<T>(path: &Path) -> Result<T, CliError>
@@ -596,7 +635,7 @@ mod tests {
 
     #[tokio::test]
     async fn rejects_a_wrong_protocol_version() {
-        assert_protocol_failure("wrong_version", "invalid inspection report").await;
+        assert_protocol_failure("wrong_version", "unsupported private inspection protocol").await;
     }
 
     #[tokio::test]

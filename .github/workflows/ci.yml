@@ -31,6 +31,14 @@ jobs:
         run: |
           cargo check -p furnace-rs-persistence --no-default-features
           cargo check -p furnace-rs-persistence --no-default-features --features sea-orm-postgres
+      - name: Check gRPC feature boundaries and example
+        run: |
+          cargo check --locked -p furnace-rs-grpc --no-default-features
+          cargo check --locked -p furnace-rs-grpc --no-default-features --features jwt
+          cargo check --locked -p furnace-rs-grpc --no-default-features --features tls
+          cargo check --locked -p furnace-rs --no-default-features --features grpc,runtime-tokio
+          cargo test --locked --manifest-path example/grpc-transport/Cargo.toml
+          cargo test --locked --manifest-path example/grpc-transport/Cargo.toml --features http
       - name: Test
         run: cargo test --locked --workspace --all-features
       - name: Test documentation
@@ -69,6 +77,8 @@ jobs:
           if-no-files-found: ignore
 
   cli-platform:
+    env:
+      AWS_LC_SYS_PREBUILT_NASM: '1'
     name: CLI platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -83,6 +93,7 @@ jobs:
         run: |
           cargo test -p furnace-rs-cli --lib command::tests -- --test-threads=1
           cargo test -p furnace-rs-cli --test json_cli -- --test-threads=1
+          cargo test -p furnace-rs-cli --test grpc_inspection -- --test-threads=1
           cargo test -p furnace-rs-cli --test json_cli model_serializes_nullable_diagnostics_and_normalized_locations -- --test-threads=1
           cargo test -p furnace-rs-cli --test scaffold_cli -- --test-threads=1
           cargo test -p furnace-rs-cli --lib scaffold::publish::tests::destination_race_preserves_the_competing_directory_and_cleans_staging -- --test-threads=1
@@ -118,6 +129,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Test minimum supported Rust version
         run: cargo test --locked --workspace --all-features
+      - name: Check independent gRPC example on minimum Rust
+        run: cargo check --locked --manifest-path example/grpc-transport/Cargo.toml
 
   seaorm-minimum:
     name: SeaORM 2.0.0 compatibility

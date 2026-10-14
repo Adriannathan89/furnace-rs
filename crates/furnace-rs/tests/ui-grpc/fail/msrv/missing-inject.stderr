@@ -1,0 +1,27 @@
+error: dependency fields require #[inject]
+ --> tests/ui-grpc/fail/msrv/missing-inject.rs:7:18
+  |
+7 | struct Service { dependency: Dependency }
+  |                  ^^^^^^^^^^
+
+error[E0425]: cannot find type `Service` in this scope
+  --> tests/ui-grpc/fail/msrv/missing-inject.rs:10:36
+   |
+10 | impl pb::hidden_server::Hidden for Service {
+   |                                    ^^^^^^^ not found in this scope
+   |
+help: consider importing this trait
+   |
+ 1 + use tower::Service;
+   |
+
+error[E0425]: cannot find type `Service` in this scope
+  --> tests/ui-grpc/fail/msrv/missing-inject.rs:19:55
+   |
+19 | #[cauldron(root, imports = [Shared], grpc_services = [Service])]
+   |                                                       ^^^^^^^ not found in this scope
+   |
+help: consider importing this trait
+   |
+ 1 + use tower::Service;
+   |

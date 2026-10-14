@@ -13,10 +13,12 @@ trap 'rm -rf "$temporary_directory"' EXIT
 packages=(
   furnace-rs-core-macros
   furnace-rs-common-macros
+  furnace-rs-grpc-macros
   furnace-rs-core
   furnace-rs-persistence
   furnace-rs-extra
   furnace-rs-common
+  furnace-rs-grpc
   furnace-rs-testing
   furnace-rs
   furnace-rs-cli
@@ -120,6 +122,16 @@ require_package_specific_content() {
   require_file "$package" "$actual" "src/lib.rs"
 
   case "$package" in
+    furnace-rs-grpc-macros)
+      for source in src/lib.rs src/grpc_service.rs src/grpc_client.rs src/grpc_reflection.rs src/path.rs; do
+        require_file "$package" "$actual" "$source"
+      done
+      ;;
+    furnace-rs-grpc)
+      for source in src/lib.rs src/grpc/config.rs src/grpc/router.rs src/grpc/client.rs src/grpc/passport.rs src/runtime/mod.rs src/runtime/server.rs; do
+        require_file "$package" "$actual" "$source"
+      done
+      ;;
     furnace-rs-persistence)
       for source in src/sea_orm/mod.rs src/sea_orm/config.rs src/sea_orm/connector.rs src/sea_orm/lifecycle.rs; do
         require_file "$package" "$actual" "$source"

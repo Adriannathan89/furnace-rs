@@ -35,6 +35,7 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
         .providers
         .iter()
         .map(|p| &p.output)
+        .chain(d.grpc_services.iter())
         .chain(d.controllers.iter())
         .chain(d.exports.iter())
         .collect::<Vec<_>>();
@@ -67,6 +68,11 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
             quote!(<#injector as #core::Injector<#output>>::Dependencies)
         })
         .chain(
+            d.grpc_services
+                .iter()
+                .map(|t| quote!(<#t as #core::Injector>::Dependencies)),
+        )
+        .chain(
             d.controllers
                 .iter()
                 .map(|t| quote!(<#t as #core::Injector>::Dependencies)),
@@ -83,7 +89,7 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
             where #(#constructors: #private::CheckDependencies<S, #proofs>),* {}
         }
     };
-    let provider_leaves = (0..d.providers.len()).map(|i| {
+    let provider_leaves = (0..d.providers.len() + d.grpc_services.len()).map(|i| {
         let index = Index::from(i);
         quote!(#private::Leaf<#private::Enabled<true, <#meta as #private::SlotAt<#index>>::Slot>>)
     }).collect::<Vec<_>>();
@@ -97,8 +103,9 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
         ident: ident.clone(),
         uid: uid.clone(),
         callback,
-        members: (0..d.providers.len() + d.controllers.len()).collect(),
-        exports: (d.providers.len() + d.controllers.len()..outputs.len()).collect(),
+        members: (0..d.providers.len() + d.grpc_services.len() + d.controllers.len()).collect(),
+        exports: (d.providers.len() + d.grpc_services.len() + d.controllers.len()..outputs.len())
+            .collect(),
         global: d.global,
         root: d.root,
         pending: d.imports.clone(),

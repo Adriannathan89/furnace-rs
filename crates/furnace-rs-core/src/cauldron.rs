@@ -8,6 +8,13 @@ pub trait Cauldron: Send + Sync + Sized + 'static {
     fn register(self) -> CauldronRegistration<Self>;
 }
 
+/// Framework-neutral membership implemented by optional transport integrations.
+#[doc(hidden)]
+pub trait TransportProvider: crate::Injector {
+    /// Stable identifier of the integration owning this service.
+    const TRANSPORT: &'static str;
+}
+
 /// A fluent declaration of a cauldron's local dependencies and public interface.
 pub struct CauldronRegistration<M: Cauldron> {
     definition: CauldronDefinition,
@@ -29,6 +36,7 @@ pub(crate) struct CauldronMember {
     pub(crate) type_id: TypeId,
     pub(crate) type_name: &'static str,
     pub(crate) controller: bool,
+    pub(crate) transport: Option<&'static str>,
     pub(crate) location: SourceLocation,
     pub(crate) descriptor: Option<&'static crate::ProviderDescriptor>,
 }
@@ -61,10 +69,25 @@ impl<M: Cauldron> CauldronRegistration<M> {
             type_id: TypeId::of::<T>(),
             type_name: std::any::type_name::<T>(),
             controller: false,
+            transport: None,
             location: location(),
             descriptor: Some(T::descriptor()),
         });
         self
+    }
+
+    /// Registers an explicitly selected transport service as a managed provider.
+    #[doc(hidden)]
+    #[track_caller]
+    pub fn transport_provider<T: TransportProvider>(self) -> Self {
+        let mut registration = self.provide::<T>();
+        registration
+            .definition
+            .members
+            .last_mut()
+            .expect("a provider was just registered")
+            .transport = Some(T::TRANSPORT);
+        registration
     }
 
     /// Registers an output constructed by the explicitly selected injector.
@@ -81,6 +104,7 @@ impl<M: Cauldron> CauldronRegistration<M> {
             type_id: TypeId::of::<T>(),
             type_name: std::any::type_name::<T>(),
             controller: false,
+            transport: None,
             location: location(),
             descriptor: Some(I::descriptor()),
         });
@@ -94,6 +118,7 @@ impl<M: Cauldron> CauldronRegistration<M> {
             type_id: TypeId::of::<T>(),
             type_name: std::any::type_name::<T>(),
             controller: true,
+            transport: None,
             location: location(),
             descriptor: None,
         });
@@ -118,6 +143,7 @@ impl<M: Cauldron> CauldronRegistration<M> {
             type_id: TypeId::of::<T>(),
             type_name: std::any::type_name::<T>(),
             controller: false,
+            transport: None,
             location: location(),
             descriptor: None,
         });

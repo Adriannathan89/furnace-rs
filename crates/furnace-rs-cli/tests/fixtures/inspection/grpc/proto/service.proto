@@ -1,0 +1,9 @@
+syntax = "proto3";
+package inspection.v1;
+message Item { uint64 value = 1; }
+service Transport {
+  rpc Unary(Item) returns (Item);
+  rpc ServerStream(Item) returns (stream Item);
+  rpc ClientStream(stream Item) returns (Item);
+  rpc Bidi(stream Item) returns (stream Item);
+}

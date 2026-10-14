@@ -8,4 +8,4 @@ publish = false
 [workspace]
 
 [dependencies]
-furnace-rs = { path = "../../crates/furnace-rs", version = "=2.0.0-beta.1", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs = { path = "../../crates/furnace-rs", version = "=2.0.0-beta.2", default-features = false, features = ["http", "runtime-tokio"] }

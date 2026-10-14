@@ -6,6 +6,19 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+## [2.0.0-beta.2] - 2026-10-15
+
+### gRPC transport
+
+- Add standalone `furnace-rs-grpc` and `furnace-rs-grpc-macros` packages, optional JWT/TLS, and facade `grpc` / `grpc-tls` features.
+- Add proto-first managed service registration, all four native RPC shapes, named injectable client wrappers, async token providers, explicit Bearer precedence, and establishment deadlines.
+- Share Passport verification and policies with HTTP; support service guards, public/replacement method policies, typed principals, and admission-only stream authentication.
+- Select HTTP/gRPC listeners through `[furnace] transports` with one DI graph and lifecycle, eager readiness before binding, public health, guarded scoped reflection, and bounded drain before provider cleanup.
+- Add verified TLS with source-relative identities, additive or isolated custom CA trust, and mandatory hostname verification; require patched Rustls 0.23.46 or later.
+- Mark explicit and provider Bearer credentials sensitive for request debug redaction and HTTP/2 never-indexed encoding.
+- Add side-effect-free `furnace grpc` inspection and existing doctor checks, retaining public JSON schema 2 and advancing the private handshake to 3.
+- Include an application-owned protobuf example and feature, consumer, runtime, security, and MSRV regressions. See the [2.0.0-beta.2 release notes](docs/releases/2.0.0-beta.2.md).
+
 ## [2.0.0-beta.1] - 2026-10-12
 
 ### Breaking

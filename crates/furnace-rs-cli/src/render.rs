@@ -351,6 +351,40 @@ pub(crate) fn render_diagnostic(diagnostic: &DiagnosticReport) -> String {
     output
 }
 
+pub(crate) fn render_grpc(report: &InspectionReport) -> String {
+    let mut output = String::from("SERVICE  METHOD  SHAPE  PROTECTION");
+    if report.grpc_services.is_empty() {
+        output.push_str("\n(none)");
+    }
+    for service in &report.grpc_services {
+        for method in &service.methods {
+            let shape = match (method.client_streaming, method.server_streaming) {
+                (false, false) => "unary",
+                (false, true) => "server streaming",
+                (true, false) => "client streaming",
+                (true, true) => "bidirectional",
+            };
+            let protection = method
+                .protection
+                .as_ref()
+                .map(|p| {
+                    format!(
+                        "{} ({}) roles={:?} permissions={:?} predicates={:?}",
+                        p.strategy, p.principal, p.roles, p.permissions, p.predicates
+                    )
+                })
+                .unwrap_or_else(|| "public".into());
+            write!(
+                output,
+                "\n{}  {}  {}  {}",
+                service.name, method.name, shape, protection
+            )
+            .expect("writing to a String cannot fail");
+        }
+    }
+    output
+}
+
 #[cfg(test)]
 mod tests {
     use furnace_rs_common::__private::{
@@ -362,6 +396,7 @@ mod tests {
 
     fn report() -> InspectionReport {
         InspectionReport {
+            grpc_services: Vec::new(),
             kind: InspectionKind::Doctor,
             graph: GraphReport {
                 root_cauldron: Some("AppCauldron".into()),
@@ -516,6 +551,7 @@ mod tests {
     #[test]
     fn failed_reports_keep_empty_partial_sections_visible() {
         let report = InspectionReport {
+            grpc_services: Vec::new(),
             kind: InspectionKind::Graph,
             graph: GraphReport::default(),
             routes: Vec::new(),

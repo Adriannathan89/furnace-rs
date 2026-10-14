@@ -62,6 +62,9 @@ jobs:
           cargo check -p furnace-rs-common --no-default-features --features jwt
           cargo check -p furnace-rs-common --no-default-features --features cookies
           cargo check -p furnace-rs-common --no-default-features --features sea-orm
+          cargo check -p furnace-rs-grpc --no-default-features
+          cargo check -p furnace-rs-grpc --no-default-features --features jwt,tls
+          cargo check -p furnace-rs --no-default-features --features grpc,jwt,grpc-tls,runtime-tokio
           cargo check -p furnace-rs --no-default-features
           cargo check -p furnace-rs --no-default-features --features http,runtime-tokio
           cargo check -p furnace-rs --no-default-features --features sea-orm
@@ -227,9 +230,11 @@ jobs:
           packages=(
             furnace-rs-core-macros
             furnace-rs-common-macros
+            furnace-rs-grpc-macros
             furnace-rs-core
             furnace-rs-extra
             furnace-rs-common
+            furnace-rs-grpc
             furnace-rs-testing
             furnace-rs
             furnace-rs-persistence
