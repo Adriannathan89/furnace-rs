@@ -1,12 +1,12 @@
 //! Passport admission precedes generated protobuf decoding for every RPC shape.
-#![cfg(all(feature = "grpc", feature = "jwt"))]
+#![cfg(feature = "jwt")]
 use furnace_grpc_test_support::{FILE_DESCRIPTOR_SET, pb};
-use furnace_rs_common::{
+use furnace_rs_core::{ConfigBuilder, Furnace, MapSource, burner, cauldron};
+use furnace_rs_grpc::{
     JwtClaims, JwtService, JwtSignOptions, JwtTokenKind, PassportContext, PassportError,
     PassportPrincipal, PassportResult, PassportStrategy, grpc_authenticated, grpc_service,
     grpc_verified_token, guard, passport_strategy, tonic,
 };
-use furnace_rs_core::{ConfigBuilder, Furnace, MapSource, burner, cauldron};
 use std::{
     pin::Pin,
     sync::{
@@ -97,13 +97,13 @@ impl Service {
             &*principal,
             &**req
                 .extensions()
-                .get::<furnace_rs_common::Authenticated<Principal>>()
+                .get::<furnace_rs_grpc::Authenticated<Principal>>()
                 .unwrap()
         ));
         assert!(std::ptr::eq(
             verified.verified(),
             req.extensions()
-                .get::<furnace_rs_common::VerifiedToken<Claims>>()
+                .get::<furnace_rs_grpc::VerifiedToken<Claims>>()
                 .unwrap()
                 .verified()
         ));
@@ -288,7 +288,7 @@ async fn grpc_guard_admission() {
             request
                 .headers_mut()
                 .insert("proxy-authorization", "private".parse().unwrap());
-            let response = furnace_rs_common::build_grpc_routes(&app)
+            let response = furnace_rs_grpc::build_grpc_routes(&app)
                 .unwrap()
                 .prepare()
                 .oneshot(request)
@@ -378,7 +378,7 @@ async fn configured_app<M: furnace_rs_core::Cauldron>() -> Furnace {
 async fn native_call(app: &Furnace, public: bool) {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let address = listener.local_addr().unwrap();
-    let routes = furnace_rs_common::build_grpc_routes(app).unwrap();
+    let routes = furnace_rs_grpc::build_grpc_routes(app).unwrap();
     let (stop, signal) = tokio::sync::oneshot::channel();
     let task = tokio::spawn(async move {
         tonic::transport::Server::builder()
@@ -471,39 +471,8 @@ async fn unreachable_strategy_cannot_satisfy_grpc_guard() {
         error
             .diagnostics()
             .iter()
-            .any(|d| d.code() == furnace_rs_common::FURNACE130)
+            .any(|d| d.code() == furnace_rs_grpc::FURNACE130)
     );
-}
-
-#[cfg(feature = "cookies")]
-mod cookie {
-    use super::*;
-    #[guard(strategy = "grpc-test", principal = Principal, source = cookie("session"))]
-    struct CookieGuard;
-    #[burner]
-    struct CookieService;
-    #[grpc_service(server = pb::hidden_server::HiddenServer, descriptor = FILE_DESCRIPTOR_SET, guard = CookieGuard)]
-    #[tonic::async_trait]
-    impl pb::hidden_server::Hidden for CookieService {
-        async fn secret(
-            &self,
-            _: tonic::Request<pb::Item>,
-        ) -> Result<tonic::Response<pb::Item>, tonic::Status> {
-            panic!("cookie guard must fail preflight")
-        }
-    }
-    #[cauldron(providers = [Strategy, ConstructorSentinel], grpc_services = [CookieService])]
-    struct CookieApp;
-    #[tokio::test]
-    async fn cookie_guard_rejected_during_preflight() {
-        let mut builder = Furnace::builder();
-        builder.root::<CookieApp>().unwrap();
-        let error = match builder.build().await {
-            Ok(_) => panic!("cookie guard accepted"),
-            Err(error) => error,
-        };
-        assert_eq!(error.code(), furnace_rs_common::FURNACE150);
-    }
 }
 
 #[tokio::test]
@@ -511,7 +480,7 @@ async fn admitted_calls_retain_typed_principals_and_claims_for_all_shapes() {
     let app = app().await;
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let address = listener.local_addr().unwrap();
-    let routes = furnace_rs_common::build_grpc_routes(&app).unwrap();
+    let routes = furnace_rs_grpc::build_grpc_routes(&app).unwrap();
     let (stop, signal) = tokio::sync::oneshot::channel();
     let task = tokio::spawn(async move {
         tonic::transport::Server::builder()

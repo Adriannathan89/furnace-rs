@@ -175,7 +175,9 @@ impl ErasedAuthentication {
         Arc::downcast::<VerifiedJwt<C>>(Arc::clone(&self.exact_verified)).ok()
     }
 
-    pub(crate) fn install_extensions(&self, extensions: &mut Extensions) -> bool {
+    /// Installs the exact typed authentication allocations for transport adapters.
+    #[doc(hidden)]
+    pub fn install_extensions(&self, extensions: &mut Extensions) -> bool {
         (self.install_extensions)(self, extensions)
     }
 }
@@ -391,7 +393,8 @@ impl PassportStrategyCatalog {
     }
 
     /// Validates only guards and strategy names used by a focused controller.
-    pub(crate) fn preflight_for_test(
+    #[doc(hidden)]
+    pub fn preflight_for_test(
         scoped_guards: &[ScopedGuard],
         provider_available: impl Fn(TypeId) -> bool,
     ) -> Result<PassportStrategyPreflight<'static>> {
@@ -429,7 +432,8 @@ impl PassportStrategyCatalog {
     /// behavior. Rooted guards see custom strategies only from their own
     /// cauldron, a direct import's explicit exports, or reachable global exports.
     #[allow(clippy::result_large_err)]
-    pub(crate) fn preflight_scoped(
+    #[doc(hidden)]
+    pub fn preflight_scoped(
         cauldron_graph: Option<&CauldronGraph>,
         guards: &[ScopedGuard],
     ) -> Result<PassportStrategyPreflight<'static>> {
@@ -571,7 +575,9 @@ pub struct PassportStrategyPreflight<'a> {
 }
 
 impl<'a> PassportStrategyPreflight<'a> {
-    pub(crate) fn binding_for_occurrence(
+    /// Finds one preflight-selected transport operation.
+    #[doc(hidden)]
+    pub fn binding_for_occurrence(
         &self,
         occurrence: &GuardOccurrence,
         context_cauldron: Option<TypeId>,

@@ -51,7 +51,7 @@ fn bearer_value(
         .map_err(|_| GrpcClientError::invalid_credential())?;
     let mut headers = http::HeaderMap::new();
     headers.insert(http::header::AUTHORIZATION, value);
-    if crate::bearer::parse(&headers) != Some(token) {
+    if crate::common::__transport::parse_bearer(&headers) != Some(token) {
         return Err(GrpcClientError::invalid_credential());
     }
     format!("Bearer {token}")
@@ -60,6 +60,7 @@ fn bearer_value(
 }
 struct State {
     config: GrpcClientConfig,
+    endpoint: tonic::transport::Endpoint,
     provider: Option<ErasedTokenProvider>,
     channel: Mutex<Option<Channel>>,
     closed: AtomicBool,
@@ -80,8 +81,10 @@ impl GrpcChannel {
         config: GrpcClientConfig,
         provider: Option<ErasedTokenProvider>,
     ) -> furnace_rs_core::Result<Self> {
+        let endpoint = super::client_endpoint(&config).await?;
         Ok(Self(Arc::new(State {
             config,
+            endpoint,
             provider,
             channel: Mutex::new(None),
             closed: AtomicBool::new(false),
@@ -110,11 +113,7 @@ impl GrpcChannel {
         self.0.channel.lock().expect("channel lock poisoned").take();
     }
     async fn endpoint(&self) -> GrpcClientResult<tonic::transport::Endpoint> {
-        Ok(self
-            .0
-            .config
-            .endpoint()
-            .connect_timeout(self.0.config.connect_timeout()))
+        Ok(self.0.endpoint.clone())
     }
     async fn channel(&self) -> GrpcClientResult<Channel> {
         if self.0.closed.load(Ordering::SeqCst) {
@@ -155,7 +154,7 @@ impl Service<http::Request<Body>> for GrpcChannel {
             let dispatch = async {
                 // Validate existing credentials before provider invocation or channel creation.
                 if request.headers().contains_key(http::header::AUTHORIZATION) {
-                    crate::bearer::parse(request.headers())
+                    crate::common::__transport::parse_bearer(request.headers())
                         .ok_or_else(GrpcClientError::invalid_credential)?;
                 } else if let Some(provider) = &this.0.provider {
                     let token = (provider.0)().await?;

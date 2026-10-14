@@ -1,6 +1,8 @@
 //! Shared strict Bearer field-value syntax for transport adapters.
 use http::header::AUTHORIZATION;
-pub(crate) fn parse(headers: &http::HeaderMap) -> Option<&str> {
+/// Parses one strict Bearer authorization field without exposing credential errors.
+#[doc(hidden)]
+pub fn parse(headers: &http::HeaderMap) -> Option<&str> {
     let mut values = headers.get_all(AUTHORIZATION).iter();
     let value = values.next()?;
     if values.next().is_some() {

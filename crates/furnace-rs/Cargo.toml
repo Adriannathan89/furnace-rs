@@ -10,6 +10,7 @@ readme = "README.md"
 description = "Modular Rust application framework with Axum and Passport integrations"
 
 [dependencies]
+furnace-rs-grpc = { path = "../furnace-rs-grpc", version = "=2.0.0-beta.1", optional = true }
 furnace-rs-common = { path = "../furnace-rs-common", version = "=2.0.0-beta.1", optional = true, default-features = false }
 furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0-beta.1" }
 furnace-rs-extra = { path = "../furnace-rs-extra", version = "=2.0.0-beta.1", optional = true }
@@ -24,12 +25,12 @@ tower.workspace = true
 trybuild.workspace = true
 
 [features]
-grpc = ["dep:furnace-rs-common", "furnace-rs-common/grpc"]
-grpc-tls = ["grpc", "furnace-rs-common/grpc-tls"]
+grpc = ["dep:furnace-rs-grpc"]
+grpc-tls = ["grpc", "furnace-rs-grpc/tls"]
 default = ["common", "runtime-tokio"]
 common = ["http", "logger"]
 http = ["dep:furnace-rs-common", "furnace-rs-common/http"]
-jwt = ["dep:furnace-rs-common", "furnace-rs-common/jwt"]
+jwt = ["dep:furnace-rs-common", "furnace-rs-common/jwt", "furnace-rs-grpc?/jwt"]
 cookies = ["http", "furnace-rs-common/cookies"]
 sea-orm = ["http", "furnace-rs-common/sea-orm"]
 logger = ["dep:furnace-rs-common", "furnace-rs-common/logger"]

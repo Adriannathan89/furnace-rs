@@ -1,5 +1,5 @@
 //! Asynchronous Passport admission around native generated Tonic services.
-use crate::passport::{authentication::authenticate_bearer, policy::authorizes};
+use crate::common::passport::__private::{authenticate_bearer, authorizes};
 use crate::{
     Authenticated, PassportError, PassportErrorKind, PassportPrincipal, PassportStrategyBinding,
     VerifiedToken,
@@ -41,6 +41,7 @@ pub fn passport_status(error: PassportError) -> Status {
         PassportErrorKind::Rejected => Status::unauthenticated("unauthenticated"),
         PassportErrorKind::Forbidden => Status::permission_denied("permission denied"),
         PassportErrorKind::Internal => Status::internal("internal server error"),
+        _ => Status::internal("internal server error"),
     }
 }
 /// Generated-service adapter retaining the native service name and readiness contract.
@@ -90,7 +91,7 @@ where
                     .extensions()
                     .get::<tonic::transport::server::TcpConnectInfo>()
                     .and_then(|info| info.remote_addr());
-                #[cfg(feature = "grpc-tls")]
+                #[cfg(feature = "tls")]
                 let peer = peer.or_else(|| {
                     request
                         .extensions()
@@ -165,11 +166,10 @@ mod tests {
             let jwt = app
                 .resolve::<JwtService>()
                 .map_err(PassportError::internal)?;
-            let verified = jwt.verify_at::<Claims>(
-                token,
-                JwtValidation::access(),
-                NOW.load(Ordering::SeqCst),
-            )?;
+            let verified = jwt.verify::<Claims>(token, JwtValidation::access())?;
+            if verified.claims.registered.expires_at <= NOW.load(Ordering::SeqCst) {
+                return Err(PassportError::reject());
+            }
             Ok(ErasedAuthentication::new(
                 verified.claims.custom.clone(),
                 verified,
@@ -257,7 +257,7 @@ mod tests {
         builder.root::<ExpiryApp>().unwrap();
         builder.provide(jwt).unwrap();
         let app = builder.build().await.unwrap();
-        let guards = [crate::passport::scope::ScopedGuard {
+        let guards = [crate::common::passport::__private::ScopedGuard {
             guard: &GUARD,
             occurrence: None,
             context_cauldron: Some(TypeId::of::<ExpiryApp>()),
@@ -291,6 +291,9 @@ mod tests {
         };
         let mut output = client.server_stream(request()).await.unwrap().into_inner();
         NOW.store(decoded.registered.expires_at, Ordering::SeqCst);
+        tokio::time::pause();
+        tokio::time::advance(Duration::from_secs(decoded.registered.expires_at - decoded.registered.issued_at)).await;
+        tokio::time::resume();
         send.send(Ok(pb::Item { value: 13 })).await.unwrap();
         drop(send);
         assert_eq!(output.message().await.unwrap().unwrap().value, 13);

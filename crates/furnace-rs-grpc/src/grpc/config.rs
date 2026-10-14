@@ -359,10 +359,14 @@ fn boolean(config: &Config, key: &str, default: bool) -> Result<bool> {
 }
 #[allow(clippy::result_large_err)]
 fn require_tls_feature(config: &Config, key: &str) -> Result<()> {
-    if cfg!(feature = "grpc-tls") {
+    if cfg!(feature = "tls") {
         Ok(())
     } else {
-        Err(invalid(config, key, "requires the grpc-tls feature"))
+        Err(invalid(
+            config,
+            key,
+            "requires the tls feature (facade grpc-tls)",
+        ))
     }
 }
 fn invalid(config: &Config, key: &str, rule: &str) -> Error {

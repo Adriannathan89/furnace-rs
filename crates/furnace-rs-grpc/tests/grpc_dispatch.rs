@@ -1,8 +1,7 @@
 //! Real protobuf framing, four RPC shapes, limits, and cancellation through DI services.
-#![cfg(feature = "grpc")]
 use furnace_grpc_test_support::{FILE_DESCRIPTOR_SET, pb};
-use furnace_rs_common::{grpc_service, tonic};
 use furnace_rs_core::{ConfigBuilder, Furnace, Injector, MapSource, cauldron};
+use furnace_rs_grpc::{grpc_service, tonic};
 use std::{
     pin::Pin,
     sync::{
@@ -146,7 +145,7 @@ impl Running {
             .unwrap()
             .as_ref()
             .clone();
-        let routes = furnace_rs_common::build_grpc_routes(&application).unwrap();
+        let routes = furnace_rs_grpc::build_grpc_routes(&application).unwrap();
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let (stop, signal) = tokio::sync::oneshot::channel();

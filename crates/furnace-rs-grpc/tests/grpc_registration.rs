@@ -1,8 +1,7 @@
 //! Registered protobuf services are scoped and validated before DI construction.
-#![cfg(feature = "grpc")]
 use furnace_grpc_test_support::{FILE_DESCRIPTOR_SET, pb};
-use furnace_rs_common::{grpc_service, tonic};
 use furnace_rs_core::{Furnace, Injector, cauldron};
+use furnace_rs_grpc::{grpc_service, tonic};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 static CONSTRUCTORS: AtomicUsize = AtomicUsize::new(0);
@@ -75,10 +74,10 @@ struct MissingRoot;
 fn grpc_registered_provider_without_service_metadata_rejected() {
     let graph = furnace_rs_core::__private::build_cauldron_graph::<MissingRoot>().unwrap();
     assert_eq!(
-        furnace_rs_common::GrpcApplicationScope::for_cauldron_graph(Some(&graph))
+        furnace_rs_grpc::GrpcApplicationScope::for_cauldron_graph(Some(&graph))
             .unwrap_err()
             .code(),
-        furnace_rs_common::FURNACE150
+        furnace_rs_grpc::FURNACE150
     );
 }
 
@@ -87,14 +86,14 @@ async fn only_reachable_registered_services_selected() {
     let mut builder = Furnace::builder();
     builder.root::<SelectedRoot>().unwrap();
     let application = builder.build().await.unwrap();
-    let scope = furnace_rs_common::GrpcApplicationScope::for_application(&application).unwrap();
+    let scope = furnace_rs_grpc::GrpcApplicationScope::for_application(&application).unwrap();
     assert_eq!(scope.services().len(), 1);
     assert_eq!(scope.services()[0].name(), "furnace.test.v1.Hidden");
     let mut builder = Furnace::builder();
     builder.root::<EmptyRoot>().unwrap();
     let empty = builder.build().await.unwrap();
     assert!(
-        furnace_rs_common::GrpcApplicationScope::for_application(&empty)
+        furnace_rs_grpc::GrpcApplicationScope::for_application(&empty)
             .unwrap()
             .services()
             .is_empty()
@@ -108,8 +107,8 @@ async fn duplicate_wire_service_and_unknown_method_fail_preconstruction() {
         furnace_rs_core::__private::build_cauldron_graph::<UnknownRoot>().unwrap(),
     ] {
         let error =
-            furnace_rs_common::GrpcApplicationScope::for_cauldron_graph(Some(&graph)).unwrap_err();
-        assert_eq!(error.code(), furnace_rs_common::FURNACE150);
+            furnace_rs_grpc::GrpcApplicationScope::for_cauldron_graph(Some(&graph)).unwrap_err();
+        assert_eq!(error.code(), furnace_rs_grpc::FURNACE150);
     }
     let mut builder = Furnace::builder();
     builder.root::<DuplicateRoot>().unwrap();
@@ -118,7 +117,7 @@ async fn duplicate_wire_service_and_unknown_method_fail_preconstruction() {
         analysis
             .diagnostics()
             .iter()
-            .any(|d| d.code() == furnace_rs_common::FURNACE150)
+            .any(|d| d.code() == furnace_rs_grpc::FURNACE150)
     );
     assert!(builder.build().await.is_err());
     assert_eq!(INVALID_CONSTRUCTORS.load(Ordering::SeqCst), 0);

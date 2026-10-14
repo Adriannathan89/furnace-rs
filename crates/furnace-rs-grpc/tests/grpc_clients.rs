@@ -1,10 +1,9 @@
 //! Named outbound clients retain native protobuf APIs and prepare credentials locally.
-#![cfg(feature = "grpc")]
 use furnace_grpc_test_support::pb;
-use furnace_rs_common::{
+use furnace_rs_core::{ConfigBuilder, Furnace, Injector, MapSource, Secret, cauldron};
+use furnace_rs_grpc::{
     GrpcClientError, GrpcClientResult, GrpcTokenProvider, grpc_client, set_grpc_bearer_token, tonic,
 };
-use furnace_rs_core::{ConfigBuilder, Furnace, Injector, MapSource, Secret, cauldron};
 use std::{
     sync::{
         Arc, Mutex,
@@ -507,7 +506,7 @@ async fn duplicate_selected_client_names_fail_preconstruction() {
         Ok(_) => panic!("duplicate client accepted"),
         Err(error) => error,
     };
-    assert_eq!(error.code(), furnace_rs_common::FURNACE153);
+    assert_eq!(error.code(), furnace_rs_grpc::FURNACE153);
 }
 
 #[tokio::test]
@@ -676,9 +675,9 @@ async fn establishment_deadline_bounds_token_provider_wait() {
         .unwrap();
     let tokens = Tokens::default();
     tokens.stall.store(true, Ordering::SeqCst);
-    let channel = furnace_rs_common::GrpcChannel::from_config(
-        furnace_rs_common::GrpcClientConfig::parse(&config, "alpha").unwrap(),
-        Some(furnace_rs_common::ErasedTokenProvider::of(tokens.clone())),
+    let channel = furnace_rs_grpc::GrpcChannel::from_config(
+        furnace_rs_grpc::GrpcClientConfig::parse(&config, "alpha").unwrap(),
+        Some(furnace_rs_grpc::ErasedTokenProvider::of(tokens.clone())),
     )
     .await
     .unwrap();

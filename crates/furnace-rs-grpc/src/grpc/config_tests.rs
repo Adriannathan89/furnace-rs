@@ -121,7 +121,7 @@ fn grpc_configuration_paths_follow_source() {
         .source(TomlSource::file(path))
         .build()
         .unwrap();
-    #[cfg(feature = "grpc-tls")]
+    #[cfg(feature = "tls")]
     {
         let s = GrpcServerConfig::parse(&c).unwrap();
         assert_eq!(
@@ -133,7 +133,7 @@ fn grpc_configuration_paths_follow_source() {
             root.path().join("certs/server.key")
         );
     }
-    #[cfg(not(feature = "grpc-tls"))]
+    #[cfg(not(feature = "tls"))]
     assert!(GrpcServerConfig::parse(&c).is_err());
 }
 

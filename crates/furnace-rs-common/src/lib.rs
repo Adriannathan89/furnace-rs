@@ -10,22 +10,6 @@
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
-#[cfg(all(test, feature = "grpc"))]
-#[path = "grpc/config_tests.rs"]
-mod grpc_config_tests;
-
-/// Protobuf-first gRPC transport and native Tonic integration.
-#[cfg(feature = "grpc")]
-pub mod grpc;
-/// Configuration-selected application transport coordination.
-#[cfg(any(feature = "http", feature = "grpc"))]
-pub mod runtime;
-/// Links a generated protobuf server to a managed implementation.
-#[cfg(feature = "grpc")]
-pub use furnace_rs_common_macros::{grpc_client, grpc_service};
-#[cfg(feature = "grpc")]
-pub use grpc::*;
-
 #[cfg(feature = "http")]
 mod cors;
 #[cfg(feature = "http")]
@@ -77,11 +61,11 @@ pub mod cookie;
 pub mod jwt;
 
 /// Typed Passport principals, request context, and normalized failures.
-#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub mod passport;
 
 /// Static policy metadata implemented by the guard declaration macro.
-#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 #[doc(hidden)]
 pub use passport::GuardPolicy;
 /// Erased static policy declarations used by startup analysis.
@@ -105,7 +89,7 @@ pub use jwt::{
 };
 
 /// Typed Passport principals, guarded extractors, context, errors, and diagnostics.
-#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub use passport::{
     Authenticated, BuiltinGuardAdapter, ClaimsPrincipal, ErasedAuthentication, FURNACE130,
     FURNACE131, GuardCatalog, GuardDescriptor, GuardPredicate, GuardPredicateAdapter,
@@ -168,15 +152,15 @@ pub use furnace_rs_common_macros::controller;
 pub use furnace_rs_common_macros::seal;
 
 /// Declares a static unit-struct Passport policy attached by a controller seal.
-#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub use furnace_rs_common_macros::guard;
 
 /// Derives role and permission membership for a named Passport principal.
-#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub use furnace_rs_common_macros::PassportPrincipal;
 
 /// Registers a managed, typed Passport JWT strategy.
-#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub use furnace_rs_common_macros::passport_strategy;
 
 /// Marks a DELETE route inside a route-contract trait.
@@ -275,5 +259,12 @@ pub mod __private {
     };
 }
 
-#[cfg(any(feature = "grpc", all(feature = "http", feature = "jwt")))]
+#[cfg(any(feature = "transport-metadata", all(feature = "http", feature = "jwt")))]
 mod bearer;
+
+/// Neutral metadata integration details shared by transport packages.
+#[doc(hidden)]
+#[cfg(any(feature = "transport-metadata", all(feature = "http", feature = "jwt")))]
+pub mod __transport {
+    pub use crate::bearer::parse as parse_bearer;
+}

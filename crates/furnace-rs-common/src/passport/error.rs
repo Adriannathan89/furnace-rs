@@ -34,7 +34,9 @@ impl PassportError {
         }
     }
 
-    pub(crate) const fn forbidden() -> Self {
+    /// Creates a transport-neutral policy rejection.
+    #[doc(hidden)]
+    pub const fn forbidden() -> Self {
         Self {
             kind: PassportErrorKind::Forbidden,
             source: None,

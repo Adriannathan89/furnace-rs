@@ -39,3 +39,13 @@ pub use client::{ErasedTokenProvider, GrpcClientLifecycle};
 pub use client::{GrpcChannel, GrpcTokenProvider, set_grpc_bearer_token};
 #[doc(hidden)]
 pub use descriptor::{GrpcClientDescriptor, GrpcClientRegistration};
+
+mod tls;
+pub use tls::{client_endpoint, configure_grpc_server};
+
+mod health;
+pub(crate) mod reflection;
+#[doc(hidden)]
+pub use descriptor::{GrpcReflectionDescriptor, GrpcReflectionRegistration};
+pub use health::{GrpcHealth, install_grpc_infrastructure};
+pub use reflection::reflection_descriptors;

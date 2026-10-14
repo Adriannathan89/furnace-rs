@@ -235,8 +235,7 @@ pub use furnace_rs_core::{
     feature = "http",
     feature = "jwt",
     feature = "cookies",
-    feature = "logger",
-    feature = "grpc"
+    feature = "logger"
 ))]
 pub use furnace_rs_common as common;
 
@@ -302,21 +301,21 @@ pub use furnace_rs_common::{
     VerifiedToken, guard, passport_strategy,
 };
 
-/// gRPC configuration and native Tonic types.
-#[cfg(feature = "grpc")]
-pub use furnace_rs_common::{
-    GrpcCauldronExt, GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes, grpc_client,
-    grpc_service, set_grpc_bearer_token,
-};
-/// gRPC configuration and native Tonic types.
-#[cfg(feature = "grpc")]
-pub use furnace_rs_common::{
-    GrpcClientConfig, GrpcClientError, GrpcClientResult, GrpcConnectionMode, GrpcServerConfig,
-    grpc, tonic,
-};
 /// HTTP-specific Passport middleware and rejections.
 #[cfg(all(feature = "http", feature = "jwt"))]
 pub use furnace_rs_common::{PassportGuard, PassportGuardBuilder, PassportRejection};
+/// gRPC configuration and native Tonic types.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc::{
+    GrpcCauldronExt, GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes, grpc_client,
+    grpc_reflection, grpc_service, set_grpc_bearer_token,
+};
+/// gRPC configuration and native Tonic types.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc::{
+    GrpcClientConfig, GrpcClientError, GrpcClientResult, GrpcConnectionMode, GrpcServerConfig,
+    tonic,
+};
 
 /// Re-exports the managed-controller declaration attribute.
 #[cfg(feature = "http")]
@@ -348,23 +347,23 @@ pub use furnace_rs_extra as extra;
 
 /// Collects application-facing furnace-rs imports.
 pub mod prelude {
-    /// Managed protobuf service registration.
-    #[cfg(feature = "grpc")]
-    pub use furnace_rs_common::{
-        GrpcCauldronExt, GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes,
-        grpc_client, grpc_service, set_grpc_bearer_token,
-    };
-    /// gRPC configuration and native protobuf transport contracts.
-    #[cfg(feature = "grpc")]
-    pub use furnace_rs_common::{
-        GrpcClientConfig, GrpcClientError, GrpcClientResult, GrpcConnectionMode, GrpcServerConfig,
-        tonic,
-    };
     /// HTTP-specific Passport middleware and rejections.
     #[cfg(all(feature = "http", feature = "jwt"))]
     pub use furnace_rs_common::{PassportGuard, PassportGuardBuilder, PassportRejection};
+    /// Managed protobuf service registration.
+    #[cfg(feature = "grpc")]
+    pub use furnace_rs_grpc::{
+        GrpcCauldronExt, GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes,
+        grpc_client, grpc_reflection, grpc_service, set_grpc_bearer_token,
+    };
+    /// gRPC configuration and native protobuf transport contracts.
+    #[cfg(feature = "grpc")]
+    pub use furnace_rs_grpc::{
+        GrpcClientConfig, GrpcClientError, GrpcClientResult, GrpcConnectionMode, GrpcServerConfig,
+        tonic,
+    };
     #[cfg(all(feature = "grpc", feature = "jwt"))]
-    pub use furnace_rs_common::{grpc_authenticated, grpc_verified_token};
+    pub use furnace_rs_grpc::{grpc_authenticated, grpc_verified_token};
 
     /// Static controller protection declarations.
     #[cfg(feature = "http")]
@@ -454,4 +453,14 @@ pub mod prelude {
 }
 
 #[cfg(all(feature = "grpc", feature = "jwt"))]
-pub use furnace_rs_common::{grpc_authenticated, grpc_verified_token, passport_status};
+pub use furnace_rs_grpc::{grpc_authenticated, grpc_verified_token, passport_status};
+
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc::{
+    GrpcHealth, client_endpoint, configure_grpc_server, install_grpc_infrastructure,
+    reflection_descriptors,
+};
+
+/// Standalone gRPC transport package.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc as grpc;

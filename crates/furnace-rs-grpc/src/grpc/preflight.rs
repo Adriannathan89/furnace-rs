@@ -39,9 +39,10 @@ pub fn preflight_grpc(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
         .memoize(|| SelectedGrpcMetadata::select(context.cauldron_graph(), context.focus_type_id()))
         .scope()
         .and_then(|scope| {
+            super::reflection::selected_policy(&scope, context.config())?;
             #[cfg(feature = "jwt")]
             {
-                let guards = scope.guards();
+                let guards = super::reflection::guards(&scope, context.config())?;
                 let strategies = if context.focus_type_id().is_some() {
                     crate::PassportStrategyCatalog::preflight_for_test(&guards, |id| {
                         context.has_output_type_id(id)
@@ -127,4 +128,18 @@ fn preflight_clients(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
 }
 furnace_rs_core::__private::inventory::submit! {
     PreflightDescriptor::new("furnace.common.grpc.clients.preflight", SourceLocation::new(file!(), line!(), column!()), preflight_clients)
+}
+
+#[cfg(feature = "jwt")]
+fn passport_scope(
+    context: &furnace_rs_core::__private::AutoConfigurationContext<'_>,
+) -> furnace_rs_core::Result<Vec<crate::common::passport::__private::ScopedGuard>> {
+    let scope = context
+        .memoize(|| SelectedGrpcMetadata::select(context.cauldron_graph(), context.focus_type_id()))
+        .scope()?;
+    super::reflection::guards(&scope, context.config())
+}
+#[cfg(feature = "jwt")]
+furnace_rs_core::__private::inventory::submit! {
+    crate::common::passport::__private::PassportScopeDescriptor { select: passport_scope }
 }

@@ -1,0 +1,19 @@
+[package]
+name = "furnace-rs-grpc-macros"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+readme = "README.md"
+description = "gRPC service, client, and reflection procedural macros for furnace-rs"
+[dependencies]
+proc-macro-crate.workspace = true
+proc-macro2.workspace = true
+quote.workspace = true
+syn.workspace = true
+[lib]
+proc-macro = true
+[lints]
+workspace = true

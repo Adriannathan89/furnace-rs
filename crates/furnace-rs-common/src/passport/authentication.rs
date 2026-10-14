@@ -5,7 +5,9 @@ use super::{
 use furnace_rs_core::ApplicationContext;
 use http::{HeaderMap, Method, Uri};
 
-pub(crate) async fn authenticate_bearer(
+/// Authenticates sanitized Bearer metadata for a transport integration.
+#[doc(hidden)]
+pub async fn authenticate_bearer(
     application: &ApplicationContext,
     adapter: PassportStrategyAdapter,
     headers: &HeaderMap,

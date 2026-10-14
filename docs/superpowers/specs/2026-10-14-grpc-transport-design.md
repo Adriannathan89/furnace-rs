@@ -327,3 +327,19 @@ Run workspace formatting, Clippy, tests, doctests, rustdoc warnings, and Rust 1.
 Exact dependency versions and MSRV compatibility will be verified when finalizing the plan; latest online documentation alone does not establish workspace compatibility.
 
 Confirmed during implementation: per-call and configured RPC establishment deadlines include asynchronous token-provider wait, connection readiness, and dispatch. Established response streams retain native lifetime behavior.
+
+
+## Approved crate migration amendment
+
+The user requested migration before continuing the remaining implementation and confirmed this layout:
+
+- `furnace-rs-grpc` is a standalone transport package. gRPC is its base functionality; its optional features are `jwt` and `tls`.
+- `furnace-rs-grpc-macros` owns `grpc_service`, `grpc_client`, and `grpc_reflection` expansion and resolves standalone, renamed, and facade dependencies.
+- The `furnace-rs` facade retains `grpc` and `grpc-tls`, mapping them to the new package. Facade `jwt` weakly enables the new package's `jwt` feature without enabling gRPC in JWT-only applications.
+- Remove gRPC APIs, features, implementation, macros, and Tonic/Prost dependencies from common. Shared Passport/JWT stays in common. Transport-neutral Bearer metadata parsing and hidden scoped Passport integration interfaces support the new crate without enabling Furnace HTTP.
+- Common JWT auto-configuration receives selected protection requirements through a neutral inventory callback. It never depends on the gRPC package or its protobuf types.
+- Direct standalone gRPC consumers can use the re-exported core macros and optional Passport macros without declaring extra package aliases. Core and Passport macro path resolution recognizes this consumer path without adding transport dependencies to core.
+- Existing gRPC behavior, security policies, deadlines, native cancellation, version floor, and proto ownership remain unchanged. Move the already implemented tests and in-progress TLS/health/reflection work with their implementation.
+- Shared lifecycle/startup and private inspection coordination remain transport-neutral in common. Remaining Tasks 8 and 9 use integration registrations from the gRPC crate rather than importing Tonic or Prost into common.
+
+Migration is explicitly authorized by the user's instruction to start migrating now, followed by confirmation of standalone/facade separation and dedicated macro/features layout. Native execution and the final independent review remain selected.

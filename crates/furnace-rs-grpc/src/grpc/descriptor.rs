@@ -180,3 +180,40 @@ pub struct GrpcClientRegistration {
     pub descriptor: &'static GrpcClientDescriptor,
 }
 furnace_rs_core::__private::inventory::collect!(GrpcClientRegistration);
+
+/// One typed policy belonging to a cauldron root's optional reflection service.
+#[doc(hidden)]
+pub struct GrpcReflectionDescriptor {
+    root: fn() -> TypeId,
+    guard: GrpcGuard,
+    location: SourceLocation,
+}
+impl GrpcReflectionDescriptor {
+    /// Creates a root policy without constructing a provider.
+    pub const fn new(root: fn() -> TypeId, guard: GrpcGuard, location: SourceLocation) -> Self {
+        Self {
+            root,
+            guard,
+            location,
+        }
+    }
+    /// Returns the root identity.
+    pub fn root(&self) -> TypeId {
+        (self.root)()
+    }
+    /// Returns the typed policy.
+    pub const fn guard(&self) -> GrpcGuard {
+        self.guard
+    }
+    /// Returns the declaration source.
+    pub const fn location(&self) -> SourceLocation {
+        self.location
+    }
+}
+/// Linked root reflection metadata.
+#[doc(hidden)]
+pub struct GrpcReflectionRegistration {
+    /// Static policy declaration.
+    pub descriptor: &'static GrpcReflectionDescriptor,
+}
+furnace_rs_core::__private::inventory::collect!(GrpcReflectionRegistration);

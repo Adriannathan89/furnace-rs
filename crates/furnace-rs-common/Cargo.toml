@@ -11,8 +11,8 @@ description = "HTTP, JWT, cookies, and Passport integrations for furnace-rs"
 
 [features]
 default = ["http"]
-grpc = ["dep:http", "dep:heck", "dep:tonic", "dep:tonic-health", "dep:tonic-reflection", "dep:prost", "dep:prost-types", "dep:tokio", "dep:tower", "dep:serde", "dep:serde_json", "dep:furnace-rs-common-macros"]
-grpc-tls = ["grpc", "tonic/tls-ring", "tonic/tls-webpki-roots"]
+transport-metadata = ["dep:http"]
+passport = ["jwt", "transport-metadata", "dep:furnace-rs-common-macros", "furnace-rs-common-macros/passport"]
 http = [
     "dep:http",
     "dep:chrono",
@@ -42,12 +42,6 @@ logger = ["dep:chrono"]
 sea-orm = ["http", "dep:sea-orm"]
 
 [dependencies]
-heck = { version = "0.5", optional = true }
-tonic = { workspace = true, optional = true, features = ["transport", "router", "codegen"] }
-tonic-health = { workspace = true, optional = true }
-tonic-reflection = { workspace = true, optional = true }
-prost = { workspace = true, optional = true }
-prost-types = { workspace = true, optional = true }
 http = { workspace = true, optional = true }
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
@@ -72,8 +66,6 @@ chrono = { version = "0.4.24", optional = true }
 rustix = { workspace = true, optional = true }
 
 [dev-dependencies]
-tonic-prost.workspace = true
-furnace-grpc-test-support = { path = "../../tests/grpc-support" }
 http-body.workspace = true
 hyper = { workspace = true, features = ["client", "http2"] }
 tempfile = "3"

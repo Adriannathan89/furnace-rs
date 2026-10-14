@@ -1,3 +1,4 @@
+<!-- Crate migration amendment: Task 11 executes after completed Tasks 1–6 and before resuming Task 7. For remaining tasks, gRPC-specific files/tests/macros belong to furnace-rs-grpc / furnace-rs-grpc-macros; common retains neutral shared coordination and Passport. Earlier completed tasks are historical. -->
 # gRPC Transport Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking. Execution method: native, approved by the user. Implementer works in this session; independent whole-branch review follows verification.
@@ -177,6 +178,20 @@ Test processes use loopback port-zero listeners, explicit shutdown channels, bou
 - [x] Implement async token/deadline middleware before remote dispatch. Honor Tower `poll_ready` on the actual service instance called; no shared lock spans provider futures or network awaits. Explicit Bearer parsing uses the shared strict parser; opaque token syntax is checked locally, JWT cryptography remains server-owned. Use fixed local errors when credentials cannot be prepared.
 - [x] Run both targets plus the named-client consumer on Rust 1.94. Expected: no startup I/O for lazy clients, eager failures roll back, explicit precedence and local failure counters pass, and streams/concurrency preserve native semantics.
 - [x] Commit `feat(grpc): add named DI clients with readiness and Bearer providers`.
+
+### Task 11: Migrate implemented gRPC support into dedicated packages before resuming Task 7
+
+**Files:** Add `crates/furnace-rs-grpc` and `crates/furnace-rs-grpc-macros`; move common gRPC source/tests and all three gRPC macros; update workspace, facade, consumer manifests, feature matrix, core/common macro path resolution, and shared Passport integration.
+
+**Interfaces:** gRPC is the standalone crate's base functionality with `jwt`/`tls`. Facade retains `grpc`/`grpc-tls`. Common exposes only neutral hidden metadata/Passport integration interfaces; a linked `PassportScopeDescriptor` callback supplies scoped guards to shared JWT auto-configuration. No common-to-gRPC dependency. Standalone macros resolve re-exported core and Passport types through the new crate, including renamed packages.
+
+- [x] Add standalone/renamed consumer and feature-boundary checks, then run them before relocation and record missing-package/unsupported-feature failures.
+- [x] Move implementation, tests, and in-progress Task 7 files; preserve behavioral contracts and native library APIs.
+- [x] Extract neutral scoped Passport and Bearer integration interfaces; replace common's direct gRPC JWT requirements with inventory callbacks.
+- [x] Move gRPC attributes to the new macro package, resolve direct/renamed/facade paths, and remove common's gRPC features, exports, and dependencies.
+- [x] Update facade wiring and consumer fixtures; retain HTTP-only and JWT-only dependency boundaries.
+- [x] Run the migrated gRPC tests, existing common/Passport tests, macro UI, consumer paths, feature matrix, Clippy, and Rust 1.94 standalone checks. Fix actual relocation regressions before continuing.
+- [x] Commit `refactor(grpc): move transport into dedicated crates`, record Task 11 completion, then resume incomplete Task 7.
 
 ### Task 7: Add verified TLS, public health, and guarded scoped reflection
 

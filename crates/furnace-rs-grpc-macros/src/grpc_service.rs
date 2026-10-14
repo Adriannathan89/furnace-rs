@@ -138,7 +138,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             "grpc_service requires a concrete implementation type",
         ));
     }
-    let common = crate::path::common_path()?;
+    let common = crate::path::grpc_path()?;
     let ty = &implementation.self_ty;
     let ident = &self_path.path.segments.last().unwrap().ident;
     let descriptor_ident = format_ident!("__FURNACE_GRPC_{}", ident.unraw());

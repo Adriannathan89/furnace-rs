@@ -7,6 +7,8 @@ members = [
     "crates/furnace-rs-persistence",
     "crates/furnace-rs-common",
     "crates/furnace-rs-common-macros",
+    "crates/furnace-rs-grpc",
+    "crates/furnace-rs-grpc-macros",
     "crates/furnace-rs-cli",
     "crates/furnace-rs-extra",
     "crates/furnace-rs-testing",

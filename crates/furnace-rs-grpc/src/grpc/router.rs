@@ -64,7 +64,7 @@ impl GrpcRegistrationContext<'_> {
     {
         #[cfg(feature = "jwt")]
         {
-            use crate::passport::scope::GuardOccurrence;
+            use crate::common::passport::__private::GuardOccurrence;
             let guards = self.scope.guards();
             let preflight = crate::PassportStrategyCatalog::preflight_scoped(
                 self.application.cauldron_graph(),

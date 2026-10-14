@@ -87,7 +87,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             "grpc_client client must be an unparameterized generated client path",
         ));
     }
-    let common = crate::path::common_path()?;
+    let common = crate::path::grpc_path()?;
     let ty = &item.ident;
     let name = &args.name;
     let client = &args.client;

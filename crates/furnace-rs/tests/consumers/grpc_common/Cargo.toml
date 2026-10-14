@@ -4,7 +4,7 @@ version = "0.0.0"
 edition = "2024"
 rust-version = "1.94"
 [dependencies]
-web = { package = "furnace-rs-common", path = "../../../../furnace-rs-common", default-features = false, features = ["grpc"] }
+web = { package = "furnace-rs-grpc", path = "../../../../furnace-rs-grpc", default-features = false }
 kernel = { package = "furnace-rs-core", path = "../../../../furnace-rs-core" }
 furnace-grpc-test-support = { path = "../../../../../tests/grpc-support" }
 [workspace]

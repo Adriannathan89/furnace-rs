@@ -55,6 +55,8 @@ impl ScopedGrpcService {
 #[derive(Clone, Debug)]
 pub struct GrpcApplicationScope {
     services: Vec<ScopedGrpcService>,
+    #[cfg(feature = "jwt")]
+    root: Option<TypeId>,
     files: BTreeMap<String, prost_types::FileDescriptorProto>,
 }
 impl GrpcApplicationScope {
@@ -100,21 +102,25 @@ impl GrpcApplicationScope {
     pub fn for_application(application: &Furnace) -> Result<Self> {
         Self::for_cauldron_graph(application.cauldron_graph())
     }
+    #[cfg(feature = "jwt")]
+    pub(crate) const fn root_type_id(&self) -> Option<TypeId> {
+        self.root
+    }
     /// Returns selected services in fully qualified protobuf-name order.
     pub fn services(&self) -> &[ScopedGrpcService] {
         &self.services
     }
     #[cfg(feature = "jwt")]
-    pub(crate) fn guards(&self) -> Vec<crate::passport::scope::ScopedGuard> {
+    pub(crate) fn guards(&self) -> Vec<crate::common::passport::__private::ScopedGuard> {
         self.services
             .iter()
             .flat_map(|service| {
                 service.methods.iter().filter_map(move |method| {
                     method
                         .guard
-                        .map(|guard| crate::passport::scope::ScopedGuard {
+                        .map(|guard| crate::common::passport::__private::ScopedGuard {
                             guard: guard.descriptor(),
-                            occurrence: Some(crate::passport::scope::GuardOccurrence {
+                            occurrence: Some(crate::common::passport::__private::GuardOccurrence {
                                 provider: service.descriptor.provider_type_id(),
                                 operation: method.path.clone(),
                             }),
@@ -138,6 +144,14 @@ impl GrpcApplicationScope {
         let mut names = BTreeSet::new();
         let mut services = Vec::new();
         for descriptor in descriptors {
+            if descriptor.name() == super::reflection::HEALTH
+                || super::reflection::NAMES.contains(&descriptor.name())
+            {
+                return Err(metadata_error(
+                    Some(descriptor),
+                    "application service conflicts with a reserved infrastructure service",
+                ));
+            }
             if !names.insert(descriptor.name()) {
                 return Err(metadata_error(
                     Some(descriptor),
@@ -269,7 +283,12 @@ impl GrpcApplicationScope {
                 methods,
             });
         }
-        Ok(Self { services, files })
+        Ok(Self {
+            services,
+            files,
+            #[cfg(feature = "jwt")]
+            root: graph.map(|graph| graph.root().type_id()),
+        })
     }
 }
 fn metadata_error(descriptor: Option<&GrpcServiceDescriptor>, message: &'static str) -> Error {

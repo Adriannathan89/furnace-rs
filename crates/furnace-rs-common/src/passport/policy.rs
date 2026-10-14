@@ -285,7 +285,9 @@ impl GuardCatalog {
     }
 }
 
-pub(crate) fn authorizes(guard: &GuardDescriptor, authentication: &ErasedAuthentication) -> bool {
+/// Evaluates every selected policy clause against authenticated values.
+#[doc(hidden)]
+pub fn authorizes(guard: &GuardDescriptor, authentication: &ErasedAuthentication) -> bool {
     let principal = authentication.principal();
     if !matches_clause(guard.roles(), |value| principal.has_role(value))
         || !matches_clause(guard.permissions(), |value| principal.has_permission(value))

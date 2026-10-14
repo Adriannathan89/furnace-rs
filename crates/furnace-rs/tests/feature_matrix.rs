@@ -174,3 +174,29 @@ fn generated_minimal_project_selects_only_http_and_tokio() {
         );
     }
 }
+
+#[test]
+fn grpc_implementation_is_owned_by_dedicated_packages() {
+    let manifest =
+        std::fs::read_to_string(workspace_root().join("crates/furnace-rs-common/Cargo.toml"))
+            .unwrap();
+    for forbidden in [
+        "grpc =",
+        "grpc-tls =",
+        "tonic =",
+        "prost =",
+        "tonic-prost.workspace",
+    ] {
+        assert!(
+            !manifest.contains(forbidden),
+            "common still owns {forbidden}"
+        );
+    }
+    let tree = dependency_tree("grpc,jwt,grpc-tls");
+    assert!(tree.contains("furnace-rs-grpc v"));
+    assert!(tree.contains("furnace-rs-grpc-macros v"));
+    for tree in [default_dependency_tree(), dependency_tree("jwt")] {
+        assert!(!tree.contains("furnace-rs-grpc v"));
+        assert!(!tree.contains("tonic v"));
+    }
+}

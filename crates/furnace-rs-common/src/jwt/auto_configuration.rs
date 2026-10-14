@@ -93,7 +93,7 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
     }
 }
 
-#[cfg(any(feature = "http", feature = "grpc"))]
+#[cfg(any(feature = "http", feature = "passport"))]
 fn guard_requirements(
     context: &AutoConfigurationContext<'_>,
 ) -> Result<Vec<AutoConfigurationRequirement>> {
@@ -112,18 +112,11 @@ fn guard_requirements(
             .iter()
             .cloned(),
     );
-    #[cfg(feature = "grpc")]
-    guards.extend(
-        context
-            .memoize(|| {
-                crate::grpc::preflight::SelectedGrpcMetadata::select(
-                    context.cauldron_graph(),
-                    context.focus_type_id(),
-                )
-            })
-            .scope()?
-            .guards(),
-    );
+    for integration in furnace_rs_core::__private::inventory::iter::<
+        crate::passport::__private::PassportScopeDescriptor,
+    > {
+        guards.extend((integration.select)(context)?);
+    }
     let preflight = if context.focus_type_id().is_some() {
         crate::PassportStrategyCatalog::preflight_for_test(&guards, |id| {
             context.has_provider_type_id(id)
@@ -140,7 +133,7 @@ fn guard_requirements(
         })
         .collect())
 }
-#[cfg(not(any(feature = "http", feature = "grpc")))]
+#[cfg(not(any(feature = "http", feature = "passport")))]
 fn guard_requirements(
     _: &AutoConfigurationContext<'_>,
 ) -> Result<Vec<AutoConfigurationRequirement>> {

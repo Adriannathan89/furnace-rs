@@ -1,6 +1,7 @@
 //! Typed Passport principals, request context, and normalized failures.
 //!
-//! Passport is available with `jwt` and either the `http` or `grpc` transport. Guards install [`Authenticated`] principals and [`VerifiedToken`]
+//! Passport is available with `jwt` and `http`, or with the transport-neutral
+//! `passport` feature used by separately packaged integrations. Guards install [`Authenticated`] principals and [`VerifiedToken`]
 //! values into request extensions for typed handler extraction.
 //!
 //! A managed access strategy receives verified claims and returns the current
@@ -158,3 +159,11 @@ pub const FURNACE130: furnace_rs_core::DiagnosticCode =
 /// Guard metadata or authentication-policy failure.
 pub const FURNACE131: furnace_rs_core::DiagnosticCode =
     furnace_rs_core::DiagnosticCode::new("FURNACE131");
+
+/// Transport-neutral interfaces used by separately packaged integrations.
+#[doc(hidden)]
+pub mod __private {
+    pub use super::authentication::authenticate_bearer;
+    pub use super::policy::authorizes;
+    pub use super::scope::{GuardOccurrence, PassportScopeDescriptor, ScopedGuard};
+}
