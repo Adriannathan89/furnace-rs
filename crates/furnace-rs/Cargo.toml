@@ -15,6 +15,7 @@ furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0-beta.1" }
 furnace-rs-extra = { path = "../furnace-rs-extra", version = "=2.0.0-beta.1", optional = true }
 
 [dev-dependencies]
+furnace-grpc-test-support = { path = "../../tests/grpc-support" }
 furnace-rs-testing = { path = "../furnace-rs-testing", version = "=2.0.0-beta.1" }
 serde.workspace = true
 serde_json.workspace = true

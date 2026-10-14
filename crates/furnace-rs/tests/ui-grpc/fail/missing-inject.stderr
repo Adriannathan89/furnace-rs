@@ -1,0 +1,5 @@
+error: dependency fields require #[inject]
+ --> tests/ui-grpc/fail/missing-inject.rs:7:18
+  |
+7 | struct Service { dependency: Dependency }
+  |                  ^^^^^^^^^^

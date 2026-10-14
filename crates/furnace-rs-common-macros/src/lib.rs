@@ -11,6 +11,7 @@ use proc_macro::TokenStream;
 
 mod controller;
 mod endpoint;
+mod grpc_service;
 mod guard;
 mod input;
 mod passport_principal;
@@ -18,6 +19,14 @@ mod passport_principal;
 mod passport_strategy;
 mod path;
 mod verb;
+
+/// Connects a managed implementation to its generated protobuf server and descriptor set.
+#[proc_macro_attribute]
+pub fn grpc_service(arguments: TokenStream, item: TokenStream) -> TokenStream {
+    grpc_service::expand(arguments.into(), item.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
 
 /// Derives deterministic validation without changing Serde deserialization.
 ///

@@ -700,6 +700,7 @@ dependencies = [
 name = "furnace-rs"
 version = "2.0.0-beta.1"
 dependencies = [
+ "furnace-grpc-test-support",
  "furnace-rs-common",
  "furnace-rs-core",
  "furnace-rs-extra",
@@ -742,6 +743,7 @@ dependencies = [
  "furnace-grpc-test-support",
  "furnace-rs-common-macros",
  "furnace-rs-core",
+ "heck 0.5.0",
  "http",
  "http-body",
  "hyper",

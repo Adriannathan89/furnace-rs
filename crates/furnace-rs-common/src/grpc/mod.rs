@@ -1,6 +1,17 @@
 //! Optional protobuf-first gRPC server and client integration.
 mod config;
+mod descriptor;
 mod error;
+pub(crate) mod preflight;
+mod scope;
+mod service;
+
+#[doc(hidden)]
+pub use descriptor::{
+    GrpcGuard, GrpcMethodOverride, GrpcServiceDescriptor, GrpcServiceRegistration,
+};
+pub use scope::{GrpcApplicationScope, GrpcMethodRecord, ScopedGrpcService};
+pub use service::{GrpcCauldronExt, GrpcService};
 
 pub use config::{
     GrpcClientConfig, GrpcClientTlsConfig, GrpcConnectionMode, GrpcServerConfig,

@@ -1,0 +1,13 @@
+error: unexpected end of input, grpc_method requires exactly one of public or guard
+ --> tests/ui-grpc/fail/method-public-and-guard.rs:8:59
+  |
+8 |     #[grpc_method(name = "Secret", public, guard = Service)]
+  |                                                           ^
+
+warning: unused imports: `FILE_DESCRIPTOR_SET` and `pb`
+ --> tests/ui-grpc/fail/method-public-and-guard.rs:2:33
+  |
+2 | use furnace_grpc_test_support::{pb, FILE_DESCRIPTOR_SET};
+  |                                 ^^  ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default

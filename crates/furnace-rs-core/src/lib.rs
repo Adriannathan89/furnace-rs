@@ -91,6 +91,7 @@ pub use furnace_rs_core_macros::{Configuration, burner, cauldron, main, storage,
 /// Implementation details used by furnace-rs procedural macro expansions.
 #[doc(hidden)]
 pub mod __private {
+    pub use crate::cauldron::TransportProvider;
     #[doc(hidden)]
     pub use crate::di_contract::*;
     #[doc(hidden)]

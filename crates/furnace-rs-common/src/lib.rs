@@ -20,6 +20,9 @@ pub mod grpc;
 /// Configuration-selected application transport coordination.
 #[cfg(any(feature = "http", feature = "grpc"))]
 pub mod runtime;
+/// Links a generated protobuf server to a managed implementation.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_common_macros::grpc_service;
 #[cfg(feature = "grpc")]
 pub use grpc::*;
 

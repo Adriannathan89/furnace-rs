@@ -1,4 +1,4 @@
-error: unknown cauldron option; expected providers, controllers, imports, exports, global, or root
+error: unknown cauldron option; expected providers, controllers, grpc_services, imports, exports, global, or root
  --> tests/ui/fail/module_unknown_argument.rs:3:12
   |
 3 | #[cauldron(unknown = [])]
