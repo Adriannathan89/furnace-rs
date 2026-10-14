@@ -1,13 +1,17 @@
 [furnace]
 transports = ["grpc"]
+
 [grpc.server]
 host = "127.0.0.1"
 port = 50051
+
 [grpc.clients.remote]
 endpoint = "http://127.0.0.1:50051"
 connect = "lazy"
+
 [grpc.reflection]
 enabled = true
+
 [passport]
 # Loaded from the local, untracked .env file.
 secret = "${DEMO_JWT_SECRET}"

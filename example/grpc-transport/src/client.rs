@@ -1,8 +1,14 @@
 use crate::{auth::Tokens, pb};
 use furnace::prelude::*;
 use tonic::codegen::tokio_stream;
-#[grpc_client(name = "remote", client = pb::transport_client::TransportClient, token_provider = Tokens)]
+
+#[grpc_client(
+    name = "remote",
+    client = pb::transport_client::TransportClient,
+    token_provider = Tokens
+)]
 pub struct Remote;
+
 /// Uses the generated API through the managed wrapper for all four RPC shapes.
 pub async fn exercise(remote: &Remote) -> Result<(), tonic::Status> {
     let mut client = remote.client();

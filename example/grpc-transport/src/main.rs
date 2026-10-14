@@ -3,6 +3,7 @@ use furnace_rs_example_grpc_transport::{
     app::{App, Consumer},
     client::{Remote, exercise},
 };
+
 #[furnace::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::args().nth(1).as_deref() != Some("client") {

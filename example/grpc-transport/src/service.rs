@@ -6,10 +6,17 @@ use crate::{
 use furnace::prelude::*;
 use std::pin::Pin;
 use tonic::codegen::tokio_stream::{self as streams, Stream};
+
 #[burner]
 pub struct Transport;
+
 type Output = Pin<Box<dyn Stream<Item = Result<pb::Item, tonic::Status>> + Send>>;
-#[grpc_service(server = pb::transport_server::TransportServer, descriptor = FILE_DESCRIPTOR_SET, guard = Reader)]
+
+#[grpc_service(
+    server = pb::transport_server::TransportServer,
+    descriptor = FILE_DESCRIPTOR_SET,
+    guard = Reader
+)]
 #[tonic::async_trait]
 impl pb::transport_server::Transport for Transport {
     #[grpc_method(name = "Unary", public)]
@@ -19,7 +26,9 @@ impl pb::transport_server::Transport for Transport {
     ) -> Result<tonic::Response<pb::Item>, tonic::Status> {
         Ok(tonic::Response::new(request.into_inner()))
     }
+
     type ServerStreamStream = Output;
+
     async fn server_stream(
         &self,
         request: tonic::Request<pb::Item>,
@@ -29,6 +38,7 @@ impl pb::transport_server::Transport for Transport {
             (0..request.into_inner().value).map(|value| Ok(pb::Item { value })),
         ))))
     }
+
     async fn client_stream(
         &self,
         request: tonic::Request<tonic::Streaming<pb::Item>>,
@@ -44,7 +54,9 @@ impl pb::transport_server::Transport for Transport {
         }
         Ok(tonic::Response::new(pb::Summary { count, total }))
     }
+
     type BidiStream = Output;
+
     async fn bidi(
         &self,
         request: tonic::Request<tonic::Streaming<pb::Item>>,

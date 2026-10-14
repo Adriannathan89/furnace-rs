@@ -57,10 +57,24 @@ Create a local CA and a certificate for `localhost`:
 ```sh
 mkdir -p certs
 umask 077
-openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/ca.key -out certs/ca.pem -days 1 -subj '/CN=Furnace demo CA'
-openssl req -newkey rsa:2048 -nodes -keyout certs/server.key -out certs/server.csr -subj '/CN=localhost'
+openssl req -x509 -newkey rsa:2048 -nodes \
+  -keyout certs/ca.key \
+  -out certs/ca.pem \
+  -days 1 \
+  -subj '/CN=Furnace demo CA'
+openssl req -newkey rsa:2048 -nodes \
+  -keyout certs/server.key \
+  -out certs/server.csr \
+  -subj '/CN=localhost'
 printf 'subjectAltName=DNS:localhost\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n' > certs/server.ext
-openssl x509 -req -in certs/server.csr -CA certs/ca.pem -CAkey certs/ca.key -CAcreateserial -out certs/server.pem -days 1 -extfile certs/server.ext
+openssl x509 -req \
+  -in certs/server.csr \
+  -CA certs/ca.pem \
+  -CAkey certs/ca.key \
+  -CAcreateserial \
+  -out certs/server.pem \
+  -days 1 \
+  -extfile certs/server.ext
 ```
 
 Add these tables to `furnace.toml` and change the remote endpoint to

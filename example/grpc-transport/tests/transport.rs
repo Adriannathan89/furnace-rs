@@ -9,6 +9,11 @@ use furnace_rs_example_grpc_transport::{
 };
 use std::time::Duration;
 use tonic::codegen::tokio_stream;
+use tonic_reflection::pb::v1::{
+    ServerReflectionRequest, server_reflection_client::ServerReflectionClient,
+    server_reflection_request::MessageRequest,
+};
+
 #[tokio::test]
 async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -28,6 +33,7 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
         ))
         .build()
         .unwrap();
+
     let mut builder = Furnace::builder_with_config(config);
     builder.root::<App>().unwrap();
     let app = builder.build().await.unwrap();
@@ -37,6 +43,7 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
             .unwrap()
             .with_address(address),
     );
+
     let descriptor = furnace::core::__private::inventory::iter::<RuntimeTransportDescriptor>
         .into_iter()
         .find(|d| d.name == "grpc")
@@ -58,6 +65,7 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
             Box::pin(async { Ok(listener) })
         },
     ));
+
     let consumer_config = ConfigBuilder::new()
         .source(furnace::core::MapSource::new(
             "synthetic consumer test",
@@ -71,12 +79,14 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
         ))
         .build()
         .unwrap();
+
     let mut builder = Furnace::builder_with_config(consumer_config);
     builder.root::<Consumer>().unwrap();
     let mut consumer = builder.build().await.unwrap();
     consumer.start().await.unwrap();
     let remote = consumer.context().resolve::<Remote>().unwrap();
     let tokens = consumer.context().resolve::<Tokens>().unwrap();
+
     exercise(&remote).await.unwrap();
     assert_eq!(tokens.calls(), 4);
     let channel = tonic::transport::Endpoint::from_shared(endpoint)
@@ -86,6 +96,7 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
         .unwrap();
     let mut native = pb::transport_client::TransportClient::new(channel.clone());
     assert!(native.unary(pb::Item { value: 9 }).await.is_ok());
+
     assert_eq!(
         native
             .server_stream(pb::Item { value: 2 })
@@ -94,6 +105,7 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
             .code(),
         tonic::Code::Unauthenticated
     );
+
     let credential = jwt
         .sign(
             furnace_rs_example_grpc_transport::auth::DemoClaims::reader(),
@@ -110,6 +122,7 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
         .into_inner();
     while response.message().await.unwrap().is_some() {}
     assert_eq!(tokens.calls(), 4, "explicit Bearer suppresses provider");
+
     let mut health = tonic_health::pb::health_client::HealthClient::new(channel.clone());
     assert_eq!(
         health
@@ -122,10 +135,7 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
             .status,
         1
     );
-    use tonic_reflection::pb::v1::{
-        ServerReflectionRequest, server_reflection_client::ServerReflectionClient,
-        server_reflection_request::MessageRequest,
-    };
+
     let mut reflection = ServerReflectionClient::new(channel);
     let query = ServerReflectionRequest {
         host: String::new(),
@@ -139,6 +149,7 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
             .code(),
         tonic::Code::Unauthenticated
     );
+
     let mut request = tonic::Request::new(tokio_stream::iter([query]));
     set_grpc_bearer_token(&mut request, &credential).unwrap();
     let mut stream = reflection
@@ -148,6 +159,7 @@ async fn example_serves_consumes_authenticates_and_exposes_infrastructure() {
         .into_inner();
     assert!(stream.message().await.unwrap().is_some());
     assert!(stream.message().await.unwrap().is_none());
+
     consumer.shutdown().await.unwrap();
     stop.send(()).unwrap();
     task.await.unwrap().unwrap();
