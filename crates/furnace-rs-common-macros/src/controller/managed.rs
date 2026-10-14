@@ -13,7 +13,7 @@ use syn::{
 };
 
 pub(super) fn expand_controller_with_common(
-    item: ItemStruct,
+    mut item: ItemStruct,
     common: &Path,
 ) -> syn::Result<TokenStream> {
     if !item.generics.params.is_empty() || item.generics.where_clause.is_some() {
@@ -44,14 +44,16 @@ pub(super) fn expand_controller_with_common(
             "`#[controller]` structs support documentation and lint attributes only",
         ));
     }
-    if let Fields::Named(fields) = &item.fields {
+    if let Fields::Named(fields) = &mut item.fields {
         if fields.named.len() > 16 {
             return Err(Error::new(
                 fields.span(),
                 "managed injectors support at most sixteen dependencies",
             ));
         }
-        for field in &fields.named {
+        for field in &mut fields.named {
+            let span = field.span();
+            consume_inject(&mut field.attrs, span)?;
             if let Some(attribute) = field
                 .attrs
                 .iter()
@@ -307,3 +309,26 @@ impl VisitMut for SelfTypeNormalizer<'_> {
 #[cfg(test)]
 #[path = "../../tests/support/controller.rs"]
 mod tests;
+
+// Field helpers belong to the enclosing managed macro and must not survive
+// expansion. Every managed dependency must declare its injection intent.
+fn consume_inject(attributes: &mut Vec<Attribute>, span: proc_macro2::Span) -> syn::Result<()> {
+    let mut seen = false;
+    for attribute in attributes.iter().filter(|a| a.path().is_ident("inject")) {
+        if seen {
+            return Err(Error::new_spanned(attribute, "duplicate #[inject] marker"));
+        }
+        if !matches!(attribute.meta, syn::Meta::Path(_)) {
+            return Err(Error::new_spanned(
+                attribute,
+                "#[inject] takes no arguments",
+            ));
+        }
+        seen = true;
+    }
+    if !seen {
+        return Err(Error::new(span, "dependency fields require #[inject]"));
+    }
+    attributes.retain(|a| !a.path().is_ident("inject"));
+    Ok(())
+}

@@ -163,6 +163,17 @@ impl CauldronGraph {
             .map(|(_, member)| member.type_id)
     }
 
+    /// Iterates explicitly selected service outputs belonging to one transport.
+    #[doc(hidden)]
+    pub fn registered_transport_providers<'a>(
+        &'a self,
+        transport: &'a str,
+    ) -> impl Iterator<Item = TypeId> + 'a {
+        self.members()
+            .filter(move |(_, member)| member.transport == Some(transport))
+            .map(|(_, member)| member.type_id)
+    }
+
     pub(crate) fn members(
         &self,
     ) -> impl Iterator<Item = (&CauldronNode, &crate::cauldron::CauldronMember)> {

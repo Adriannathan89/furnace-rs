@@ -1,0 +1,5 @@
+error: dependency fields require #[inject]
+ --> tests/ui-inject/fail/burner_missing_inject.rs:5:5
+  |
+5 |     value: String,
+  |     ^^^^^

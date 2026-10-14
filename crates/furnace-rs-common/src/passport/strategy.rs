@@ -7,13 +7,13 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
 
-use axum::http::Extensions;
 use furnace_rs_core::{
     ApplicationContext, Catalog, CauldronGraph, Diagnostic, Error, ProviderDescriptor, Result,
     SourceLocation,
 };
+use http::Extensions;
 
-use crate::http_scope::ScopedGuard;
+use super::scope::{GuardOccurrence, ScopedGuard};
 use crate::{JwtClaims, JwtTokenKind, VerifiedJwt};
 
 use super::{
@@ -175,7 +175,9 @@ impl ErasedAuthentication {
         Arc::downcast::<VerifiedJwt<C>>(Arc::clone(&self.exact_verified)).ok()
     }
 
-    pub(crate) fn install_extensions(&self, extensions: &mut Extensions) -> bool {
+    /// Installs the exact typed authentication allocations for transport adapters.
+    #[doc(hidden)]
+    pub fn install_extensions(&self, extensions: &mut Extensions) -> bool {
         (self.install_extensions)(self, extensions)
     }
 }
@@ -391,7 +393,8 @@ impl PassportStrategyCatalog {
     }
 
     /// Validates only guards and strategy names used by a focused controller.
-    pub(crate) fn preflight_for_test(
+    #[doc(hidden)]
+    pub fn preflight_for_test(
         scoped_guards: &[ScopedGuard],
         provider_available: impl Fn(TypeId) -> bool,
     ) -> Result<PassportStrategyPreflight<'static>> {
@@ -429,7 +432,8 @@ impl PassportStrategyCatalog {
     /// behavior. Rooted guards see custom strategies only from their own
     /// cauldron, a direct import's explicit exports, or reachable global exports.
     #[allow(clippy::result_large_err)]
-    pub(crate) fn preflight_scoped(
+    #[doc(hidden)]
+    pub fn preflight_scoped(
         cauldron_graph: Option<&CauldronGraph>,
         guards: &[ScopedGuard],
     ) -> Result<PassportStrategyPreflight<'static>> {
@@ -489,8 +493,9 @@ impl PassportStrategyCatalog {
 ///
 /// This record contains no application-owned values. Its adapter obtains a
 /// managed strategy only after ordinary application construction has succeeded.
+#[derive(Clone)]
 pub struct PassportStrategyBinding<'a> {
-    occurrence: Option<crate::http_scope::RouteIdentity>,
+    occurrence: Option<GuardOccurrence>,
     provider_type_id: Option<TypeId>,
     guard: &'a GuardDescriptor,
     context_cauldron: Option<TypeId>,
@@ -570,13 +575,17 @@ pub struct PassportStrategyPreflight<'a> {
 }
 
 impl<'a> PassportStrategyPreflight<'a> {
-    pub(crate) fn binding_for_endpoint(
+    /// Finds one preflight-selected transport operation.
+    #[doc(hidden)]
+    pub fn binding_for_occurrence(
         &self,
-        occurrence: crate::http_scope::RouteIdentity,
+        occurrence: &GuardOccurrence,
+        context_cauldron: Option<TypeId>,
     ) -> Option<&PassportStrategyBinding<'a>> {
-        self.bindings
-            .iter()
-            .find(|binding| binding.occurrence == Some(occurrence))
+        self.bindings.iter().find(|binding| {
+            binding.occurrence.as_ref() == Some(occurrence)
+                && binding.context_cauldron == context_cauldron
+        })
     }
     /// Returns every selected guard binding in deterministic route order.
     #[must_use]

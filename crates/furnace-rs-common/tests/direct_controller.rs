@@ -79,6 +79,7 @@ furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_S
 
 #[controller]
 struct UserController {
+    #[inject]
     service: Service,
 }
 impl Sealable for UserController {

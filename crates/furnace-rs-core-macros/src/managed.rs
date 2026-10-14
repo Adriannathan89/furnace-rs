@@ -35,7 +35,7 @@ impl ManagedKind {
     fn supported_form(&self) -> String {
         let attribute = self.attribute_name();
         format!(
-            "`#[furnace_rs::{attribute}]` supports only non-generic named-field or unit structs, such as `#[furnace_rs::{attribute}] struct Managed {{ dependency: Dependency }}` or `#[furnace_rs::{attribute}] struct Managed;`"
+            "`#[furnace_rs::{attribute}]` supports only non-generic named-field or unit structs, such as `#[furnace_rs::{attribute}] struct Managed {{ #[inject] dependency: Dependency }}` or `#[furnace_rs::{attribute}] struct Managed;`"
         )
     }
 }
@@ -54,7 +54,7 @@ pub(crate) fn expand(
     expand_managed(kind, item)
 }
 
-fn expand_managed(kind: ManagedKind, item: ItemStruct) -> syn::Result<TokenStream> {
+fn expand_managed(kind: ManagedKind, mut item: ItemStruct) -> syn::Result<TokenStream> {
     if !item.generics.params.is_empty() || item.generics.where_clause.is_some() {
         return Err(Error::new(item.generics.span(), kind.supported_form()));
     }
@@ -77,25 +77,27 @@ fn expand_managed(kind: ManagedKind, item: ItemStruct) -> syn::Result<TokenStrea
         return Err(Error::new(
             attribute.span(),
             format!(
-                "`#[furnace_rs::{}]` managed providers support documentation attributes only in v0.2; remove this struct attribute",
+                "`#[furnace_rs::{}]` managed providers support documentation attributes only; remove this struct attribute",
                 kind.attribute_name()
             ),
         ));
     }
 
-    if let Fields::Named(fields) = &item.fields {
+    if let Fields::Named(fields) = &mut item.fields {
         if fields.named.len() > 16 {
             return Err(Error::new(
                 fields.span(),
                 "managed injectors support at most sixteen dependencies",
             ));
         }
-        for field in &fields.named {
+        for field in &mut fields.named {
+            let span = field.span();
+            consume_inject(&mut field.attrs, span)?;
             if let Some(attribute) = field.attrs.iter().find(|attribute| !is_doc(attribute)) {
                 return Err(Error::new(
                     attribute.span(),
                     format!(
-                        "`#[furnace_rs::{}]` managed-provider fields support documentation attributes only in v0.2; remove this field attribute",
+                        "`#[furnace_rs::{}]` managed-provider fields support documentation attributes only; remove this field attribute",
                         kind.attribute_name()
                     ),
                 ));
@@ -306,5 +308,29 @@ impl VisitMut for SelfTypeNormalizer<'_> {
         visit_mut::visit_type_path_mut(self, type_path);
     }
 }
+
+// Field helpers belong to the enclosing managed macro and must not survive
+// expansion. Every managed dependency must declare its injection intent.
+fn consume_inject(attributes: &mut Vec<Attribute>, span: proc_macro2::Span) -> syn::Result<()> {
+    let mut seen = false;
+    for attribute in attributes.iter().filter(|a| a.path().is_ident("inject")) {
+        if seen {
+            return Err(Error::new_spanned(attribute, "duplicate #[inject] marker"));
+        }
+        if !matches!(attribute.meta, syn::Meta::Path(_)) {
+            return Err(Error::new_spanned(
+                attribute,
+                "#[inject] takes no arguments",
+            ));
+        }
+        seen = true;
+    }
+    if !seen {
+        return Err(Error::new(span, "dependency fields require #[inject]"));
+    }
+    attributes.retain(|a| !a.path().is_ident("inject"));
+    Ok(())
+}
+
 #[cfg(test)]
 include!("../tests/support/managed.rs");

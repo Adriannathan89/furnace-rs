@@ -5,17 +5,26 @@
 //! router configuration before they start application lifecycle hooks or ask
 //! Tokio to bind a listener.
 
-use std::error::Error as StdError;
+#[cfg(test)]
 use std::fmt;
 use std::future::Future;
-use std::path::{Path, PathBuf};
+#[cfg(test)]
+use std::path::Path;
+use std::path::PathBuf;
 use std::time::Duration;
 
-use furnace_rs_core::{Cauldron, Diagnostic, DiagnosticCode, Error, FURNACE020, Furnace};
+#[cfg(test)]
+use furnace_rs_core::Cauldron;
+use furnace_rs_core::{Diagnostic, DiagnosticCode, Error, Furnace};
 use tokio::net::TcpListener;
 
+#[cfg(test)]
 use crate::cors::CORS_AUTO_CONFIGURATION_ID;
+#[cfg(test)]
 use crate::http_scope::HttpApplicationScope;
+#[cfg(test)]
+use crate::route::RouteDescriptor;
+#[cfg(test)]
 use crate::server_config::{
     HttpRuntimeMode, SERVER_AUTO_CONFIGURATION_ID, ServerBinding, load_standard_config_from,
 };
@@ -29,130 +38,81 @@ const BODY_READ_IDLE_TIMEOUT: Duration = Duration::from_secs(10);
 /// A standard application run had no reachable managed HTTP route.
 pub const FURNACE031: DiagnosticCode = DiagnosticCode::new("FURNACE031");
 
-/// An error produced while preparing, running, or stopping the HTTP runtime.
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum HttpRuntimeError {
-    /// Route validation or final router configuration failed before lifecycle startup.
-    Bootstrap(furnace_rs_core::Error),
-    /// Application lifecycle startup or shutdown failed.
-    Lifecycle(furnace_rs_core::Error),
-    /// The HTTP listener could not bind to the requested address.
-    Bind(std::io::Error),
-    /// Axum stopped because of an HTTP serving failure.
-    Serve(std::io::Error),
-    /// An operational failure occurred and the subsequent shutdown also failed.
-    OperationAndShutdown {
-        /// The bind or serving error that initiated shutdown.
-        operation: Box<HttpRuntimeError>,
-        /// The lifecycle error returned while attempting shutdown.
-        shutdown: furnace_rs_core::Error,
-    },
-}
+/// Compatibility alias for the shared application runtime error.
+pub type HttpRuntimeError = crate::runtime::ApplicationRuntimeError;
 
-impl fmt::Display for HttpRuntimeError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Bootstrap(error) => write!(formatter, "HTTP bootstrap failed: {error}"),
-            Self::Lifecycle(error) => write!(formatter, "application lifecycle failed: {error}"),
-            Self::Bind(error) => write!(formatter, "HTTP listener bind failed: {error}"),
-            Self::Serve(error) => write!(formatter, "HTTP serving failed: {error}"),
-            Self::OperationAndShutdown {
-                operation,
-                shutdown,
-            } => write!(
-                formatter,
-                "{operation}; application shutdown also failed: {shutdown}"
-            ),
-        }
-    }
-}
+pub use crate::runtime::FurnaceBurnExt;
 
-impl StdError for HttpRuntimeError {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match self {
-            Self::Bootstrap(error) | Self::Lifecycle(error) => Some(error),
-            Self::Bind(error) | Self::Serve(error) => Some(error),
-            Self::OperationAndShutdown { operation, .. } => Some(operation.as_ref()),
-        }
-    }
-}
-
-/// Runs a rooted application module with conventional HTTP configuration.
-///
-/// Import this trait to call [`Furnace::burn`]. The standard path loads optional
-/// `.env` and `furnace.toml` files from the current working directory, applies
-/// `FURNACE_*` environment overrides, and owns automatic HTTP binding. Use the
-/// low-level [`Furnace::builder`] and [`serve`] APIs when the application needs
-/// explicit configuration, providers, lifecycle hooks, or a listener address.
-pub trait FurnaceBurnExt {
-    /// Builds and runs the selected rooted application module.
-    fn burn<M>() -> impl Future<Output = Result<(), HttpRuntimeError>> + Send
-    where
-        M: Cauldron;
-}
-
-impl FurnaceBurnExt for Furnace {
-    #[allow(clippy::manual_async_fn)] // The public trait keeps an explicit `Send` future.
-    fn burn<M>() -> impl Future<Output = Result<(), HttpRuntimeError>> + Send
-    where
-        M: Cauldron,
-    {
-        async move {
-            let root = std::env::current_dir().map_err(config_directory_error)?;
-            if let Some(result) = crate::inspection::try_run_inspection::<M>(&root) {
-                return result;
-            }
-            let prepared = prepare_standard_run::<M>(&root).await?;
-            println!("{}", prepared.startup_summary());
-            serve_prepared(prepared, TcpListener::bind, shutdown_signal()).await
-        }
-    }
-}
-
+#[cfg(test)]
 struct PreparedStandardRun {
     application: Furnace,
     router: axum::Router,
     binding: std::sync::Arc<ServerBinding>,
     route_count: usize,
+    routes: Vec<RouteDescriptor>,
 }
 
+#[cfg(test)]
 struct StartupSummary {
     host: String,
     port: u16,
     route_count: usize,
+    routes: Vec<RouteDescriptor>,
 }
 
+#[cfg(test)]
 impl StartupSummary {
-    const fn new(host: String, port: u16, route_count: usize) -> Self {
+    const fn new(
+        host: String,
+        port: u16,
+        route_count: usize,
+        routes: Vec<RouteDescriptor>,
+    ) -> Self {
         Self {
             host,
             port,
             route_count,
+            routes,
         }
     }
 }
 
+#[cfg(test)]
 impl fmt::Display for StartupSummary {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
-            "FURNACE application ready\nserver: http://{}:{}\nroutes: {}",
+            "\n\nFURNACE · Application ready\n────────────────────────────\nServer  http://{}:{}\nRoutes  {}",
             self.host, self.port, self.route_count
-        )
+        )?;
+        if !self.routes.is_empty() {
+            write!(formatter, "\n\nMETHOD  PATH\n──────  ────")?;
+        }
+        for route in &self.routes {
+            write!(
+                formatter,
+                "\n{:<6}  {}",
+                route.method().as_str(),
+                route.full_path()
+            )?;
+        }
+        writeln!(formatter)
     }
 }
 
+#[cfg(test)]
 impl PreparedStandardRun {
     fn startup_summary(&self) -> StartupSummary {
         StartupSummary::new(
             self.binding.host().to_owned(),
             self.binding.port(),
             self.route_count,
+            self.routes.clone(),
         )
     }
 }
 
+#[cfg(test)]
 async fn prepare_standard_run<M: Cauldron>(
     root: &Path,
 ) -> Result<PreparedStandardRun, HttpRuntimeError> {
@@ -170,6 +130,7 @@ async fn prepare_standard_run<M: Cauldron>(
     prepare_standard_application(application)
 }
 
+#[cfg(test)]
 fn prepare_standard_application(
     application: Furnace,
 ) -> Result<PreparedStandardRun, HttpRuntimeError> {
@@ -186,15 +147,18 @@ fn prepare_standard_application(
         .context()
         .resolve::<ServerBinding>()
         .map_err(HttpRuntimeError::Bootstrap)?;
+    let routes = scope.route_records().map(|(_, route)| *route).collect();
 
     Ok(PreparedStandardRun {
         application,
         router,
         binding,
         route_count,
+        routes,
     })
 }
 
+#[cfg(test)]
 async fn serve_prepared<B, BindFuture, Shutdown>(
     prepared: PreparedStandardRun,
     binder: B,
@@ -210,12 +174,13 @@ where
         router,
         binding,
         route_count: _,
+        routes: _,
     } = prepared;
     let address = (binding.host().to_owned(), binding.port());
     serve_configured_router_with(application, router, address, binder, shutdown).await
 }
 
-fn no_runnable_route_error() -> Error {
+pub(crate) fn no_runnable_route_error() -> Error {
     Error::new(
         Diagnostic::new(
             FURNACE031,
@@ -225,19 +190,6 @@ fn no_runnable_route_error() -> Error {
         .with_subject("HTTP runtime")
         .with_suggestion("declare a managed controller route reachable from the root module"),
     )
-}
-
-fn config_directory_error(error: std::io::Error) -> HttpRuntimeError {
-    HttpRuntimeError::Bootstrap(Error::with_source(
-        Diagnostic::new(
-            FURNACE020,
-            "configuration directory could not be determined",
-            "could not determine the process current working directory",
-        )
-        .with_subject("current working directory")
-        .with_suggestion("run the application from an accessible directory"),
-        error,
-    ))
 }
 
 /// Builds, configures, starts, serves, and shuts down an application on `address`.
@@ -298,6 +250,9 @@ pub async fn serve(
 /// Incomplete initial requests and HTTP/1 request headers expire after ten
 /// seconds without imposing a handler execution deadline.
 /// Request-body reads also have a ten-second idle deadline, renewed by progress.
+/// Each request carries the accepted socket peer in Axum's `ConnectInfo<SocketAddr>`
+/// extension, available to native extractors and Passport strategies. Forwarding
+/// headers do not replace this transport address.
 ///
 /// # Errors
 ///
@@ -364,6 +319,7 @@ where
     BindFuture: Future<Output = std::io::Result<TcpListener>>,
     Shutdown: Future<Output = ()> + Send + 'static,
 {
+    let debug = application.context().config().get("furnace.mode") == Some("debug");
     application
         .start()
         .await
@@ -374,7 +330,7 @@ where
             return finish_after_error(application, HttpRuntimeError::Bind(error)).await;
         }
     };
-    let result = serve_http(listener, router, shutdown)
+    let result = serve_http(debug, listener, router, shutdown)
         .await
         .map_err(HttpRuntimeError::Serve);
     finish(application, result).await
@@ -383,14 +339,25 @@ where
 // Axum's convenience server does not install a Hyper timer. Without one,
 // incomplete request headers retain their socket and task indefinitely.
 async fn serve_http(
+    debug: bool,
+    listener: TcpListener,
+    router: axum::Router,
+    shutdown: impl Future<Output = ()> + Send + 'static,
+) -> std::io::Result<()> {
+    serve_http_supervised(debug, listener, router, shutdown, None).await
+}
+
+pub(crate) async fn serve_http_supervised(
+    debug: bool,
     mut listener: TcpListener,
     router: axum::Router,
     shutdown: impl Future<Output = ()> + Send + 'static,
+    tasks: Option<crate::runtime::RuntimeTasks>,
 ) -> std::io::Result<()> {
     use axum::response::IntoResponse;
     use axum::serve::Listener;
     use hyper_util::{
-        rt::{TokioExecutor, TokioIo, TokioTimer},
+        rt::{TokioIo, TokioTimer},
         server::conn::auto::Builder,
     };
     use std::sync::{
@@ -407,34 +374,51 @@ async fn serve_http(
             biased;
             _ = &mut shutdown => break,
             Some(_) = connections.join_next(), if !connections.is_empty() => {},
-            (stream, _) = Listener::accept(&mut listener) => {
+            (stream, peer_addr) = Listener::accept(&mut listener) => {
                 let first_request = std::sync::Arc::new(tokio::sync::Notify::new());
                 let request_received = std::sync::Arc::clone(&first_request);
                 let connection_router = router.clone().with_state(());
-                let service = hyper::service::service_fn(move |request: axum::http::Request<hyper::body::Incoming>| {
+                let service = hyper::service::service_fn(move |mut request: axum::http::Request<hyper::body::Incoming>| {
                     request_received.notify_one();
+                    request.extensions_mut().insert(axum::extract::ConnectInfo(peer_addr));
                     let router = connection_router.clone();
                     async move {
+                        let path = debug.then(|| request.uri().path().to_owned());
+                        let method = debug.then(|| request.method().clone());
                         let version = request.version();
                         let expired = Arc::new(AtomicBool::new(false));
                         let request = request.map(|body| axum::body::Body::new(body::IdleTimeoutBody::new(body, BODY_READ_IDLE_TIMEOUT, Arc::clone(&expired))));
                         let response = router.oneshot(request).await?;
-                        if !expired.load(Ordering::Relaxed) {
-                            return Ok::<_, std::convert::Infallible>(response);
+                        let response = if expired.load(Ordering::Relaxed) {
+                            let mut response = (
+                                axum::http::StatusCode::REQUEST_TIMEOUT,
+                                axum::Json(serde_json::json!({"error": {"code": "request_timeout", "message": "request body read timed out"}})),
+                            ).into_response();
+                            if matches!(version, axum::http::Version::HTTP_10 | axum::http::Version::HTTP_11) {
+                                response.headers_mut().insert(axum::http::header::CONNECTION, axum::http::HeaderValue::from_static("close"));
+                            }
+                            response
+                        } else {
+                            response
+                        };
+                        if let (Some(path), Some(method)) = (path, method) {
+                            use std::io::Write;
+                            let _ = writeln!(
+                                std::io::stdout().lock(),
+                                "[debug] {} | {:3} | {:<7} | {}",
+                                chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
+                                response.status().as_u16(),
+                                method.as_str(),
+                                path,
+                            );
                         }
-                        let mut response = (
-                            axum::http::StatusCode::REQUEST_TIMEOUT,
-                            axum::Json(serde_json::json!({"error": {"code": "request_timeout", "message": "request body read timed out"}})),
-                        ).into_response();
-                        if matches!(version, axum::http::Version::HTTP_10 | axum::http::Version::HTTP_11) {
-                            response.headers_mut().insert(axum::http::header::CONNECTION, axum::http::HeaderValue::from_static("close"));
-                        }
-                        Ok(response)
+                        Ok::<_, std::convert::Infallible>(response)
                     }
                 });
                 let mut shutdown_rx = shutdown_rx.clone();
-                connections.spawn(async move {
-                    let mut builder = Builder::new(TokioExecutor::new());
+                let executor = HttpExecutor(tasks.clone());
+                let future = async move {
+                    let mut builder = Builder::new(executor);
                     builder.http1().timer(TokioTimer::new())
                         .header_read_timeout(HEADER_READ_TIMEOUT);
                     builder.http2().enable_connect_protocol();
@@ -458,7 +442,8 @@ async fn serve_http(
                             let _ = connection.await;
                         }
                     }
-                });
+                };
+                if let Some(tasks) = &tasks { tasks.spawn(future); } else { connections.spawn(future); }
             }
         }
     }
@@ -549,13 +534,90 @@ mod tests {
         FURNACE031, HttpRuntimeError, StartupSummary, prepare_standard_application,
         prepare_standard_run, serve_prepared, serve_router_with, serve_with, wait_for_dev_shutdown,
     };
+    #[cfg(test)]
     use crate::cors::CORS_AUTO_CONFIGURATION_ID;
+    #[cfg(test)]
     use crate::server_config::{HttpRuntimeMode, SERVER_AUTO_CONFIGURATION_ID, ServerBinding};
     use crate::{ControllerEndpointDescriptor, HttpMethod, RouteDescriptor};
 
     static STARTS: AtomicUsize = AtomicUsize::new(0);
     static BINDS: AtomicUsize = AtomicUsize::new(0);
     static TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+    async fn assert_socket_peer_metadata(http2: bool) {
+        use axum::extract::ConnectInfo;
+        use hyper_util::rt::{TokioExecutor, TokioIo};
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = axum::Router::new().route(
+            "/peer",
+            axum::routing::get(|ConnectInfo(peer): ConnectInfo<SocketAddr>| async move {
+                peer.to_string()
+            }),
+        );
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
+            let _ = shutdown_rx.await;
+        }));
+        let stream = tokio::net::TcpStream::connect(address).await.unwrap();
+        let expected_peer = stream.local_addr().unwrap().to_string();
+        let request = axum::http::Request::builder()
+            .uri("http://localhost/peer")
+            .header("forwarded", "for=203.0.113.10")
+            .header("x-forwarded-for", "203.0.113.11")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let (response, client) = if http2 {
+            let (mut sender, connection) =
+                hyper::client::conn::http2::handshake(TokioExecutor::new(), TokioIo::new(stream))
+                    .await
+                    .unwrap();
+            let client = tokio::spawn(connection);
+            let response = sender.send_request(request).await.unwrap();
+            (response, client)
+        } else {
+            let (mut sender, connection) =
+                hyper::client::conn::http1::handshake(TokioIo::new(stream))
+                    .await
+                    .unwrap();
+            let client = tokio::spawn(connection);
+            let response = sender.send_request(request).await.unwrap();
+            (response, client)
+        };
+        let status = response.status();
+        let body = axum::body::to_bytes(axum::body::Body::new(response.into_body()), 1024)
+            .await
+            .unwrap();
+        client.abort();
+        let _ = shutdown_tx.send(());
+        tokio::time::timeout(Duration::from_secs(2), server)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(
+            status,
+            axum::http::StatusCode::OK,
+            "ConnectInfo was unavailable: {body:?}"
+        );
+        assert_eq!(
+            &body[..],
+            expected_peer.as_bytes(),
+            "forwarding headers must not replace the socket peer"
+        );
+    }
+
+    #[tokio::test]
+    async fn http1_socket_peer_is_available_to_native_extractors() {
+        assert_socket_peer_metadata(false).await;
+    }
+
+    #[tokio::test]
+    async fn http2_socket_peer_is_available_to_native_extractors() {
+        assert_socket_peer_metadata(true).await;
+    }
 
     #[tokio::test]
     async fn body_deadline_preserves_valid_json_and_body_size_rejections() {
@@ -570,7 +632,7 @@ mod tests {
             )
             .layer(axum::extract::DefaultBodyLimit::max(8));
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         for (length, body, status) in [
@@ -626,7 +688,7 @@ mod tests {
             )
             .route("/health", axum::routing::get(|| async { "healthy" }));
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         let stream = tokio::net::TcpStream::connect(address).await.unwrap();
@@ -694,7 +756,7 @@ mod tests {
             )
             .route("/health", axum::routing::get(|| async { "healthy" }));
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         let mut stalled = tokio::net::TcpStream::connect(address).await.unwrap();
@@ -758,7 +820,7 @@ mod tests {
             }),
         );
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         let client = tokio::spawn(async move {
@@ -803,6 +865,7 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let server = tokio::spawn(super::serve_http(
+            false,
             listener,
             axum::Router::new(),
             async move {
@@ -841,7 +904,7 @@ mod tests {
         let router =
             axum::Router::new().route("/health", axum::routing::get(|| async { "healthy" }));
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(super::serve_http(listener, router, async move {
+        let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         let stream = tokio::net::TcpStream::connect(address).await.unwrap();
@@ -1249,15 +1312,48 @@ mod tests {
             AutoConfigurationStatus::Active,
         );
         assert_eq!(prepared.route_count, 1);
+        assert_eq!(
+            prepared.startup_summary().to_string(),
+            "\n\nFURNACE · Application ready\n────────────────────────────\nServer  http://127.0.0.1:3000\nRoutes  1\n\nMETHOD  PATH\n──────  ────\nGET     /standard-run-health\n"
+        );
     }
 
     #[test]
     fn startup_summary_formats_owned_binding_and_validated_route_count() {
-        let summary = StartupSummary::new("api.internal".into(), 4321, 7);
+        let summary = StartupSummary::new("api.internal".into(), 4321, 7, vec![]);
 
         assert_eq!(
             summary.to_string(),
-            "FURNACE application ready\nserver: http://api.internal:4321\nroutes: 7"
+            "\n\nFURNACE · Application ready\n────────────────────────────\nServer  http://api.internal:4321\nRoutes  7\n"
+        );
+    }
+
+    #[test]
+    fn startup_summary_lists_every_method_and_full_path() {
+        let routes = [
+            (HttpMethod::Get, "/", "/users"),
+            (HttpMethod::Post, "/", "/users"),
+            (HttpMethod::Put, "/:id", "/users/:id"),
+            (HttpMethod::Patch, "/:id", "/users/:id"),
+            (HttpMethod::Delete, "/:id", "/users/:id"),
+        ]
+        .into_iter()
+        .map(|(method, path, full_path)| {
+            RouteDescriptor::new(
+                method,
+                "/users",
+                path,
+                full_path,
+                "handler",
+                SourceLocation::new("routes.rs", 1, 1),
+            )
+        })
+        .collect();
+        let summary = StartupSummary::new("api.internal".into(), 4321, 5, routes);
+
+        assert_eq!(
+            summary.to_string(),
+            "\n\nFURNACE · Application ready\n────────────────────────────\nServer  http://api.internal:4321\nRoutes  5\n\nMETHOD  PATH\n──────  ────\nGET     /users\nPOST    /users\nPUT     /users/:id\nPATCH   /users/:id\nDELETE  /users/:id\n"
         );
     }
 
@@ -1624,5 +1720,25 @@ mod tests {
             *events.lock().unwrap(),
             ["lifecycle_start", "bind", "serve", "lifecycle_stop"]
         );
+    }
+}
+
+#[derive(Clone)]
+struct HttpExecutor(Option<crate::runtime::RuntimeTasks>);
+impl<F> hyper::rt::Executor<F> for HttpExecutor
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    fn execute(&self, future: F) {
+        if let Some(tasks) = &self.0 {
+            tasks.spawn(async move {
+                let _ = future.await;
+            });
+        } else {
+            tokio::spawn(async move {
+                let _ = future.await;
+            });
+        }
     }
 }

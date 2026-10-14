@@ -1,0 +1,17 @@
+[package]
+name = "furnace-grpc-test-support"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+tonic = { workspace = true, features = ["transport", "codegen"] }
+tonic-prost.workspace = true
+prost.workspace = true
+
+[build-dependencies]
+prost.workspace = true
+prost-types.workspace = true
+tonic-prost-build.workspace = true
+protoc-bin-vendored.workspace = true

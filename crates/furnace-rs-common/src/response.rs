@@ -17,6 +17,13 @@ use serde::Serialize;
 
 const INTERNAL_SERVER_ERROR_MESSAGE: &str = "internal server error";
 
+#[cfg(feature = "sea-orm")]
+impl From<sea_orm::DbErr> for HttpError {
+    fn from(source: sea_orm::DbErr) -> Self {
+        Self::internal(source)
+    }
+}
+
 #[derive(Serialize)]
 struct ErrorEnvelope<'a> {
     error: ErrorBody<'a>,
@@ -313,6 +320,10 @@ named_error_impls!(InternalError);
 /// This is the delivery-layer result type. Use [`crate::core::Result`] for
 /// application construction, dependency resolution, and server bootstrap
 /// operations instead.
+///
+/// With the `sea-orm` feature, handlers can propagate `sea_orm::DbErr` with
+/// `?`. Database failures become redacted 500 responses and retain their
+/// original source for server-side diagnosis.
 ///
 /// # Examples
 ///

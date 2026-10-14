@@ -24,8 +24,7 @@ Start with:
   historical context, and acceptance requirements;
 
 When documentation disagrees with current code or configuration, mention it in
-the pull request instead of silently relying on an assumption. Documents under
-`docs/superpowers/` are design history or proposals; use
+the pull request instead of silently relying on an assumption. Use
 the current source, `README.md`, `docs/ARCHITECTURE.md`, and CI configuration to
 confirm present behavior.
 

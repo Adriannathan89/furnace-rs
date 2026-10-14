@@ -34,6 +34,7 @@ furnace::core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_MAR
 
 #[furnace::controller]
 struct UserController {
+    #[inject]
     _marker: Marker,
 }
 

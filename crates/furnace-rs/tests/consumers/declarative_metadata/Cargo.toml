@@ -1,0 +1,8 @@
+[package]
+name = "furnace-di-renamed-consumer"
+version = "0.0.0"
+edition = "2024"
+[dependencies]
+runtime = { package = "furnace-rs-core", path = "../../../../furnace-rs-core" }
+infra = { package = "furnace-di-infrastructure-consumer", path = "../di_infrastructure" }
+[workspace]

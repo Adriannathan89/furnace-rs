@@ -11,6 +11,7 @@ struct NotClone;
 
 #[furnace_rs::controller]
 struct Controller {
+    #[inject]
     dependency: NotClone,
 }
 

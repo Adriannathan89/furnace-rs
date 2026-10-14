@@ -2,11 +2,7 @@
 
 use std::{any::type_name, fmt, ops::Deref, sync::Arc};
 
-use axum::{extract::FromRequestParts, http::request::Parts};
-
 use crate::VerifiedJwt;
-
-use super::{PassportError, PassportRejection};
 
 /// An authenticated application identity that can answer guard policies.
 pub trait PassportPrincipal: Send + Sync + 'static {
@@ -78,7 +74,9 @@ where
     }
 }
 
-/// An Axum extractor for the principal installed by a successful guard.
+/// The typed principal installed by a successful guard.
+///
+/// Use HTTP extraction or `grpc_authenticated` with the corresponding transport.
 pub struct Authenticated<P>(Arc<P>);
 
 impl<P> Authenticated<P> {
@@ -111,21 +109,7 @@ impl<P> fmt::Debug for Authenticated<P> {
     }
 }
 
-impl<P, S> FromRequestParts<S> for Authenticated<P>
-where
-    P: PassportPrincipal,
-    S: Send + Sync,
-{
-    type Rejection = PassportRejection;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts.extensions.get::<Self>().cloned().ok_or_else(|| {
-            PassportError::internal(MissingGuardExtension("authenticated principal")).into()
-        })
-    }
-}
-
-/// An Axum extractor for the complete token installed by a successful guard.
+/// The complete verified token installed by a successful guard.
 pub struct VerifiedToken<C>(Arc<VerifiedJwt<C>>);
 
 impl<C> VerifiedToken<C> {
@@ -163,30 +147,3 @@ impl<C> fmt::Debug for VerifiedToken<C> {
             .finish()
     }
 }
-
-impl<C, S> FromRequestParts<S> for VerifiedToken<C>
-where
-    C: Send + Sync + 'static,
-    S: Send + Sync,
-{
-    type Rejection = PassportRejection;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts
-            .extensions
-            .get::<Self>()
-            .cloned()
-            .ok_or_else(|| PassportError::internal(MissingGuardExtension("verified token")).into())
-    }
-}
-
-#[derive(Debug)]
-struct MissingGuardExtension(&'static str);
-
-impl fmt::Display for MissingGuardExtension {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "missing guard-installed {}", self.0)
-    }
-}
-
-impl std::error::Error for MissingGuardExtension {}

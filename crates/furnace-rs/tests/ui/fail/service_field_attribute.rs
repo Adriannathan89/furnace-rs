@@ -2,6 +2,7 @@
 
 #[furnace_rs::burner]
 struct AttributedFieldService {
+    #[inject]
     #[allow(dead_code)]
     dependency: String,
 }

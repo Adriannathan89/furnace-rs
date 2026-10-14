@@ -92,7 +92,9 @@ mod private_infrastructure {
 
     #[furnace_rs_core::burner]
     pub struct Consumer {
+        #[inject]
         _factory: DatabaseFactory,
+        #[inject]
         _connector: SeaOrmPostgres,
     }
 

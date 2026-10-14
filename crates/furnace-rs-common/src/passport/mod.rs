@@ -1,7 +1,7 @@
 //! Typed Passport principals, request context, and normalized failures.
 //!
-//! Passport is available only when both the `http` and `jwt` features are
-//! enabled. Guards install [`Authenticated`] principals and [`VerifiedToken`]
+//! Passport is available with `jwt` and `http`, or with the transport-neutral
+//! `passport` feature used by separately packaged integrations. Guards install [`Authenticated`] principals and [`VerifiedToken`]
 //! values into request extensions for typed handler extraction.
 //!
 //! A managed access strategy receives verified claims and returns the current
@@ -116,21 +116,34 @@
 //! permissions, and every synchronous `fn(&Principal) -> bool` predicate are
 //! separate AND clauses.
 
+pub(crate) mod authentication;
 mod context;
 mod error;
 mod guard;
+#[cfg(feature = "http")]
+mod http;
+pub(crate) mod policy;
 mod principal;
+pub(crate) mod scope;
 mod strategy;
+
+#[cfg(all(test, feature = "http"))]
+mod shared_tests;
 
 pub use context::PassportContext;
 #[cfg(feature = "cookies")]
 pub use context::PassportCookies;
-pub use error::{PassportError, PassportErrorKind, PassportRejection, PassportResult};
+pub use error::{PassportError, PassportErrorKind, PassportResult};
 pub use guard::{
     BuiltinGuardAdapter, GuardCatalog, GuardDescriptor, GuardPolicy, GuardPredicate,
-    GuardPredicateAdapter, NativePassportGuardService, PassportGuard, PassportGuardBuilder,
-    PassportGuardLayer, PassportGuardService, PassportGuardState, PolicyClause, PolicyMode,
-    TokenSource,
+    GuardPredicateAdapter, PolicyClause, PolicyMode, TokenSource,
+};
+#[cfg(feature = "http")]
+pub use http::PassportRejection;
+#[cfg(feature = "http")]
+pub use http::{
+    NativePassportGuardService, PassportGuard, PassportGuardBuilder, PassportGuardLayer,
+    PassportGuardService, PassportGuardState,
 };
 pub use principal::{Authenticated, ClaimsPrincipal, PassportPrincipal, VerifiedToken};
 pub use strategy::{
@@ -146,3 +159,11 @@ pub const FURNACE130: furnace_rs_core::DiagnosticCode =
 /// Guard metadata or authentication-policy failure.
 pub const FURNACE131: furnace_rs_core::DiagnosticCode =
     furnace_rs_core::DiagnosticCode::new("FURNACE131");
+
+/// Transport-neutral interfaces used by separately packaged integrations.
+#[doc(hidden)]
+pub mod __private {
+    pub use super::authentication::authenticate_bearer;
+    pub use super::policy::authorizes;
+    pub use super::scope::{GuardOccurrence, PassportScopeDescriptor, ScopedGuard};
+}

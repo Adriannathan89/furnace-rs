@@ -63,6 +63,14 @@ impl DatabaseConnector for SeaOrmPostgres {
 
     async fn connect(self) -> PersistenceResult<Self::Database> {
         validate_postgres_scheme(self.options.get_url())?;
+        // SQLx allocates an ArrayQueue whose capacity must be nonzero.
+        // Validate native options as well as the typed configuration path.
+        if self.options.get_max_connections() == Some(0) {
+            return Err(PersistenceError::new(
+                PersistenceErrorKind::InvalidConfiguration,
+                "configure",
+            ));
+        }
         // A zero reaping interval continuously reschedules SQLx maintenance.
         // Native callers can disable these policies with None instead.
         if [

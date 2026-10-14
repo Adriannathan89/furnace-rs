@@ -1,0 +1,13 @@
+error: one grpc_method override is allowed per Rust method
+ --> tests/ui-grpc/fail/repeated-method-override.rs:9:5
+  |
+9 |     #[grpc_method(name = "Secret", public)]
+  |     ^
+
+warning: unused imports: `FILE_DESCRIPTOR_SET` and `pb`
+ --> tests/ui-grpc/fail/repeated-method-override.rs:2:33
+  |
+2 | use furnace_grpc_test_support::{pb, FILE_DESCRIPTOR_SET};
+  |                                 ^^  ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default

@@ -20,12 +20,15 @@ use std::{
 
 #[furnace_rs_core::burner]
 struct Service {
+    #[inject]
     message: String,
 }
 
 #[furnace_rs_common::controller]
 struct Controller {
+    #[inject]
     service: Service,
+    #[inject]
     resource: Resource,
 }
 

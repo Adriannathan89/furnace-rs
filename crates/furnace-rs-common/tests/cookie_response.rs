@@ -267,6 +267,107 @@ async fn invalid_batch_is_atomic() {
     .await;
 }
 
+async fn assert_attribute_injection_rejected(domain: bool, removal: bool) {
+    use axum::response::IntoResponse;
+
+    let injected = Cookie::build(("private-cookie", "private-token"))
+        .http_only(true)
+        .secure(true)
+        .same_site(SameSite::Strict);
+    let injected = if domain {
+        injected.domain("example.com; SameSite=None; Max-Age=31536000")
+    } else {
+        injected.path("/; SameSite=None; Max-Age=31536000")
+    }
+    .build();
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(
+        axum::http::header::COOKIE,
+        "private-cookie=old-token".parse().unwrap(),
+    );
+    let jar = CookieJar::from_headers(&headers)
+        .unwrap()
+        .add(Cookie::new("valid-cookie", "valid-token"));
+    let jar = if removal {
+        jar.remove(injected)
+    } else {
+        jar.add(injected)
+    };
+    let response = jar.into_response();
+    assert_internal_cookie_rejection(
+        response,
+        &[
+            "private-cookie",
+            "private-token",
+            "valid-cookie",
+            "valid-token",
+        ],
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn domain_attribute_injection_is_rejected_for_add() {
+    assert_attribute_injection_rejected(true, false).await;
+}
+
+#[tokio::test]
+async fn domain_attribute_injection_is_rejected_for_removal() {
+    assert_attribute_injection_rejected(true, true).await;
+}
+
+#[tokio::test]
+async fn path_attribute_injection_is_rejected_for_add() {
+    assert_attribute_injection_rejected(false, false).await;
+}
+
+#[tokio::test]
+async fn path_attribute_injection_is_rejected_for_removal() {
+    assert_attribute_injection_rejected(false, true).await;
+}
+
+#[tokio::test]
+async fn ascii_controls_in_attributes_are_rejected_for_add_and_removal() {
+    use axum::response::IntoResponse;
+
+    for control in ['\t', '\0', '\u{1f}', '\u{7f}'] {
+        for domain in [false, true] {
+            for removal in [false, true] {
+                let cookie = Cookie::build(("private-cookie", "private-token"));
+                let cookie = if domain {
+                    cookie.domain(format!("example.com{control}"))
+                } else {
+                    cookie.path(format!("/{control}"))
+                }
+                .build();
+                let mut headers = axum::http::HeaderMap::new();
+                headers.insert(
+                    axum::http::header::COOKIE,
+                    "private-cookie=old-token".parse().unwrap(),
+                );
+                let jar = CookieJar::from_headers(&headers)
+                    .unwrap()
+                    .add(Cookie::new("valid-cookie", "valid-token"));
+                let jar = if removal {
+                    jar.remove(cookie)
+                } else {
+                    jar.add(cookie)
+                };
+                assert_internal_cookie_rejection(
+                    jar.into_response(),
+                    &[
+                        "private-cookie",
+                        "private-token",
+                        "valid-cookie",
+                        "valid-token",
+                    ],
+                )
+                .await;
+            }
+        }
+    }
+}
+
 #[tokio::test]
 async fn response_errors_are_redacted_and_stably_classified() {
     use axum::response::IntoResponse;

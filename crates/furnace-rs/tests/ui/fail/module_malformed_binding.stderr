@@ -1,0 +1,5 @@
+error: unexpected end of input, expected one of: `for`, parentheses, `fn`, `unsafe`, `extern`, identifier, `::`, `<`, `dyn`, square brackets, `*`, `&`, `!`, `impl`, `_`, lifetime
+ --> tests/ui/fail/module_malformed_binding.rs:1:47
+  |
+1 | #[furnace_rs::cauldron(providers = [Service =>])]
+  |                                               ^

@@ -653,6 +653,20 @@ impl Config {
         Some(base.join(configured))
     }
 
+    /// Resolves one string-array path relative to the source that supplied the array.
+    pub fn resolve_string_array_path(&self, key: &str, index: usize) -> Option<PathBuf> {
+        let value = self.string_arrays.get(key)?;
+        let configured = Path::new(value.value.get(index)?);
+        if configured.is_absolute() {
+            return Some(configured.to_path_buf());
+        }
+        let base = match &value.origin.relative_path_base {
+            Some(base) => base.clone(),
+            None => std::env::current_dir().ok()?,
+        };
+        Some(base.join(configured))
+    }
+
     /// Iterates over string-array keys and values in lexical key order.
     pub fn iter_string_arrays(&self) -> impl Iterator<Item = (&str, &[String])> {
         self.string_arrays

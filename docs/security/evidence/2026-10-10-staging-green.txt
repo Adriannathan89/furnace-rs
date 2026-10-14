@@ -1,0 +1,14 @@
+   Compiling furnace-rs-cli v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-cli)
+    Finished `test` profile [unoptimized] target(s) in 2.53s
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_cli-fae3d719c9451f0f)
+
+running 7 tests
+test scaffold::publish::tests::directory_sync_propagates_supported_platform_errors ... ok
+test scaffold::publish::tests::private_scaffold_child ... ok
+test scaffold::publish::tests::write_failure_removes_only_the_owned_staging_directory ... ok
+test scaffold::publish::tests::staging_sync_failure_removes_the_private_staging_directory ... ok
+test scaffold::publish::tests::destination_race_preserves_the_competing_directory_and_cleans_staging ... ok
+test scaffold::publish::tests::preparation_failure_removes_the_private_staging_directory ... ok
+test scaffold::publish::tests::scaffold_directories_are_private_under_each_umask ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 71 filtered out; finished in 0.05s

@@ -3,10 +3,45 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
 
-from compare import body_limit_probe, contract_checks, measure, median_summary, warmup_size
+from compare import (
+    body_limit_probe,
+    build_run_schedule,
+    contract_checks,
+    measure,
+    median_summary,
+    operation_order,
+    STARTUP_POLL_INTERVAL_SECONDS,
+    warmup_size,
+)
 
 
 class ComparisonSummaryTests(unittest.TestCase):
+    def test_startup_readiness_poll_is_fine_grained(self):
+        self.assertGreater(STARTUP_POLL_INTERVAL_SECONDS, 0)
+        self.assertLessEqual(STARTUP_POLL_INTERVAL_SECONDS, 0.005)
+
+    def test_request_operation_order_is_a_reproducible_permutation(self):
+        first = operation_order(12, seed=742)
+        second = operation_order(12, seed=742)
+
+        self.assertEqual(first, second)
+        self.assertEqual(sorted(first), list(range(12)))
+        self.assertNotEqual(first, list(range(12)))
+
+    def test_run_schedule_randomizes_independent_targets_reproducibly(self):
+        first = build_run_schedule(("hello", "auth"), ("old", "beta", "axum"), 2, seed=19)
+        second = build_run_schedule(("hello", "auth"), ("old", "beta", "axum"), 2, seed=19)
+
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 12)
+        self.assertEqual(set(first), {
+            (scenario, framework, run)
+            for scenario in ("hello", "auth")
+            for framework in ("old", "beta", "axum")
+            for run in range(2)
+        })
+        self.assertNotEqual(first, sorted(first))
+
     def test_summary_uses_median_not_fastest_run(self):
         runs = [
             {"passed": True, "responses_per_second": 100.0, "p50_ms": 4.0, "p95_ms": 12.0, "p99_ms": 20.0},

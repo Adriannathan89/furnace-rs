@@ -2,6 +2,7 @@
 struct NotCloneManaged;
 #[furnace_rs::burner]
 struct Service {
+    #[inject]
     dependency: NotCloneManaged,
 }
 fn main() {}

@@ -304,6 +304,17 @@ impl CookieJar {
     fn validate_pending(&self) -> CookieResult<()> {
         for pending in &self.pending {
             let cookie = pending.cookie();
+            if [cookie.path(), cookie.domain()]
+                .into_iter()
+                .flatten()
+                .any(|attribute| {
+                    attribute
+                        .bytes()
+                        .any(|byte| byte == b';' || byte.is_ascii_control())
+                })
+            {
+                return Err(CookieError::new(CookieErrorKind::InvalidResponse));
+            }
             if cookie.same_site() == Some(SameSite::None) && cookie.secure() == Some(false) {
                 return Err(CookieError::new(CookieErrorKind::InvalidResponse));
             }

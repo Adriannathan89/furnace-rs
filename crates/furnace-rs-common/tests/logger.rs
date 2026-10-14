@@ -92,6 +92,7 @@ mod consumer {
 
     #[furnace_rs_core::burner]
     pub struct LoggingService {
+        #[inject]
         _logger: Logger,
     }
 
@@ -185,4 +186,38 @@ async fn application_can_manually_provide_a_custom_global_logger() {
             .resolve::<consumer::LoggingService>()
             .is_ok()
     );
+}
+
+mod declarative_logger_application {
+    use furnace_rs_common::{Logger, LoggerCauldron};
+    #[furnace_rs_core::burner]
+    pub struct Consumer {
+        #[inject]
+        pub logger: Logger,
+    }
+    #[furnace_rs_core::cauldron(root, imports=[LoggerCauldron], providers=[Consumer])]
+    pub struct Root;
+}
+
+#[tokio::test]
+async fn declared_logger_contract_selects_defaults_and_native_overrides() {
+    for custom in [false, true] {
+        let inner = RecordingLogger::default();
+        let entries = inner.entries.clone();
+        let mut builder = Furnace::builder();
+        builder
+            .root::<declarative_logger_application::Root>()
+            .unwrap();
+        if custom {
+            builder.provide(Logger::new(inner)).unwrap();
+        }
+        let application = builder.build().await.unwrap();
+        application
+            .context()
+            .resolve::<declarative_logger_application::Consumer>()
+            .unwrap()
+            .logger
+            .info("declared logger");
+        assert_eq!(entries.lock().unwrap().len(), usize::from(custom));
+    }
 }

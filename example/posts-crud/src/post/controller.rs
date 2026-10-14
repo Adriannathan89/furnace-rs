@@ -2,12 +2,13 @@ use furnace_rs::prelude::*;
 
 use super::{
     model::{Post, PostInput},
-    service::PostService,
+    repository::PostRepository,
 };
 
 #[controller]
 pub struct PostController {
-    service: PostService,
+    #[inject]
+    repository: PostRepository,
 }
 
 #[controller(route = "/posts")]
@@ -17,25 +18,20 @@ impl PostController {
         &self,
         ValidatedJson(body): ValidatedJson<PostInput>,
     ) -> HttpResult<Created<Json<Post>>> {
-        let post = self
-            .service
-            .create(body.title, body.body)
-            .await
-            .map_err(InternalError::new)?;
+        let post = self.repository.create(body.title, body.body).await?;
         Ok(Created(Json(post)))
     }
 
     #[get]
     async fn list(&self) -> HttpResult<Json<Vec<Post>>> {
-        Ok(Json(self.service.list().await.map_err(InternalError::new)?))
+        Ok(Json(self.repository.list().await?))
     }
 
     #[get("/:id")]
     async fn find(&self, Path(id): Path<i32>) -> HttpResult<Json<Post>> {
-        self.service
+        self.repository
             .find(id)
-            .await
-            .map_err(InternalError::new)?
+            .await?
             .map(Json)
             .ok_or_else(|| NotFound::new("post not found").into())
     }
@@ -46,17 +42,16 @@ impl PostController {
         Path(id): Path<i32>,
         ValidatedJson(body): ValidatedJson<PostInput>,
     ) -> HttpResult<Json<Post>> {
-        self.service
+        self.repository
             .update(id, body.title, body.body)
-            .await
-            .map_err(InternalError::new)?
+            .await?
             .map(Json)
             .ok_or_else(|| NotFound::new("post not found").into())
     }
 
     #[delete("/:id")]
     async fn delete(&self, Path(id): Path<i32>) -> HttpResult<NoContent> {
-        if self.service.delete(id).await.map_err(InternalError::new)? {
+        if self.repository.delete(id).await? {
             Ok(NoContent)
         } else {
             Err(NotFound::new("post not found").into())

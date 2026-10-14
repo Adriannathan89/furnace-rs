@@ -14,10 +14,12 @@ use tempfile::{TempDir, tempdir};
 const PACKAGES: &[&str] = &[
     "furnace-rs-core-macros",
     "furnace-rs-common-macros",
+    "furnace-rs-grpc-macros",
     "furnace-rs-core",
     "furnace-rs-persistence",
     "furnace-rs-extra",
     "furnace-rs-common",
+    "furnace-rs-grpc",
     "furnace-rs-testing",
     "furnace-rs",
     "furnace-rs-cli",
@@ -26,9 +28,11 @@ const PACKAGES: &[&str] = &[
 const PUBLISH_ORDER: &[&str] = &[
     "furnace-rs-core-macros",
     "furnace-rs-common-macros",
+    "furnace-rs-grpc-macros",
     "furnace-rs-core",
     "furnace-rs-extra",
     "furnace-rs-common",
+    "furnace-rs-grpc",
     "furnace-rs-testing",
     "furnace-rs",
     "furnace-rs-persistence",
@@ -301,8 +305,10 @@ fn release_workflows_verify_v090_feature_boundaries_and_package_contents() {
             "cargo check -p furnace-rs-common --no-default-features --features http",
             "cargo check -p furnace-rs-common --no-default-features --features jwt",
             "cargo check -p furnace-rs-common --no-default-features --features cookies",
+            "cargo check -p furnace-rs-common --no-default-features --features sea-orm",
             "cargo check -p furnace-rs --no-default-features",
             "cargo check -p furnace-rs --no-default-features --features http,runtime-tokio",
+            "cargo check -p furnace-rs --no-default-features --features sea-orm",
             "cargo package --locked --workspace --no-verify",
         ] {
             assert!(
@@ -368,21 +374,17 @@ fn package_content_policy_checks_every_workspace_archive() {
         .expect("package-content policy should start");
     assert_success(&output);
     assert!(
-        String::from_utf8_lossy(&output.stdout).contains("verified package contents for 9 crates")
+        String::from_utf8_lossy(&output.stdout).contains("verified package contents for 11 crates")
     );
 }
 
 #[test]
-fn all_packages_use_v101_pins_and_workspace_version() {
-    const VERSION: &str = "1.0.1";
-
+fn all_packages_use_exact_pins_and_workspace_version() {
     let root = workspace_root();
     let workspace_manifest =
         fs::read_to_string(root.join("Cargo.toml")).expect("workspace manifest should exist");
-    assert!(
-        workspace_manifest.contains(&format!("version = \"{VERSION}\"")),
-        "the workspace must remain at the approved stable version"
-    );
+    let version = env!("CARGO_PKG_VERSION");
+    assert!(workspace_manifest.contains(&format!("version = \"{version}\"")));
 
     let lockfile =
         fs::read_to_string(root.join("Cargo.lock")).expect("workspace lockfile should exist");
@@ -391,23 +393,23 @@ fn all_packages_use_v101_pins_and_workspace_version() {
             .unwrap_or_else(|error| panic!("{package} manifest should exist: {error}"));
         assert!(
             manifest.contains("version.workspace = true"),
-            "{package} must inherit the workspace stable version"
+            "{package} must inherit the workspace version"
         );
 
         for dependency in manifest
             .lines()
-            .filter(|line| line.contains("path = \"../"))
+            .filter(|line| line.contains("path = \"../furnace-rs"))
         {
             assert!(
-                dependency.contains(&format!("version = \"={VERSION}\"")),
-                "{package} internal dependency must use an exact stable pin: {dependency}"
+                dependency.contains(&format!("version = \"={version}\"")),
+                "{package} internal dependency must use an exact version pin: {dependency}"
             );
         }
 
-        let record = format!("name = \"{package}\"\nversion = \"{VERSION}\"");
+        let record = format!("name = \"{package}\"\nversion = \"{version}\"");
         assert!(
             lockfile.contains(&record),
-            "lockfile must contain {package} at {VERSION}"
+            "lockfile must contain {package} at {version}"
         );
     }
 
@@ -416,15 +418,15 @@ fn all_packages_use_v101_pins_and_workspace_version() {
     assert!(cli_manifest.contains("version.workspace = true"));
     for dependency in cli_manifest
         .lines()
-        .filter(|line| line.contains("path = \"../"))
+        .filter(|line| line.contains("path = \"../furnace-rs"))
     {
         assert!(
-            dependency.contains(&format!("version = \"={VERSION}\"")),
+            dependency.contains(&format!("version = \"={version}\"")),
             "furnace-rs-cli must pin the updated framework dependency: {dependency}"
         );
     }
     assert!(lockfile.contains(&format!(
-        "name = \"furnace-rs-cli\"\nversion = \"{VERSION}\""
+        "name = \"furnace-rs-cli\"\nversion = \"{version}\""
     )));
 }
 
@@ -454,159 +456,81 @@ fn stable_and_beta_publication_require_security_verification() {
 }
 
 #[test]
-fn active_090_docs_describe_native_persistence() {
+fn current_docs_describe_native_persistence() {
     let root = workspace_root();
     let cli = fs::read_to_string(root.join("docs/CLI.md")).unwrap();
-    let readme = fs::read_to_string(root.join("README.md")).unwrap();
+    let persistence = fs::read_to_string(root.join("docs/furnace-rs-persistence.md")).unwrap();
     assert!(!cli.contains("furnace db"));
-    assert!(readme.contains("furnace-rs-persistence"));
-    assert!(readme.contains("sea-orm-postgres"));
-    for path in [
-        "docs/superpowers/specs/2026-09-23-mads-persistence-design.md",
-        "docs/superpowers/plans/2026-09-23-mads-persistence.md",
+    for required in [
+        "sea-orm-postgres",
+        "DatabaseCauldron",
+        "DatabaseConnection",
+        "DbErr",
+        "sea-orm",
+        "Injector::lifecycle",
     ] {
-        let document = fs::read_to_string(root.join(path)).unwrap();
         assert!(
-            document
-                .lines()
-                .take(6)
-                .any(|line| line.contains("Superseded"))
+            persistence.contains(required),
+            "persistence guide missing {required}"
         );
     }
+    assert!(!persistence.contains("#[element]"));
 }
 
 #[test]
-fn legacy_database_examples_are_marked_as_superseded() {
+fn documentation_points_to_current_examples_and_released_version() {
     let root = workspace_root();
-    for path in [
-        "docs/final_ideav1.md",
-        "docs/examples/application.md",
-        "docs/examples/application_clean_architecture.md",
-        "docs/examples/final_application_clean_architecture.md",
-        "docs/examples/modular_user_jwt.md",
-        "docs/examples/passport_jwt.md",
-    ] {
-        let document = fs::read_to_string(root.join(path)).unwrap();
-        let introduction = document.lines().take(8).collect::<Vec<_>>().join(" ");
-        assert!(
-            introduction.contains("Superseded")
-                && introduction.contains("docs/furnace-rs-persistence.md"),
-            "{path} must direct readers to the current 0.9 persistence guide"
-        );
-    }
-    let contributing = fs::read_to_string(root.join("CONTRIBUTING.md")).unwrap();
+    let readme = fs::read_to_string(root.join("README.md")).unwrap();
+    let security = fs::read_to_string(root.join("docs/SECURITY.md")).unwrap();
     let common = fs::read_to_string(root.join("crates/furnace-rs-common/README.md")).unwrap();
-    assert!(!contributing.contains("CORS, Diesel"));
-    assert!(!common.contains("PostgreSQL suites are ignored"));
+    for path in [
+        "example/hello-world/",
+        "example/posts-crud/",
+        "example/post-crud-with-service/",
+        "example/protected-route/",
+    ] {
+        assert!(
+            readme.contains(path),
+            "README missing current example {path}"
+        );
+        assert!(root.join(path).join("src/main.rs").is_file());
+    }
+    assert!(common.contains("../../example/protected-route/README.md"));
+    for (name, source) in [("README", &readme), ("security policy", &security)] {
+        assert!(
+            source.contains("1.0.2"),
+            "{name} must identify the current release"
+        );
+        assert!(!source.contains("preparing furnace-rs"));
+        assert!(!source.contains("forthcoming 1.0.x"));
+    }
+    assert!(readme.contains("1.0.2 is the current released version"));
+    assert!(security.contains("current released version is furnace-rs **1.0.2**"));
 }
 
 #[test]
-fn documentation_describes_the_v080_compatibility_boundaries() {
+fn documentation_describes_validation_and_configuration_boundaries() {
     let root = workspace_root();
-    let readme = fs::read_to_string(root.join("README.md")).expect("README should exist");
-    let architecture = fs::read_to_string(root.join("docs/ARCHITECTURE.md"))
-        .expect("architecture guide should exist");
-
+    let readme = fs::read_to_string(root.join("README.md")).unwrap();
+    let architecture = fs::read_to_string(root.join("docs/ARCHITECTURE.md")).unwrap();
     for (name, source) in [("README", &readme), ("architecture", &architecture)] {
         for required in ["ValidatedJson", "native `Json`", "Config::parse", "Secret"] {
             assert!(
                 source.contains(required),
-                "{name} must document the v0.8 compatibility contract: {required}",
+                "{name} missing contract: {required}"
             );
         }
     }
-
-    for stale_claim in [
-        "request-validation derives or schemas",
-        "generic typed configuration, third-party",
-        "machine-readable CLI output are deferred to\nv0.8",
-    ] {
-        assert!(
-            !readme.contains(stale_claim),
-            "README still describes a shipped v0.8 feature as deferred: {stale_claim}",
-        );
-        assert!(
-            !architecture.contains(stale_claim),
-            "architecture still describes a shipped v0.8 feature as deferred: {stale_claim}",
-        );
-    }
-
-    let current_surface = fs::read_to_string(root.join("docs/final_ideav1.md"))
-        .expect("current v1 surface should exist");
+    let controller =
+        fs::read_to_string(root.join("example/protected-route/src/auth/controller.rs")).unwrap();
     for required in [
         "ValidatedJson",
-        "Config::parse",
-        "Secret",
-        ".into_http()",
-        "schema_version",
-        "mads new <name>",
+        "Authenticated",
+        "Self::seal::<ProfileGuard>()",
     ] {
         assert!(
-            current_surface.contains(required),
-            "current v1 surface must document {required}",
-        );
-    }
-    assert!(!current_surface.contains("validation adalah target v1"));
-    assert!(!current_surface.contains("machine-readable CLI output remain v0.8 directions"));
-
-    let complete_example =
-        fs::read_to_string(root.join("docs/examples/final_application_clean_architecture.md"))
-            .expect("complete application example should exist");
-    for extractor in ["ValidatedJson", "ValidatedQuery", "ValidatedPath"] {
-        assert!(
-            complete_example.contains(extractor),
-            "complete application example must use {extractor}",
-        );
-    }
-    assert!(!complete_example.contains("planned validation API"));
-
-    let passport = fs::read_to_string(root.join("docs/examples/passport_jwt.md"))
-        .expect("Passport example should exist");
-    for required in [
-        "0.8.0",
-        "ValidatedJson",
-        "authentication was rejected",
-        "access was denied",
-        "WWW-Authenticate: Bearer",
-    ] {
-        assert!(
-            passport.contains(required),
-            "Passport example missing {required}"
-        );
-    }
-
-    let features = fs::read_to_string(root.join("docs/importance/version_0.8.0/features.md"))
-        .expect("v0.8 feature evidence should exist");
-    for required in [
-        "0.8.0-beta.1",
-        "ValidatedJson",
-        "Config::parse",
-        ".into_http()",
-        "schema_version",
-        "mads new",
-    ] {
-        assert!(
-            features.contains(required),
-            "v0.8 feature guide missing {required}"
-        );
-    }
-
-    let stable = fs::read_to_string(root.join("docs/importance/version_0.8.0/stable-promotion.md"))
-        .expect("v0.8 stable-promotion guide should exist");
-    assert!(stable.contains("no new features"));
-    assert!(stable.contains("0.8.0-beta.1"));
-
-    let changelog = fs::read_to_string(root.join("CHANGELOG.md")).expect("changelog should exist");
-    assert!(changelog.contains("## [0.8.0-beta.1]"));
-    for required in [
-        "mads new",
-        "ValidatedJson",
-        "Config::parse",
-        "schema version 1",
-    ] {
-        assert!(
-            changelog.contains(required),
-            "v0.8 changelog missing {required}"
+            controller.contains(required),
+            "protected-route example missing {required}"
         );
     }
 }

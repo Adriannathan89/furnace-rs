@@ -93,21 +93,36 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
     }
 }
 
-#[cfg(feature = "http")]
+#[cfg(any(feature = "http", feature = "passport"))]
 fn guard_requirements(
     context: &AutoConfigurationContext<'_>,
 ) -> Result<Vec<AutoConfigurationRequirement>> {
-    use crate::{http_preflight::SelectedHttpMetadata, passport::PassportStrategyCatalog};
-
-    let http = context
-        .memoize(|| SelectedHttpMetadata::select(context.cauldron_graph(), context.focus_type_id()))
-        .scope()?;
+    let mut guards = Vec::new();
+    #[cfg(feature = "http")]
+    guards.extend(
+        context
+            .memoize(|| {
+                crate::http_preflight::SelectedHttpMetadata::select(
+                    context.cauldron_graph(),
+                    context.focus_type_id(),
+                )
+            })
+            .scope()?
+            .guards()
+            .iter()
+            .cloned(),
+    );
+    for integration in furnace_rs_core::__private::inventory::iter::<
+        crate::passport::__private::PassportScopeDescriptor,
+    > {
+        guards.extend((integration.select)(context)?);
+    }
     let preflight = if context.focus_type_id().is_some() {
-        PassportStrategyCatalog::preflight_for_test(http.guards(), |type_id| {
-            context.has_provider_type_id(type_id)
+        crate::PassportStrategyCatalog::preflight_for_test(&guards, |id| {
+            context.has_provider_type_id(id)
         })?
     } else {
-        PassportStrategyCatalog::preflight_scoped(context.cauldron_graph(), http.guards())?
+        crate::PassportStrategyCatalog::preflight_scoped(context.cauldron_graph(), &guards)?
     };
     Ok(preflight
         .bindings()
@@ -118,10 +133,9 @@ fn guard_requirements(
         })
         .collect())
 }
-
-#[cfg(not(feature = "http"))]
+#[cfg(not(any(feature = "http", feature = "passport")))]
 fn guard_requirements(
-    _context: &AutoConfigurationContext<'_>,
+    _: &AutoConfigurationContext<'_>,
 ) -> Result<Vec<AutoConfigurationRequirement>> {
     Ok(Vec::new())
 }

@@ -1,0 +1,12 @@
+[package]
+name = "furnace-grpc-automatic-consumer"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.94"
+[features]
+default = []
+http = ["brand/http"]
+[dependencies]
+brand = { package = "furnace-rs", path = "../../..", default-features = false, features = ["grpc", "runtime-tokio"] }
+furnace-grpc-test-support = { path = "../../../../../tests/grpc-support" }
+[workspace]

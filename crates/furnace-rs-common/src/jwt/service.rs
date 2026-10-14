@@ -146,6 +146,26 @@ impl JwtService {
     where
         C: DeserializeOwned,
     {
+        self.verify_with_time(token, validation, unix_now)
+    }
+
+    #[cfg(test)]
+    #[allow(dead_code)]
+    pub(crate) fn verify_at<C: DeserializeOwned>(
+        &self,
+        token: &str,
+        validation: JwtValidation,
+        now: u64,
+    ) -> JwtResult<VerifiedJwt<C>> {
+        self.verify_with_time(token, validation, || Ok(now))
+    }
+
+    fn verify_with_time<C: DeserializeOwned>(
+        &self,
+        token: &str,
+        validation: JwtValidation,
+        now: impl FnOnce() -> JwtResult<u64>,
+    ) -> JwtResult<VerifiedJwt<C>> {
         self.ensure_token_size(token)?;
         let (encoded_header, encoded_payload, _) = jwt_parts(token)?;
         let header = decode_jwt_header(encoded_header)?;
@@ -156,7 +176,7 @@ impl JwtService {
 
         verify_signature(token, key, key_algorithm)?;
         let claims = decode_claims(encoded_payload)?;
-        self.validate_claims(&header, &claims.registered, &validation, unix_now()?)?;
+        self.validate_claims(&header, &claims.registered, &validation, now()?)?;
         Ok(VerifiedJwt { header, claims })
     }
 

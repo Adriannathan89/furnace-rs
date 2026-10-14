@@ -21,6 +21,7 @@ impl framework::Cauldron for AppCauldron {
 
 #[storage]
 struct RenamedRepository {
+    #[inject]
     value: u32,
 }
 
@@ -122,3 +123,11 @@ fn main() {
     let _ = passport_principal;
     let _ = consume_repository;
 }
+
+#[framework::burner]
+struct DeclarativeService;
+#[framework::cauldron(providers=[DeclarativeService], exports=[DeclarativeService])]
+struct DeclarativeModule;
+use DeclarativeModule as DeclarativeAlias;
+#[framework::cauldron(root, imports=[DeclarativeAlias])]
+struct DeclarativeApp;

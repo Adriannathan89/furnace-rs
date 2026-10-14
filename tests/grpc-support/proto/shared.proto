@@ -1,0 +1,3 @@
+syntax = "proto3";
+package furnace.test.v1;
+message Summary { uint64 count = 1; uint64 total = 2; }

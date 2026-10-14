@@ -29,6 +29,7 @@ mod config;
 mod configuration;
 mod context;
 mod descriptor;
+mod di_contract;
 mod diagnostic;
 mod graph;
 mod injector;
@@ -90,6 +91,11 @@ pub use furnace_rs_core_macros::{Configuration, burner, cauldron, main, storage,
 /// Implementation details used by furnace-rs procedural macro expansions.
 #[doc(hidden)]
 pub mod __private {
+    pub use crate::cauldron::TransportProvider;
+    #[doc(hidden)]
+    pub use crate::di_contract::*;
+    #[doc(hidden)]
+    pub use furnace_rs_core_macros::{__di_bootstrap, __di_collect};
     use std::any::TypeId;
 
     pub use crate::configuration::parse as configuration;

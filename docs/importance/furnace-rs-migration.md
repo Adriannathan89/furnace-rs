@@ -1,10 +1,11 @@
 # Migrating to furnace-rs 1.0.0
 
 Version 1.0.0 introduced breaking API changes from MADS. This guide describes
-that migration; the current patch-release preparation targets 1.0.1 across all
+that migration; the current released version is 1.0.2 across all
 nine workspace packages, with Rust edition 2024 and MSRV 1.94.
-Version 1.0.1 must be available on the registry before installing the exact
-pins below. Until its publication, use local workspace/path dependencies.
+Version 1.0.2 is available on crates.io; the dependency examples below use exact
+registry pins for that release. Local path dependencies can be used for checkout
+development.
 There are no compatibility aliases for the removed declarations.
 
 | Previous API | Current API |
@@ -31,7 +32,7 @@ recommended for applications:
 
 ```toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.1", default-features = false, features = ["http", "jwt", "runtime-tokio"] }
+furnace = { package = "furnace-rs", version = "=1.0.2", default-features = false, features = ["http", "jwt", "runtime-tokio"] }
 serde = { version = "1", features = ["derive"] }
 ```
 
@@ -52,7 +53,7 @@ use furnace::prelude::*;
 #[storage]
 pub struct UserStorage;
 #[burner]
-pub struct UserService { storage: UserStorage }
+pub struct UserService { #[inject] storage: UserStorage }
 impl UserService {
     fn list(&self) -> &'static str { let _ = &self.storage; "users" }
 }
@@ -67,7 +68,7 @@ impl PassportPrincipal for UserClaims {
 pub struct UserGuard;
 
 #[controller]
-pub struct UserController { service: UserService }
+pub struct UserController { #[inject] service: UserService }
 impl Sealable for UserController {
     fn seals() -> SealRegistration<Self> { Self::seal::<UserGuard>() }
 }
@@ -161,6 +162,7 @@ pub struct UserDependency; // Previously private; required by the public injecto
 
 #[burner]
 pub struct UserService {
+    #[inject]
     dependency: UserDependency, // The field itself can remain private.
 }
 ```
@@ -190,7 +192,7 @@ impl Injector<Arc<dyn UserRepository>> for MemoryRepository {
 }
 
 #[burner]
-struct UserService { repository: Arc<dyn UserRepository> }
+struct UserService { #[inject] repository: Arc<dyn UserRepository> }
 
 #[cauldron]
 struct AppCauldron;

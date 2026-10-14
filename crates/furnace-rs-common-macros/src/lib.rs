@@ -59,7 +59,8 @@ pub fn passport_strategy(arguments: TokenStream, item: TokenStream) -> TokenStre
 /// Annotate exactly one inherent implementation with `#[controller]` or
 /// `#[controller(route = "/users")]`; its endpoint methods use HTTP verb
 /// attributes. Handlers may be synchronous or asynchronous with `&self` or
-/// no receiver. Named fields are resolved as managed dependencies.
+/// no receiver. Named fields require parameterless `#[inject]` and are resolved
+/// as managed dependencies.
 #[proc_macro_attribute]
 pub fn controller(arguments: TokenStream, item: TokenStream) -> TokenStream {
     controller::expand(arguments.into(), item.into())

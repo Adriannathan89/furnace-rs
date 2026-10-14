@@ -10,23 +10,23 @@ error[E0446]: private type `PrivateDependency` in public interface
   = note: this error originates in the attribute macro `furnace_rs::burner` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0446]: private type `PrivateDependency` in public interface
-  --> tests/ui/fail/injector_private_managed_dependency.rs:11:1
+  --> tests/ui/fail/injector_private_managed_dependency.rs:12:1
    |
  4 | struct PrivateDependency;
    | ------------------------ `PrivateDependency` declared as private
 ...
-11 | #[furnace_rs::storage]
+12 | #[furnace_rs::storage]
    | ^^^^^^^^^^^^^^^^^^^^^^ can't leak private type
    |
    = note: this error originates in the attribute macro `furnace_rs::storage` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0446]: private type `PrivateDependency` in public interface
-  --> tests/ui/fail/injector_private_managed_dependency.rs:16:1
+  --> tests/ui/fail/injector_private_managed_dependency.rs:18:1
    |
  4 | struct PrivateDependency;
    | ------------------------ `PrivateDependency` declared as private
 ...
-16 | #[furnace_rs::controller]
+18 | #[furnace_rs::controller]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^ can't leak private type
    |
    = note: this error originates in the attribute macro `furnace_rs::controller` (in Nightly builds, run with -Z macro-backtrace for more info)

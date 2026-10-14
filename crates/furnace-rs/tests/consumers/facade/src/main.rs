@@ -13,6 +13,7 @@ impl furnace_rs::core::Cauldron for AppCauldron {
 
 #[storage]
 struct Repository {
+    #[inject]
     value: u32,
 }
 

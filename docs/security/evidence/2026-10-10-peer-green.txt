@@ -1,0 +1,9 @@
+   Compiling furnace-rs-common v1.0.2 (/home/ryynn/Desktop/furnace-rs/crates/furnace-rs-common)
+    Finished `test` profile [unoptimized] target(s) in 5.36s
+     Running unittests src/lib.rs (target/debug/deps/furnace_rs_common-607efcb2d4259735)
+
+running 2 tests
+test server::tests::http1_socket_peer_is_available_to_native_extractors ... ok
+test server::tests::http2_socket_peer_is_available_to_native_extractors ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 39 filtered out; finished in 0.00s

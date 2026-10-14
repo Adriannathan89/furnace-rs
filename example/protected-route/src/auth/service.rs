@@ -10,8 +10,11 @@ use super::{
 // Service: login and identity lookup are application use cases.
 #[burner]
 pub struct AuthServiceImpl {
+    #[inject]
     repository: Arc<dyn UserRepository>,
+    #[inject]
     jwt: JwtService,
+    #[inject]
     logger: Logger,
 }
 
@@ -23,7 +26,6 @@ impl Injector<Arc<dyn AuthService>> for AuthServiceImpl {
         Ok(Arc::new(service))
     }
 }
-
 
 impl AuthService for AuthServiceImpl {
     fn login(&self, username: &str, password: &str) -> JwtResult<Option<String>> {
@@ -47,6 +49,7 @@ impl AuthService for AuthServiceImpl {
 
 #[burner]
 pub struct DemoJwtStrategy {
+    #[inject]
     service: Arc<dyn AuthService>,
 }
 

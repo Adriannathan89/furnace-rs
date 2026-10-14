@@ -4,6 +4,88 @@ All notable changes to furnace-rs are documented in this file. Published MADS
 release history is retained below; the pending 0.9.2 work and furnace-rs API
 migration are consolidated into the first 1.0.0 release.
 
+## [Unreleased]
+
+## [2.0.0-beta.2] - 2026-10-15
+
+### gRPC transport
+
+- Add standalone `furnace-rs-grpc` and `furnace-rs-grpc-macros` packages, optional JWT/TLS, and facade `grpc` / `grpc-tls` features.
+- Add proto-first managed service registration, all four native RPC shapes, named injectable client wrappers, async token providers, explicit Bearer precedence, and establishment deadlines.
+- Share Passport verification and policies with HTTP; support service guards, public/replacement method policies, typed principals, and admission-only stream authentication.
+- Select HTTP/gRPC listeners through `[furnace] transports` with one DI graph and lifecycle, eager readiness before binding, public health, guarded scoped reflection, and bounded drain before provider cleanup.
+- Add verified TLS with source-relative identities, additive or isolated custom CA trust, and mandatory hostname verification; require patched Rustls 0.23.46 or later.
+- Mark explicit and provider Bearer credentials sensitive for request debug redaction and HTTP/2 never-indexed encoding.
+- Add side-effect-free `furnace grpc` inspection and existing doctor checks, retaining public JSON schema 2 and advancing the private handshake to 3.
+- Include an application-owned protobuf example and feature, consumer, runtime, security, and MSRV regressions. See the [2.0.0-beta.2 release notes](docs/releases/2.0.0-beta.2.md).
+
+## [2.0.0-beta.1] - 2026-10-12
+
+### Breaking
+
+- Require parameterless `#[inject]` on every dependency field of burner, storage and managed controller structs. Unmarked fields now fail compilation; unit structs and manual `Injector` implementations are unchanged.
+
+### Declarative DI
+
+- Add registration in the existing cauldron attribute and root-scoped compile-time dependency/visibility checks, including reachable globals and native injector outputs.
+- Retain legacy fluent registration alongside declarative cauldron registration.
+- Adopt declarative contracts for DatabaseCauldron and LoggerCauldron while retaining native overrides and lifecycle behavior.
+- Add a standalone compile-time DI example with a missing-logger compile-fail Cargo test. See [2.0 release notes](docs/releases/2.0.0-beta.1.md).
+- Make checker callback names independent of the checkout directory so compile-fail diagnostics remain reproducible.
+
+### Security
+
+- Reject cookie Path/Domain delimiters and ASCII controls before emitting a
+  response batch, preventing supplied attributes from injecting additional
+  Set-Cookie attributes. See the [patch and reproduction](docs/security/2026-10-10-cookie-attribute-injection.md).
+- Create Unix scaffold staging directories with mode `0700` at creation,
+  preventing other users from modifying generated files through permissive
+  umasks. Published project directories retain `0700`. See the
+  [patch and reproduction](docs/security/2026-10-10-scaffold-directory-privacy.md).
+- Reject native SeaORM `max_connections(0)` with a typed configuration error
+  before pool construction can panic. See the
+  [patch and reproduction](docs/security/2026-10-10-native-pool-capacity.md).
+
+### Fixed
+
+- Supply the accepted socket peer address to native HTTP `ConnectInfo`
+  extractors and Passport request metadata for HTTP/1 and HTTP/2. See the
+  [patch and reproduction](docs/security/2026-10-10-http-peer-address.md).
+- Record the [implementation scan and its limits](docs/security/2026-10-10-implementation-scan.md).
+
+## [1.0.2] - 2026-10-09
+
+Released on crates.io. See the [release notes](docs/releases/1.0.2.md) for
+changes and recorded verification.
+
+### Added
+
+- Add an opt-in `sea-orm` HTTP feature to convert native `DbErr` values into
+  redacted `HttpError` 500 responses through `?`, preserving the original source.
+- Add a separate runnable `example/post-crud-with-service` project alongside
+  the simpler posts CRUD example.
+- Enable HTTP request logging with `[furnace] mode = "debug"` in `furnace.toml`.
+  Print aligned `[debug]` rows with local timestamps to millisecond precision,
+  final response status codes, HTTP methods, and paths without query strings.
+  Logging includes body-timeout 408 responses and remains disabled when the
+  mode is absent or differs from `debug`.
+
+### Changed
+
+- Make the default posts CRUD example call its repository directly, with no
+  required service layer or repeated `map_err(InternalError::new)` calls.
+- Display all registered routes in the startup summary with uppercase HTTP
+  methods and full controller-prefixed paths, using a readable header and
+  aligned method/path columns.
+
+### Security
+
+- Prevent custom Serde missing-field error text from leaking through the
+  client-visible paths of `ValidatedJson`, `ValidatedQuery`, and `ValidatedPath`
+  rejections. Retain HTTP 422, fixed messages, and structured containing paths;
+  omit field names recovered only from native error text. See the
+  [patch writeup and reproductions](docs/security/2026-10-09-extractor-error-redaction.md).
+
 ## [1.0.1] - 2026-10-06
 
 Security and availability hardening for the HTTP runtime, database pool
@@ -330,3 +412,4 @@ First public beta of the MADS.rs HTTP application foundation.
 
 [1.0.0]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.0
 [1.0.1]: https://github.com/Adriannathan89/furnace-rs/releases/tag/v1.0.1
+[1.0.2]: https://crates.io/crates/furnace-rs/1.0.2

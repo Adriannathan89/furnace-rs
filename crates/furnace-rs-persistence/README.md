@@ -6,7 +6,7 @@ opt-in; the crate has no default database backend.
 For PostgreSQL, depend explicitly on:
 
 ```toml
-furnace-rs-persistence = { version = "1.0.1", features = ["sea-orm-postgres"] }
+furnace-rs-persistence = { version = "2.0.0-beta.2", features = ["sea-orm-postgres"] }
 ```
 
 Import `furnace_rs_persistence::sea_orm::DatabaseCauldron` in the application root.
@@ -19,7 +19,9 @@ For manual construction, `DatabaseFactory::provide(SeaOrmPostgres::new(url))`
 returns `PersistenceResult<DatabaseConnection>`: the native connection on
 success or a typed `PersistenceError` on failure. `PersistenceError::kind()`
 classifies failures while public formatting redacts connection details. FURNACE
-does not map persistence failures automatically to HTTP responses. See the
+does not map connector failures automatically to HTTP responses. For query
+errors, enable the separate `sea-orm` feature on `furnace-rs` to propagate native
+`DbErr` through `HttpResult` with `?` as redacted 500 responses. See the
 [persistence design](../../docs/furnace-rs-persistence.md) for the connector model.
 
 Configured and native pool durations must fit the platform's monotonic-clock
@@ -32,3 +34,5 @@ This also suppresses tracing from callbacks running inside that operation.
 Tracing outside connection establishment and configured statement logging on
 the returned database connection keep their existing behavior. Applications
 should keep credentials out of their own diagnostic messages and log events.
+
+The `2.0.0-beta.2` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.

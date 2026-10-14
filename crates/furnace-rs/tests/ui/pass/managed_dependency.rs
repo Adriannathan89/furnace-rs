@@ -5,6 +5,7 @@ struct Dependency;
 
 #[furnace_rs::burner]
 struct Service {
+    #[inject]
     dependency: Dependency,
 }
 

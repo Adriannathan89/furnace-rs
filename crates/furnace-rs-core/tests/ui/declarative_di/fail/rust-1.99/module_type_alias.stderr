@@ -1,0 +1,15 @@
+error: cannot find macro `Alias` in this scope
+ --> tests/ui/declarative_di/fail/rust-1.99/module_type_alias.rs:4:27
+  |
+4 | #[cauldron(root, imports=[Alias])] struct App;
+  |                           ^^^^^
+  |
+  = note: `Alias` is in scope, but it is a type alias, not a macro
+
+error[E0423]: cannot find value `Alias` in this scope
+ --> tests/ui/declarative_di/fail/rust-1.99/module_type_alias.rs:4:27
+  |
+4 | #[cauldron(root, imports=[Alias])] struct App;
+  |                           ^^^^^ not found in this scope
+  |
+  = note: a type alias named `Alias` exists in another namespace

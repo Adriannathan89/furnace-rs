@@ -1,0 +1,31 @@
+error[E0277]: the trait bound `furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>>: furnace_rs_core::__private::Lookup<Value, _>` is not satisfied
+ --> tests/ui/declarative_di/fail/stable/root_isolation.rs:6:48
+  |
+6 | #[cauldron(root, providers=[Consumer])] struct App;
+  |                                                ^^^ unsatisfied trait bound
+  |
+  = help: the trait `furnace_rs_core::__private::Lookup<Value, _>` is not implemented for `furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>>`
+help: `furnace_rs_core::__private::Branch<L, R>` implements trait `furnace_rs_core::__private::Lookup<T, Proof>`
+ --> src/di_contract.rs
+  |
+  | impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::Lookup<T, furnace_rs_core::__private::Left<P>>`
+  | impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::Lookup<T, furnace_rs_core::__private::Right<P>>`
+  = note: required for `(Value,)` to implement `furnace_rs_core::__private::CheckDependencies<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>>, (_,)>`
+note: required for `__FurnaceAppMetadata` to implement `furnace_rs_core::__private::CheckModule<furnace_rs_core::__private::Branch<furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, furnace_rs_core::__private::ConfigSlot>>, furnace_rs_core::__private::Leaf<furnace_rs_core::__private::Enabled<true, __FurnaceAppSlot0>>>, ((_,),)>`
+ --> tests/ui/declarative_di/fail/stable/root_isolation.rs:6:1
+  |
+6 | #[cauldron(root, providers=[Consumer])] struct App;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        ^^^
+  | |
+  | unsatisfied trait bound introduced here
+note: required by a bound in `furnace_rs_core::__private::assert_module_scope`
+ --> src/di_contract.rs
+  |
+  | pub fn assert_module_scope<M, S, P>(_: S)
+  |        ------------------- required by a bound in this function
+  | where
+  |     M: CheckModule<S, P>,
+  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module_scope`
+  = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

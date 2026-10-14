@@ -1,0 +1,9 @@
+[package]
+name = "furnace-grpc-renamed-consumer"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.94"
+[dependencies]
+brand = { package = "furnace-rs", path = "../../..", default-features = false, features = ["grpc", "jwt"] }
+furnace-grpc-test-support = { path = "../../../../../tests/grpc-support" }
+[workspace]

@@ -1,0 +1,656 @@
+{
+  "baseline": "bc16a4fc20a7a03ff13cda98de93121fbd2a8541",
+  "scope": "All Rust files under crates excluding tests and target; includes the persistence runtime example",
+  "files": [
+    {
+      "path": "crates/furnace-rs-cli/src/cargo.rs",
+      "bytes": 13176,
+      "sha256": "8400064ffd6fb2a224d45bf0451c828315ad50a60256e970ab1db1400405c74d"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/command.rs",
+      "bytes": 26464,
+      "sha256": "8d4a0aa30f61aa3dbffe193bf7af422ed7d45db67610bc0a6e77ba6f20ab4b98"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/dev.rs",
+      "bytes": 21992,
+      "sha256": "d10ea87a1983aac74a0db9f13b87be7251674e8d5ed895ccf50e627b3aa83fe1"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/dev_state.rs",
+      "bytes": 10545,
+      "sha256": "8d2bcaf7561067d8a31bb05dff7127f81ce3b31a5d80f09dcec86502c8107e5c"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/diagnostic.rs",
+      "bytes": 6893,
+      "sha256": "4b8d10f0910232c2c907323f2081d300d61c04d94bdb83e3746c5c896525adf2"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/inspection.rs",
+      "bytes": 22771,
+      "sha256": "a7427c300203c3f8c1b15618915a32c29a3cab18acdc41b3bdf48cb286388c3c"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/lib.rs",
+      "bytes": 8791,
+      "sha256": "148716586db9944db32c89507e5957c423a143e9beb980f4f55731668d44ffe7"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/main.rs",
+      "bytes": 269,
+      "sha256": "1ce5f610bd26c25f8dcb00c9b68b74cec8d635aac14109ba24619ac3ccce3202"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/output/human.rs",
+      "bytes": 864,
+      "sha256": "b1b4d6203bbd9a3231cb10403fca3ff8aa17348b60ee56f90b6a0b58dbfb0c98"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/output/json.rs",
+      "bytes": 1160,
+      "sha256": "44597f3d24252ccdfe4791cd0b8d82d37f3bae1f0cf3e6b1ab72bcaad72c8218"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/output/mod.rs",
+      "bytes": 4188,
+      "sha256": "ee9e7d457df0969f538f5671c4fd5007c457bac846e9c405fea4d57175637ecb"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/output/model.rs",
+      "bytes": 12526,
+      "sha256": "2d66f671029aaad23278a46aa75ba7692ded82a97469d34fe954c7134af09321"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/output/path.rs",
+      "bytes": 2007,
+      "sha256": "4c898e83ced834eb003e6ea8106cb421006bc71aebf79e7daaf1581f57561f36"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/private_temp_dir.rs",
+      "bytes": 4216,
+      "sha256": "2b357bec1ecb0310fc297b81a73ae12a52bc88a420a247df535e1aa82b6b519b"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/process.rs",
+      "bytes": 11289,
+      "sha256": "09c36a5b5f73632375cfd1727592d0e8eeb9e44284c3caafb7748305aff91e21"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/project.rs",
+      "bytes": 15396,
+      "sha256": "3389a68c4395d2539c6b3597fb9e27a30d61f1be54b03d11b038a5b5e3448933"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/render.rs",
+      "bytes": 19674,
+      "sha256": "191771dc34f059cfb091c5b0870a2600ce2b856d1b75aee951de0189a43b93eb"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/scaffold/mod.rs",
+      "bytes": 547,
+      "sha256": "096538f1e5210bdf78ec110cf697f4d3e2ac88689f14b7765134d3ca02901588"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/scaffold/name.rs",
+      "bytes": 3327,
+      "sha256": "db1a27cec4cbd50a7839e6587405151de6729add3f093f26197123ec0f3cf5fb"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/scaffold/publish.rs",
+      "bytes": 14417,
+      "sha256": "5ea3d6487fe9c9ed853bd124e7dc37f555d055fe3c4f90fb433f5e2c2887943a"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/scaffold/template.rs",
+      "bytes": 4256,
+      "sha256": "3323e5d8e2a12fa608ab007dddfc0478a2e3d162cfdafb548efe7bb159be6378"
+    },
+    {
+      "path": "crates/furnace-rs-cli/src/watch.rs",
+      "bytes": 11358,
+      "sha256": "49af97009cd2c9a7bc6e6610259a523a6b5802c71813b028f95e417ce3eac92d"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/controller.rs",
+      "bytes": 874,
+      "sha256": "a50abde2cc2b6f7fbbd6c8a52bd4950983e9bcf0d6f5ebfcce92e072b9433def"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/controller/endpoints.rs",
+      "bytes": 11892,
+      "sha256": "4f64b5242a2571bea64b6af7bf42f374526188f854917f1b56ed1aee06a55719"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/controller/managed.rs",
+      "bytes": 11311,
+      "sha256": "98c962bc9e5ed5cc4c8c93791d367295af7c556d8dc1a35849864b8210dd1c97"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/endpoint.rs",
+      "bytes": 11511,
+      "sha256": "79a4c8d0bbd9a030573a0f08b402399a51ca71e2be27fcf994f399d3fcd1e818"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/guard.rs",
+      "bytes": 20240,
+      "sha256": "ff35eced8af6da287cee6dd2b85d91b26d4c258b98eb8ffd40574d0e66a0f720"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/input.rs",
+      "bytes": 6882,
+      "sha256": "022646d151fa32f522a6f831ff431badf1cf10487caef61a2038e5fbb5e2bc28"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/input/attributes.rs",
+      "bytes": 8370,
+      "sha256": "74407474d55fc6567b52252c413ecdb852fa6494c85703c79f7b6de3a5a05280"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/input/checks.rs",
+      "bytes": 11582,
+      "sha256": "d1e3f8b7a454f4c870c910ca21404d5200c6918c296c2d13efd2791db7edcce3"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/input/serde_path.rs",
+      "bytes": 4623,
+      "sha256": "8dc2faf9fa249db962ab67b577434c4210f6b55e89ba3d11a6405db249aa5b7d"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/lib.rs",
+      "bytes": 4706,
+      "sha256": "233802a0eb2a3471196d6c06d3b96d143a21613334627bb7747fe2d07ee6c2c9"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/passport_principal.rs",
+      "bytes": 8090,
+      "sha256": "ec28015469b296418d44d3bb0a5aa3a2c4631295bb2d42b2a390aa46848fa3af"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/passport_strategy.rs",
+      "bytes": 11088,
+      "sha256": "827a821dcb6018f022b8959e8d773a4a2c7a80a5be15b72e3e9fed3d04afa43b"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/path.rs",
+      "bytes": 1856,
+      "sha256": "2d01bb0bb60a30f736767cb7ae6ba636373ec9c23f2d065a76cafd0b5fd6a62a"
+    },
+    {
+      "path": "crates/furnace-rs-common-macros/src/verb.rs",
+      "bytes": 1111,
+      "sha256": "3feaf9e9e10852dd489078f4e3ffded877dc7d455fbf6ad465e184a5aed84c33"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/cookie.rs",
+      "bytes": 12476,
+      "sha256": "6c20eabfdff15733512f9bb9117f8c427d22d8c9a486e4fbc1c074c3044df20a"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/cors.rs",
+      "bytes": 15612,
+      "sha256": "9deebd0a302f9d2170dbc05132a377b0258df1f406b818c545dd298614642385"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/extract.rs",
+      "bytes": 449,
+      "sha256": "a4a94a9ba680c67d959d576e8b3a5f105aac117e16744712a415f26c2fd36cbb"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/http_preflight.rs",
+      "bytes": 3652,
+      "sha256": "5758e34e25be2ec03d35fd31f4106ee43af73df0af96659a96bdb3bc3bc460de"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/http_scope.rs",
+      "bytes": 14149,
+      "sha256": "9a42658b96d01617e2cf2bcd30849324ccf01678600441046c7c657d1722318f"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/inspection.rs",
+      "bytes": 45975,
+      "sha256": "6949ede68d2faf055c8324c120ba22d93719270e26385a6863073e98ff955edc"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/jwt/auto_configuration.rs",
+      "bytes": 8349,
+      "sha256": "7a864b1626531fddb373a719380dff0bbd1084259bff7a7714ad0b2503801aea"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/jwt/claims.rs",
+      "bytes": 12879,
+      "sha256": "8795d4ebff4c24ae0bd6a9f25f6ef9f1ac573d91fc318d48e4df7ea3bff3b460"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/jwt/config.rs",
+      "bytes": 18096,
+      "sha256": "531188425974ec617014c86cd632a2774443091396c438ce3443fdc2cb48225d"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/jwt/crypto.rs",
+      "bytes": 1339,
+      "sha256": "cfd82f4dc627ef01118ebc4ae5fd550fdc61e117bf60f9ae2229dd1e39101a86"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/jwt/error.rs",
+      "bytes": 4935,
+      "sha256": "160b3c7aca7a99cd6a4efb879c62f42cf7ce3617991fd8ef5fb11c45f079fc4c"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/jwt/keyring.rs",
+      "bytes": 4566,
+      "sha256": "9f4598a5d1f7813af09546cd21a75ee320b4d3b77659ee20f3538a9cc468bc35"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/jwt/mod.rs",
+      "bytes": 2274,
+      "sha256": "aafe0ffd02965bc507cbf21ab3a7cee1ec46790d0685dcc6de421685c413d72a"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/jwt/service.rs",
+      "bytes": 23362,
+      "sha256": "0beb7fca94a0e6dd0c14f9865cb53b78d14a75058dc6327e632d47312222b4c5"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/lib.rs",
+      "bytes": 10581,
+      "sha256": "2a9e3ac1c661a8633d1b7b804a125b22974ad90bca3f272ec54d1a7938ba5c6f"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/logger/console_logger_service.rs",
+      "bytes": 830,
+      "sha256": "3ce51dae99671a51f3af5983dd9d764520cb91cb561bd965394e1d4c0cdafd7a"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/logger/logger_service.rs",
+      "bytes": 3749,
+      "sha256": "3a648731dc4bd09750274c09a289eb747790ddaf48f4654b59890341da4fe462"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/logger/mod.rs",
+      "bytes": 2073,
+      "sha256": "6d817cb34c74b466afebc8b70532d7fb56b431ea6a5ec21f5676406235e69cb6"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/passport/context.rs",
+      "bytes": 11480,
+      "sha256": "739f323fd40886f29c71489915affce82f4339ec13b77514e106f1c4a5565c57"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/passport/error.rs",
+      "bytes": 4883,
+      "sha256": "62b8dd6860d1cc54088b54619facb787d1363afb640c1bb7a2bc898767ebbcf6"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/passport/guard.rs",
+      "bytes": 37161,
+      "sha256": "e24424cf3a9e033eb53d3dc7b769345eb9fd3d1682a97a2f97dc6bf7be3d42d2"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/passport/mod.rs",
+      "bytes": 5573,
+      "sha256": "37000da00313241ace745fe100bf1a4bb3faf768c989566254515ee5d1d5f327"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/passport/principal.rs",
+      "bytes": 4970,
+      "sha256": "c9dbab85348508b3ee5ab5afe25a23ff7987bad70ade457ed0de6887addc2fcd"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/passport/strategy.rs",
+      "bytes": 32613,
+      "sha256": "0622e305d8d5558a9ad480348111a3cb108ea02d0faeb9e0d614d31b8bdd057a"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/response.rs",
+      "bytes": 12455,
+      "sha256": "7bc695739ccec2d8393c16159974702562824b8496bf68a3b0e6ed6f762711c1"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/route.rs",
+      "bytes": 50377,
+      "sha256": "26d9b3c8ffa78dc37b944fe0036c004ab761e4b6d18792d8d44affe181b7de4f"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/router.rs",
+      "bytes": 4574,
+      "sha256": "41f7f9d0fbaf4eb07dc9d478ba6616deb674e44df04266ee5a7fc0088e85a4d7"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/seal.rs",
+      "bytes": 4171,
+      "sha256": "8b11d437704b6471a93475660f73c13e917c3eaf5c55833a1c87ab4890ab05e6"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/server.rs",
+      "bytes": 64499,
+      "sha256": "73772f4762b7c6bf8c8aea0dbd2e42d93ca1529c12a7351b97fb2b033c963a7f"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/server/body.rs",
+      "bytes": 6216,
+      "sha256": "8ba41944800681c273cace9861a9e4ac339b1697d68b7ab6a33b210a34dd9300"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/server_config.rs",
+      "bytes": 8158,
+      "sha256": "f71a75202193a09654a8f88130c72da0b73982a8c78ca28098be4e2793bec598"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/validation/error.rs",
+      "bytes": 4899,
+      "sha256": "f53719fe0400d1b7a7b83ee44831511b7a663a065d04bd040e8a0965e7e38593"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/validation/extract.rs",
+      "bytes": 3470,
+      "sha256": "7741168486a2e74be5a9ac279aaf0e67a378a05ffb1c0715a55948f097f5b060"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/validation/mod.rs",
+      "bytes": 1255,
+      "sha256": "c005d44e3b8d7a919d419594a09f6cd0cb37a94c296dc1cc82d33b1029332377"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/validation/nested.rs",
+      "bytes": 1805,
+      "sha256": "813bcd1bc2a2bdd1d6c40caa7fc62c2e3bd19e46bd0a9eaba1956d08f7924875"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/validation/number.rs",
+      "bytes": 1479,
+      "sha256": "6e2747934c626e2a10f3503f023323944459e52ac37ff2314306501e72141c9f"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/validation/primitive.rs",
+      "bytes": 881,
+      "sha256": "00e9d6a8034918fda6f2f00c46822a271da728881039b9fa2bb55fc717600fa6"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/validation/rejection.rs",
+      "bytes": 8343,
+      "sha256": "7d352a35d29dd3ab01c9df21c0ae128c430cca7a585c2937d462148990f13bd6"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/validation/string.rs",
+      "bytes": 1165,
+      "sha256": "33b3a9ace8473b30cb94332ec79ff83a640e8f171d1177a98678d45201d49c86"
+    },
+    {
+      "path": "crates/furnace-rs-common/src/validation/support.rs",
+      "bytes": 2025,
+      "sha256": "05cd7893154b9431db35be3cdfd4c4d5aaffaa2083e0fb44fc5fe76938918677"
+    },
+    {
+      "path": "crates/furnace-rs-core-macros/src/cauldron.rs",
+      "bytes": 4213,
+      "sha256": "851a6ea6b10d3d7a682d0d52e4e5a1a5cfb8f1f4d60847833b01229fa1dd104d"
+    },
+    {
+      "path": "crates/furnace-rs-core-macros/src/configuration.rs",
+      "bytes": 13504,
+      "sha256": "6ad364494c33357dd482a057983e97b18770285f8507deba9e2e432e27c9398a"
+    },
+    {
+      "path": "crates/furnace-rs-core-macros/src/configuration/validate.rs",
+      "bytes": 12481,
+      "sha256": "294e733cc56142c05bc5c550b2442057db91803abc11962b49855578b28ad371"
+    },
+    {
+      "path": "crates/furnace-rs-core-macros/src/lib.rs",
+      "bytes": 2541,
+      "sha256": "7828627a8f4b5dd3b1802388df1c61b1a08be72b6ab6ab3e33184f954d44b952"
+    },
+    {
+      "path": "crates/furnace-rs-core-macros/src/main.rs",
+      "bytes": 2492,
+      "sha256": "8a0e3aab375084c68f2fbfb2a5a5f39d737228f7aec95feddd62b97a9164ed15"
+    },
+    {
+      "path": "crates/furnace-rs-core-macros/src/managed.rs",
+      "bytes": 10940,
+      "sha256": "587eff014bc237a842630fc2fa877b8e928739d14382004a56ad219bc0ff6be3"
+    },
+    {
+      "path": "crates/furnace-rs-core-macros/src/path.rs",
+      "bytes": 1802,
+      "sha256": "a20b008d50964485e57e47026e296a6595ebd8c4b1675810ccf9905342e84c0f"
+    },
+    {
+      "path": "crates/furnace-rs-core-macros/src/test_fn.rs",
+      "bytes": 2291,
+      "sha256": "440b35d1323d664f2ec41d5187fdbe363510d38af6c2ba8f6883019a0078949e"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/auto_configuration/analysis.rs",
+      "bytes": 23098,
+      "sha256": "deb8ea600eaa998374389fe9fcd48d489365cb5deaebcb61d1d1450c040ccc86"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/auto_configuration/descriptor.rs",
+      "bytes": 15505,
+      "sha256": "45da6732de8c0ac71d8abdcd329994b8b20f35fcae67753ee329cbca9b1267a9"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/auto_configuration/mod.rs",
+      "bytes": 1512,
+      "sha256": "350628a85ae6aee158b74fcc0fcdb5a9957bc3205ab9745e8649719491eb4083"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/auto_configuration/report.rs",
+      "bytes": 7090,
+      "sha256": "50097ba261bab7dd02f6b256ed226f6dc5a4699646a82a8ccbd9f61bd9c3de29"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/builder.rs",
+      "bytes": 22334,
+      "sha256": "5ed513a702662303daedc5efed075bd6b0f92eea5d395e5c624a899faf6a2741"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/catalog.rs",
+      "bytes": 6468,
+      "sha256": "e7a17771d37346f16da3f073804b1abf4c1fdbf9fca5f402b114822b43b92b2e"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/cauldron.rs",
+      "bytes": 4502,
+      "sha256": "b6abcd8a8b7b3f16cbe8f4dc24beaa7a35667405077871c5b5540eda7adc1c6a"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/config.rs",
+      "bytes": 28892,
+      "sha256": "9eeac527db6df8a1f3f4ff221b0a4007bf2e714de1f522452f9670e2faa51c2d"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/configuration/error.rs",
+      "bytes": 4279,
+      "sha256": "7c5a5608769b2141c0c4af38850d4d71771c0984f102824e060810280d8559dc"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/configuration/mod.rs",
+      "bytes": 1427,
+      "sha256": "49ce77abe97dc4a66d8e75c3dc147871916c1fc375a1c153f1d918dd82c78bd1"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/configuration/parse.rs",
+      "bytes": 4120,
+      "sha256": "ea41d733b0c55a2672ff019024299dff83510e9bdd5f17573e64ddceca65eeb8"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/configuration/secret.rs",
+      "bytes": 1011,
+      "sha256": "147892ebef9bf23d660fb83ccd29fb30a5638222a9be34256703646c3ec94fd7"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/configuration/validate.rs",
+      "bytes": 3174,
+      "sha256": "6761a1d498c6b3e037bcd0b24110584904075e072f8c1ae16eee3dcf8019eee7"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/context.rs",
+      "bytes": 2042,
+      "sha256": "c8be45fc7825bca2dd17ead56bb861dc7c774d0d8b37b69373a5ebe5b896245c"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/descriptor.rs",
+      "bytes": 12848,
+      "sha256": "4dcf46321e9d94c9a5a9c902a670280f63a31104e80e330fd4ad74df70becd71"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/diagnostic.rs",
+      "bytes": 8423,
+      "sha256": "7264a544371edcf5954d2b7fa490f22a49b554fe9c425c008ee39d6b8ac7eba3"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/graph/analysis.rs",
+      "bytes": 23362,
+      "sha256": "be40ae44358d32f86bcc3af10a1fb13051a6e86104cc5a2fd425870240eb58b6"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/graph/cauldron.rs",
+      "bytes": 16015,
+      "sha256": "5f710dc3b455bc63bad4f63d23c5668c523d7a5da8f4b26cb158a16701ac5940"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/graph/cycle.rs",
+      "bytes": 3798,
+      "sha256": "e7fcb0f1ba9b6517dc1d48ba2b6fcd6d6d97143f9c3d78276a09823643161a8c"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/graph/focus.rs",
+      "bytes": 1879,
+      "sha256": "d3e946ef004f156e38bc78ffecbefccefbddf7646d876323107299d6ad9a4c81"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/graph/inspection.rs",
+      "bytes": 13796,
+      "sha256": "aa64ed60836c85fab6dd3907ec2c324f78b6b030a5c7dd29933068d84dea3e12"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/graph/mod.rs",
+      "bytes": 1725,
+      "sha256": "888c64e577e5de6802074417572c8df1cc3aa386147b4b4c686e2b3b6e716357"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/graph/model.rs",
+      "bytes": 13354,
+      "sha256": "6fbd62f1e8dbf8c013b3f270f2dabbd36cac2b6de1d3e6021e0531e7be5b055f"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/graph/plan.rs",
+      "bytes": 3417,
+      "sha256": "24054b056e780f154c4567dd5e56a2a1c5aff9907d965ea53b7262644c89ccfe"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/graph/scope.rs",
+      "bytes": 5316,
+      "sha256": "25801be7004007cf835bafe4e076b0f5e85c858c651d6fd7773ad65a55b04dcb"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/injector.rs",
+      "bytes": 6314,
+      "sha256": "acae7d9a43c5e955db6297c6df45cc3ee5a5d320fac101bdf054e0afdf2155ca"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/lib.rs",
+      "bytes": 4568,
+      "sha256": "0a4de8818b338e5215e7834e38e268cc901d1dffcc8964890740e1004d15f825"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/lifecycle.rs",
+      "bytes": 10377,
+      "sha256": "db43774e15375a39a75e591646930249c31407aab5c3e739e17c347c3e8320b3"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/preflight.rs",
+      "bytes": 4524,
+      "sha256": "9174a698a1072e7ad97a6e4350ce7eeffa596f19f16733c5182f5a2e24a50d95"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/registry.rs",
+      "bytes": 4006,
+      "sha256": "59cadfb2da8b26aa32ca0c9488075c4caa065dcd7d37b16a2b9a184d17c58f99"
+    },
+    {
+      "path": "crates/furnace-rs-core/src/runtime.rs",
+      "bytes": 552,
+      "sha256": "ba1f7ccbc24be1033af7c4b303f80becb5a9d55471f5062e5cb45e17452a870a"
+    },
+    {
+      "path": "crates/furnace-rs-extra/src/lib.rs",
+      "bytes": 348,
+      "sha256": "540a3b9c658fe3dd6926e78844ae312952c346ed243e6b88a8b4e72c4e68b129"
+    },
+    {
+      "path": "crates/furnace-rs-persistence/examples/standard_run.rs",
+      "bytes": 1256,
+      "sha256": "036ec8a5d3a605dd1b614d9170f9b5485d2ec7becb398b164dfb5172fc221698"
+    },
+    {
+      "path": "crates/furnace-rs-persistence/src/error.rs",
+      "bytes": 4032,
+      "sha256": "552092e8e51a096e21c55e39d441218a8fd9c3852d7606772ccfbf0ffc1365ca"
+    },
+    {
+      "path": "crates/furnace-rs-persistence/src/factory.rs",
+      "bytes": 1513,
+      "sha256": "5171871775c1c705e0e2800af053134f28fdb4fc7ad2cca2388d18e33f496967"
+    },
+    {
+      "path": "crates/furnace-rs-persistence/src/lib.rs",
+      "bytes": 343,
+      "sha256": "6b781d4ae43ac37aaafca9831ef3b2b0238766f120fa56de9d1b372693e38dcf"
+    },
+    {
+      "path": "crates/furnace-rs-persistence/src/sea_orm/config.rs",
+      "bytes": 9989,
+      "sha256": "709b038cb8e0ace0c0618c2c3c0cdacebe041ce41d8a40aae980a02f3458e7c5"
+    },
+    {
+      "path": "crates/furnace-rs-persistence/src/sea_orm/connector.rs",
+      "bytes": 4838,
+      "sha256": "9b8b7fb56be741e19aad32964f744741eb4f42205254020c751078a8512d31ac"
+    },
+    {
+      "path": "crates/furnace-rs-persistence/src/sea_orm/lifecycle.rs",
+      "bytes": 2273,
+      "sha256": "e161a02063baa8ca8ff78772e6ccf4e05f21e315cb7be9e78b90381c24222abb"
+    },
+    {
+      "path": "crates/furnace-rs-persistence/src/sea_orm/mod.rs",
+      "bytes": 4287,
+      "sha256": "25df1ab10ebd8d066caf518f9c34d4ba60c85b2afea1a0209dc478505b54b918"
+    },
+    {
+      "path": "crates/furnace-rs-testing/src/error.rs",
+      "bytes": 2720,
+      "sha256": "365da3f31a91e2a2af23702a226156ee7654e1da8a6ad6eef91e1f0a24282b91"
+    },
+    {
+      "path": "crates/furnace-rs-testing/src/fixture.rs",
+      "bytes": 6826,
+      "sha256": "54249c6edf9901ebc83f7c68a5cc7da87e59b090843002092f43d28c2f40459a"
+    },
+    {
+      "path": "crates/furnace-rs-testing/src/http.rs",
+      "bytes": 3085,
+      "sha256": "c90d87b40963af8e6c19486d4a508e236f2721aed7bd66c9f841b2259ec515ee"
+    },
+    {
+      "path": "crates/furnace-rs-testing/src/lib.rs",
+      "bytes": 1271,
+      "sha256": "fd3f0f877202391468c66b69c92a93d734941045e1e9f3a82c63ae70796a4898"
+    },
+    {
+      "path": "crates/furnace-rs-testing/src/response.rs",
+      "bytes": 2471,
+      "sha256": "4179aa25b09fe0523d649f082e75bc4abf331430c9ea0ebc9010c2a4f9d98b87"
+    },
+    {
+      "path": "crates/furnace-rs/src/lib.rs",
+      "bytes": 15894,
+      "sha256": "1dd06a7fc09b9926d5ed8cd8dd86564c0f74fc34226016662745095fc63e1a1f"
+    }
+  ]
+}

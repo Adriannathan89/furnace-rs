@@ -67,7 +67,9 @@ furnace_rs_common::core::__private::inventory::submit! {
 }
 #[controller]
 struct Conflict {
+    #[inject]
     _resource: Resource,
+    #[inject]
     _default: DefaultResource,
 }
 impl Sealable for Conflict {
@@ -506,6 +508,7 @@ mod security {
     }
     #[furnace_rs_common::core::burner]
     struct Strategy {
+        #[inject]
         _resource: Resource,
     }
     #[furnace_rs_common::passport_strategy(name = "custom")]

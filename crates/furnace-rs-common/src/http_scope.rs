@@ -9,28 +9,8 @@ use crate::{ControllerEndpointDescriptor, HttpMethod, RouteCatalog, RouteDescrip
 #[cfg(feature = "jwt")]
 use crate::GuardDescriptor;
 
-/// A selected Passport guard and the module context that selected it.
 #[cfg(feature = "jwt")]
-#[derive(Clone)]
-pub(crate) struct ScopedGuard {
-    guard: &'static GuardDescriptor,
-    occurrence: Option<RouteIdentity>,
-    context_cauldron: Option<TypeId>,
-}
-
-#[cfg(feature = "jwt")]
-impl ScopedGuard {
-    pub(crate) const fn occurrence(&self) -> Option<RouteIdentity> {
-        self.occurrence
-    }
-    pub(crate) const fn guard(&self) -> &'static GuardDescriptor {
-        self.guard
-    }
-
-    pub(crate) const fn context_cauldron(&self) -> Option<TypeId> {
-        self.context_cauldron
-    }
-}
+use crate::passport::scope::{GuardOccurrence, ScopedGuard};
 
 /// A static identity for one route emitted by one controller.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -44,6 +24,19 @@ pub(crate) struct RouteIdentity {
 }
 
 impl RouteIdentity {
+    #[cfg(feature = "jwt")]
+    pub(crate) fn guard_occurrence(&self) -> GuardOccurrence {
+        GuardOccurrence {
+            provider: self.controller,
+            operation: format!(
+                "{} {} {}",
+                self.method.as_str(),
+                self.full_path,
+                self.handler
+            ),
+        }
+    }
+
     fn new(controller: &ControllerEndpointDescriptor, route: &RouteDescriptor) -> Self {
         Self {
             controller: controller.type_id(),
@@ -73,7 +66,7 @@ impl RouteIdentity {
     }
 
     #[cfg(feature = "jwt")]
-    const fn passport_context_cauldron(&self) -> Option<TypeId> {
+    pub(crate) const fn passport_context_cauldron(&self) -> Option<TypeId> {
         self.passport_context_cauldron
     }
 }
@@ -244,7 +237,7 @@ impl HttpApplicationScope {
                         }) {
                             guards.push(ScopedGuard {
                                 guard: seal.guard,
-                                occurrence: Some(*occurrence),
+                                occurrence: Some(occurrence.guard_occurrence()),
                                 context_cauldron: controller.context_cauldron,
                             });
                         }

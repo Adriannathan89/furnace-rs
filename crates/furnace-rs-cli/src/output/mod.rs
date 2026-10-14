@@ -67,6 +67,7 @@ pub(crate) const fn command_name(command: CanonicalCommand) -> &'static str {
     match command {
         CanonicalCommand::New => "new",
         CanonicalCommand::Routes => "routes",
+        CanonicalCommand::Grpc => "grpc",
         CanonicalCommand::Graph => "graph",
         CanonicalCommand::Doctor => "doctor",
     }

@@ -10,6 +10,7 @@ use super::{
 // Controller: only translates HTTP input/output and invokes the service.
 #[controller]
 pub struct AuthController {
+    #[inject]
     service: Arc<dyn AuthService>,
 }
 
@@ -35,6 +36,7 @@ impl AuthController {
 struct ProfileGuard;
 #[controller]
 pub struct ProfileController {
+    #[inject]
     logger: Logger,
 }
 impl Sealable for ProfileController {

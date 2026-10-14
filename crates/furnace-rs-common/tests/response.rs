@@ -217,3 +217,32 @@ fn http_result_alias_uses_http_error() {
 
     assert!(result.is_err());
 }
+
+#[cfg(feature = "sea-orm")]
+#[tokio::test]
+async fn database_errors_propagate_with_question_mark_and_hide_their_source() {
+    async fn handler() -> HttpResult<()> {
+        Err::<(), _>(sea_orm::DbErr::Custom(
+            "private database credentials".into(),
+        ))?;
+        Ok(())
+    }
+
+    let error = handler()
+        .await
+        .expect_err("database failure must propagate");
+    let source = std::error::Error::source(&error)
+        .expect("database error must remain available for diagnosis")
+        .downcast_ref::<sea_orm::DbErr>()
+        .expect("the original DbErr must be preserved");
+    assert!(
+        matches!(source, sea_orm::DbErr::Custom(message) if message == "private database credentials")
+    );
+    assert!(!format!("{error:?}").contains("private database credentials"));
+    assert_error_response(
+        error,
+        StatusCode::INTERNAL_SERVER_ERROR,
+        r#"{"error":{"code":"internal","message":"internal server error"}}"#,
+    )
+    .await;
+}

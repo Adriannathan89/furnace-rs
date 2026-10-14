@@ -17,8 +17,10 @@ pub struct CommandUsecase;
 #[furnace_rs::controller]
 pub struct UserController {
     /// Query behavior.
+    #[inject]
     query: QueryUsecase,
     /// Command behavior.
+    #[inject]
     command: CommandUsecase,
 }
 

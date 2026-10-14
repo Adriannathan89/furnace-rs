@@ -1,0 +1,5 @@
+error: #[inject] takes no arguments
+ --> tests/ui/fail/controller_inject_arguments.rs:2:21
+  |
+2 | struct Controller { #[inject(value)] value: String }
+  |                     ^^^^^^^^^^^^^^^^

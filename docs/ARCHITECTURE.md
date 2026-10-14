@@ -1,8 +1,8 @@
-# furnace-rs 1.0.1 Architecture (Unreleased)
+# furnace-rs architecture
 
 FURNACE separates framework-neutral construction and configuration from Axum HTTP
-delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
-The 1.0.1 preparation retains the validation, REST-error, typed configuration,
+delivery, standalone protobuf gRPC delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
+The current implementation retains the validation, REST-error, typed configuration,
 compiler-diagnostic, machine-output, and minimal-scaffolding surface while
 removing the former Diesel and CLI migration integrations.
 
@@ -28,7 +28,7 @@ application cauldrons, typed injectors, providers, inherent endpoints, controlle
 `furnace-rs-core` owns module/provider graphs, lifecycle, diagnostics, the existing
 source-attributed `Config`, `#[derive(Configuration)]`, `Config::parse`,
 configuration issues, and `Secret<T>`. It has no Axum, SeaORM, JWT, cookie, or
-Serde dependency. Typed configuration is a view over an already loaded Config;
+direct Serde dependency. Existing TOML parsing brings transitive Serde. Typed configuration is a view over an already loaded Config;
 it does not replace loading or discover types globally.
 
 `furnace-rs-common` owns the `http` boundary: route registration, `Input` and
@@ -48,11 +48,12 @@ connector retains typed `PersistenceError` causes while redacting public
 formatting. It checks readiness before serving and closes on graceful shutdown.
 
 ~~~text
-core                         no HTTP/database/JWT/cookie/Serde
+core                         no HTTP/database/JWT/cookie or direct Serde
 http                         Axum + validation + standard REST errors
 logger                       application logging and console backend
 jwt                          JWT service/configuration, no Axum
 cookies                      HTTP cookie support
+sea-orm                      HTTP + native DbErr conversion, no database driver
 http + jwt (+ cookies)       Passport Bearer (and cookie) guards
 furnace-rs-persistence/sea-orm-postgres  native SeaORM PostgreSQL connector
 ~~~
@@ -113,6 +114,11 @@ deserialization authority and reports its first conversion failure. Sources,
 wire field names, issue codes, and fixed built-in messages are deliberate public
 contracts; rejected values are never copied into a built-in issue.
 
+Native deserializer error text is used only to classify fixed issue codes.
+Missing-field rejections retain any structured containing path but omit the
+missing field name when it is available only inside free-form error text:
+custom Serde implementations can put private data in that text.
+
 Native `Json<T>`, `Query<T>`, and `Path<T>` are still the ordinary Axum
 extractors. A native `Json` handler performs no FURNACE `Input` validation, which
 is the compatibility escape hatch for application-owned extraction, routing,
@@ -135,10 +141,13 @@ FURNACE-owned internal failures map to redacted 500 responses. User-created
 `Unauthorized` does not claim a Bearer scheme, and ordinary native responses
 are not normalized.
 
-Persistence-to-HTTP conversion is application-owned. The SeaORM connector
-returns the native database value or a typed `PersistenceError`; there is no
-automatic database-to-HTTP mapping. Applications choose a domain-specific
-`map_err` policy without exposing connection details to clients.
+The SeaORM connector returns the native database value or a typed
+`PersistenceError`. The opt-in `sea-orm` feature on `furnace-rs-common` (also
+exposed by the facade) converts native query `DbErr` values into redacted
+`HttpError` 500 responses, allowing `?` in `HttpResult` handlers. It retains the
+original error source and does not select a driver or provision connections.
+Applications can choose a domain-specific `map_err` policy when a failure
+needs another HTTP status.
 
 ## Root scope and normal runtime
 
@@ -191,10 +200,11 @@ generate database/JWT/cookie/migration code.
 
 ## Deliberate non-goals
 
-1.0.1 does not add automatic validation to native extractors, asynchronous or
+1.0.2 does not add automatic validation to native extractors, asynchronous or
 database-backed derive validation, full-RFC or DNS email validation, automatic
-persistence-to-HTTP conversion, new configuration sources or arbitrary TOML
-shapes, global configuration discovery, generic compiler-diagnostic rewriting,
+conversion of connector `PersistenceError` values into HTTP responses, new
+configuration sources or arbitrary TOML shapes, global configuration discovery,
+generic compiler-diagnostic rewriting,
 JSON wrapping for run/dev streams, additional generators, or starter database,
 JWT, cookie, migration, and Git setup. Login,
 credential validation, password hashing, CSRF, remote JWKS, JWE, MySQL/SQLite,
@@ -216,3 +226,25 @@ JWT/strategy requirements or receive Passport bindings.
 Each endpoint binding retains its controller, method, canonical path, handler,
 and owning cauldron context. The Passport layer wraps each protected method router before methods are merged, preserving native extractor behavior and local strategy visibility.
 See [the breaking migration guide](importance/furnace-rs-migration.md).
+
+
+## gRPC and shared runtime in 2.0.0-beta.2
+
+`furnace-rs-grpc` owns native Tonic/Prost service registration, scope validation,
+client wrappers, TLS, Passport admission adapters, health, reflection, and gRPC
+inspection metadata. Its dedicated proc-macro companion resolves direct,
+renamed, and facade dependency paths. Common keeps shared Passport/JWT and
+transport-neutral runtime coordination, without importing Tonic or Prost.
+
+Linked adapters validate selected metadata before construction and finalize native
+routes before startup. The common coordinator starts one application lifecycle,
+waits for eager infrastructure readiness, binds all selected listeners, then opens
+admission. gRPC's bounded drain cancels and joins supervised Hyper connection and
+stream tasks before provider shutdown. HTTP continues using its existing guarded
+connection server. Raw composition uses shared builders and a standalone gRPC
+extension trait, with no second lifecycle owner.
+
+Inspection uses graph analysis and static adapter callbacks, never runtime
+preparation. The private report includes protobuf service/method/policy records;
+the public CLI retains schema version 2 and HTTP report fields. See the
+[gRPC guide](grpc.md) for the public APIs and configuration.

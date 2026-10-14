@@ -1,9 +1,8 @@
 use furnace_rs::prelude::*;
 
 use super::{model::User, traits::UserRepository};
-use std::sync::Arc;
 use furnace_rs::prelude::{Config, Injector};
-
+use std::sync::Arc;
 
 // Repository: deliberately in memory so this project focuses on auth and TPRS.
 pub struct DemoUserRepository {

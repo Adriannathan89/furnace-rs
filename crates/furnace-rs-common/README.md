@@ -8,7 +8,7 @@ validation, REST-error, and CORS behavior.
 Application authors normally use the
 [`furnace-rs` facade](../furnace-rs/README.md). Depend on `furnace-rs-common` directly when
 building or testing an integration boundary, or when a tool needs the private
-HTTP inspection contract used by `furnace-rs-cli`.
+transport-neutral inspection contract used by `furnace-rs-cli`.
 
 ## Feature model
 
@@ -18,14 +18,19 @@ facade disables those defaults and maps its own features explicitly.
 | Feature | Adds | Requires |
 | --- | --- | --- |
 | `http` | Axum 0.8 routing/server delivery, route/controller contracts, extractors, validation, REST errors, CORS, and native Axum/Tower re-exports. | `furnace-rs-core` and the HTTP dependency set. |
-| `logger` | Tracing-based application logging. | Tracing dependencies. |
+| `transport-metadata` | Shared request metadata used by transport adapters. | HTTP types; no native server dependency. |
+| `transport-runtime` | Shared selection, lifecycle coordinator, inspection, and task supervision. | Tokio and neutral runtime dependencies; no Tonic/Prost. |
+| `passport` | Shared Passport contracts and derives. | JWT and shared metadata; no Axum. |
+| `logger` | Timestamped console application logging. | Chrono dependency. |
 | `jwt` | `JwtService`, claims, validation profiles, algorithms, keyrings, and JWT auto-configuration. | No Axum or database dependency. |
 | `cookies` | Strict cookie extraction and checked response-cookie composition. | Implies `http` and enables the cookie/Passport macro support. |
+| `sea-orm` | `From<sea_orm::DbErr> for HttpError`, enabling `?` in HTTP handlers. | Implies `http`; adds SeaORM without a database driver. |
 
 Passport route guards and managed strategies are available when `http + jwt`
-are selected. Cookie-backed guards additionally need `cookies`. The
-Persistence is supplied separately by `furnace-rs-persistence`; this crate has no
-database feature or automatic database-to-HTTP error conversion.
+are selected. Cookie-backed guards additionally need `cookies`.
+Persistence is supplied separately by `furnace-rs-persistence`. The opt-in
+`sea-orm` feature maps native query errors into redacted HTTP 500 responses and
+retains the original `DbErr` as the error source; it does not provision connections.
 
 ## How this crate fits the runtime
 
@@ -50,6 +55,13 @@ Controllers are resolved once while the router is built; request handling uses
 the captured application-scoped handles. The standard server path configures
 the final router, starts lifecycle hooks, waits for infrastructure readiness,
 binds the listener, serves, and then shuts down in reverse order.
+
+With `[furnace] mode = "debug"` in `furnace.toml`, the HTTP server prints a
+local timestamp with milliseconds, final response status code, HTTP method,
+and request path for each response in aligned `[debug]` rows.
+Query strings are omitted. This works with the `http` feature alone; request
+logging is disabled when the setting is absent or has any other value.
+See the [configuration example](../../README.md#conventional-configuration-and-http).
 
 The JWT service can be used without HTTP. Passport adds a typed strategy and
 principal layer on top of verified JWT claims, with guard policy resolved
@@ -119,10 +131,19 @@ require the fixtures under `crates/furnace-rs/tests/ui`.
 
 See the [architecture reference](../../docs/ARCHITECTURE.md), the
 [CLI contract](../../docs/CLI.md), and the
-[Passport example](../../docs/examples/passport_jwt.md) before changing a
+[Passport example](../../example/protected-route/README.md) before changing a
 public integration contract.
 
 Controllers without `impl Sealable` are public. Implement the trait to attach
 one guard; `#[seal(skip)]` on an endpoint bypasses that guard's authentication
 and policy checks. Protection applies per HTTP method, including when public
 and protected methods share a path.
+
+The `2.0.0-beta.2` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
+
+The standalone [`furnace-rs-grpc`](../furnace-rs-grpc/README.md) crate owns all
+native gRPC APIs and dependencies. Common supplies shared Passport contracts,
+transport selection, lifecycle coordination, supervised tasks, neutral runtime
+errors, and static inspection. `ApplicationRuntimeError` is shared;
+`HttpRuntimeError` remains its compatibility alias. See the
+[gRPC guide](../../docs/grpc.md) for automatic selection and manual composition.

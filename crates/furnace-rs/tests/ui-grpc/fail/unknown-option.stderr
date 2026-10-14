@@ -1,0 +1,5 @@
+error: unknown grpc_service option; expected server, descriptor, or guard
+ --> tests/ui-grpc/fail/unknown-option.rs:3:16
+  |
+3 | #[grpc_service(unknown = Service)]
+  |                ^^^^^^^

@@ -164,7 +164,17 @@ fn create_staging_directory(
             name.as_str(),
             process::id()
         ));
-        match fs::create_dir(&staging_directory) {
+        #[cfg(unix)]
+        let mut directory = fs::DirBuilder::new();
+        #[cfg(not(unix))]
+        let directory = fs::DirBuilder::new();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::DirBuilderExt;
+            // Set privacy on mkdir itself, before generated files are written.
+            directory.mode(0o700);
+        }
+        match directory.create(&staging_directory) {
             Ok(()) => return Ok(staging_directory),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(error) => {
@@ -287,6 +297,77 @@ mod tests {
         ProjectName, publish_project_with_operations, publish_without_replacement, sync_directory,
         write_new_file,
     };
+
+    #[cfg(unix)]
+    #[test]
+    fn scaffold_directories_are_private_under_each_umask() {
+        const CHILD: &str = "scaffold::publish::tests::private_scaffold_child";
+        const COMPLETE: &str = "FURNACE_PRIVATE_SCAFFOLD_COMPLETE";
+        let executable = std::env::current_exe().unwrap();
+        for umask in ["000", "002", "022", "077"] {
+            let output = std::process::Command::new("sh")
+                .args([
+                    "-c",
+                    "umask \"$1\"; exec \"$2\" --exact \"$3\" --nocapture",
+                    "furnace-private-scaffold-test",
+                    umask,
+                ])
+                .arg(&executable)
+                .arg(CHILD)
+                .env("FURNACE_PRIVATE_SCAFFOLD_TEST_CHILD", "1")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success()
+                    && String::from_utf8_lossy(&output.stdout)
+                        .lines()
+                        .filter(|line| *line == COMPLETE)
+                        .count()
+                        == 1,
+                "umask {umask}: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr),
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn private_scaffold_child() {
+        use std::os::unix::fs::PermissionsExt;
+
+        if std::env::var_os("FURNACE_PRIVATE_SCAFFOLD_TEST_CHILD").is_none() {
+            return;
+        }
+        let invocation = tempdir().unwrap();
+        let name = ProjectName::parse("private-app").unwrap();
+        let rendered = render_project(&name).unwrap();
+        let destination = publish_project_with_operations(
+            invocation.path(),
+            &name,
+            &rendered,
+            |path, contents| {
+                // Inspect the root before the first generated file is written.
+                let staging = fs::read_dir(invocation.path())?.next().unwrap()?.path();
+                let mode = fs::metadata(&staging)?.permissions().mode() & 0o777;
+                assert_eq!(mode, 0o700, "staging mode was {mode:o}");
+                write_new_file(path, contents)
+            },
+            |_| Ok(()),
+            sync_directory,
+            publish_without_replacement,
+        )
+        .unwrap();
+        let mode = fs::metadata(&destination).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o700, "published mode was {mode:o}");
+        for file in rendered.files() {
+            assert_eq!(
+                fs::read_to_string(destination.join(file.path())).unwrap(),
+                file.contents(),
+            );
+        }
+        println!("FURNACE_PRIVATE_SCAFFOLD_COMPLETE");
+    }
 
     #[test]
     fn write_failure_removes_only_the_owned_staging_directory() {

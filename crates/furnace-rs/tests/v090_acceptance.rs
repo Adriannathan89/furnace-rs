@@ -85,6 +85,7 @@ mod application {
 
     #[controller]
     pub(super) struct AcceptanceController {
+        #[inject]
         service: AcceptanceService,
     }
 

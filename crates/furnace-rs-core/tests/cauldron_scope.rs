@@ -37,6 +37,7 @@ furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_V
 
 #[furnace_rs_core::burner]
 struct Consumer {
+    #[inject]
     _value: Value,
 }
 macro_rules! cauldron {
