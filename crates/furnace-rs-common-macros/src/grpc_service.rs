@@ -142,6 +142,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     let ty = &implementation.self_ty;
     let ident = &self_path.path.segments.last().unwrap().ident;
     let descriptor_ident = format_ident!("__FURNACE_GRPC_{}", ident.unraw());
+    let register_ident = format_ident!("__furnace_grpc_register_{}", ident.unraw());
     let guard_value = |guard: &Option<Path>| match guard {
         Some(guard) => quote!(Some(#common::GrpcGuard::of::<#guard>())),
         None => quote!(None),
@@ -200,6 +201,19 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         #implementation
         #(#cfg)*
         #[doc(hidden)]
+        #[allow(non_snake_case)]
+        fn #register_ident(
+            context: &#common::GrpcRegistrationContext<'_>,
+            routes: #common::tonic::service::Routes,
+        ) -> #common::core::Result<#common::tonic::service::Routes> {
+            let implementation = context.application.context().resolve::<#ty>()?;
+            let server = #server::from_arc(implementation)
+                .max_encoding_message_size(context.config.max_encoding_message_bytes())
+                .max_decoding_message_size(context.config.max_decoding_message_bytes());
+            Ok(routes.add_service(server))
+        }
+        #(#cfg)*
+        #[doc(hidden)]
         #[allow(non_upper_case_globals)]
         static #descriptor_ident: #common::GrpcServiceDescriptor = #common::GrpcServiceDescriptor::new(
             || ::std::any::TypeId::of::<#ty>(),
@@ -207,7 +221,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             || <#server<#ty> as #common::tonic::server::NamedService>::NAME,
             #descriptor, #guard, &[#(#overrides),*],
             #common::core::SourceLocation::new(file!(), line!(), column!()),
-        );
+        ).with_registrar(#register_ident);
         #(#cfg)*
         impl #common::core::__private::TransportProvider for #ty {
             const TRANSPORT: &'static str = "grpc";

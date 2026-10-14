@@ -72,6 +72,7 @@ chrono = { version = "0.4.24", optional = true }
 rustix = { workspace = true, optional = true }
 
 [dev-dependencies]
+tonic-prost.workspace = true
 furnace-grpc-test-support = { path = "../../tests/grpc-support" }
 http-body.workspace = true
 hyper = { workspace = true, features = ["client", "http2"] }

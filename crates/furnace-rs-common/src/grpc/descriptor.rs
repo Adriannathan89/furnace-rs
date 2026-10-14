@@ -51,6 +51,7 @@ pub struct GrpcServiceDescriptor {
     guard: Option<GrpcGuard>,
     overrides: &'static [GrpcMethodOverride],
     location: SourceLocation,
+    registrar: Option<super::GrpcServiceRegistrar>,
 }
 impl GrpcServiceDescriptor {
     /// Creates immutable registration data without resolving a service.
@@ -72,6 +73,7 @@ impl GrpcServiceDescriptor {
             guard,
             overrides,
             location,
+            registrar: None,
         }
     }
     /// Returns the selected DI output identity.
@@ -101,6 +103,15 @@ impl GrpcServiceDescriptor {
     /// Returns the authored declaration location.
     pub const fn location(&self) -> SourceLocation {
         self.location
+    }
+    /// Attaches a typed generated server adapter.
+    pub const fn with_registrar(mut self, registrar: super::GrpcServiceRegistrar) -> Self {
+        self.registrar = Some(registrar);
+        self
+    }
+    /// Returns the typed generated server adapter.
+    pub const fn registrar(&self) -> Option<super::GrpcServiceRegistrar> {
+        self.registrar
     }
 }
 impl fmt::Debug for GrpcServiceDescriptor {

@@ -125,17 +125,17 @@ Test processes use loopback port-zero listeners, explicit shutdown channels, bou
 
 **Interfaces:** Produce `build_grpc_routes(&Furnace) -> core::Result<tonic::service::Routes>` and hidden `GrpcRegistrationContext<'a> { application: &'a Furnace, config: &'a GrpcServerConfig, scope: &'a GrpcApplicationScope }`. Registrar signature is `fn(&GrpcRegistrationContext<'_>, tonic::service::Routes) -> core::Result<tonic::service::Routes>`. Generated registrar resolves one implementation handle, constructs its server, applies encoding/decoding limits, and installs it. Scoped guard wrapping is supplied by Task 5.
 
-- [ ] Add `managed_service_dispatches_all_rpc_shapes`: unary echoes 7; server stream yields [0, 1, 2]; client stream [2, 3, 5] returns count 3/total 10; bidi echoes [8, 13, 21] in order. Assert construction count 1 across concurrent calls. Add `oversized_messages_rejected_in_both_directions`, `unknown_wire_method_is_unimplemented`, and `cancelled_bidi_releases_handler_state`.
+- [x] Add `managed_service_dispatches_all_rpc_shapes`: unary echoes 7; server stream yields [0, 1, 2]; client stream [2, 3, 5] returns count 3/total 10; bidi echoes [8, 13, 21] in order. Assert construction count 1 across concurrent calls. Add `oversized_messages_rejected_in_both_directions`, `unknown_wire_method_is_unimplemented`, and `cancelled_bidi_releases_handler_state`.
 
   ```rust
   assert_eq!(server_stream_values, [0, 1, 2]);
   assert_eq!((summary.count, summary.total), (3, 10));
   assert_eq!(bidi_values, [8, 13, 21]);
   ```
-- [ ] Run `cargo test -p furnace-rs-common --all-features --test grpc_dispatch`; initially fails at missing router/registrar behavior.
-- [ ] Implement typed generated server registration into `tonic::service::Routes`, retaining Tonic message framing, streams, backpressure and native application statuses. The test harness serves caller-built routes with a native Tonic loopback server at this stage; it does not introduce a second Furnace lifecycle owner.
-- [ ] Run the dispatch target. Expected: all shape/order/concurrency assertions pass, both configured 4194304-byte limits apply, cancellation joins handler tasks, and no graph planning occurs per call.
-- [ ] Commit `feat(grpc): dispatch unary and streaming methods through managed services`.
+- [x] Run `cargo test -p furnace-rs-common --all-features --test grpc_dispatch`; initially fails at missing router/registrar behavior.
+- [x] Implement typed generated server registration into `tonic::service::Routes`, retaining Tonic message framing, streams, backpressure and native application statuses. The test harness serves caller-built routes with a native Tonic loopback server at this stage; it does not introduce a second Furnace lifecycle owner.
+- [x] Run the dispatch target. Expected: all shape/order/concurrency assertions pass, both configured 4194304-byte limits apply, cancellation joins handler tasks, and no graph planning occurs per call.
+- [x] Commit `feat(grpc): dispatch unary and streaming methods through managed services`.
 
 ### Task 5: Protect gRPC with shared Passport and JWT
 

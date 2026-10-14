@@ -304,7 +304,7 @@ pub use furnace_rs_common::{
 
 /// gRPC configuration and native Tonic types.
 #[cfg(feature = "grpc")]
-pub use furnace_rs_common::{GrpcCauldronExt, GrpcService, grpc_service};
+pub use furnace_rs_common::{GrpcCauldronExt, GrpcService, build_grpc_routes, grpc_service};
 /// gRPC configuration and native Tonic types.
 #[cfg(feature = "grpc")]
 pub use furnace_rs_common::{
@@ -347,7 +347,7 @@ pub use furnace_rs_extra as extra;
 pub mod prelude {
     /// Managed protobuf service registration.
     #[cfg(feature = "grpc")]
-    pub use furnace_rs_common::{GrpcCauldronExt, GrpcService, grpc_service};
+    pub use furnace_rs_common::{GrpcCauldronExt, GrpcService, build_grpc_routes, grpc_service};
     /// gRPC configuration and native protobuf transport contracts.
     #[cfg(feature = "grpc")]
     pub use furnace_rs_common::{

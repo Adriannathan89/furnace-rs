@@ -3,8 +3,12 @@ mod config;
 mod descriptor;
 mod error;
 pub(crate) mod preflight;
+mod router;
 mod scope;
 mod service;
+pub use router::build_grpc_routes;
+#[doc(hidden)]
+pub use router::{GrpcRegistrationContext, GrpcServiceRegistrar};
 
 #[doc(hidden)]
 pub use descriptor::{

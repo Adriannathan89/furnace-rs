@@ -13,6 +13,7 @@ Make gRPC a first-class Furnace transport for serving methods and consuming remo
 - Support gRPC servers and injectable outbound clients.
 - Use protobuf-first contracts with Tonic and Prost. Rust method attributes must not replace protobuf as the wire-contract authority.
 - Support unary, server-streaming, client-streaming, and bidirectional-streaming RPCs.
+- Preserve native Tonic cancellation semantics, as clarified during implementation: cancelling a bidirectional call means stopping its request producer and dropping its response. No additional Furnace cancellation handle is introduced. Runtime shutdown still enforces the configured drain deadline.
 - Support HTTP and gRPC in one application through separate listeners sharing DI and lifecycle.
 - Support plaintext and TLS for servers and clients, including configurable trusted CAs. Framework configuration for mTLS is deferred.
 - Let each client select eager or lazy connection. An unavailable eager dependency fails startup; lazy clients attempt connection when used.
