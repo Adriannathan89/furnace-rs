@@ -552,3 +552,50 @@ async fn admitted_calls_retain_typed_principals_and_claims_for_all_shapes() {
         .unwrap()
         .unwrap();
 }
+
+#[burner]
+struct StaleService {
+    #[inject]
+    counters: Counters,
+}
+#[grpc_service(server = pb::transport_server::TransportServer, descriptor = furnace_grpc_test_support::STALE_DESCRIPTOR_SET, guard = IdentityOnly)]
+#[tonic::async_trait]
+impl pb::transport_server::Transport for StaleService {
+    async fn unary(
+        &self,
+        _: tonic::Request<pb::Item>,
+    ) -> Result<tonic::Response<pb::Item>, tonic::Status> {
+        self.counters.calls.fetch_add(1, Ordering::SeqCst);
+        Err(tonic::Status::unimplemented("test"))
+    }
+    type ServerStreamStream = Output;
+    async fn server_stream(
+        &self,
+        _: tonic::Request<pb::Item>,
+    ) -> Result<tonic::Response<Output>, tonic::Status> {
+        unreachable!()
+    }
+    async fn client_stream(
+        &self,
+        _: tonic::Request<tonic::Streaming<pb::Item>>,
+    ) -> Result<tonic::Response<pb::Summary>, tonic::Status> {
+        unreachable!()
+    }
+    type BidiStream = Output;
+    async fn bidi(
+        &self,
+        _: tonic::Request<tonic::Streaming<pb::Item>>,
+    ) -> Result<tonic::Response<Output>, tonic::Status> {
+        unreachable!()
+    }
+}
+#[cauldron(root, providers = [Counters, Strategy, JwtService], grpc_services = [StaleService])]
+struct StaleRoot;
+#[test]
+fn stale_descriptor_missing_callable_rpc_is_rejected_before_construction() {
+    let graph = furnace_rs_core::__private::build_cauldron_graph::<StaleRoot>().unwrap();
+    let error =
+        furnace_rs_grpc::GrpcApplicationScope::for_cauldron_graph(Some(&graph)).unwrap_err();
+    assert_eq!(error.code(), furnace_rs_grpc::FURNACE150);
+    assert!(error.to_string().contains("methods"));
+}

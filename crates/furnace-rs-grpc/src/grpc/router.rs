@@ -80,7 +80,7 @@ impl GrpcRegistrationContext<'_> {
                 .expect("registrar is selected from scope");
             let mut bindings = std::collections::BTreeMap::new();
             for method in selected.methods() {
-                if method.guard.is_some() {
+                let binding = if method.guard.is_some() {
                     let occurrence = GuardOccurrence {
                         provider: std::any::TypeId::of::<T>(),
                         operation: method.path.clone(),
@@ -88,8 +88,11 @@ impl GrpcRegistrationContext<'_> {
                     let binding = preflight
                         .binding_for_occurrence(&occurrence, selected.owner())
                         .expect("selected guarded method has a preflight binding");
-                    bindings.insert(method.path.clone(), binding.clone());
-                }
+                    Some(binding.clone())
+                } else {
+                    None
+                };
+                bindings.insert(method.path.clone(), binding);
             }
             Ok(routes.add_service(super::GrpcPassportService::new(
                 server,

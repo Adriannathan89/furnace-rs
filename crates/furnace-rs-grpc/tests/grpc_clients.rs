@@ -797,3 +797,84 @@ async fn bearer_sources_use_http2_never_indexed_encoding() {
         app.shutdown().await.unwrap();
     }
 }
+
+#[tokio::test]
+async fn eager_readiness_retains_connection_cause_behind_redacted_boundary() {
+    use std::error::Error as _;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("http://{}", listener.local_addr().unwrap());
+    drop(listener);
+    let config = ConfigBuilder::new()
+        .source(MapSource::new(
+            "test",
+            [("grpc.clients.remote.endpoint", endpoint)],
+        ))
+        .build()
+        .unwrap();
+    let options = furnace_rs_grpc::GrpcClientConfig::parse(&config, "remote").unwrap();
+    let channel = furnace_rs_grpc::GrpcChannel::from_config(options, None)
+        .await
+        .unwrap();
+    let error = channel.ready().await.unwrap_err();
+    assert!(!format!("{error:?} {error}").contains("127.0.0.1"));
+    let cause = error
+        .source()
+        .expect("readiness must retain its typed source")
+        .downcast_ref::<GrpcClientError>()
+        .unwrap();
+    assert!(
+        cause
+            .cause()
+            .unwrap()
+            .downcast_ref::<tonic::transport::Error>()
+            .is_some()
+    );
+    assert!(cause.source().unwrap().source().is_none());
+}
+#[cfg(feature = "tls")]
+#[tokio::test]
+async fn eager_readiness_retains_timeout_cause() {
+    use std::error::Error as _;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("https://{}", listener.local_addr().unwrap());
+    let (stop, signal) = tokio::sync::oneshot::channel();
+    let peer = tokio::spawn(async move {
+        let (socket, _) = listener.accept().await.unwrap();
+        let _ = signal.await;
+        drop(socket);
+    });
+    let config = ConfigBuilder::new()
+        .source(MapSource::new(
+            "test",
+            [
+                ("grpc.clients.remote.endpoint", endpoint),
+                ("grpc.clients.remote.connect_timeout_ms", "50".into()),
+                (
+                    "grpc.clients.remote.tls_handshake_timeout_ms",
+                    "2000".into(),
+                ),
+            ],
+        ))
+        .build()
+        .unwrap();
+    let options = furnace_rs_grpc::GrpcClientConfig::parse(&config, "remote").unwrap();
+    let channel = furnace_rs_grpc::GrpcChannel::from_config(options, None)
+        .await
+        .unwrap();
+    let error = channel.ready().await.unwrap_err();
+    let cause = error
+        .source()
+        .expect("readiness timeout must retain its source")
+        .downcast_ref::<GrpcClientError>()
+        .unwrap()
+        .cause()
+        .unwrap();
+    assert!(
+        cause
+            .downcast_ref::<tokio::time::error::Elapsed>()
+            .is_some()
+            || cause.downcast_ref::<tonic::transport::Error>().is_some()
+    );
+    stop.send(()).unwrap();
+    peer.await.unwrap();
+}

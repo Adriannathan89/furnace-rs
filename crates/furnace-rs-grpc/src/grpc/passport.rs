@@ -50,13 +50,13 @@ pub fn passport_status(error: PassportError) -> Status {
 pub struct GrpcPassportService<S> {
     inner: S,
     application: ApplicationContext,
-    bindings: Arc<BTreeMap<String, PassportStrategyBinding<'static>>>,
+    bindings: Arc<BTreeMap<String, Option<PassportStrategyBinding<'static>>>>,
 }
 impl<S> GrpcPassportService<S> {
     pub(crate) fn new(
         inner: S,
         application: ApplicationContext,
-        bindings: BTreeMap<String, PassportStrategyBinding<'static>>,
+        bindings: BTreeMap<String, Option<PassportStrategyBinding<'static>>>,
     ) -> Self {
         Self {
             inner,
@@ -86,6 +86,9 @@ where
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
         Box::pin(async move {
+            let Some(binding) = binding else {
+                return Ok(Status::unimplemented("unimplemented method").into_http());
+            };
             if let Some(binding) = binding {
                 let peer = request
                     .extensions()
@@ -273,7 +276,7 @@ mod tests {
             .map(|name| {
                 (
                     format!("/furnace.test.v1.Transport/{name}"),
-                    binding.clone(),
+                    Some(binding.clone()),
                 )
             })
             .into_iter()
@@ -305,5 +308,40 @@ mod tests {
             client.unary(request()).await.unwrap_err().code(),
             tonic::Code::Unauthenticated
         );
+    }
+    #[derive(Clone)]
+    struct UnknownService(Arc<std::sync::atomic::AtomicUsize>);
+    #[tonic::async_trait]
+    impl pb::hidden_server::Hidden for UnknownService {
+        async fn secret(
+            &self,
+            request: tonic::Request<pb::Item>,
+        ) -> Result<tonic::Response<pb::Item>, Status> {
+            self.0.fetch_add(1, Ordering::SeqCst);
+            Ok(tonic::Response::new(request.into_inner()))
+        }
+    }
+    #[tokio::test]
+    async fn operation_missing_policy_metadata_never_dispatches() {
+        let config = ConfigBuilder::new()
+            .source(MapSource::new(
+                "test",
+                [("passport.secret", "sufficiently-long-test-secret-for-hs256")],
+            ))
+            .build()
+            .unwrap();
+        let mut builder = Furnace::builder_with_config(config);
+        builder.root::<ExpiryApp>().unwrap();
+        let app = builder.build().await.unwrap();
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let server = pb::hidden_server::HiddenServer::new(UnknownService(calls.clone()));
+        let mut client = pb::hidden_client::HiddenClient::new(GrpcPassportService::new(
+            server,
+            app.context().clone(),
+            BTreeMap::new(),
+        ));
+        let error = client.secret(pb::Item { value: 1 }).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Unimplemented);
+        assert_eq!(calls.load(Ordering::SeqCst), 0);
     }
 }

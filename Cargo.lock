@@ -764,6 +764,7 @@ name = "furnace-grpc-test-support"
 version = "0.0.0"
 dependencies = [
  "prost",
+ "prost-types",
  "protoc-bin-vendored",
  "tonic",
  "tonic-prost",

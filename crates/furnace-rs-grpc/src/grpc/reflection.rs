@@ -146,7 +146,7 @@ pub(crate) fn bindings(
     scope: &GrpcApplicationScope,
     app: &furnace_rs_core::Furnace,
     name: &str,
-) -> Result<BTreeMap<String, crate::PassportStrategyBinding<'static>>> {
+) -> Result<BTreeMap<String, Option<crate::PassportStrategyBinding<'static>>>> {
     let guards = guards(scope, app.context().config())?;
     let preflight =
         crate::PassportStrategyCatalog::preflight_scoped(app.cauldron_graph(), &guards)?;
@@ -161,5 +161,5 @@ pub(crate) fn bindings(
         .binding_for_occurrence(&occurrence, Some(policy.root()))
         .expect("reflection guard was preflighted")
         .clone();
-    Ok(BTreeMap::from([(path, binding)]))
+    Ok(BTreeMap::from([(path, Some(binding))]))
 }

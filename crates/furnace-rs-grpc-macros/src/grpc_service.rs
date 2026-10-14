@@ -148,11 +148,19 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         None => quote!(None),
     };
     let mut overrides = Vec::new();
+    let mut rust_methods = Vec::new();
     let mut wire_names = std::collections::HashSet::new();
     for item in &mut implementation.items {
         let ImplItem::Fn(method) = item else {
             continue;
         };
+        let rust_name = method.sig.ident.unraw().to_string();
+        let method_cfg: Vec<_> = method
+            .attrs
+            .iter()
+            .filter(|a| a.path().is_ident("cfg"))
+            .collect();
+        rust_methods.push(quote!(#(#method_cfg)* #rust_name));
         let attrs: Vec<_> = method
             .attrs
             .iter()
@@ -221,7 +229,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             || <#server<#ty> as #common::tonic::server::NamedService>::NAME,
             #descriptor, #guard, &[#(#overrides),*],
             #common::core::SourceLocation::new(file!(), line!(), column!()),
-        ).with_registrar(#register_ident);
+        ).with_registrar(#register_ident).with_rust_methods(&[#(#rust_methods),*]);
         #(#cfg)*
         impl #common::core::__private::TransportProvider for #ty {
             const TRANSPORT: &'static str = "grpc";

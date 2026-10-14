@@ -96,16 +96,16 @@ impl GrpcChannel {
     /// Establishes initial connection readiness within the configured connect deadline.
     pub async fn ready(&self) -> furnace_rs_core::Result<()> {
         if self.0.closed.load(Ordering::SeqCst) {
-            return Err(readiness_error());
+            return Err(readiness_error(GrpcClientError::closed()));
         }
-        let endpoint = self.endpoint().await.map_err(|_| readiness_error())?;
+        let endpoint = self.endpoint().await.map_err(readiness_error)?;
         let channel = tokio::time::timeout(self.0.config.connect_timeout(), endpoint.connect())
             .await
-            .map_err(|_| readiness_error())?
-            .map_err(|_| readiness_error())?;
+            .map_err(|error| readiness_error(GrpcClientError::transport(error)))?
+            .map_err(|error| readiness_error(GrpcClientError::transport(error)))?;
         let mut stored = self.0.channel.lock().expect("channel lock poisoned");
         if self.0.closed.load(Ordering::SeqCst) {
-            return Err(readiness_error());
+            return Err(readiness_error(GrpcClientError::closed()));
         }
         *stored = Some(channel);
         Ok(())
@@ -226,7 +226,7 @@ fn request_deadline(
     }
     Ok(default)
 }
-fn parse_timeout(raw: &str) -> Option<Duration> {
+pub(crate) fn parse_timeout(raw: &str) -> Option<Duration> {
     let (number, unit) = raw.split_at_checked(raw.len().checked_sub(1)?)?;
     if number.is_empty() || number.len() > 8 || !number.bytes().all(|b| b.is_ascii_digit()) {
         return None;
@@ -242,12 +242,15 @@ fn parse_timeout(raw: &str) -> Option<Duration> {
         _ => return None,
     })
 }
-fn readiness_error() -> Error {
-    Error::new(Diagnostic::new(
-        FURNACE153,
-        "gRPC client readiness failed",
-        "the named client could not establish a verified transport connection",
-    ))
+fn readiness_error(source: GrpcClientError) -> Error {
+    Error::with_source(
+        Diagnostic::new(
+            FURNACE153,
+            "gRPC client readiness failed",
+            "the named client could not establish a verified transport connection",
+        ),
+        source,
+    )
 }
 /// Infrastructure lifecycle adapter installed by generated named clients.
 #[doc(hidden)]

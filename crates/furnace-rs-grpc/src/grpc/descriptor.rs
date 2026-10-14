@@ -52,6 +52,7 @@ pub struct GrpcServiceDescriptor {
     descriptor_set: &'static [u8],
     guard: Option<GrpcGuard>,
     overrides: &'static [GrpcMethodOverride],
+    rust_methods: Option<&'static [&'static str]>,
     location: SourceLocation,
     registrar: Option<super::GrpcServiceRegistrar>,
 }
@@ -76,7 +77,17 @@ impl GrpcServiceDescriptor {
             overrides,
             location,
             registrar: None,
+            rust_methods: None,
         }
+    }
+    /// Captures all authored generated-trait methods for descriptor coverage validation.
+    #[doc(hidden)]
+    pub const fn with_rust_methods(mut self, methods: &'static [&'static str]) -> Self {
+        self.rust_methods = Some(methods);
+        self
+    }
+    pub(crate) const fn rust_methods(&self) -> Option<&'static [&'static str]> {
+        self.rust_methods
     }
     /// Returns the selected DI output identity.
     pub fn provider_type_id(&self) -> TypeId {

@@ -124,7 +124,24 @@ async fn connection<IO>(
     let service =
         hyper::service::service_fn(move |mut request: http::Request<hyper::body::Incoming>| {
             request.extensions_mut().insert(info.clone());
-            routes.clone().oneshot(request)
+            // Match native Tonic establishment deadlines; never wrap the response body.
+            let timeout = request
+                .headers()
+                .get("grpc-timeout")
+                .and_then(|value| value.to_str().ok())
+                .and_then(crate::grpc::parse_timeout);
+            let dispatch = routes.clone().oneshot(request);
+            async move {
+                match timeout {
+                    Some(timeout) => match tokio::time::timeout(timeout, dispatch).await {
+                        Ok(response) => response,
+                        Err(_) => {
+                            Ok(tonic::Status::deadline_exceeded("deadline exceeded").into_http())
+                        }
+                    },
+                    None => dispatch.await,
+                }
+            }
         });
     let mut builder = hyper::server::conn::http2::Builder::new(executor);
     builder.timer(hyper_util::rt::TokioTimer::new());

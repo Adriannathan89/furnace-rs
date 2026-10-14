@@ -161,8 +161,14 @@ async fn tls_handshake_is_bounded_when_peer_never_replies() {
     let (accepted, receive) = tokio::sync::oneshot::channel();
     let (stop, signal) = tokio::sync::oneshot::channel();
     let task = tokio::spawn(async move {
-        let (socket, _) = listener.accept().await.unwrap();
-        accepted.send(()).unwrap();
+        use tokio::io::AsyncReadExt;
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut record = [0; 3];
+        tokio::time::timeout(Duration::from_secs(1), socket.read_exact(&mut record))
+            .await
+            .unwrap()
+            .expect("HTTPS must send a TLS ClientHello without an explicit TLS table");
+        accepted.send(record).unwrap();
         let _ = signal.await;
         drop(socket);
     });
@@ -182,8 +188,10 @@ async fn tls_handshake_is_bounded_when_peer_never_replies() {
     )
     .unwrap();
     let endpoint = client_endpoint(&options).await.unwrap();
+    let started = std::time::Instant::now();
     let connect = tokio::spawn(async move { endpoint.connect().await });
-    receive.await.unwrap();
+    let record = receive.await.unwrap();
+    assert_eq!(&record[..2], &[22, 3], "expected a TLS handshake record");
     assert!(
         tokio::time::timeout(Duration::from_secs(1), connect)
             .await
@@ -191,6 +199,7 @@ async fn tls_handshake_is_bounded_when_peer_never_replies() {
             .unwrap()
             .is_err()
     );
+    assert!(started.elapsed() >= Duration::from_millis(50));
     stop.send(()).unwrap();
     task.await.unwrap();
 }

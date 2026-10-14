@@ -250,16 +250,24 @@ impl GrpcApplicationScope {
                     guard,
                 });
             }
+            if let Some(authored) = descriptor.rust_methods() {
+                let actual: BTreeSet<_> = authored.iter().copied().collect();
+                let expected: BTreeSet<_> = method_names
+                    .iter()
+                    .map(|name| rust_method_name(name))
+                    .collect();
+                if actual.len() != authored.len()
+                    || actual != expected.iter().map(String::as_str).collect()
+                {
+                    return Err(metadata_error(
+                        Some(descriptor),
+                        "descriptor methods do not match the generated trait implementation",
+                    ));
+                }
+            }
             let mut overrides = BTreeSet::new();
             for entry in descriptor.overrides() {
-                use heck::ToSnakeCase;
-                let mut rust_name = entry.wire_name.to_snake_case();
-                if matches!(
-                    rust_name.as_str(),
-                    "self" | "super" | "crate" | "extern" | "_"
-                ) {
-                    rust_name.push('_');
-                }
+                let rust_name = rust_method_name(entry.wire_name);
                 if rust_name != entry.rust_name {
                     return Err(metadata_error(
                         Some(descriptor),
@@ -363,4 +371,13 @@ mod tests {
             FURNACE150
         );
     }
+}
+
+fn rust_method_name(wire_name: &str) -> String {
+    use heck::ToSnakeCase;
+    let mut name = wire_name.to_snake_case();
+    if matches!(name.as_str(), "self" | "super" | "crate" | "extern" | "_") {
+        name.push('_');
+    }
+    name
 }

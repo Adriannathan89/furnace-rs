@@ -8,18 +8,21 @@ use furnace_rs_core::{Diagnostic, Error};
 pub async fn client_endpoint(config: &GrpcClientConfig) -> Result<tonic::transport::Endpoint> {
     let endpoint = config.endpoint().connect_timeout(config.connect_timeout());
     #[cfg(feature = "tls")]
-    if let Some(options) = config.tls() {
+    if endpoint.uri().scheme_str() == Some("https") {
+        let options = config.tls();
         let mut tls =
             tonic::transport::ClientTlsConfig::new().timeout(config.tls_handshake_timeout());
-        if !options.custom_ca_only() {
+        if !options.is_some_and(|options| options.custom_ca_only()) {
             tls = tls.with_webpki_roots();
         }
-        if let Some(domain) = options.domain_name() {
-            tls = tls.domain_name(domain);
-        }
-        for path in options.custom_ca_files() {
-            let pem = tokio::fs::read(path).await.map_err(|_| tls_error())?;
-            tls = tls.ca_certificate(tonic::transport::Certificate::from_pem(pem));
+        if let Some(options) = options {
+            if let Some(domain) = options.domain_name() {
+                tls = tls.domain_name(domain);
+            }
+            for path in options.custom_ca_files() {
+                let pem = tokio::fs::read(path).await.map_err(|_| tls_error())?;
+                tls = tls.ca_certificate(tonic::transport::Certificate::from_pem(pem));
+            }
         }
         return endpoint.tls_config(tls).map_err(|_| tls_error());
     }

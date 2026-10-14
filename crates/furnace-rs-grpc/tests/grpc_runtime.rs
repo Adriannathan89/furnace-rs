@@ -20,6 +20,7 @@ struct StateInner {
     stops: AtomicUsize,
     expect_drained: AtomicBool,
     calls: AtomicUsize,
+    completions: AtomicUsize,
     drops: AtomicUsize,
     dropped: tokio::sync::Notify,
 }
@@ -74,6 +75,13 @@ impl Drop for ProbeStream {
     }
 }
 
+struct HandlerLifetime(State);
+impl Drop for HandlerLifetime {
+    fn drop(&mut self) {
+        self.0.0.drops.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
 #[grpc_service(server = pb::transport_server::TransportServer, descriptor = FILE_DESCRIPTOR_SET)]
 #[tonic::async_trait]
 impl pb::transport_server::Transport for TransportService {
@@ -82,6 +90,11 @@ impl pb::transport_server::Transport for TransportService {
         request: tonic::Request<pb::Item>,
     ) -> Result<tonic::Response<pb::Item>, tonic::Status> {
         self.state.0.calls.fetch_add(1, Ordering::SeqCst);
+        if request.get_ref().value == 99 {
+            let _lifetime = HandlerLifetime(self.state.clone());
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            self.state.0.completions.fetch_add(1, Ordering::SeqCst);
+        }
         if request.get_ref().value == 42 {
             let peer = request
                 .remote_addr()
@@ -100,6 +113,14 @@ impl pb::transport_server::Transport for TransportService {
     ) -> Result<tonic::Response<ItemStream>, tonic::Status> {
         self.state.0.calls.fetch_add(1, Ordering::SeqCst);
         let count = request.into_inner().value;
+        if count == 98 {
+            return Ok(tonic::Response::new(Box::pin(futures_util::stream::once(
+                async {
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                    Ok(pb::Item { value: 98 })
+                },
+            ))));
+        }
         Ok(tonic::Response::new(Box::pin(streams::iter(
             (0..count).map(|value| Ok(pb::Item { value })),
         ))))
@@ -444,4 +465,112 @@ async fn trusted_socket_peer_survives_supervised_dispatch() {
     assert!(port > 0 && port != 9876);
     stop.send(()).unwrap();
     task.await.unwrap().unwrap();
+}
+
+struct WireBody(Option<tonic::codegen::Bytes>);
+impl http_body::Body for WireBody {
+    type Data = tonic::codegen::Bytes;
+    type Error = std::convert::Infallible;
+    fn poll_frame(
+        mut self: Pin<&mut Self>,
+        _: &mut Context<'_>,
+    ) -> Poll<Option<Result<http_body::Frame<Self::Data>, Self::Error>>> {
+        Poll::Ready(self.0.take().map(|data| Ok(http_body::Frame::data(data))))
+    }
+    fn is_end_stream(&self) -> bool {
+        self.0.is_none()
+    }
+}
+#[tokio::test]
+async fn incoming_deadline_cancels_establishment_without_client_timeout() {
+    use prost::Message;
+    let (client, state, stop, runtime, address) = running().await;
+    drop(client);
+    let socket = tokio::net::TcpStream::connect(address).await.unwrap();
+    let (mut sender, connection) = hyper::client::conn::http2::handshake(
+        hyper_util::rt::TokioExecutor::new(),
+        hyper_util::rt::TokioIo::new(socket),
+    )
+    .await
+    .unwrap();
+    let connection = tokio::spawn(connection);
+    let payload = pb::Item { value: 99 }.encode_to_vec();
+    let mut bytes = vec![0];
+    bytes.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(&payload);
+    let request = http::Request::builder()
+        .method("POST")
+        .uri(format!("http://{address}/furnace.test.v1.Transport/Unary"))
+        .header("content-type", "application/grpc")
+        .header("grpc-timeout", "10m")
+        .body(WireBody(Some(bytes.into())))
+        .unwrap();
+    let response = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        sender.send_request(request),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(
+        response
+            .headers()
+            .get("grpc-status")
+            .map(|v| v.to_str().unwrap()),
+        Some("4")
+    );
+    assert_eq!(state.0.completions.load(Ordering::SeqCst), 0);
+    assert_eq!(state.0.drops.load(Ordering::SeqCst), 1);
+    drop(response);
+    drop(sender);
+    connection.abort();
+    let _ = connection.await;
+    stop.send(()).unwrap();
+    runtime.await.unwrap().unwrap();
+    assert_eq!(state.0.stops.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn incoming_deadline_does_not_truncate_established_response_stream() {
+    let (client, state, stop, runtime, address) = running().await;
+    drop(client);
+    let socket = tokio::net::TcpStream::connect(address).await.unwrap();
+    let (mut sender, connection) = hyper::client::conn::http2::handshake(
+        hyper_util::rt::TokioExecutor::new(),
+        hyper_util::rt::TokioIo::new(socket),
+    )
+    .await
+    .unwrap();
+    let connection = tokio::spawn(connection);
+    let request = http::Request::builder()
+        .method("POST")
+        .uri(format!(
+            "http://{address}/furnace.test.v1.Transport/ServerStream"
+        ))
+        .header("content-type", "application/grpc")
+        .header("grpc-timeout", "10m")
+        .body(WireBody(Some(tonic::codegen::Bytes::from_static(&[
+            0, 0, 0, 0, 2, 8, 98,
+        ]))))
+        .unwrap();
+    let started = std::time::Instant::now();
+    let mut response = sender.send_request(request).await.unwrap();
+    assert!(response.headers().get("grpc-status").is_none());
+    let frame = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        std::future::poll_fn(|cx| http_body::Body::poll_frame(Pin::new(response.body_mut()), cx)),
+    )
+    .await
+    .unwrap()
+    .unwrap()
+    .unwrap();
+    assert_eq!(frame.data_ref().unwrap().as_ref(), &[0, 0, 0, 0, 2, 8, 98]);
+    assert!(started.elapsed() >= std::time::Duration::from_millis(100));
+    drop(response);
+    drop(sender);
+    connection.abort();
+    let _ = connection.await;
+    stop.send(()).unwrap();
+    runtime.await.unwrap().unwrap();
+    assert_eq!(state.0.stops.load(Ordering::SeqCst), 1);
 }

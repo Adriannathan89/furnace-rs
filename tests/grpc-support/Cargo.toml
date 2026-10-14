@@ -11,5 +11,7 @@ tonic-prost.workspace = true
 prost.workspace = true
 
 [build-dependencies]
+prost.workspace = true
+prost-types.workspace = true
 tonic-prost-build.workspace = true
 protoc-bin-vendored.workspace = true

@@ -5,3 +5,6 @@ pub mod pb {
 }
 /// Encoded file descriptors, including the unregistered Hidden service.
 pub const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("transport");
+
+/// Deliberately stale descriptors missing the generated Unary method.
+pub const STALE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("stale");

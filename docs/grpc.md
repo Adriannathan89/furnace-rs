@@ -52,7 +52,9 @@ implementations. Register ordinary dependencies in `providers`; a constructor
 that injects `JwtService` must explicitly declare that provider, as in the example.
 Native values supplied with `builder.provide(...)` retain precedence and do not
 erase static constructor requirements. Selected metadata and policy bindings
-are checked before construction; each service is resolved once into native routes.
+are checked before construction, including full method coverage between the
+descriptor and authored generated-trait implementation. Missing operation policy
+metadata never dispatches a managed RPC. Each service is resolved once into native routes.
 
 ## Runtime selection and manual composition
 
@@ -154,7 +156,8 @@ Duplicate or malformed credentials and provider failures fail locally before
 remote dispatch. Incoming credentials are never forwarded implicitly. Provider
 failure messages are redacted; deliberate debugging can inspect
 `GrpcClientError::cause()` without exposing causes through automatic Tonic status
-conversion.
+conversion. Eager readiness retains a typed, redacted `GrpcClientError` source
+with its original transport or timeout cause available through `cause()`.
 
 Explicit per-call timeout metadata takes precedence over client defaults. The
 establishment deadline includes asynchronous credential preparation, connection
@@ -174,6 +177,9 @@ Passport context uses the accepted socket peer and sanitized metadata.
 Streams authenticate once at admission. A stream can continue after its JWT
 expires; subsequent guarded calls validate again. Retain the typed principal
 handle in application stream logic when that logic needs the admitted identity.
+The managed server also honors incoming `grpc-timeout` through authentication and
+handler response establishment; established response bodies retain their lifetime.
+
 Framework statuses use generic `UNAUTHENTICATED`, `PERMISSION_DENIED`, and
 `INTERNAL` messages. Application-authored Tonic statuses retain their normal
 behavior. Native oversized protobuf messages produce `OUT_OF_RANGE`.
@@ -203,7 +209,8 @@ domain_name = "localhost"
 The remote endpoint must use `https`. Paths resolve relative to their configuration
 source, including each configured CA array element. Clients use WebPKI roots by
 default. Custom CAs are additive unless `custom_ca_only = true`, which requires at
-least one configured CA. Hostname and chain verification remain mandatory.
+least one configured CA. HTTPS enables default WebPKI TLS even without a client
+TLS table. Hostname and chain verification remain mandatory.
 Framework mTLS settings and certificate hot reload are outside this feature.
 TLS material is read during runtime preparation, never during static inspection.
 

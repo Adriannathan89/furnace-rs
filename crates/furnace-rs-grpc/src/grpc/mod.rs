@@ -34,6 +34,7 @@ mod passport;
 pub use passport::{GrpcPassportService, grpc_authenticated, grpc_verified_token, passport_status};
 
 mod client;
+pub(crate) use client::parse_timeout;
 #[doc(hidden)]
 pub use client::{ErasedTokenProvider, GrpcClientLifecycle};
 pub use client::{GrpcChannel, GrpcTokenProvider, set_grpc_bearer_token};
