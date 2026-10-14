@@ -5,19 +5,26 @@
 //! router configuration before they start application lifecycle hooks or ask
 //! Tokio to bind a listener.
 
-use std::error::Error as StdError;
+#[cfg(test)]
 use std::fmt;
 use std::future::Future;
-use std::io::IsTerminal;
-use std::path::{Path, PathBuf};
+#[cfg(test)]
+use std::path::Path;
+use std::path::PathBuf;
 use std::time::Duration;
 
-use furnace_rs_core::{Cauldron, Diagnostic, DiagnosticCode, Error, FURNACE020, Furnace};
+#[cfg(test)]
+use furnace_rs_core::Cauldron;
+use furnace_rs_core::{Diagnostic, DiagnosticCode, Error, Furnace};
 use tokio::net::TcpListener;
 
+#[cfg(test)]
 use crate::cors::CORS_AUTO_CONFIGURATION_ID;
+#[cfg(test)]
 use crate::http_scope::HttpApplicationScope;
+#[cfg(test)]
 use crate::route::RouteDescriptor;
+#[cfg(test)]
 use crate::server_config::{
     HttpRuntimeMode, SERVER_AUTO_CONFIGURATION_ID, ServerBinding, load_standard_config_from,
 };
@@ -31,92 +38,12 @@ const BODY_READ_IDLE_TIMEOUT: Duration = Duration::from_secs(10);
 /// A standard application run had no reachable managed HTTP route.
 pub const FURNACE031: DiagnosticCode = DiagnosticCode::new("FURNACE031");
 
-/// An error produced while preparing, running, or stopping the HTTP runtime.
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum HttpRuntimeError {
-    /// Route validation or final router configuration failed before lifecycle startup.
-    Bootstrap(furnace_rs_core::Error),
-    /// Application lifecycle startup or shutdown failed.
-    Lifecycle(furnace_rs_core::Error),
-    /// The HTTP listener could not bind to the requested address.
-    Bind(std::io::Error),
-    /// Axum stopped because of an HTTP serving failure.
-    Serve(std::io::Error),
-    /// An operational failure occurred and the subsequent shutdown also failed.
-    OperationAndShutdown {
-        /// The bind or serving error that initiated shutdown.
-        operation: Box<HttpRuntimeError>,
-        /// The lifecycle error returned while attempting shutdown.
-        shutdown: furnace_rs_core::Error,
-    },
-}
+/// Compatibility alias for the shared application runtime error.
+pub type HttpRuntimeError = crate::runtime::ApplicationRuntimeError;
 
-impl fmt::Display for HttpRuntimeError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Bootstrap(error) => write!(formatter, "HTTP bootstrap failed: {error}"),
-            Self::Lifecycle(error) => write!(formatter, "application lifecycle failed: {error}"),
-            Self::Bind(error) => write!(formatter, "HTTP listener bind failed: {error}"),
-            Self::Serve(error) => write!(formatter, "HTTP serving failed: {error}"),
-            Self::OperationAndShutdown {
-                operation,
-                shutdown,
-            } => write!(
-                formatter,
-                "{operation}; application shutdown also failed: {shutdown}"
-            ),
-        }
-    }
-}
+pub use crate::runtime::FurnaceBurnExt;
 
-impl StdError for HttpRuntimeError {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match self {
-            Self::Bootstrap(error) | Self::Lifecycle(error) => Some(error),
-            Self::Bind(error) | Self::Serve(error) => Some(error),
-            Self::OperationAndShutdown { operation, .. } => Some(operation.as_ref()),
-        }
-    }
-}
-
-/// Runs a rooted application module with conventional HTTP configuration.
-///
-/// Import this trait to call [`Furnace::burn`]. The standard path loads optional
-/// `.env` and `furnace.toml` files from the current working directory, applies
-/// `FURNACE_*` environment overrides, and owns automatic HTTP binding. Use the
-/// low-level [`Furnace::builder`] and [`serve`] APIs when the application needs
-/// explicit configuration, providers, lifecycle hooks, or a listener address.
-pub trait FurnaceBurnExt {
-    /// Builds and runs the selected rooted application module.
-    fn burn<M>() -> impl Future<Output = Result<(), HttpRuntimeError>> + Send
-    where
-        M: Cauldron;
-}
-
-impl FurnaceBurnExt for Furnace {
-    #[allow(clippy::manual_async_fn)] // The public trait keeps an explicit `Send` future.
-    fn burn<M>() -> impl Future<Output = Result<(), HttpRuntimeError>> + Send
-    where
-        M: Cauldron,
-    {
-        async move {
-            let root = std::env::current_dir().map_err(config_directory_error)?;
-            if let Some(result) = crate::inspection::try_run_inspection::<M>(&root) {
-                return result;
-            }
-            let prepared = prepare_standard_run::<M>(&root).await?;
-            let clear = if std::io::stdout().is_terminal() {
-                "\x1b[2J\x1b[H"
-            } else {
-                ""
-            };
-            println!("{clear}{}", prepared.startup_summary());
-            serve_prepared(prepared, TcpListener::bind, shutdown_signal()).await
-        }
-    }
-}
-
+#[cfg(test)]
 struct PreparedStandardRun {
     application: Furnace,
     router: axum::Router,
@@ -125,6 +52,7 @@ struct PreparedStandardRun {
     routes: Vec<RouteDescriptor>,
 }
 
+#[cfg(test)]
 struct StartupSummary {
     host: String,
     port: u16,
@@ -132,6 +60,7 @@ struct StartupSummary {
     routes: Vec<RouteDescriptor>,
 }
 
+#[cfg(test)]
 impl StartupSummary {
     const fn new(
         host: String,
@@ -148,6 +77,7 @@ impl StartupSummary {
     }
 }
 
+#[cfg(test)]
 impl fmt::Display for StartupSummary {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -170,6 +100,7 @@ impl fmt::Display for StartupSummary {
     }
 }
 
+#[cfg(test)]
 impl PreparedStandardRun {
     fn startup_summary(&self) -> StartupSummary {
         StartupSummary::new(
@@ -181,6 +112,7 @@ impl PreparedStandardRun {
     }
 }
 
+#[cfg(test)]
 async fn prepare_standard_run<M: Cauldron>(
     root: &Path,
 ) -> Result<PreparedStandardRun, HttpRuntimeError> {
@@ -198,6 +130,7 @@ async fn prepare_standard_run<M: Cauldron>(
     prepare_standard_application(application)
 }
 
+#[cfg(test)]
 fn prepare_standard_application(
     application: Furnace,
 ) -> Result<PreparedStandardRun, HttpRuntimeError> {
@@ -225,6 +158,7 @@ fn prepare_standard_application(
     })
 }
 
+#[cfg(test)]
 async fn serve_prepared<B, BindFuture, Shutdown>(
     prepared: PreparedStandardRun,
     binder: B,
@@ -246,7 +180,7 @@ where
     serve_configured_router_with(application, router, address, binder, shutdown).await
 }
 
-fn no_runnable_route_error() -> Error {
+pub(crate) fn no_runnable_route_error() -> Error {
     Error::new(
         Diagnostic::new(
             FURNACE031,
@@ -256,19 +190,6 @@ fn no_runnable_route_error() -> Error {
         .with_subject("HTTP runtime")
         .with_suggestion("declare a managed controller route reachable from the root module"),
     )
-}
-
-fn config_directory_error(error: std::io::Error) -> HttpRuntimeError {
-    HttpRuntimeError::Bootstrap(Error::with_source(
-        Diagnostic::new(
-            FURNACE020,
-            "configuration directory could not be determined",
-            "could not determine the process current working directory",
-        )
-        .with_subject("current working directory")
-        .with_suggestion("run the application from an accessible directory"),
-        error,
-    ))
 }
 
 /// Builds, configures, starts, serves, and shuts down an application on `address`.
@@ -419,14 +340,24 @@ where
 // incomplete request headers retain their socket and task indefinitely.
 async fn serve_http(
     debug: bool,
+    listener: TcpListener,
+    router: axum::Router,
+    shutdown: impl Future<Output = ()> + Send + 'static,
+) -> std::io::Result<()> {
+    serve_http_supervised(debug, listener, router, shutdown, None).await
+}
+
+pub(crate) async fn serve_http_supervised(
+    debug: bool,
     mut listener: TcpListener,
     router: axum::Router,
     shutdown: impl Future<Output = ()> + Send + 'static,
+    tasks: Option<crate::runtime::RuntimeTasks>,
 ) -> std::io::Result<()> {
     use axum::response::IntoResponse;
     use axum::serve::Listener;
     use hyper_util::{
-        rt::{TokioExecutor, TokioIo, TokioTimer},
+        rt::{TokioIo, TokioTimer},
         server::conn::auto::Builder,
     };
     use std::sync::{
@@ -485,8 +416,9 @@ async fn serve_http(
                     }
                 });
                 let mut shutdown_rx = shutdown_rx.clone();
-                connections.spawn(async move {
-                    let mut builder = Builder::new(TokioExecutor::new());
+                let executor = HttpExecutor(tasks.clone());
+                let future = async move {
+                    let mut builder = Builder::new(executor);
                     builder.http1().timer(TokioTimer::new())
                         .header_read_timeout(HEADER_READ_TIMEOUT);
                     builder.http2().enable_connect_protocol();
@@ -510,7 +442,8 @@ async fn serve_http(
                             let _ = connection.await;
                         }
                     }
-                });
+                };
+                if let Some(tasks) = &tasks { tasks.spawn(future); } else { connections.spawn(future); }
             }
         }
     }
@@ -601,7 +534,9 @@ mod tests {
         FURNACE031, HttpRuntimeError, StartupSummary, prepare_standard_application,
         prepare_standard_run, serve_prepared, serve_router_with, serve_with, wait_for_dev_shutdown,
     };
+    #[cfg(test)]
     use crate::cors::CORS_AUTO_CONFIGURATION_ID;
+    #[cfg(test)]
     use crate::server_config::{HttpRuntimeMode, SERVER_AUTO_CONFIGURATION_ID, ServerBinding};
     use crate::{ControllerEndpointDescriptor, HttpMethod, RouteDescriptor};
 
@@ -1785,5 +1720,25 @@ mod tests {
             *events.lock().unwrap(),
             ["lifecycle_start", "bind", "serve", "lifecycle_stop"]
         );
+    }
+}
+
+#[derive(Clone)]
+struct HttpExecutor(Option<crate::runtime::RuntimeTasks>);
+impl<F> hyper::rt::Executor<F> for HttpExecutor
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    fn execute(&self, future: F) {
+        if let Some(tasks) = &self.0 {
+            tasks.spawn(async move {
+                let _ = future.await;
+            });
+        } else {
+            tokio::spawn(async move {
+                let _ = future.await;
+            });
+        }
     }
 }

@@ -1,3 +1,5 @@
-//! Configuration and lifecycle coordination for selected application transports.
-mod config;
-pub use config::RuntimeSelection;
+//! Shared application runtime and gRPC composition.
+pub use furnace_rs_common::runtime::*;
+mod adapter;
+mod server;
+pub use adapter::RuntimeGrpcExt;

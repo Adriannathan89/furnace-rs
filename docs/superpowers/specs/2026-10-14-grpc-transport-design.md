@@ -343,3 +343,9 @@ The user requested migration before continuing the remaining implementation and 
 - Shared lifecycle/startup and private inspection coordination remain transport-neutral in common. Remaining Tasks 8 and 9 use integration registrations from the gRPC crate rather than importing Tonic or Prost into common.
 
 Migration is explicitly authorized by the user's instruction to start migrating now, followed by confirmation of standalone/facade separation and dedicated macro/features layout. Native execution and the final independent review remain selected.
+
+### Approved runtime API adjustment after crate separation
+
+The user approved protocol-neutral `ApplicationRuntimeError::TransportBind { transport, source }` and `TransportServe { transport, source }`, retaining the original errors through `std::error::Error::source()`. Existing HTTP variants and `HttpRuntimeError` remain compatible. Shared `RuntimeRoutes` and `RuntimeBindings` expose `new()` and HTTP `with_http(...)`; the standalone crate supplies `RuntimeGrpcExt::with_grpc(...)` for native Tonic routes and `GrpcServerConfig`. The facade prelude exports this extension. Explicit configuration may override its address with `GrpcServerConfig::with_address(...)`, including port zero.
+
+Common owns transport selection, conventional source loading, coordination, and task supervision without importing Tonic or Prost. Linked adapters validate selected managed operations before provider construction and prepare native routes before startup. The gRPC adapter serves native Tonic routes through supervised Hyper HTTP/2 connection and stream tasks, using verified Rustls for TLS, because Tonic's convenience server does not expose task handles for forced cancellation. HTTP retains the existing guarded connection implementation.

@@ -268,3 +268,7 @@ mod bearer;
 pub mod __transport {
     pub use crate::bearer::parse as parse_bearer;
 }
+
+/// Transport-neutral runtime infrastructure.
+#[cfg(feature = "transport-runtime")]
+pub mod runtime;

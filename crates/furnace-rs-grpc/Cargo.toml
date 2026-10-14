@@ -11,10 +11,14 @@ description = "Protobuf-first gRPC serving and consumption for furnace-rs"
 [features]
 default = []
 jwt = ["furnace-rs-common/passport"]
-tls = ["tonic/tls-ring", "tonic/tls-webpki-roots"]
+tls = ["dep:tokio-rustls","tonic/tls-ring", "tonic/tls-webpki-roots"]
 [dependencies]
+futures-util.workspace = true
+hyper = { workspace = true, features = ["http2", "server"] }
+hyper-util.workspace = true
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"], optional = true }
 furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0-beta.1" }
-furnace-rs-common = { path = "../furnace-rs-common", version = "=2.0.0-beta.1", default-features = false, features = ["transport-metadata"] }
+furnace-rs-common = { path = "../furnace-rs-common", version = "=2.0.0-beta.1", default-features = false, features = ["transport-metadata", "transport-runtime"] }
 furnace-rs-grpc-macros = { path = "../furnace-rs-grpc-macros", version = "=2.0.0-beta.1" }
 heck = "0.5"
 http.workspace = true

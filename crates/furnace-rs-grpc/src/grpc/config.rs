@@ -106,6 +106,11 @@ impl GrpcServerConfig {
             reflection_enabled: boolean(config, "grpc.reflection.enabled", false)?,
         })
     }
+    /// Overrides the listener address for explicit runtime composition, allowing port zero.
+    pub fn with_address(mut self, address: SocketAddr) -> Self {
+        self.address = address;
+        self
+    }
     /// Returns the configured bind address.
     pub const fn address(&self) -> SocketAddr {
         self.address

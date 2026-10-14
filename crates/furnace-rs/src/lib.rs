@@ -347,6 +347,15 @@ pub use furnace_rs_extra as extra;
 
 /// Collects application-facing furnace-rs imports.
 pub mod prelude {
+    #[cfg(all(feature = "grpc", not(feature = "http")))]
+    pub use crate::FurnaceBurnExt;
+    #[cfg(feature = "grpc")]
+    pub use crate::RuntimeGrpcExt;
+    #[cfg(any(feature = "http", feature = "grpc"))]
+    pub use crate::{
+        ApplicationRuntimeError, RuntimeBindings, RuntimeRoutes, RuntimeSelection, serve_transports,
+    };
+
     /// HTTP-specific Passport middleware and rejections.
     #[cfg(all(feature = "http", feature = "jwt"))]
     pub use furnace_rs_common::{PassportGuard, PassportGuardBuilder, PassportRejection};
@@ -464,3 +473,18 @@ pub use furnace_rs_grpc::{
 /// Standalone gRPC transport package.
 #[cfg(feature = "grpc")]
 pub use furnace_rs_grpc as grpc;
+
+/// Shared transport selection and manual composition.
+#[cfg(feature = "http")]
+pub use furnace_rs_common::runtime::{
+    ApplicationRuntimeError, RuntimeBindings, RuntimeRoutes, RuntimeSelection, serve_transports,
+};
+/// Native gRPC composition extension for shared runtime builders.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc::RuntimeGrpcExt;
+/// Standalone gRPC automatic startup and shared runtime composition.
+#[cfg(all(feature = "grpc", not(feature = "http")))]
+pub use furnace_rs_grpc::{
+    ApplicationRuntimeError, FurnaceBurnExt, RuntimeBindings, RuntimeRoutes, RuntimeSelection,
+    serve_transports,
+};

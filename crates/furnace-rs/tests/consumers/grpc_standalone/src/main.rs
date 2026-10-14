@@ -17,3 +17,6 @@ impl pb::hidden_server::Hidden for Service {
 #[cauldron(root, grpc_services = [Service])]
 struct App;
 fn main() {}
+
+#[allow(dead_code)]
+async fn automatic_runtime() -> Result<(), rpc::ApplicationRuntimeError> { use rpc::FurnaceBurnExt; rpc::core::Furnace::burn::<App>().await }

@@ -25,3 +25,8 @@ pub use furnace_rs_common::{
     PassportStrategyBinding, PassportStrategyCatalog, PassportStrategyFuture, TokenSource,
     VerifiedToken, guard, passport_strategy,
 };
+/// Automatic startup and explicit shared runtime composition.
+pub use runtime::{
+    ApplicationRuntimeError, FurnaceBurnExt, RuntimeBindings, RuntimeGrpcExt, RuntimeRoutes,
+    RuntimeSelection, serve_transports,
+};
