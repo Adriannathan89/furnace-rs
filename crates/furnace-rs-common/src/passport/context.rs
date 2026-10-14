@@ -2,7 +2,7 @@
 
 use std::{fmt, net::SocketAddr};
 
-use axum::http::{
+use http::{
     HeaderMap, Method, Uri,
     header::{AUTHORIZATION, COOKIE, PROXY_AUTHORIZATION},
 };
@@ -211,7 +211,7 @@ impl fmt::Debug for PassportContext<'_> {
 
 #[cfg(test)]
 mod tests {
-    use axum::http::{
+    use http::{
         HeaderMap, HeaderValue, Method, Uri,
         header::{AUTHORIZATION, COOKIE},
     };

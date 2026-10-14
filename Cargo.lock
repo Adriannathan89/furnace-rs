@@ -712,6 +712,7 @@ dependencies = [
  "cookie",
  "furnace-rs-common-macros",
  "furnace-rs-core",
+ "http",
  "http-body",
  "hyper",
  "hyper-util",

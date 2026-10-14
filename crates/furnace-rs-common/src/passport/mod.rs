@@ -116,22 +116,30 @@
 //! permissions, and every synchronous `fn(&Principal) -> bool` predicate are
 //! separate AND clauses.
 
+mod authentication;
 mod context;
 mod error;
 mod guard;
+mod http;
+mod policy;
 mod principal;
+pub(crate) mod scope;
 mod strategy;
+
+#[cfg(test)]
+mod shared_tests;
 
 pub use context::PassportContext;
 #[cfg(feature = "cookies")]
 pub use context::PassportCookies;
-pub use error::{PassportError, PassportErrorKind, PassportRejection, PassportResult};
+pub use error::{PassportError, PassportErrorKind, PassportResult};
 pub use guard::{
     BuiltinGuardAdapter, GuardCatalog, GuardDescriptor, GuardPolicy, GuardPredicate,
     GuardPredicateAdapter, NativePassportGuardService, PassportGuard, PassportGuardBuilder,
     PassportGuardLayer, PassportGuardService, PassportGuardState, PolicyClause, PolicyMode,
     TokenSource,
 };
+pub use http::PassportRejection;
 pub use principal::{Authenticated, ClaimsPrincipal, PassportPrincipal, VerifiedToken};
 pub use strategy::{
     ErasedAuthentication, PassportStrategy, PassportStrategyAdapter, PassportStrategyBinding,

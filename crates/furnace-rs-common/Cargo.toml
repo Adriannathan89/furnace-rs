@@ -12,6 +12,7 @@ description = "HTTP, JWT, cookies, and Passport integrations for furnace-rs"
 [features]
 default = ["http"]
 http = [
+    "dep:http",
     "dep:chrono",
     "dep:axum",
     "dep:axum-extra",
@@ -39,6 +40,7 @@ logger = ["dep:chrono"]
 sea-orm = ["http", "dep:sea-orm"]
 
 [dependencies]
+http = { workspace = true, optional = true }
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
 hyper = { workspace = true, optional = true }
