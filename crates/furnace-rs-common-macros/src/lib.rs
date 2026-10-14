@@ -11,6 +11,7 @@ use proc_macro::TokenStream;
 
 mod controller;
 mod endpoint;
+mod grpc_client;
 mod grpc_service;
 mod guard;
 mod input;
@@ -124,4 +125,12 @@ pub fn patch(arguments: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn delete(arguments: TokenStream, item: TokenStream) -> TokenStream {
     verb::outside_contract("delete", arguments.into(), item.into()).into()
+}
+
+/// Creates a DI-managed named wrapper for an application-generated protobuf client.
+#[proc_macro_attribute]
+pub fn grpc_client(arguments: TokenStream, item: TokenStream) -> TokenStream {
+    grpc_client::expand(arguments.into(), item.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }

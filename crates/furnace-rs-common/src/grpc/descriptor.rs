@@ -132,3 +132,51 @@ pub struct GrpcServiceRegistration {
     pub descriptor: &'static GrpcServiceDescriptor,
 }
 furnace_rs_core::__private::inventory::collect!(GrpcServiceRegistration);
+
+/// Static identity of one DI-managed named remote client.
+#[doc(hidden)]
+pub struct GrpcClientDescriptor {
+    name: &'static str,
+    output_type_id: fn() -> TypeId,
+    output_type_name: fn() -> &'static str,
+    location: SourceLocation,
+}
+impl GrpcClientDescriptor {
+    /// Creates named-client metadata without constructing the wrapper.
+    pub const fn new(
+        name: &'static str,
+        output_type_id: fn() -> TypeId,
+        output_type_name: fn() -> &'static str,
+        location: SourceLocation,
+    ) -> Self {
+        Self {
+            name,
+            output_type_id,
+            output_type_name,
+            location,
+        }
+    }
+    /// Returns the configuration name.
+    pub const fn name(&self) -> &'static str {
+        self.name
+    }
+    /// Returns the wrapper's exact native output identity.
+    pub fn output_type_id(&self) -> TypeId {
+        (self.output_type_id)()
+    }
+    /// Returns the wrapper's Rust type name.
+    pub fn output_type_name(&self) -> &'static str {
+        (self.output_type_name)()
+    }
+    /// Returns the declaration source.
+    pub const fn location(&self) -> SourceLocation {
+        self.location
+    }
+}
+/// Links one named client for side-effect-free preflight and inspection.
+#[doc(hidden)]
+pub struct GrpcClientRegistration {
+    /// Named client metadata.
+    pub descriptor: &'static GrpcClientDescriptor,
+}
+furnace_rs_core::__private::inventory::collect!(GrpcClientRegistration);

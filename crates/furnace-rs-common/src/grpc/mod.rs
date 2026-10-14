@@ -32,3 +32,10 @@ pub use tonic;
 mod passport;
 #[cfg(feature = "jwt")]
 pub use passport::{GrpcPassportService, grpc_authenticated, grpc_verified_token, passport_status};
+
+mod client;
+#[doc(hidden)]
+pub use client::{ErasedTokenProvider, GrpcClientLifecycle};
+pub use client::{GrpcChannel, GrpcTokenProvider, set_grpc_bearer_token};
+#[doc(hidden)]
+pub use descriptor::{GrpcClientDescriptor, GrpcClientRegistration};

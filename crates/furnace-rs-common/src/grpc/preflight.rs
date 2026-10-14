@@ -94,3 +94,37 @@ pub fn preflight_grpc(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
 furnace_rs_core::__private::inventory::submit! {
     PreflightDescriptor::new("furnace.common.grpc.preflight", SourceLocation::new(file!(), line!(), column!()), preflight_grpc)
 }
+
+fn preflight_clients(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
+    let mut names = std::collections::BTreeSet::new();
+    let mut diagnostics = Vec::new();
+    let mut clients: Vec<_> =
+        furnace_rs_core::__private::inventory::iter::<super::GrpcClientRegistration>
+            .into_iter()
+            .map(|registration| registration.descriptor)
+            .collect();
+    clients.sort_by_key(|client| (client.name(), client.output_type_name()));
+    for client in clients {
+        if !context.has_output_type_id(client.output_type_id()) {
+            continue;
+        }
+        if !super::config::valid_client_name(client.name()) || !names.insert(client.name()) {
+            diagnostics.push(
+                Diagnostic::new(
+                    super::FURNACE153,
+                    "invalid named gRPC client",
+                    "selected client names must be valid and unique",
+                )
+                .with_subject(client.name())
+                .with_location(client.location()),
+            );
+        }
+        if let Err(error) = super::GrpcClientConfig::parse(context.config(), client.name()) {
+            diagnostics.extend(error.diagnostics().iter().cloned());
+        }
+    }
+    diagnostics
+}
+furnace_rs_core::__private::inventory::submit! {
+    PreflightDescriptor::new("furnace.common.grpc.clients.preflight", SourceLocation::new(file!(), line!(), column!()), preflight_clients)
+}

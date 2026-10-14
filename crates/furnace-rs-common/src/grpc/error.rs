@@ -30,7 +30,7 @@ pub enum GrpcClientErrorKind {
 /// A redacted error retaining an operational cause for explicit inspection.
 pub struct GrpcClientError {
     kind: GrpcClientErrorKind,
-    source: Option<Box<dyn StdError + Send + Sync>>,
+    source: Option<RedactedCause>,
 }
 
 impl GrpcClientError {
@@ -45,14 +45,14 @@ impl GrpcClientError {
     pub fn token_provider(error: impl StdError + Send + Sync + 'static) -> Self {
         Self {
             kind: GrpcClientErrorKind::TokenProvider,
-            source: Some(Box::new(error)),
+            source: Some(RedactedCause(Box::new(error))),
         }
     }
     /// Creates a redacted transport failure with an inspectable source.
     pub fn transport(error: impl StdError + Send + Sync + 'static) -> Self {
         Self {
             kind: GrpcClientErrorKind::Transport,
-            source: Some(Box::new(error)),
+            source: Some(RedactedCause(Box::new(error))),
         }
     }
     /// Creates an error for use of a shut-down managed channel.
@@ -61,6 +61,13 @@ impl GrpcClientError {
             kind: GrpcClientErrorKind::Closed,
             source: None,
         }
+    }
+    /// Returns the original operational cause for deliberate inspection.
+    ///
+    /// The standard error chain uses a redacted boundary so transport libraries
+    /// cannot convert a nested application status into a credential-bearing status.
+    pub fn cause(&self) -> Option<&(dyn StdError + Send + Sync + 'static)> {
+        self.source.as_ref().map(|source| source.0.as_ref())
     }
     /// Returns the stable category.
     pub const fn kind(&self) -> GrpcClientErrorKind {
@@ -87,6 +94,50 @@ impl fmt::Debug for GrpcClientError {
 }
 impl StdError for GrpcClientError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        self.source.as_deref().map(|s| s as _)
+        self.source.as_ref().map(|s| s as _)
+    }
+}
+
+struct RedactedCause(Box<dyn StdError + Send + Sync>);
+impl fmt::Debug for RedactedCause {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("RedactedCause(..)")
+    }
+}
+impl fmt::Display for RedactedCause {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("gRPC operation failed")
+    }
+}
+impl StdError for RedactedCause {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn nested_status_cause_requires_deliberate_inspection() {
+        let error =
+            GrpcClientError::token_provider(tonic::Status::internal("private-token-sentinel"));
+        assert!(!format!("{error:?} {error}").contains("private-token-sentinel"));
+        assert!(
+            !error
+                .source()
+                .unwrap()
+                .to_string()
+                .contains("private-token-sentinel")
+        );
+        assert!(error.source().unwrap().source().is_none());
+        assert!(
+            error
+                .cause()
+                .unwrap()
+                .downcast_ref::<tonic::Status>()
+                .is_some()
+        );
+        assert!(
+            !tonic::Status::from_error(Box::new(error))
+                .message()
+                .contains("private-token-sentinel")
+        );
     }
 }

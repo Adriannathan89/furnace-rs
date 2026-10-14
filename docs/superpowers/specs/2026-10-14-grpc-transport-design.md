@@ -325,3 +325,5 @@ Run workspace formatting, Clippy, tests, doctests, rustdoc warnings, and Rust 1.
 - Server TLS: https://docs.rs/tonic/latest/tonic/transport/server/struct.ServerTlsConfig.html
 
 Exact dependency versions and MSRV compatibility will be verified when finalizing the plan; latest online documentation alone does not establish workspace compatibility.
+
+Confirmed during implementation: per-call and configured RPC establishment deadlines include asynchronous token-provider wait, connection readiness, and dispatch. Established response streams retain native lifetime behavior.

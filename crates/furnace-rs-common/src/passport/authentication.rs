@@ -3,7 +3,7 @@ use super::{
     ErasedAuthentication, PassportContext, PassportError, PassportResult, PassportStrategyAdapter,
 };
 use furnace_rs_core::ApplicationContext;
-use http::{HeaderMap, Method, Uri, header::AUTHORIZATION};
+use http::{HeaderMap, Method, Uri};
 
 pub(crate) async fn authenticate_bearer(
     application: &ApplicationContext,
@@ -19,31 +19,7 @@ pub(crate) async fn authenticate_bearer(
 }
 
 pub(crate) fn bearer_token(headers: &http::HeaderMap) -> PassportResult<&str> {
-    let mut values = headers.get_all(AUTHORIZATION).iter();
-    let Some(value) = values.next() else {
-        return Err(PassportError::reject());
-    };
-    if values.next().is_some() {
-        return Err(PassportError::reject());
-    }
-    let value = value.to_str().map_err(|_| PassportError::reject())?;
-    // HTTP field-value OWS may surround the credentials. Inside them,
-    // RFC 6750 section 2.1 requires 1*SP, not arbitrary whitespace.
-    let value = value.trim_matches([' ', '\t']);
-    let Some((scheme, token)) = value.split_once(' ') else {
-        return Err(PassportError::reject());
-    };
-    let token = token.trim_start_matches(' ');
-    let unpadded = token.trim_end_matches('=');
-    if !scheme.eq_ignore_ascii_case("Bearer")
-        || unpadded.is_empty()
-        || !unpadded.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~' | b'+' | b'/')
-        })
-    {
-        return Err(PassportError::reject());
-    }
-    Ok(token)
+    crate::bearer::parse(headers).ok_or_else(PassportError::reject)
 }
 
 #[cfg(test)]

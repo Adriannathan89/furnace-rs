@@ -22,7 +22,7 @@ pub mod grpc;
 pub mod runtime;
 /// Links a generated protobuf server to a managed implementation.
 #[cfg(feature = "grpc")]
-pub use furnace_rs_common_macros::grpc_service;
+pub use furnace_rs_common_macros::{grpc_client, grpc_service};
 #[cfg(feature = "grpc")]
 pub use grpc::*;
 
@@ -274,3 +274,6 @@ pub mod __private {
         InspectionKind, InspectionReport, ProviderReport, RouteReport, SourceReport,
     };
 }
+
+#[cfg(any(feature = "grpc", all(feature = "http", feature = "jwt")))]
+mod bearer;

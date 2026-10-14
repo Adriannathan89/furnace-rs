@@ -13,6 +13,7 @@ fn attributes_expand_for_supported_dependency_paths() {
         "grpc_renamed",
         "grpc_common",
         "grpc_jwt_only",
+        "grpc_clients",
         "direct_default",
         "direct_alias",
         "direct_renamed",
