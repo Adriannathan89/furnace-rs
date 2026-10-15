@@ -249,6 +249,20 @@ and watches the selected application's reachable workspace inputs. Changes are
 debounced; a failed rebuild keeps the last good process when one is running.
 Neither command wraps Cargo, rustc, or arbitrary application streams in JSON.
 
+Builds retain the invocation directory so member `.cargo/config.toml` settings
+remain effective. Direct application and inspection launches include Cargo's
+platform library search paths, including toolchain and build-script libraries,
+while preserving existing search paths.
+
+Development watches Rust and protobuf sources, manifests, lockfiles, migrations,
+and paths declared by local build scripts with `cargo:rerun-if-changed` or
+`cargo::rerun-if-changed`. Declared inputs become available after a successful
+build, including inputs outside package directories. Ordinary runtime log and
+cache files do not trigger rebuilds. Manifest and lockfile changes reload the
+selected target and reachable dependencies, replacing watcher registrations.
+Invalid manifests remain editable while the last good process runs; a selected
+binary removed from valid metadata produces a target-selection diagnostic.
+
 ```bash
 furnace run -- --seed-data
 furnace run -p api --bin server -- --port 4000

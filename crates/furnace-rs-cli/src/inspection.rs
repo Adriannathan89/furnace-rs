@@ -376,6 +376,7 @@ fn inspection_command(
         .env(INSPECTION_TOKEN_ENV, token)
         .env(INSPECTION_ACK_ENV, acknowledgement)
         .env(INSPECTION_RESPONSE_ENV, response);
+    built.configure_runtime(&mut command);
     match streams {
         InspectionStreams::Inherit => {
             command
