@@ -296,7 +296,6 @@ impl GrpcClientConfig {
 }
 
 /// Checks the lowercase configuration grammar for a named client.
-
 pub(crate) fn valid_client_name(name: &str) -> bool {
     name.bytes().next().is_some_and(|b| b.is_ascii_lowercase())
         && name

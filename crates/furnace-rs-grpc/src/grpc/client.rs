@@ -297,7 +297,6 @@ impl LifecycleHook for GrpcClientLifecycle {
 }
 
 /// Detects a native Tonic timeout through the transport error chain.
-
 fn native_timeout(error: &(dyn std::error::Error + 'static)) -> bool {
     let mut cause = Some(error);
     while let Some(error) = cause {
