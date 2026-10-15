@@ -506,12 +506,19 @@ impl Furnace {
     }
 
     /// Starts registered lifecycle hooks.
+    ///
+    /// If this future is cancelled, call [`Self::shutdown`] to clean up resources
+    /// whose hooks completed startup. The application cannot restart afterward.
     #[allow(clippy::result_large_err)]
     pub async fn start(&mut self) -> Result<()> {
         self.lifecycle.start(&self.context).await
     }
 
-    /// Stops registered lifecycle hooks in reverse registration order.
+    /// Stops successfully started lifecycle hooks in reverse startup order.
+    ///
+    /// Also cleans up interrupted startup and resumes interrupted shutdown or
+    /// rollback. A hook whose stop future was cancelled is retried. Completed
+    /// stops are not repeated, and earlier hook failures are retained.
     #[allow(clippy::result_large_err)]
     pub async fn shutdown(&mut self) -> Result<()> {
         self.lifecycle.shutdown(&self.context).await

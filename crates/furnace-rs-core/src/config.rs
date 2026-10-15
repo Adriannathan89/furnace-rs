@@ -18,8 +18,10 @@
 //! # }
 //! ```
 //!
-//! TOML and programmatic sources may contain string arrays. A later scalar or
-//! string array replaces the earlier value and its shape completely. Process
+//! TOML and programmatic sources may contain string arrays. Later sources replace
+//! incompatible scalar, array, or table shapes, removing obsolete descendants.
+//! Compatible tables merge by field. TOML key segments must be nonempty and may
+//! not contain literal dots, because dotted paths identify nested settings. Process
 //! environment variables override dotenv variables during `${NAME}`
 //! interpolation; [`EnvSource`] itself remains scalar-only.
 
@@ -414,6 +416,13 @@ fn flatten_toml(
                 return Ok(());
             }
             for (segment, value) in table {
+                if segment.is_empty() || segment.contains('.') {
+                    return Err(Error::new(Diagnostic::new(
+                        FURNACE020,
+                        "unsupported configuration key",
+                        "TOML configuration key segments must be nonempty and contain no literal dots",
+                    )));
+                }
                 let key = if prefix.is_empty() {
                     segment
                 } else {
@@ -449,6 +458,16 @@ fn flatten_toml(
 fn insert_scalar(key: &str, value: String, output: &mut ConfigDocument) -> Result<()> {
     if key.is_empty() {
         return Err(unsupported_value(key, "root scalar"));
+    }
+    if output.scalars.contains_key(key)
+        || output.string_arrays.contains_key(key)
+        || output.tables.contains(key)
+    {
+        return Err(Error::new(Diagnostic::new(
+            FURNACE020,
+            "ambiguous configuration key",
+            "distinct TOML keys resolve to the same configuration path",
+        )));
     }
     output.insert_scalar(key, value);
     Ok(())
@@ -569,6 +588,25 @@ impl fmt::Debug for Config {
 }
 
 impl Config {
+    /// Removes incompatible leaves, ancestor leaves, and replaced descendants.
+    fn remove_incompatible_shapes(&mut self, key: &str, is_table: bool) {
+        let descendants = format!("{key}.");
+        let keep_leaf = |candidate: &String| {
+            candidate != key
+                && !key
+                    .strip_prefix(candidate.as_str())
+                    .is_some_and(|suffix| suffix.starts_with('.'))
+                && (is_table || !candidate.starts_with(&descendants))
+        };
+        self.values.retain(|candidate, _| keep_leaf(candidate));
+        self.string_arrays
+            .retain(|candidate, _| keep_leaf(candidate));
+        if !is_table {
+            self.tables
+                .retain(|candidate, _| candidate != key && !candidate.starts_with(&descendants));
+        }
+    }
+
     /// Parses a typed view without loading any additional configuration sources.
     pub fn parse<T: crate::Configuration>(&self) -> crate::ConfigurationResult<T> {
         T::from_config(self)
@@ -770,18 +808,20 @@ impl ConfigBuilder {
             }
         }
 
-        let mut values = BTreeMap::new();
-        let mut string_arrays = BTreeMap::new();
-        let mut tables = BTreeMap::new();
+        let mut config = Config::empty();
         for source in self.sources {
             let origin = ConfigOrigin {
                 label: source.name().to_owned(),
                 relative_path_base: source.relative_path_base().map(Path::to_path_buf),
             };
             let document = source.load_document()?;
+            for key in document.tables {
+                config.remove_incompatible_shapes(&key, true);
+                config.tables.insert(key, origin.clone());
+            }
             for (key, value) in document.scalars {
-                string_arrays.remove(&key);
-                values.insert(
+                config.remove_incompatible_shapes(&key, false);
+                config.values.insert(
                     key,
                     ConfigValue {
                         value,
@@ -790,8 +830,8 @@ impl ConfigBuilder {
                 );
             }
             for (key, value) in document.string_arrays {
-                values.remove(&key);
-                string_arrays.insert(
+                config.remove_incompatible_shapes(&key, false);
+                config.string_arrays.insert(
                     key,
                     ConfigStringArrayValue {
                         value,
@@ -799,17 +839,14 @@ impl ConfigBuilder {
                     },
                 );
             }
-            for key in document.tables {
-                tables.insert(key, origin.clone());
-            }
         }
-        for (key, value) in &mut values {
+        for (key, value) in &mut config.values {
             if let Some(variable) = exact_variable_name(&value.value) {
                 let resolved = resolve_variable(key, variable, &variables)?;
                 value.value.clone_from(resolved);
             }
         }
-        for (key, value) in &mut string_arrays {
+        for (key, value) in &mut config.string_arrays {
             for element in &mut value.value {
                 if let Some(variable) = exact_variable_name(element) {
                     let resolved = resolve_variable(key, variable, &variables)?;
@@ -817,11 +854,7 @@ impl ConfigBuilder {
                 }
             }
         }
-        Ok(Config {
-            values,
-            string_arrays,
-            tables,
-        })
+        Ok(config)
     }
 }
 
