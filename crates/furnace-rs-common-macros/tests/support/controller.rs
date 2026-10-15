@@ -24,6 +24,22 @@ fn rejects_seventeen_controller_dependencies_with_a_focused_error() {
 }
 
 #[test]
+fn rejects_conditional_controller_fields_before_generating_dependency_references() {
+    for condition in ["#[cfg(any())]", "#[cfg_attr(all(), cfg(any()))]"] {
+        let item = syn::parse_str(&format!(
+            "struct Controller {{ {condition} #[inject] disabled: MissingDependency }}"
+        ))
+        .unwrap();
+        let error = expand_controller_with_common(item, &syn::parse_quote!(furnace_rs_common))
+            .expect_err("conditional controller fields must be rejected explicitly");
+        assert_eq!(
+            error.to_string(),
+            "conditional attributes are not supported on `#[controller]` fields; conditionally compile the complete controller instead"
+        );
+    }
+}
+
+#[test]
 fn records_a_managed_controller_and_its_static_seal_callback() {
     let item = syn::parse_str("pub struct Controller;").unwrap();
     let expanded = normalized(

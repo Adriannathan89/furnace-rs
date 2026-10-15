@@ -223,9 +223,9 @@ async fn same_site_none_requires_secure_unless_unspecified() {
 }
 
 #[tokio::test]
-async fn cookie_names_and_values_are_percent_encoded_into_valid_headers() {
+async fn cookie_values_are_percent_encoded_and_round_trip_through_request_parsing() {
     async fn handler(jar: CookieJar) -> (CookieJar, &'static str) {
-        (jar.add(Cookie::new("name with space", "line\nbreak")), "ok")
+        (jar.add(Cookie::new("valid-name", "line\nbreak")), "ok")
     }
 
     let response = Router::new()
@@ -241,7 +241,62 @@ async fn cookie_names_and_values_are_percent_encoded_into_valid_headers() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(value, "name%20with%20space=line%0Abreak");
+    assert_eq!(value, "valid-name=line%0Abreak");
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(axum::http::header::COOKIE, value.parse().unwrap());
+    let request_jar = CookieJar::from_headers(&headers).unwrap();
+    assert_eq!(
+        request_jar.get("valid-name").unwrap().value(),
+        "line\nbreak"
+    );
+}
+
+#[tokio::test]
+async fn response_cookie_names_obey_request_policy_for_add_and_removal() {
+    use axum::response::IntoResponse;
+
+    for name in [
+        "",
+        "name with space",
+        "name;extra",
+        "name=value",
+        "nonascii-é",
+        "name\n",
+    ] {
+        for removal in [false, true] {
+            let jar = CookieJar::new().add(Cookie::new("valid-name", "valid-value"));
+            let cookie = Cookie::new(name, "private-value");
+            let jar = if removal {
+                jar.remove(cookie)
+            } else {
+                jar.add(cookie)
+            };
+            assert_internal_cookie_rejection(
+                jar.into_response(),
+                &["valid-value", "private-value"],
+            )
+            .await;
+        }
+    }
+}
+
+#[tokio::test]
+async fn response_token_cookie_names_round_trip_without_renaming() {
+    use axum::response::IntoResponse;
+
+    for name in ["session", "!#$%&'*+-.^_`|~", "percent%20literal"] {
+        let response = CookieJar::new()
+            .add(Cookie::new(name, "value"))
+            .into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert(
+            axum::http::header::COOKIE,
+            response.headers()[SET_COOKIE].clone(),
+        );
+        let request_jar = CookieJar::from_headers(&headers).unwrap();
+        assert_eq!(request_jar.get(name).unwrap().value(), "value");
+    }
 }
 
 #[tokio::test]
