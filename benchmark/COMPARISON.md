@@ -1,6 +1,6 @@
 # FURNACE vs native Axum vs Go Fiber v2 — local benchmark
 
-Measured 2026-09-25. The [raw result](results/2026-09-25-mads-axum-fiber-stress.json)
+Measured 2026-09-25. The [raw result](results/2026-09-25-furnace-axum-fiber-stress.json)
 contains all five measured runs for every combination, including status counts,
 client-observed p50/p95/p99 latency, and errors. All 420,000 measured HTTP
 responses had the expected status, and content checks on valid-response paths
@@ -79,14 +79,20 @@ therefore do not use identical database round-trip counts.
 
 FURNACE's existing published-package example lockfiles currently fail a direct
 build with a registry checksum mismatch for `furnace-rs-common-macros 0.9.1`.
-`benchmark/tool/build_mads.py` therefore stages the unchanged examples in a
-temporary directory, patches FURNACE dependencies to this local checkout, and
-uses the pinned local-source locks in `benchmark/targets/furnace-rs/locks/`. This
+The benchmark setup stages the unchanged FURNACE examples in a temporary
+directory, patches framework dependencies to this local checkout, and uses
+the pinned local-source locks in `benchmark/targets/furnace-rs/locks/`. This
 does not claim to measure the published crate archive. The Axum `Cargo.lock`
 and Fiber `go.sum` are included separately. See [benchmark setup](README.md#furnace-rs-vs-native-axum-vs-go-fiber-v2)
 for build and rerun commands.
 
-## 2026-10-11 — DI beta runtime comparison
+## 2026-10-11 — declarative DI runtime comparison
+
+Declarative dependency injection was introduced in FURNACE 2.0.0-beta.1.
+These 2026-10-11 and 2026-10-12 runs measured earlier development commits
+whose workspace metadata still reported `1.1.0-beta.1`. The tables and raw
+results preserve those recorded versions; these runs do not measure the later
+mandatory injection-marker release.
 
 This rerun compares the released **FURNACE 1.0.2** source at `8c08bba` with **1.1.0-beta.1** source at `613ee02`, then places the existing Axum and Fiber targets alongside them. The full raw runs, host details, lock hashes, contract outcomes and pair order are in [the machine-readable result](results/2026-10-11-di-runtime-comparison.json).
 
@@ -101,7 +107,7 @@ In the paired runs, beta median throughput was **2.5% higher** for Hello World a
 
 PostgreSQL CRUD is omitted because no local server or disposable `BENCH_*_DATABASE_URL` databases were available. The pre-existing 2026-09-25 comparison table above remains historical: it measures FURNACE 0.9.1 and should not be conflated with this beta rerun. The refreshed Fiber oversized-body probe again reset the connection; this is recorded separately by the existing runner and is outside the valid-request throughput samples.
 
-## 2026-10-12 — randomized DI graph-size comparison
+## 2026-10-12 — randomized declarative DI graph-size comparison
 
 This rerun uses FURNACE **1.0.2** from `8c08bba` and **1.1.0-beta.1** from `53ed419`, plus the existing Axum 0.8.9 and Fiber 2.52.15 targets for Hello and Auth. The [raw result](results/2026-10-12-di-randomized-comparison.json) records seed `20261012`, all 120 randomized trial entries, per-worker request-order seeds and hashes, lockfile hashes, contract results, and all five measurements per target. The old and beta builds use lockfiles with the same third-party package versions.
 
