@@ -439,6 +439,7 @@ fn stable_and_beta_publication_require_security_verification() {
         for required in [
             "cargo fetch --locked",
             "cargo audit --no-yanked --file Cargo.lock",
+            "python3 benchmark/tool/audit_lockfiles.py",
             "benchmark/tool/infrastructure_security.py --profile smoke",
             "benchmark/tool/cli_security.py --profile smoke",
             "test_*security.py",
