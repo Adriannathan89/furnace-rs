@@ -12,6 +12,7 @@ pub(super) struct Provider {
 }
 
 impl Parse for Provider {
+    /// Parses an output type and its optional explicit injector type.
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let output = input.parse()?;
         let injector = if input.peek(Token![=>]) {
@@ -35,6 +36,7 @@ pub(super) struct Declaration {
     pub root: bool,
 }
 
+/// Rejects repeated declaration entries at the repeated token span.
 fn unique<T: ToTokens>(items: &[T]) -> syn::Result<()> {
     let mut seen = HashSet::new();
     for item in items {
@@ -46,6 +48,7 @@ fn unique<T: ToTokens>(items: &[T]) -> syn::Result<()> {
 }
 
 impl Parse for Declaration {
+    /// Parses cauldron flags and typed member/import/export lists.
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let mut declaration = Self::default();
         let mut seen = HashSet::new();

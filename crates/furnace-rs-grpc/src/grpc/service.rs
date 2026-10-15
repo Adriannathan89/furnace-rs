@@ -15,6 +15,7 @@ pub trait GrpcCauldronExt: Sized {
     fn grpc_service<T: GrpcService>(self) -> Self;
 }
 impl<M: Cauldron> GrpcCauldronExt for CauldronRegistration<M> {
+    /// Registers a typed gRPC transport provider in the cauldron.
     fn grpc_service<T: GrpcService>(self) -> Self {
         self.transport_provider::<T>()
     }

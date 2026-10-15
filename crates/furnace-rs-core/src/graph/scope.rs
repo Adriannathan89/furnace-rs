@@ -11,6 +11,7 @@ pub(crate) struct ScopedProviderCatalog {
     pub(crate) locations: Vec<(TypeId, crate::SourceLocation)>,
 }
 
+/// Selects providers allowed by module ownership, imports, exports, and supplied values.
 pub(crate) fn select_scoped_providers(
     graph: &CauldronGraph,
     descriptors: &[&'static ProviderDescriptor],

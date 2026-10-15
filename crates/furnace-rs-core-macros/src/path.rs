@@ -36,6 +36,7 @@ pub(crate) fn testing_path() -> syn::Result<Path> {
     }
 }
 
+/// Converts Cargo's package-discovery result into the correct runtime path.
 fn found_path(found: FoundCrate, facade: bool) -> syn::Result<Path> {
     match (found, facade) {
         (FoundCrate::Itself, false) => Ok(parse_quote!(::furnace_rs_core)),
@@ -45,6 +46,7 @@ fn found_path(found: FoundCrate, facade: bool) -> syn::Result<Path> {
     }
 }
 
+/// Builds a Rust path for a direct dependency, including Cargo name normalization.
 fn named_path(name: &str, facade: bool) -> syn::Result<Path> {
     let ident = syn::Ident::new(&name.replace('-', "_"), Span::call_site());
     if facade {

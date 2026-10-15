@@ -1,6 +1,6 @@
 # FURNACE vs native Axum vs Go Fiber v2 — local benchmark
 
-Measured 2026-09-25. The [raw result](results/2026-09-25-furnace-rs-axum-fiber-stress.json)
+Measured 2026-09-25. The [raw result](results/2026-09-25-furnace-axum-fiber-stress.json)
 contains all five measured runs for every combination, including status counts,
 client-observed p50/p95/p99 latency, and errors. All 420,000 measured HTTP
 responses had the expected status, and content checks on valid-response paths
@@ -79,20 +79,26 @@ therefore do not use identical database round-trip counts.
 
 FURNACE's existing published-package example lockfiles currently fail a direct
 build with a registry checksum mismatch for `furnace-rs-common-macros 0.9.1`.
-`benchmark/tool/build_mads.py` therefore stages the unchanged examples in a
-temporary directory, patches FURNACE dependencies to this local checkout, and
-uses the pinned local-source locks in `benchmark/targets/furnace-rs/locks/`. This
+The benchmark setup stages the unchanged FURNACE examples in a temporary
+directory, patches framework dependencies to this local checkout, and uses
+the pinned local-source locks in `benchmark/targets/furnace-rs/locks/`. This
 does not claim to measure the published crate archive. The Axum `Cargo.lock`
 and Fiber `go.sum` are included separately. See [benchmark setup](README.md#furnace-rs-vs-native-axum-vs-go-fiber-v2)
 for build and rerun commands.
 
-## 2026-10-11 — DI beta runtime comparison
+## 2026-10-11 — declarative DI runtime comparison
 
-This rerun compares the released **FURNACE 1.0.2** source at `8c08bba` with **1.1.0-beta.1** source at `613ee02`, then places the existing Axum and Fiber targets alongside them. The full raw runs, host details, lock hashes, contract outcomes and pair order are in [the machine-readable result](results/2026-10-11-di-runtime-comparison.json).
+Declarative dependency injection was introduced in FURNACE 2.0.0-beta.1.
+These 2026-10-11 and 2026-10-12 runs measured earlier development commits
+whose workspace metadata still reported `2.0.0-beta.1`. The tables and raw
+results preserve those recorded versions; these runs do not measure the later
+mandatory injection-marker release.
+
+This rerun compares the released **FURNACE 1.0.2** source at `8c08bba` with **2.0.0-beta.1** source at `613ee02`, then places the existing Axum and Fiber targets alongside them. The full raw runs, host details, lock hashes, contract outcomes and pair order are in [the machine-readable result](results/2026-10-11-di-runtime-comparison.json).
 
 The FURNACE versions ran in five paired rounds with order alternated. Each round first passed the benchmark contracts and warmup, then measured 12,000 Hello requests or 6,000 valid login/profile pairs (12,000 HTTP responses) at 64 clients. Axum 0.8.9 and Fiber 2.52.15 each ran five fresh stress measurements immediately afterward. All measured responses had expected status/content and zero errors. Medians below are medians of per-run throughput and p95.
 
-| Workload | FURNACE 1.0.2 | FURNACE 1.1.0-beta.1 | Axum 0.8.9 | Fiber v2.52.15 |
+| Workload | FURNACE 1.0.2 | FURNACE 2.0.0-beta.1 | Axum 0.8.9 | Fiber v2.52.15 |
 | --- | ---: | ---: | ---: | ---: |
 | Hello World | 8,821.6 resp/s; 17.06 ms | 9,042.4 resp/s; 16.84 ms | 8,885.4 resp/s; 17.51 ms | 8,942.7 resp/s; 17.19 ms |
 | Login + protected JWT read | 6,891.9 resp/s; 20.52 ms | 6,948.6 resp/s; 20.98 ms | 6,999.9 resp/s; 20.29 ms | 6,993.9 resp/s; 20.50 ms |
@@ -101,9 +107,9 @@ In the paired runs, beta median throughput was **2.5% higher** for Hello World a
 
 PostgreSQL CRUD is omitted because no local server or disposable `BENCH_*_DATABASE_URL` databases were available. The pre-existing 2026-09-25 comparison table above remains historical: it measures FURNACE 0.9.1 and should not be conflated with this beta rerun. The refreshed Fiber oversized-body probe again reset the connection; this is recorded separately by the existing runner and is outside the valid-request throughput samples.
 
-## 2026-10-12 — randomized DI graph-size comparison
+## 2026-10-12 — randomized declarative DI graph-size comparison
 
-This rerun uses FURNACE **1.0.2** from `8c08bba` and **1.1.0-beta.1** from `53ed419`, plus the existing Axum 0.8.9 and Fiber 2.52.15 targets for Hello and Auth. The [raw result](results/2026-10-12-di-randomized-comparison.json) records seed `20261012`, all 120 randomized trial entries, per-worker request-order seeds and hashes, lockfile hashes, contract results, and all five measurements per target. The old and beta builds use lockfiles with the same third-party package versions.
+This rerun uses FURNACE **1.0.2** from `8c08bba` and **2.0.0-beta.1** from `53ed419`, plus the existing Axum 0.8.9 and Fiber 2.52.15 targets for Hello and Auth. The [raw result](results/2026-10-12-di-randomized-comparison.json) records seed `20261012`, all 120 randomized trial entries, per-worker request-order seeds and hashes, lockfile hashes, contract results, and all five measurements per target. The old and beta builds use lockfiles with the same third-party package versions.
 
 Every target ran five stress measurements at 64 clients. Hello sends 12,000 requests per run. Auth performs 6,000 valid login/profile pairs (12,000 HTTP responses) per run. Each graph measurement sends 12,000 requests. The graph sizes are 1, 16, 64, and 256 registered providers in a balanced tree. Its no-op endpoint returns a constant after graph construction; its traversal endpoint visits every node and performs one observable relaxed atomic increment per node so release optimization cannot collapse the traversal. The latter measures application work over the injected graph, not repeated DI resolution. Furnace constructs the graph at startup.
 
@@ -112,11 +118,11 @@ The trial order and independent transactions were randomized with the recorded s
 | Workload | Framework | Median responses/s | Median p95 | Median startup |
 | --- | --- | ---: | ---: | ---: |
 | Hello | FURNACE 1.0.2 | 8,840.3 | 16.785 ms | 3.1 ms |
-| Hello | FURNACE 1.1.0-beta.1 | 8,944.3 | 16.841 ms | 3.1 ms |
+| Hello | FURNACE 2.0.0-beta.1 | 8,944.3 | 16.841 ms | 3.1 ms |
 | Hello | Axum 0.8.9 | 9,173.7 | 16.901 ms | 3.0 ms |
 | Hello | Fiber v2.52.15 | 8,941.3 | 17.214 ms | 5.4 ms |
 | Login + protected profile | FURNACE 1.0.2 | 6,865.1 | 20.695 ms | 3.1 ms |
-| Login + protected profile | FURNACE 1.1.0-beta.1 | 7,079.4 | 20.282 ms | 3.2 ms |
+| Login + protected profile | FURNACE 2.0.0-beta.1 | 7,079.4 | 20.282 ms | 3.2 ms |
 | Login + protected profile | Axum 0.8.9 | 7,048.2 | 20.289 ms | 3.1 ms |
 | Login + protected profile | Fiber v2.52.15 | 6,803.9 | 20.714 ms | 3.3 ms |
 
@@ -125,13 +131,13 @@ The beta median throughput is 1.2% higher for Hello and 3.1% higher for Auth tha
 | Graph nodes | FURNACE version | No-op median responses/s | Traversal median responses/s | Startup median across both modes |
 | ---: | --- | ---: | ---: | ---: |
 | 1 | 1.0.2 | 8,677.5 | 8,858.7 | 3.1 ms (3.0–3.3) |
-| 1 | 1.1.0-beta.1 | 8,660.9 | 8,720.2 | 3.1 ms (3.0–3.2) |
+| 1 | 2.0.0-beta.1 | 8,660.9 | 8,720.2 | 3.1 ms (3.0–3.2) |
 | 16 | 1.0.2 | 8,712.4 | 8,835.2 | 3.1 ms (2.9–3.3) |
-| 16 | 1.1.0-beta.1 | 8,766.4 | 8,641.1 | 3.1 ms (3.0–3.2) |
+| 16 | 2.0.0-beta.1 | 8,766.4 | 8,641.1 | 3.1 ms (3.0–3.2) |
 | 64 | 1.0.2 | 8,760.2 | 8,675.0 | 5.2 ms (3.0–5.5) |
-| 64 | 1.1.0-beta.1 | 8,789.8 | 8,628.6 | 4.2 ms (3.0–5.4) |
+| 64 | 2.0.0-beta.1 | 8,789.8 | 8,628.6 | 4.2 ms (3.0–5.4) |
 | 256 | 1.0.2 | 8,758.6 | 8,818.7 | 7.5 ms (5.2–7.6) |
-| 256 | 1.1.0-beta.1 | 8,668.2 | 8,474.5 | 7.4 ms (7.3–7.5) |
+| 256 | 2.0.0-beta.1 | 8,668.2 | 8,474.5 | 7.4 ms (7.3–7.5) |
 
 No-op HTTP throughput and p95 remain similar across graph sizes, so the constructed graph does not add request-path DI work after startup. Traversal adds explicit application work but its run ranges overlap substantially; this benchmark does not establish a throughput trend by graph size. Startup medians rise from about 3.1 ms at 1–16 nodes to about 7.4 ms at 256 nodes. The old and beta startup ranges overlap, and the 64-node runs show more host-timing variation, so these measurements indicate scale rather than a precise version difference.
 

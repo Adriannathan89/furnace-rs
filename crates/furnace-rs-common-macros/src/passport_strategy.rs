@@ -14,6 +14,7 @@ struct StrategyArguments {
 }
 
 impl Parse for StrategyArguments {
+    /// Parses the required `name = "..."` strategy declaration argument.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let key: Ident = input.parse()?;
         if key != "name" {
@@ -41,6 +42,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     expand_strategy(arguments, implementation, &common)
 }
 
+/// Enforces the runtime catalog's lowercase ASCII strategy-name syntax.
 fn validate_name(name: &LitStr) -> syn::Result<()> {
     let value = name.value();
     if value.is_empty()
@@ -56,6 +58,7 @@ fn validate_name(name: &LitStr) -> syn::Result<()> {
     Ok(())
 }
 
+/// Requires a concrete strategy impl with claims, principal, token kind, and async validation.
 fn validate_implementation(implementation: &ItemImpl) -> syn::Result<()> {
     if !implementation.generics.params.is_empty() || implementation.generics.where_clause.is_some()
     {
@@ -136,12 +139,14 @@ fn validate_implementation(implementation: &ItemImpl) -> syn::Result<()> {
     Ok(())
 }
 
+/// Matches a trait path whose final segment is `PassportStrategy`.
 fn is_passport_strategy_path(path: &Path) -> bool {
     path.segments
         .last()
         .is_some_and(|segment| segment.ident == "PassportStrategy")
 }
 
+/// Emits the token-verifying adapter and static provider/claims/principal descriptors.
 fn expand_strategy(
     arguments: StrategyArguments,
     implementation: ItemImpl,
@@ -164,6 +169,7 @@ fn expand_strategy(
         #implementation
 
         #[doc(hidden)]
+        #[doc = "Verifies the selected token profile and invokes the managed strategy validator."]
         #[allow(non_snake_case)]
         fn #adapter<'a>(
             __furnace_application: &'a #common::core::ApplicationContext,
@@ -201,36 +207,42 @@ fn expand_strategy(
         }
 
         #[doc(hidden)]
+        #[doc = "Returns the concrete strategy provider type identifier."]
         #[allow(non_snake_case)]
         fn #provider_type_id() -> ::core::any::TypeId {
             ::core::any::TypeId::of::<#strategy_type>()
         }
 
         #[doc(hidden)]
+        #[doc = "Returns the stable Rust name of the strategy provider type."]
         #[allow(non_snake_case)]
         fn #provider_type_name() -> &'static str {
             ::core::any::type_name::<#strategy_type>()
         }
 
         #[doc(hidden)]
+        #[doc = "Returns the custom JWT claims type identifier declared by the strategy."]
         #[allow(non_snake_case)]
         fn #claims_type_id() -> ::core::any::TypeId {
             ::core::any::TypeId::of::<<#strategy_type as #common::PassportStrategy>::Claims>()
         }
 
         #[doc(hidden)]
+        #[doc = "Returns the Rust name of the custom JWT claims type."]
         #[allow(non_snake_case)]
         fn #claims_type_name() -> &'static str {
             ::core::any::type_name::<<#strategy_type as #common::PassportStrategy>::Claims>()
         }
 
         #[doc(hidden)]
+        #[doc = "Returns the authenticated principal type identifier declared by the strategy."]
         #[allow(non_snake_case)]
         fn #principal_type_id() -> ::core::any::TypeId {
             ::core::any::TypeId::of::<<#strategy_type as #common::PassportStrategy>::Principal>()
         }
 
         #[doc(hidden)]
+        #[doc = "Returns the Rust name of the authenticated principal type."]
         #[allow(non_snake_case)]
         fn #principal_type_name() -> &'static str {
             ::core::any::type_name::<<#strategy_type as #common::PassportStrategy>::Principal>()
@@ -254,6 +266,7 @@ fn expand_strategy(
     })
 }
 
+/// Produces a deterministic identifier suffix from the strategy implementation tokens.
 fn generated_suffix(implementation: &ItemImpl) -> String {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     implementation

@@ -11,6 +11,7 @@ pub(crate) struct Cycle {
     pub(crate) location: SourceLocation,
 }
 
+/// Detects every provider cycle and returns each path in canonical name order.
 pub(crate) fn detect(graph: &ApplicationGraph) -> Vec<Cycle> {
     let mut colors = vec![Color::White; graph.providers.len()];
     let mut stack = Vec::new();
@@ -27,6 +28,7 @@ pub(crate) fn detect(graph: &ApplicationGraph) -> Vec<Cycle> {
     cycles
 }
 
+/// Performs depth-first coloring and records a back-edge as one dependency cycle.
 fn visit(
     index: usize,
     graph: &ApplicationGraph,
@@ -65,6 +67,7 @@ fn visit(
     colors[index] = Color::Black;
 }
 
+/// Returns a provider's graph dependencies in deterministic traversal order.
 fn outgoing(graph: &ApplicationGraph, provider: usize) -> Vec<usize> {
     let provider_type_id = graph.providers[provider].type_id;
     let mut dependencies = graph
@@ -82,6 +85,7 @@ fn outgoing(graph: &ApplicationGraph, provider: usize) -> Vec<usize> {
     dependencies
 }
 
+/// Rotates a cycle so equivalent paths share the same least-ordered starting node.
 fn canonicalize(graph: &ApplicationGraph, open_cycle: &[usize]) -> Vec<usize> {
     let start = open_cycle
         .iter()
@@ -96,6 +100,7 @@ fn canonicalize(graph: &ApplicationGraph, open_cycle: &[usize]) -> Vec<usize> {
         .collect()
 }
 
+/// Orders cycle nodes by type, origin, and optional source location.
 fn node_order(graph: &ApplicationGraph, left: usize, right: usize) -> Ordering {
     let left = &graph.providers[left];
     let right = &graph.providers[right];

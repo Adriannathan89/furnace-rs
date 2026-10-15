@@ -29,12 +29,14 @@ pub enum TestError {
 }
 
 impl From<furnace_rs_core::Error> for TestError {
+    /// Wraps a core diagnostic as a test fixture error.
     fn from(error: furnace_rs_core::Error) -> Self {
         Self::Furnace(Box::new(error))
     }
 }
 
 impl fmt::Display for TestError {
+    /// Formats a fixture, lifecycle, or in-process HTTP failure.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Furnace(error) => write!(f, "{error}"),
@@ -50,6 +52,7 @@ impl fmt::Display for TestError {
     }
 }
 impl Error for TestError {
+    /// Returns the underlying diagnostic or transport cause when one exists.
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Furnace(error) => Some(error.as_ref()),

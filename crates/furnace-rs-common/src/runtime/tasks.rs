@@ -41,6 +41,7 @@ impl RuntimeTasks {
         .shared();
         state.tasks.push(Task { abort, completed });
     }
+    /// Prevents new tasks from being admitted and snapshots the pending task handles.
     fn close(&self) -> Vec<Task> {
         let mut state = self.0.lock().expect("runtime task scope poisoned");
         state.closed = true;
@@ -140,6 +141,7 @@ where
     F: Future + Send + 'static,
     F::Output: Send + 'static,
 {
+    /// Runs a Hyper protocol future inside the shared runtime task scope.
     fn execute(&self, future: F) {
         self.0.spawn(async move {
             let _ = future.await;

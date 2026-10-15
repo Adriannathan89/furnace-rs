@@ -1,3 +1,5 @@
+//! Stable CLI diagnostic codes, structured details, and source-aware errors.
+
 use std::{
     error::Error,
     fmt,
@@ -57,6 +59,7 @@ pub(crate) struct CliError {
 }
 
 impl CliError {
+    /// Creates a diagnostic with a stable code, title, safe message, and empty details.
     pub(crate) fn new(code: &'static str, title: &'static str, message: impl Into<String>) -> Self {
         Self {
             code,
@@ -67,11 +70,13 @@ impl CliError {
         }
     }
 
+    /// Adds a subject to the structured diagnostic.
     pub(crate) fn with_subject(mut self, subject: impl Into<String>) -> Self {
         self.details.subject = Some(subject.into());
         self
     }
 
+    /// Appends one remediation suggestion in output order.
     pub(crate) fn with_suggestion(mut self, suggestion: impl Into<String>) -> Self {
         self.details.suggestions.push(suggestion.into());
         self
@@ -92,6 +97,7 @@ impl CliError {
         self
     }
 
+    /// Retains an operational cause for deliberate source-chain inspection.
     pub(crate) fn with_source<E>(mut self, source: E) -> Self
     where
         E: Error + Send + Sync + 'static,
@@ -108,6 +114,7 @@ impl CliError {
         Self::new(FURNACE230, "Project scaffolding failed", message).with_source(source)
     }
 
+    /// Returns the stable diagnostic code.
     pub(crate) const fn code(&self) -> &'static str {
         self.code
     }
@@ -144,6 +151,7 @@ impl CliError {
 }
 
 impl fmt::Display for CliError {
+    /// Formats a CLI diagnostic for human display or redacted debug output.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "error[{}]: {}", self.code, self.title)?;
         if let Some(subject) = &self.details.subject {
@@ -158,6 +166,7 @@ impl fmt::Display for CliError {
 }
 
 impl fmt::Debug for CliError {
+    /// Formats a CLI diagnostic for human display or redacted debug output.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         let message = if self.source.is_some() {
             "[REDACTED]"
@@ -184,6 +193,7 @@ impl fmt::Debug for CliError {
 }
 
 impl Error for CliError {
+    /// Returns the retained operational cause through the standard error chain.
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         self.source
             .as_deref()

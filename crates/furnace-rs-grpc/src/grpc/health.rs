@@ -66,6 +66,7 @@ pub fn install_grpc_infrastructure(
     Ok((routes, GrpcHealth { reporter, services }))
 }
 #[cfg(feature = "jwt")]
+/// Creates a fixed diagnostic when native reflection services cannot be built.
 fn reflection_build_error() -> furnace_rs_core::Error {
     furnace_rs_core::Error::new(furnace_rs_core::Diagnostic::new(
         super::FURNACE150,

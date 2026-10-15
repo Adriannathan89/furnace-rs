@@ -7,11 +7,13 @@ use jsonwebtoken::errors::Result;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header};
 use serde::Serialize;
 
+/// Produces a compact JWT signature for the supplied message and algorithm.
 pub(super) fn sign(message: &[u8], key: &EncodingKey, algorithm: Algorithm) -> Result<String> {
     let signer = (DEFAULT_PROVIDER.signer_factory)(&algorithm, key)?;
     Ok(URL_SAFE_NO_PAD.encode(signer.try_sign(message)?))
 }
 
+/// Verifies a compact signature against its message and configured algorithm.
 pub(super) fn verify(
     signature: &str,
     message: &[u8],
@@ -23,6 +25,7 @@ pub(super) fn verify(
     Ok(verifier.verify(message, &decoded).is_ok())
 }
 
+/// Serializes claims and signs them into a compact JWT.
 pub(super) fn encode<T: Serialize>(
     header: &Header,
     claims: &T,

@@ -5,6 +5,7 @@ use std::any::TypeId;
 use super::{GraphAnalysis, SatisfiedProvider, analyze_descriptors};
 use crate::{Diagnostic, FURNACE003, ProviderDescriptor};
 
+/// Selects the target provider and reachable dependencies for an isolated fixture build.
 pub(crate) fn select_focused_providers(
     target: TypeId,
     target_name: &'static str,

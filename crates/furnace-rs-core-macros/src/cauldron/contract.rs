@@ -10,6 +10,7 @@ use syn::{
     parse::{Parse, ParseStream},
 };
 
+/// Emits root-local type contracts and the token protocol used to collect imports.
 pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Result<TokenStream> {
     let ident = &item.ident;
     let span = ident.span().unwrap();
@@ -137,6 +138,7 @@ struct Bootstrap {
     pending: Vec<Path>,
     records: Vec<Record>,
 }
+/// Parses one parenthesized sequence of tuple-index values.
 fn indices(input: ParseStream) -> syn::Result<Vec<usize>> {
     let list;
     parenthesized!(list in input);
@@ -147,6 +149,7 @@ fn indices(input: ParseStream) -> syn::Result<Vec<usize>> {
         .collect())
 }
 impl Parse for Bootstrap {
+    /// Parses one import-collection state carried between declarative macro expansions.
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let core = input.parse()?;
         input.parse::<Token![;]>()?;
@@ -180,6 +183,7 @@ impl Parse for Bootstrap {
     }
 }
 impl Bootstrap {
+    /// Serializes this state into the private token protocol.
     fn tokens(&self) -> TokenStream {
         let Self {
             core,
@@ -197,6 +201,7 @@ impl Bootstrap {
         let records = records.iter().map(Record::tokens);
         quote!(#core; #ident; #uid #callback (#(#members),*) (#(#exports),*) #global #root [#(#pending),*] [#(#records)*])
     }
+    /// Requests metadata for the next direct import or emits the completed callback.
     fn advance(mut self) -> TokenStream {
         if self.pending.is_empty() {
             return self.finish();
@@ -210,6 +215,7 @@ impl Bootstrap {
         let state = self.tokens();
         quote!(#next!(@describe #core::__di_bootstrap, [__FurnaceContract], <__FurnaceModule as __FurnaceContract::ImportAt<#index>>::Metadata, [#state]);)
     }
+    /// Emits the callback and root checks after all imported records are collected.
     fn finish(self) -> TokenStream {
         let Self {
             core,
@@ -279,6 +285,7 @@ impl Bootstrap {
     }
 }
 
+/// Derives a stable exported callback identifier without embedding checkout paths.
 fn callback_name(manifest: &str, source: &str, line: usize, column: usize, ident: &Ident) -> Ident {
     // Exported macro names are crate-scoped. Keep source-relative uniqueness
     // without exposing the checkout directory in compiler diagnostics. Metadata
@@ -320,6 +327,7 @@ fn callback_name(manifest: &str, source: &str, line: usize, column: usize, ident
 
 // Replace only reserved protocol placeholders in macro data. This is token
 // substitution, not type matching: all membership remains Rust trait checking.
+/// Replaces protocol placeholders with the current module and contract metavariables.
 fn substitute(tokens: TokenStream, ident: &Ident) -> TokenStream {
     replace_placeholders(
         tokens,
@@ -327,6 +335,7 @@ fn substitute(tokens: TokenStream, ident: &Ident) -> TokenStream {
         &quote_spanned!(ident.span()=> $($contract)*),
     )
 }
+/// Rewrites reserved placeholder identifiers recursively while retaining group spans.
 fn replace_placeholders(
     tokens: TokenStream,
     module: &TokenStream,
@@ -359,6 +368,7 @@ struct BootstrapReply {
     records: Vec<Record>,
 }
 impl Parse for BootstrapReply {
+    /// Parses a child's returned state and its reachable module records.
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let state;
         bracketed!(state in input);
@@ -368,6 +378,7 @@ impl Parse for BootstrapReply {
         })
     }
 }
+/// Marks the first returned child record as direct and advances the parent state.
 pub(crate) fn bootstrap(input: TokenStream) -> syn::Result<TokenStream> {
     let mut reply: BootstrapReply = syn::parse2(input)?;
     for (i, mut record) in reply.records.into_iter().enumerate() {
@@ -388,6 +399,7 @@ struct Record {
     imports: Vec<Type>,
 }
 impl Parse for Record {
+    /// Parses one module's opaque metadata record from the recursive token protocol.
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let _: Ident = input.parse()?;
         let u;
@@ -435,6 +447,7 @@ impl Parse for Record {
     }
 }
 impl Record {
+    /// Serializes the record for transfer to an importing cauldron expansion.
     fn tokens(&self) -> TokenStream {
         let Self {
             uid,
@@ -450,6 +463,7 @@ impl Record {
         quote!(uid(#uid) module(#module) members(#(#members),*) exports(#(#exports),*) global(#global) root(#root) direct(#direct) imports(#((#imports))*))
     }
 }
+/// Parses the bracketed record sequence returned by an imported cauldron.
 fn records(input: ParseStream) -> syn::Result<Vec<Record>> {
     let list;
     bracketed!(list in input);
@@ -464,6 +478,7 @@ struct Collection {
     records: Vec<Record>,
 }
 impl Parse for Collection {
+    /// Parses the core path and accumulated module records for root validation.
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let core;
         bracketed!(core in input);
@@ -473,6 +488,7 @@ impl Parse for Collection {
         })
     }
 }
+/// Checks root uniqueness and emits static module/provider scope assertions.
 pub(crate) fn collect(input: TokenStream) -> syn::Result<TokenStream> {
     let state: Collection = syn::parse2(input)?;
     for record in state.records.iter().skip(1) {
@@ -489,6 +505,7 @@ pub(crate) fn collect(input: TokenStream) -> syn::Result<TokenStream> {
     Ok(emit_checks(state))
 }
 
+/// Builds identity, visibility, output, and constructor-dependency type checks.
 fn emit_checks(state: Collection) -> TokenStream {
     let core = &state.core;
     let mut checks = TokenStream::new();
@@ -549,6 +566,7 @@ fn emit_checks(state: Collection) -> TokenStream {
     }
     quote!(const _: fn() = || { use #core::FilterConfig as _; #checks };)
 }
+/// Builds a balanced type-level tree to avoid deeply nested scope types.
 fn balanced(items: &[TokenStream], core: &Path) -> TokenStream {
     match items.len() {
         0 => quote!(#core::Nil),
@@ -562,6 +580,7 @@ fn balanced(items: &[TokenStream], core: &Path) -> TokenStream {
     }
 }
 
+/// Builds a balanced value-level tree matching the compile-time scope contract.
 fn balanced_value(items: &[TokenStream], core: &Path) -> TokenStream {
     match items.len() {
         0 => quote!(#core::Nil),

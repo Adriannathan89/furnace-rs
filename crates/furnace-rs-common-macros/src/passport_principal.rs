@@ -9,6 +9,7 @@ use crate::path::common_path;
 const POLICY_FIELD_TYPE_ERROR: &str =
     "Passport principal policy fields must provide `.iter()` items implementing `AsRef<str>`";
 
+/// Expands `PassportPrincipal` and assigns marked fields to role/permission checks.
 pub(crate) fn expand(input: DeriveInput) -> Result<TokenStream> {
     reject_item_markers(&input)?;
 
@@ -78,12 +79,15 @@ pub(crate) fn expand(input: DeriveInput) -> Result<TokenStream> {
 
     Ok(quote! {
         impl #impl_generics #common::PassportPrincipal for #ident #type_generics #where_clause {
+            #[doc = "Checks whether one marked principal role collection contains the requested role."]
             fn has_role(&self, requested: &str) -> bool { #role_body }
+            #[doc = "Checks whether one marked principal permission collection contains the requested permission."]
             fn has_permission(&self, requested: &str) -> bool { #permission_body }
         }
     })
 }
 
+/// Rejects role and permission markers placed on the item rather than named fields.
 fn reject_item_markers(input: &DeriveInput) -> Result<()> {
     if let Some(attribute) = input.attrs.iter().find(|attribute| {
         attribute.path().is_ident("roles") || attribute.path().is_ident("permissions")
@@ -96,12 +100,14 @@ fn reject_item_markers(input: &DeriveInput) -> Result<()> {
     Ok(())
 }
 
+/// Counts occurrences of one policy marker on an item or field.
 fn marker_count<'a>(attributes: impl Iterator<Item = &'a syn::Attribute>, marker: &str) -> usize {
     attributes
         .filter(|attribute| attribute.path().is_ident(marker))
         .count()
 }
 
+/// Rejects known scalar and primitive-collection types that cannot hold policy strings.
 fn reject_known_invalid_policy_field(ty: &Type) -> Result<()> {
     if is_scalar_primitive(ty) || is_known_collection_with_primitive_item(ty) {
         return Err(Error::new(ty.span(), POLICY_FIELD_TYPE_ERROR));
@@ -109,6 +115,7 @@ fn reject_known_invalid_policy_field(ty: &Type) -> Result<()> {
     Ok(())
 }
 
+/// Identifies unqualified primitive scalar types that cannot represent policy lists.
 fn is_scalar_primitive(ty: &Type) -> bool {
     let Type::Path(type_path) = ty else {
         return false;
@@ -143,6 +150,7 @@ fn is_scalar_primitive(ty: &Type) -> bool {
     )
 }
 
+/// Recognizes standard single-item collections whose element type is a primitive scalar.
 fn is_known_collection_with_primitive_item(ty: &Type) -> bool {
     let Type::Path(type_path) = ty else {
         return false;
@@ -169,6 +177,7 @@ fn is_known_collection_with_primitive_item(ty: &Type) -> bool {
     types.next().is_none() && is_scalar_primitive(item)
 }
 
+/// Matches supported standard-library and alloc collection paths.
 fn is_known_standard_collection_path(path: &syn::Path) -> bool {
     match path
         .segments
@@ -193,6 +202,7 @@ fn is_known_standard_collection_path(path: &syn::Path) -> bool {
     }
 }
 
+/// Checks exact identifier equality between a syntax path and expected segments.
 fn path_matches(path: &syn::Path, expected: &[&str]) -> bool {
     path.segments.len() == expected.len()
         && path
@@ -207,6 +217,7 @@ struct PolicyField {
     ty: Type,
 }
 
+/// Records one marked field and rejects a second field with the same policy marker.
 fn set_unique(slot: &mut Option<PolicyField>, field: &Field, marker: &str) -> Result<()> {
     if slot.is_some() {
         let ident = field.ident.as_ref().expect("named fields have identifiers");
@@ -222,6 +233,7 @@ fn set_unique(slot: &mut Option<PolicyField>, field: &Field, marker: &str) -> Re
     Ok(())
 }
 
+/// Emits a false result or string-membership check for one optional policy field.
 fn membership_body(field: Option<&PolicyField>) -> TokenStream {
     field.map_or_else(
         || quote!(false),
@@ -236,6 +248,7 @@ fn membership_body(field: Option<&PolicyField>) -> TokenStream {
                 __furnace_contains_passport_policy_string_item(__furnace_policy_values.iter(), requested)
             };
             quote! {
+                #[doc = "Checks whether an iterator contains a string-like policy value."]
                 fn __furnace_contains_passport_policy_string_item<I>(mut values: I, requested: &str) -> bool
                 where
                     I: ::core::iter::Iterator<Item: ::core::convert::AsRef<str>>,

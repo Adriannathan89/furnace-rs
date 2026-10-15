@@ -97,6 +97,7 @@ impl<T> LifecycleResource<T> {
         self
     }
 
+    /// Separates the native value from registrations for the application builder.
     pub(crate) fn into_parts(self) -> (T, Vec<LifecycleRegistration>) {
         (self.value, self.registrations)
     }
@@ -143,6 +144,7 @@ impl LifecycleManager {
         self
     }
 
+    /// Adds an already-erased infrastructure hook without changing its owner label.
     pub(crate) fn add_boxed_infrastructure_hook(
         &mut self,
         owner: &'static str,
@@ -151,6 +153,7 @@ impl LifecycleManager {
         self.add_registration(LifecycleRegistration::Infrastructure { owner, hook });
     }
 
+    /// Assigns sequence metadata and appends one hook to its lifecycle group.
     pub(crate) fn add_registration(&mut self, registration: LifecycleRegistration) {
         let (group, hook) = match registration {
             LifecycleRegistration::Infrastructure { owner, hook } => {
@@ -244,11 +247,13 @@ impl LifecycleManager {
 }
 
 impl Default for LifecycleManager {
+    /// Creates the same empty, not-yet-started manager as [`Self::new`].
     fn default() -> Self {
         Self::new()
     }
 }
 
+/// Reports a start or shutdown call that is invalid for the current state.
 fn invalid_transition(state: LifecycleState, operation: &str) -> Error {
     Error::new(
         Diagnostic::new(
@@ -260,10 +265,12 @@ fn invalid_transition(state: LifecycleState, operation: &str) -> Error {
     )
 }
 
+/// Retains a hook's structured failure under the stable lifecycle diagnostic.
 fn hook_failure(name: &str, operation: &str, error: Error) -> Error {
     Error::with_source(hook_failure_diagnostic(name, operation), error)
 }
 
+/// Creates the safe diagnostic shared by startup rollback and shutdown errors.
 fn hook_failure_diagnostic(name: &str, operation: &str) -> Diagnostic {
     Diagnostic::new(
         FURNACE011,

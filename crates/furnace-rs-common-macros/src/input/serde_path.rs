@@ -14,6 +14,7 @@ pub(super) struct Naming {
 }
 
 impl Naming {
+    /// Reads Serde rename and representation settings that affect validation paths.
     pub fn parse(attributes: &[Attribute]) -> syn::Result<Self> {
         let mut naming = Self::default();
         for attr in attributes
@@ -46,6 +47,7 @@ impl Naming {
     }
 }
 
+/// Extracts the deserialization-side name from a Serde rename metadata item.
 fn deserialize_name(meta: &Meta) -> syn::Result<Option<String>> {
     match meta {
         Meta::NameValue(value) => {
@@ -68,6 +70,7 @@ fn deserialize_name(meta: &Meta) -> syn::Result<Option<String>> {
     }
 }
 
+/// Applies a supported Serde rename rule to a field or variant identifier.
 pub(super) fn rename(name: &str, rule: Option<&str>, variant: bool) -> syn::Result<String> {
     let name = name.strip_prefix("r#").unwrap_or(name);
     let Some(rule) = rule else {

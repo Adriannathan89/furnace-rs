@@ -44,6 +44,7 @@ pub fn set_grpc_bearer_token<T>(
     request.metadata_mut().insert("authorization", value);
     Ok(())
 }
+/// Builds sensitive authorization metadata after validating a Bearer token.
 fn bearer_value(
     token: &str,
 ) -> GrpcClientResult<tonic::metadata::MetadataValue<tonic::metadata::Ascii>> {
@@ -72,6 +73,7 @@ struct State {
 #[derive(Clone)]
 pub struct GrpcChannel(Arc<State>);
 impl std::fmt::Debug for GrpcChannel {
+    /// Reports channel closure without formatting transport state or credentials.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("GrpcChannel")
             .field("closed", &self.0.closed.load(Ordering::SeqCst))
@@ -115,9 +117,11 @@ impl GrpcChannel {
         self.0.closed.store(true, Ordering::SeqCst);
         self.0.channel.lock().expect("channel lock poisoned").take();
     }
+    /// Returns a clone of the parsed endpoint for connection preparation.
     async fn endpoint(&self) -> GrpcClientResult<tonic::transport::Endpoint> {
         Ok(self.0.endpoint.clone())
     }
+    /// Returns the shared channel, creating a lazy connection when needed.
     async fn channel(&self) -> GrpcClientResult<Channel> {
         if self.0.closed.load(Ordering::SeqCst) {
             return Err(GrpcClientError::closed());
@@ -143,6 +147,7 @@ impl Service<http::Request<Body>> for GrpcChannel {
     type Response = http::Response<Body>;
     type Error = GrpcClientError;
     type Future = Pin<Box<dyn Future<Output = GrpcClientResult<Self::Response>> + Send>>;
+    /// Rejects calls after closure and otherwise reports the managed service as ready.
     fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<GrpcClientResult<()>> {
         if self.0.closed.load(Ordering::SeqCst) {
             Poll::Ready(Err(GrpcClientError::closed()))
@@ -150,6 +155,7 @@ impl Service<http::Request<Body>> for GrpcChannel {
             Poll::Ready(Ok(()))
         }
     }
+    /// Prepares per-call credentials and deadline before dispatching the HTTP/2 request.
     fn call(&mut self, mut request: http::Request<Body>) -> Self::Future {
         let this = self.clone();
         Box::pin(async move {
@@ -193,6 +199,7 @@ impl Service<http::Request<Body>> for GrpcChannel {
         })
     }
 }
+/// Validates a request timeout or installs the configured default timeout.
 fn request_deadline(
     request: &mut http::Request<Body>,
     default: Option<Duration>,
@@ -226,6 +233,7 @@ fn request_deadline(
     }
     Ok(default)
 }
+/// Parses the gRPC timeout grammar into a duration.
 pub(crate) fn parse_timeout(raw: &str) -> Option<Duration> {
     let (number, unit) = raw.split_at_checked(raw.len().checked_sub(1)?)?;
     if number.is_empty() || number.len() > 8 || !number.bytes().all(|b| b.is_ascii_digit()) {
@@ -242,6 +250,7 @@ pub(crate) fn parse_timeout(raw: &str) -> Option<Duration> {
         _ => return None,
     })
 }
+/// Wraps client startup failures with the stable readiness diagnostic.
 fn readiness_error(source: GrpcClientError) -> Error {
     Error::with_source(
         Diagnostic::new(
@@ -265,9 +274,11 @@ impl GrpcClientLifecycle {
     }
 }
 impl LifecycleHook for GrpcClientLifecycle {
+    /// Returns the lifecycle hook name registered for this client.
     fn name(&self) -> &str {
         self.name
     }
+    /// Establishes the channel during startup when eager mode is configured.
     fn start<'a>(&'a self, _: &'a ApplicationContext) -> LifecycleFuture<'a> {
         Box::pin(async move {
             if self.channel.0.config.connection_mode() == GrpcConnectionMode::Eager {
@@ -276,6 +287,7 @@ impl LifecycleHook for GrpcClientLifecycle {
             Ok(())
         })
     }
+    /// Closes the shared managed channel during application shutdown.
     fn stop<'a>(&'a self, _: &'a ApplicationContext) -> LifecycleFuture<'a> {
         Box::pin(async move {
             self.channel.close();
@@ -284,6 +296,7 @@ impl LifecycleHook for GrpcClientLifecycle {
     }
 }
 
+/// Detects a native Tonic timeout through the transport error chain.
 fn native_timeout(error: &(dyn std::error::Error + 'static)) -> bool {
     let mut cause = Some(error);
     while let Some(error) = cause {

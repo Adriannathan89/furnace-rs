@@ -1,6 +1,6 @@
 //! Shared lifecycle and transport failures.
 use std::{error::Error as StdError, fmt};
-/// An error produced while preparing, running, or stopping the HTTP runtime.
+/// An error produced while preparing, running, or stopping the selected application transports.
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum ApplicationRuntimeError {
@@ -38,6 +38,7 @@ pub enum ApplicationRuntimeError {
 }
 
 impl fmt::Display for ApplicationRuntimeError {
+    /// Writes the user-facing runtime failure description.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Bootstrap(error) => write!(formatter, "HTTP bootstrap failed: {error}"),
@@ -63,6 +64,7 @@ impl fmt::Display for ApplicationRuntimeError {
 }
 
 impl StdError for ApplicationRuntimeError {
+    /// Returns the underlying cause when the variant retains one.
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
             Self::Bootstrap(error) | Self::Lifecycle(error) => Some(error),

@@ -9,10 +9,12 @@ pub(crate) struct HumanOutput {
 }
 
 impl HumanOutput {
+    /// Creates human output containing only stderr text.
     pub(crate) fn stderr(stderr: impl Into<String>) -> Self {
         Self::streams(String::new(), stderr)
     }
 
+    /// Creates human output with independent stdout and stderr strings.
     pub(crate) fn streams(stdout: impl Into<String>, stderr: impl Into<String>) -> Self {
         Self {
             stdout: stdout.into(),
@@ -21,6 +23,7 @@ impl HumanOutput {
     }
 }
 
+/// Writes each nonempty human stream to its corresponding process stream.
 pub(crate) fn write(output: &HumanOutput) -> io::Result<()> {
     if !output.stdout.is_empty() {
         io::stdout().lock().write_all(output.stdout.as_bytes())?;

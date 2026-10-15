@@ -2,6 +2,7 @@
 use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::Span;
 use syn::{Error, Path, parse_quote};
+/// Resolves the crate path used by generated gRPC code.
 pub(crate) fn grpc_path() -> syn::Result<Path> {
     if let Ok(found) = crate_name("furnace-rs-grpc") {
         return match found {

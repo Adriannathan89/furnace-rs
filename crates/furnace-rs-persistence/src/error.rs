@@ -1,3 +1,5 @@
+//! Stable persistence failure categories with redacted display and retained typed causes.
+
 use std::fmt;
 
 use furnace_rs_core::{Diagnostic, DiagnosticCode};
@@ -30,6 +32,7 @@ pub struct PersistenceError {
 
 #[allow(dead_code)]
 impl PersistenceError {
+    /// Creates a persistence failure category and operation without retaining a cause.
     pub(crate) const fn new(kind: PersistenceErrorKind, operation: &'static str) -> Self {
         Self {
             kind,
@@ -38,6 +41,7 @@ impl PersistenceError {
         }
     }
 
+    /// Retains a typed operational cause behind the redacted error display.
     pub(crate) fn with_source<E>(
         kind: PersistenceErrorKind,
         operation: &'static str,
@@ -60,6 +64,7 @@ impl PersistenceError {
 }
 
 impl fmt::Display for PersistenceError {
+    /// Formats a stable persistence message without including the retained source.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
@@ -70,6 +75,7 @@ impl fmt::Display for PersistenceError {
 }
 
 impl fmt::Debug for PersistenceError {
+    /// Formats a stable persistence message without including the retained source.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PersistenceError")
@@ -81,6 +87,7 @@ impl fmt::Debug for PersistenceError {
 }
 
 impl std::error::Error for PersistenceError {
+    /// Returns the retained cause through the standard error chain.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.source
             .as_deref()
@@ -89,6 +96,7 @@ impl std::error::Error for PersistenceError {
 }
 
 impl From<PersistenceError> for furnace_rs_core::Error {
+    /// Converts a persistence failure to the stable FURNACE140 core diagnostic.
     fn from(error: PersistenceError) -> Self {
         let operation = error.operation;
         furnace_rs_core::Error::with_source(

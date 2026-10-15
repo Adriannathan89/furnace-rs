@@ -11,6 +11,7 @@ pub(crate) const NAMES: [&str; 2] = [
 ];
 pub(crate) const HEALTH: &str = "grpc.health.v1.Health";
 #[cfg(feature = "jwt")]
+/// Builds the fully qualified gRPC method path for a service and method.
 pub(crate) fn path(name: &str) -> String {
     format!("/{name}/ServerReflectionInfo")
 }
@@ -51,6 +52,7 @@ pub fn reflection_descriptors(
         file: files.into_values().collect(),
     })
 }
+/// Merges selected descriptor sets and rejects conflicting file definitions.
 fn merge_files(
     files: &mut BTreeMap<String, prost_types::FileDescriptorProto>,
     bytes: &[u8],
@@ -69,6 +71,7 @@ fn merge_files(
     }
     Ok(())
 }
+/// Attaches service source information to a registration diagnostic.
 fn metadata_error() -> Error {
     Error::new(Diagnostic::new(
         FURNACE150,
@@ -76,6 +79,7 @@ fn metadata_error() -> Error {
         "descriptor files must have matching definitions for every shared file name",
     ))
 }
+/// Selects the configured reflection guard, if reflection is enabled.
 pub(crate) fn selected_policy(
     scope: &GrpcApplicationScope,
     config: &Config,
@@ -114,6 +118,7 @@ pub(crate) fn selected_policy(
         Ok(Some(*policy))
     }
 }
+/// Builds a diagnostic for invalid reflection protection metadata.
 fn policy_error(message: &'static str) -> Error {
     Error::new(Diagnostic::new(
         FURNACE152,
@@ -122,6 +127,7 @@ fn policy_error(message: &'static str) -> Error {
     ))
 }
 #[cfg(feature = "jwt")]
+/// Collects and validates guards for the selected application scope.
 pub(crate) fn guards(
     scope: &GrpcApplicationScope,
     config: &Config,
@@ -142,6 +148,7 @@ pub(crate) fn guards(
     Ok(guards)
 }
 #[cfg(feature = "jwt")]
+/// Builds per-method Passport bindings for a native reflection service.
 pub(crate) fn bindings(
     scope: &GrpcApplicationScope,
     app: &furnace_rs_core::Furnace,

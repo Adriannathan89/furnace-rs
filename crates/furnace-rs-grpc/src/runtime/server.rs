@@ -11,6 +11,7 @@ where
     F: Future + Send + 'static,
     F::Output: Send + 'static,
 {
+    /// Spawns a connection task on the runtime-owned Tokio handle.
     fn execute(&self, future: F) {
         self.0.spawn(async move {
             let _ = future.await;
@@ -21,6 +22,7 @@ where
 pub(super) type Tls = Option<tokio_rustls::TlsAcceptor>;
 #[cfg(not(feature = "tls"))]
 pub(super) type Tls = ();
+/// Loads and validates server TLS identity before accepting connections.
 pub(super) async fn prepare_tls(config: &crate::GrpcServerConfig) -> furnace_rs_core::Result<Tls> {
     #[cfg(feature = "tls")]
     {
@@ -61,6 +63,7 @@ pub(super) async fn prepare_tls(config: &crate::GrpcServerConfig) -> furnace_rs_
     }
 }
 #[cfg(feature = "tls")]
+/// Creates a fixed diagnostic for invalid server TLS material.
 fn tls_error() -> furnace_rs_core::Error {
     furnace_rs_core::Error::new(furnace_rs_core::Diagnostic::new(
         crate::FURNACE151,
@@ -68,6 +71,7 @@ fn tls_error() -> furnace_rs_core::Error {
         "configured certificate material could not establish verified TLS",
     ))
 }
+/// Accepts connections, updates health, and drains active calls on shutdown.
 pub(super) async fn serve(
     listener: TcpListener,
     routes: Routes,
@@ -112,6 +116,7 @@ pub(super) async fn serve(
     }
     Ok(())
 }
+/// Serves one accepted connection with its peer information and routes.
 async fn connection<IO>(
     stream: IO,
     routes: Routes,

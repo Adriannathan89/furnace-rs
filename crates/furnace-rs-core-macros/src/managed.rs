@@ -18,6 +18,7 @@ pub(crate) enum ManagedKind {
 }
 
 impl ManagedKind {
+    /// Returns the user-facing attribute name for this provider role.
     fn attribute_name(&self) -> &'static str {
         match self {
             Self::Service => "burner",
@@ -25,6 +26,7 @@ impl ManagedKind {
         }
     }
 
+    /// Emits the core enum variant corresponding to this provider role.
     fn provider_kind(&self, core: &syn::Path) -> TokenStream {
         match self {
             Self::Service => quote!(#core::ProviderKind::Service),
@@ -32,6 +34,7 @@ impl ManagedKind {
         }
     }
 
+    /// Formats the shared declaration-shape diagnostic for this role.
     fn supported_form(&self) -> String {
         let attribute = self.attribute_name();
         format!(
@@ -54,6 +57,7 @@ pub(crate) fn expand(
     expand_managed(kind, item)
 }
 
+/// Validates the managed struct and strips field-only injection markers.
 fn expand_managed(kind: ManagedKind, mut item: ItemStruct) -> syn::Result<TokenStream> {
     if !item.generics.params.is_empty() || item.generics.where_clause.is_some() {
         return Err(Error::new(item.generics.span(), kind.supported_form()));
@@ -109,6 +113,7 @@ fn expand_managed(kind: ManagedKind, mut item: ItemStruct) -> syn::Result<TokenS
     expand_managed_with_core(kind, item, core)
 }
 
+/// Emits the Arc-backed handle, Injector implementation, and static descriptor.
 fn expand_managed_with_core(
     kind: ManagedKind,
     item: ItemStruct,
@@ -192,6 +197,7 @@ fn expand_managed_with_core(
         #vis struct #ident(::std::sync::Arc<#inner_ident>);
 
         impl ::core::clone::Clone for #ident {
+            #[doc = "Clones the shared handle without cloning the managed value."]
             fn clone(&self) -> Self {
                 Self(::std::sync::Arc::clone(&self.0))
             }
@@ -200,6 +206,7 @@ fn expand_managed_with_core(
         impl ::core::ops::Deref for #ident {
             type Target = #inner_ident;
 
+            #[doc = "Borrows the managed value through its shared handle."]
             fn deref(&self) -> &Self::Target {
                 self.0.as_ref()
             }
@@ -208,9 +215,11 @@ fn expand_managed_with_core(
         const _: () = {
             impl #core::Injector for #ident {
                 type Dependencies = #dependency_types;
+                #[doc = "Constructs the managed handle from its declared dependency tuple."]
                 async fn inject(#dependency_pattern: Self::Dependencies) -> #core::Result<Self> {
                     Ok(#ident(::std::sync::Arc::new(#inner_value)))
                 }
+                #[doc = "Returns the static provider descriptor emitted for this managed type."]
                 fn descriptor() -> &'static #core::ProviderDescriptor {
                     &__FURNACE_DESCRIPTOR
                 }
@@ -218,6 +227,7 @@ fn expand_managed_with_core(
 
             #[doc(hidden)]
             #[allow(non_snake_case)]
+            #[doc = "Invokes the typed constructor bridge for this managed provider."]
             fn #constructor_ident<'a>(
                 context: &'a #core::ConstructionContext<'a>,
             ) -> #core::ProviderFuture<'a> {
@@ -226,16 +236,20 @@ fn expand_managed_with_core(
 
             #[doc(hidden)]
             #[allow(non_snake_case)]
+            #[doc = "Returns the concrete runtime identity of the managed provider."]
             fn #type_id_ident() -> ::core::any::TypeId {
                 ::core::any::TypeId::of::<#ident>()
             }
 
             #[doc(hidden)]
             #[allow(non_snake_case)]
+            #[doc = "Returns the concrete runtime type name of the managed provider."]
             fn #runtime_type_name_ident() -> &'static str {
                 ::core::any::type_name::<#ident>()
             }
 
+            #[doc(hidden)]
+            #[doc = "Constructs the managed provider and retains its lifecycle registrations."]
             fn __furnace_construct_resource<'a>(
                 context: &'a #core::ConstructionContext<'a>,
             ) -> #core::LifecycleProviderFuture<'a> {
@@ -261,6 +275,7 @@ fn expand_managed_with_core(
     })
 }
 
+/// Maps Rust item visibility to the provider descriptor's public/private category.
 fn provider_visibility(visibility: &syn::Visibility, core: &syn::Path) -> TokenStream {
     if matches!(visibility, syn::Visibility::Public(_)) {
         quote!(#core::ProviderVisibility::Public)
@@ -269,14 +284,17 @@ fn provider_visibility(visibility: &syn::Visibility, core: &syn::Path) -> TokenS
     }
 }
 
+/// Recognizes representation attributes that cannot be preserved on generated handles.
 fn is_repr(attribute: &&Attribute) -> bool {
     attribute.path().is_ident("repr")
 }
 
+/// Recognizes documentation attributes copied onto the generated public handle.
 fn is_doc(attribute: &&Attribute) -> bool {
     attribute.path().is_ident("doc")
 }
 
+/// Rewrites field references to `Self` so they name the generated handle type.
 fn normalize_self_type(ty: &mut Type, handle: &Ident) {
     SelfTypeNormalizer { handle }.visit_type_mut(ty);
 }
@@ -286,6 +304,7 @@ struct SelfTypeNormalizer<'a> {
 }
 
 impl VisitMut for SelfTypeNormalizer<'_> {
+    /// Rewrites a leading `Self` in expression paths while visiting nested paths.
     fn visit_expr_path_mut(&mut self, expression_path: &mut ExprPath) {
         if expression_path.qself.is_none()
             && let Some(segment) = expression_path.path.segments.first_mut()
@@ -297,6 +316,7 @@ impl VisitMut for SelfTypeNormalizer<'_> {
         visit_mut::visit_expr_path_mut(self, expression_path);
     }
 
+    /// Rewrites a leading `Self` in type paths while preserving qualified paths.
     fn visit_type_path_mut(&mut self, type_path: &mut TypePath) {
         if type_path.qself.is_none()
             && let Some(segment) = type_path.path.segments.first_mut()
@@ -311,6 +331,7 @@ impl VisitMut for SelfTypeNormalizer<'_> {
 
 // Field helpers belong to the enclosing managed macro and must not survive
 // expansion. Every managed dependency must declare its injection intent.
+/// Validates and consumes exactly one argument-free `#[inject]` marker.
 fn consume_inject(attributes: &mut Vec<Attribute>, span: proc_macro2::Span) -> syn::Result<()> {
     let mut seen = false;
     for attribute in attributes.iter().filter(|a| a.path().is_ident("inject")) {

@@ -30,9 +30,11 @@ pub struct Here;
 pub struct Left<Proof>(PhantomData<Proof>);
 pub struct Right<Proof>(PhantomData<Proof>);
 
+/// Creates the leaf marker used to represent one slot in a compile-time scope.
 pub fn leaf<S>() -> Leaf<S> {
     Leaf(PhantomData)
 }
+/// Combines two marker trees into a type-level scope branch.
 pub fn branch<L, R>(_: L, _: R) -> Branch<L, R> {
     Branch(PhantomData)
 }
@@ -41,15 +43,18 @@ pub fn branch<L, R>(_: L, _: R) -> Branch<L, R> {
 // Config outputs (including aliases) from membership: the intrinsic satisfies
 // those inputs. CheckModule still verifies the declared factories' dependencies.
 pub struct ConfigFilter<const ACTIVE: bool, Slot>(PhantomData<Slot>);
+/// Creates the autoref-dispatch marker that removes intrinsic Config slots.
 pub fn config_filter<const ACTIVE: bool, Slot>() -> ConfigFilter<ACTIVE, Slot> {
     ConfigFilter(PhantomData)
 }
 pub trait FilterConfig {
     type Scope;
+    /// Converts the selected autoref implementation into its filtered scope marker.
     fn filter_config(self) -> Self::Scope;
 }
 impl<const ACTIVE: bool, Slot> FilterConfig for &ConfigFilter<ACTIVE, Slot> {
     type Scope = Leaf<Enabled<ACTIVE, Slot>>;
+    /// Keeps the slot when no intrinsic Config binding matches it.
     fn filter_config(self) -> Self::Scope {
         leaf()
     }
@@ -58,6 +63,7 @@ impl<const ACTIVE: bool, Slot: Represents<crate::Config>> FilterConfig
     for &&ConfigFilter<ACTIVE, Slot>
 {
     type Scope = Nil;
+    /// Erases a Config slot because the root supplies Config intrinsically.
     fn filter_config(self) -> Self::Scope {
         Nil
     }
@@ -99,6 +105,7 @@ impl SlotKey for ConfigSlot {
 
 // Keys only choose candidate marker positions. Identity assertions below must
 // accompany any equality/deduplication; keys never stand in for Rust types.
+/// Compares two keys in const contexts without relying on runtime string APIs.
 pub const fn same(a: &str, b: &str) -> bool {
     let a = a.as_bytes();
     let b = b.as_bytes();
@@ -114,6 +121,7 @@ pub const fn same(a: &str, b: &str) -> bool {
     }
     true
 }
+/// Selects the earliest visible key with this value for compile-time deduplication.
 pub const fn first_visible(keys: &[&str], visible: &[bool], index: usize) -> bool {
     if !visible[index] {
         return false;
@@ -127,6 +135,7 @@ pub const fn first_visible(keys: &[&str], visible: &[bool], index: usize) -> boo
     }
     true
 }
+/// Checks whether one module key appears in the direct import list.
 pub const fn direct_import(provider: &str, imports: &[&str]) -> bool {
     let mut i = 0;
     while i < imports.len() {
@@ -140,21 +149,25 @@ pub const fn direct_import(provider: &str, imports: &[&str]) -> bool {
 pub trait SameWhen<const MATCH: bool, A, B> {}
 impl<A, B> SameWhen<false, A, B> for () {}
 impl<A> SameWhen<true, A, A> for () {}
+/// Requires two candidate types to be identical exactly when `MATCH` is true.
 pub fn assert_identity<const MATCH: bool, A, B>()
 where
     (): SameWhen<MATCH, A, B>,
 {
 }
+/// Produces a trait error when module `M` does not satisfy scope contract `S`.
 pub fn assert_module<M, S, P>()
 where
     M: CheckModule<S, P>,
 {
 }
+/// Produces a trait error when `T` cannot be looked up in scope `S`.
 pub fn assert_has<T, S, P>()
 where
     S: Lookup<T, P>,
 {
 }
+/// Checks a module's complete provider/dependency contract against its scope.
 pub fn assert_module_scope<M, S, P>(_: S)
 where
     M: CheckModule<S, P>,

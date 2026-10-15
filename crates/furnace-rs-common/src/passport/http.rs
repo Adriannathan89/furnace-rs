@@ -94,6 +94,7 @@ impl PassportGuardLayer {
 impl<S> Layer<S> for PassportGuardLayer {
     type Service = PassportGuardService<S>;
 
+    /// Wraps the route service with the selected guard state.
     fn layer(&self, inner: S) -> Self::Service {
         PassportGuardService {
             inner,
@@ -120,10 +121,12 @@ where
     type Error = S::Error;
     type Future = Pin<Box<dyn Future<Output = std::result::Result<Response, S::Error>> + Send>>;
 
+    /// Delegates readiness polling to the protected route service.
     fn poll_ready(&mut self, context: &mut Context<'_>) -> Poll<std::result::Result<(), S::Error>> {
         self.inner.poll_ready(context)
     }
 
+    /// Authenticates and authorizes the request before calling the route service.
     fn call(&mut self, mut request: Request) -> Self::Future {
         let state = self.state.clone();
         let not_ready_inner = self.inner.clone();
@@ -138,6 +141,7 @@ where
 }
 
 impl PassportGuardState {
+    /// Authenticates the request, checks the selected policy, and installs typed extensions.
     async fn authorize(&self, request: &mut Request) -> PassportResult<()> {
         let (headers, method, uri, remote_addr) = request_metadata(request);
         let authentication = authenticate_request(
@@ -232,6 +236,7 @@ where
 }
 
 impl<P> Clone for PassportGuard<P> {
+    /// Clones the guard's shared application and middleware state.
     fn clone(&self) -> Self {
         Self {
             state: self.state.clone(),
@@ -240,6 +245,7 @@ impl<P> Clone for PassportGuard<P> {
 }
 
 impl<P> fmt::Debug for PassportGuard<P> {
+    /// Formats the token source and policy counts without exposing policy values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PassportGuard")
@@ -266,6 +272,7 @@ impl<P> PassportGuardBuilder<P>
 where
     P: PassportPrincipal,
 {
+    /// Starts an unconfigured native guard using Bearer authentication by default.
     fn new(application: furnace_rs_core::ApplicationContext) -> Self {
         Self {
             application,
@@ -343,6 +350,7 @@ where
         self
     }
 
+    /// Selects the internal adapter used by the built-in JWT claims strategy.
     fn with_builtin_adapter(mut self, adapter: BuiltinGuardAdapter) -> Self {
         self.builtin_adapter = Some(adapter);
         self
@@ -410,6 +418,7 @@ impl<S, P> Clone for NativePassportGuardService<S, P>
 where
     S: Clone,
 {
+    /// Clones the inner service and native guard state.
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -424,6 +433,7 @@ where
 {
     type Service = NativePassportGuardService<S, P>;
 
+    /// Wraps a native route service with this typed Passport guard.
     fn layer(&self, inner: S) -> Self::Service {
         NativePassportGuardService {
             inner,
@@ -443,10 +453,12 @@ where
     type Error = S::Error;
     type Future = Pin<Box<dyn Future<Output = std::result::Result<Response, S::Error>> + Send>>;
 
+    /// Delegates readiness polling to the protected native route service.
     fn poll_ready(&mut self, context: &mut Context<'_>) -> Poll<std::result::Result<(), S::Error>> {
         self.inner.poll_ready(context)
     }
 
+    /// Authenticates and authorizes the request before calling the native route service.
     fn call(&mut self, mut request: Request) -> Self::Future {
         let state = self.state.clone();
         let not_ready_inner = self.inner.clone();
@@ -471,6 +483,7 @@ struct NativePassportGuardState<P> {
 }
 
 impl<P> Clone for NativePassportGuardState<P> {
+    /// Clones the request-validation configuration and its shared application context.
     fn clone(&self) -> Self {
         Self {
             application: self.application.clone(),
@@ -488,6 +501,7 @@ impl<P> NativePassportGuardState<P>
 where
     P: PassportPrincipal,
 {
+    /// Runs strategy authentication, native policy checks, and typed extension installation.
     async fn authorize(&self, request: &mut Request) -> PassportResult<()> {
         let (headers, method, uri, remote_addr) = request_metadata(request);
         let authentication = authenticate_request(
@@ -532,6 +546,7 @@ struct NativePolicyClause {
 }
 
 impl NativePolicyClause {
+    /// Copies policy values into owned storage for a reusable native guard.
     fn new<I, V>(mode: PolicyMode, values: I) -> Self
     where
         I: IntoIterator<Item = V>,
@@ -547,6 +562,7 @@ impl NativePolicyClause {
     }
 }
 
+/// Selects one credential source and invokes its strategy with sanitized request context.
 async fn authenticate_request(
     application: &furnace_rs_core::ApplicationContext,
     source: TokenSource,
@@ -591,6 +607,7 @@ async fn authenticate_request(
     }
 }
 
+/// Copies request metadata and optional peer address for asynchronous authentication.
 fn request_metadata(
     request: &Request,
 ) -> (
@@ -610,6 +627,7 @@ fn request_metadata(
     )
 }
 
+/// Applies the configured all/any predicate to a native role or permission clause.
 fn matches_native_clause(
     clause: Option<&NativePolicyClause>,
     matches: impl FnMut(&str) -> bool,
@@ -623,6 +641,7 @@ fn matches_native_clause(
     }
 }
 
+/// Rejects empty values and controls in one native roles or permissions clause.
 fn validate_native_policy(clause: Option<&NativePolicyClause>, label: &str) -> Result<()> {
     let Some(clause) = clause else {
         return Ok(());
@@ -640,6 +659,7 @@ fn validate_native_policy(clause: Option<&NativePolicyClause>, label: &str) -> R
     Ok(())
 }
 
+/// Supplies the exact principal type identity to static guard metadata.
 fn native_principal_type_id<P>() -> TypeId
 where
     P: PassportPrincipal,
@@ -647,6 +667,7 @@ where
     TypeId::of::<P>()
 }
 
+/// Supplies the Rust principal type name to static guard metadata.
 fn native_principal_type_name<P>() -> &'static str
 where
     P: PassportPrincipal,
@@ -654,6 +675,7 @@ where
     std::any::type_name::<P>()
 }
 
+/// Builds a source-located diagnostic for an invalid native guard configuration.
 fn native_guard_error(message: impl Into<String>) -> Error {
     Error::new(
         Diagnostic::new(FURNACE131, "invalid native Passport guard", message)
@@ -662,6 +684,7 @@ fn native_guard_error(message: impl Into<String>) -> Error {
     )
 }
 
+/// Verifies an access token and builds a typed claims-backed principal.
 fn builtin_claims_adapter<'a, C>(
     application: &'a furnace_rs_core::ApplicationContext,
     _context: &'a PassportContext<'a>,
@@ -690,6 +713,7 @@ where
 {
     type Rejection = PassportRejection;
 
+    /// Extracts the guard-installed principal or returns an internal setup error.
     async fn from_request_parts(
         parts: &mut Parts,
         _state: &S,
@@ -707,6 +731,7 @@ where
 {
     type Rejection = PassportRejection;
 
+    /// Extracts the guard-installed verified token or returns an internal setup error.
     async fn from_request_parts(
         parts: &mut Parts,
         _state: &S,
@@ -723,6 +748,7 @@ where
 struct MissingGuardExtension(&'static str);
 
 impl fmt::Display for MissingGuardExtension {
+    /// Names the typed extension that was not installed by a successful guard.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "missing guard-installed {}", self.0)
     }
@@ -734,6 +760,7 @@ impl std::error::Error for MissingGuardExtension {}
 pub struct PassportRejection(PassportError);
 
 impl PassportRejection {
+    /// Wraps the normalized authentication, authorization, or internal failure.
     pub(crate) const fn new(error: PassportError) -> Self {
         Self(error)
     }
@@ -746,6 +773,7 @@ impl PassportRejection {
 }
 
 impl fmt::Debug for PassportRejection {
+    /// Formats the stable rejection category without exposing private causes.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PassportRejection")
@@ -755,24 +783,28 @@ impl fmt::Debug for PassportRejection {
 }
 
 impl fmt::Display for PassportRejection {
+    /// Delegates to the redacted Passport error message.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(formatter)
     }
 }
 
 impl std::error::Error for PassportRejection {
+    /// Returns the normalized Passport error retained by this rejection.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         Some(&self.0)
     }
 }
 
 impl From<PassportError> for PassportRejection {
+    /// Wraps a Passport error as its HTTP rejection type.
     fn from(error: PassportError) -> Self {
         Self::new(error)
     }
 }
 
 impl IntoResponse for PassportRejection {
+    /// Maps rejected, forbidden, and internal failures to 401, 403, and redacted 500 responses.
     fn into_response(self) -> Response {
         let Self(error) = self;
         match error.kind() {
@@ -790,6 +822,7 @@ impl IntoResponse for PassportRejection {
 }
 
 impl<'a> super::PassportStrategyPreflight<'a> {
+    /// Finds the strategy binding for one exact route occurrence and module context.
     pub(crate) fn binding_for_endpoint(
         &self,
         occurrence: crate::http_scope::RouteIdentity,

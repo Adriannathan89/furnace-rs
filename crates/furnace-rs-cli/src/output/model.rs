@@ -25,6 +25,7 @@ impl Envelope {
         Self::success_with_diagnostics(command, data, Vec::new())
     }
 
+    /// Creates a successful schema envelope with ordered nonfatal diagnostics.
     pub(crate) fn success_with_diagnostics(
         command: impl Into<String>,
         data: CommandData,
@@ -54,6 +55,7 @@ impl Envelope {
         }
     }
 
+    /// Returns the optional canonical command name carried by the envelope.
     pub(crate) fn command(&self) -> Option<&str> {
         self.command.as_deref()
     }
@@ -389,6 +391,7 @@ impl CliDiagnostic {
         self
     }
 
+    /// Converts a CLI error while normalizing any source path for public output.
     pub(crate) fn from_error(error: &CliError, package_root: Option<&Path>) -> Self {
         let mut diagnostic = Self::error(error.code(), error.title(), error.message());
         if let Some(subject) = error.subject() {
@@ -411,6 +414,7 @@ impl CliDiagnostic {
         diagnostic
     }
 
+    /// Creates a diagnostic record with the supplied severity and no optional details.
     fn new(
         severity: Severity,
         code: impl Into<String>,

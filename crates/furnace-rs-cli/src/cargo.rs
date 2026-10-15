@@ -1,3 +1,5 @@
+//! Cargo subprocess construction, JSON message collection, and selected-binary tracking.
+
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
@@ -20,6 +22,7 @@ pub(crate) struct BuiltApplication {
     executable: PathBuf,
 }
 
+/// Builds exactly the selected package binary and streams Cargo JSON messages on stdout.
 pub(crate) fn cargo_build_command(target: &ResolvedApplication) -> tokio::process::Command {
     let mut command = tokio::process::Command::new("cargo");
     command
@@ -37,12 +40,14 @@ pub(crate) fn cargo_build_command(target: &ResolvedApplication) -> tokio::proces
     command
 }
 
+/// Builds the selected application and returns its reported executable.
 pub(crate) async fn build_application(
     target: &ResolvedApplication,
 ) -> Result<BuiltApplication, CliError> {
     build_application_owned(target.clone()).await
 }
 
+/// Owns the selected target while the Cargo build runs to completion.
 pub(crate) async fn build_application_owned(
     target: ResolvedApplication,
 ) -> Result<BuiltApplication, CliError> {
@@ -58,6 +63,7 @@ pub(crate) struct CargoBuild {
 }
 
 impl CargoBuild {
+    /// Starts Cargo and begins collecting its newline-delimited JSON output.
     pub(crate) fn start(target: ResolvedApplication) -> Result<Self, CliError> {
         let mut child = cargo_build_command(&target).spawn().map_err(|error| {
             CliError::new(
@@ -83,6 +89,7 @@ impl CargoBuild {
         })
     }
 
+    /// Consumes build messages, forwards compiler diagnostics, and waits for the selected artifact.
     pub(crate) async fn wait(&mut self) -> Result<BuiltApplication, CliError> {
         while let Some(line) = self.lines.next_line().await.map_err(|error| {
             CliError::new(
@@ -129,6 +136,7 @@ impl CargoBuild {
         std::mem::take(&mut self.collector).finish(self.target.clone())
     }
 
+    /// Kills the active Cargo child and waits for it to be reaped.
     pub(crate) async fn cancel_and_wait(&mut self) -> Result<(), CliError> {
         let kill_result = self.child.start_kill();
         let wait_result = self.child.wait().await;
@@ -152,10 +160,12 @@ impl CargoBuild {
 }
 
 impl BuiltApplication {
+    /// Returns the package and binary selection associated with this build.
     pub(crate) fn target(&self) -> &ResolvedApplication {
         &self.target
     }
 
+    /// Returns the executable path selected from Cargo compiler-artifact messages.
     pub(crate) fn executable(&self) -> &Path {
         &self.executable
     }
@@ -169,6 +179,7 @@ impl BuiltApplication {
     }
 }
 
+/// Selects the requested executable from a stream of Cargo JSON messages.
 fn collect_artifact(
     target: &ResolvedApplication,
     messages: impl IntoIterator<Item = Result<Message, serde_json::Error>>,
@@ -190,6 +201,7 @@ fn collect_artifact(
     collector.finish(target.clone())
 }
 
+/// Accumulates build success and the matching executable from Cargo messages.
 #[derive(Default)]
 struct ArtifactCollector {
     executable: Option<PathBuf>,
@@ -197,6 +209,7 @@ struct ArtifactCollector {
 }
 
 impl ArtifactCollector {
+    /// Records a matching compiler artifact or the final Cargo build status.
     fn process(&mut self, target: &ResolvedApplication, message: Message) {
         match message {
             Message::CompilerArtifact(artifact) => {
@@ -209,6 +222,7 @@ impl ArtifactCollector {
         }
     }
 
+    /// Requires a successful build and returns its selected executable.
     fn finish(self, target: ResolvedApplication) -> Result<BuiltApplication, CliError> {
         if !self.successful {
             return Err(CliError::new(
@@ -230,6 +244,7 @@ impl ArtifactCollector {
     }
 }
 
+/// Matches a Cargo artifact by package identity and binary target name.
 fn matching_executable(target: &ResolvedApplication, artifact: &Artifact) -> Option<PathBuf> {
     if artifact.package_id == *target.package().package_id()
         && artifact.target.name == target.binary_name()

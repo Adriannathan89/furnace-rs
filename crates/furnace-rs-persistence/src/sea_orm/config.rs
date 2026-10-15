@@ -1,3 +1,5 @@
+//! Typed SeaORM settings parsing and conversion into native pool options.
+
 use std::time::Duration;
 
 use ::sea_orm::ConnectOptions;
@@ -27,6 +29,7 @@ struct PersistenceConfig {
 }
 
 impl SeaOrmConfig {
+    /// Parses typed SeaORM settings and validates deadline ranges and pool relationships.
     pub(super) fn parse(config: &Config) -> Result<Self, ConfigurationErrors> {
         let parsed = config.parse::<PersistenceConfig>()?.seaorm;
         for (field, seconds) in [
@@ -66,6 +69,7 @@ impl SeaOrmConfig {
         Ok(parsed)
     }
 
+    /// Copies configured pool limits, deadlines, and logging into native connect options.
     pub(super) fn apply(&self, options: &mut ConnectOptions) {
         if let Some(value) = self.min_connections {
             options.min_connections(value);
@@ -91,6 +95,7 @@ impl SeaOrmConfig {
     }
 }
 
+/// Checks that adding a duration to the current instant does not overflow.
 pub(super) fn deadline_is_representable(duration: Duration) -> bool {
     std::time::Instant::now().checked_add(duration).is_some()
 }

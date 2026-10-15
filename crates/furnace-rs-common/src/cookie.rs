@@ -109,6 +109,7 @@ impl CookieError {
         self.kind
     }
 
+    /// Retains a parser or header error while keeping its details out of formatting.
     fn with_source<E>(kind: CookieErrorKind, source: E) -> Self
     where
         E: std::error::Error + Send + Sync + 'static,
@@ -121,6 +122,7 @@ impl CookieError {
 }
 
 impl fmt::Debug for CookieError {
+    /// Formats the category and source presence without serializing cookie data.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("CookieError")
@@ -131,6 +133,7 @@ impl fmt::Debug for CookieError {
 }
 
 impl fmt::Display for CookieError {
+    /// Formats a stable message that contains no request or response cookie value.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self.kind {
             CookieErrorKind::MalformedRequest => "cookie request is malformed",
@@ -140,6 +143,7 @@ impl fmt::Display for CookieError {
 }
 
 impl std::error::Error for CookieError {
+    /// Exposes the retained parser or header-validation cause to server-side diagnostics.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.source
             .as_deref()
@@ -158,6 +162,7 @@ impl CookieRejection {
 }
 
 impl fmt::Debug for CookieRejection {
+    /// Formats only the stable rejection category.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("CookieRejection")
@@ -167,24 +172,28 @@ impl fmt::Debug for CookieRejection {
 }
 
 impl fmt::Display for CookieRejection {
+    /// Delegates to the redacted cookie error display.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(formatter)
     }
 }
 
 impl std::error::Error for CookieRejection {
+    /// Returns the underlying normalized cookie error.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         Some(&self.0)
     }
 }
 
 impl From<CookieError> for CookieRejection {
+    /// Wraps a checked cookie failure as an Axum extractor rejection.
     fn from(error: CookieError) -> Self {
         Self(error)
     }
 }
 
 impl IntoResponse for CookieRejection {
+    /// Maps malformed request cookies to 400 and invalid response cookies to 500.
     fn into_response(self) -> Response {
         let Self(error) = self;
         match error.kind() {
@@ -202,6 +211,7 @@ enum PendingCookie {
 }
 
 impl PendingCookie {
+    /// Returns the cookie emitted by either the add or deletion operation.
     fn cookie(&self) -> &Cookie<'static> {
         match self {
             Self::Add(cookie) | Self::Remove(cookie) => cookie,
@@ -301,6 +311,7 @@ impl CookieJar {
         self
     }
 
+    /// Rejects response attributes that are unsafe or cannot fit in a header value.
     fn validate_pending(&self) -> CookieResult<()> {
         for pending in &self.pending {
             let cookie = pending.cookie();
@@ -328,12 +339,14 @@ impl CookieJar {
 }
 
 impl Default for CookieJar {
+    /// Creates a fresh empty jar with no request cookies or pending response changes.
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl fmt::Debug for CookieJar {
+    /// Formats cookie counts and operation counts without exposing names or values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("CookieJar")
@@ -350,6 +363,7 @@ where
 {
     type Rejection = CookieRejection;
 
+    /// Strictly parses the request's Cookie headers and rejects malformed pairs.
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         Self::from_headers(&parts.headers).map_err(Into::into)
     }
@@ -358,6 +372,7 @@ where
 impl IntoResponseParts for CookieJar {
     type Error = CookieRejection;
 
+    /// Validates pending cookies before appending them to the response headers.
     fn into_response_parts(self, response: ResponseParts) -> Result<ResponseParts, Self::Error> {
         self.validate_pending()?;
 
@@ -369,11 +384,13 @@ impl IntoResponseParts for CookieJar {
 }
 
 impl IntoResponse for CookieJar {
+    /// Converts the jar into an Axum response containing its pending cookie headers.
     fn into_response(self) -> Response {
         (self, ()).into_response()
     }
 }
 
+/// Checks that every percent sign begins a complete two-digit hexadecimal escape.
 fn has_valid_percent_escapes(value: &str) -> bool {
     let bytes = value.as_bytes();
     let mut index = 0;
@@ -393,6 +410,7 @@ fn has_valid_percent_escapes(value: &str) -> bool {
     true
 }
 
+/// Applies the RFC token character subset accepted for cookie names.
 fn is_valid_cookie_name(name: &str) -> bool {
     !name.is_empty()
         && name.bytes().all(|byte| {

@@ -108,8 +108,8 @@ application inspection.
   startup, explicit serving, binding, and outer router configuration.
 - `src/http_scope.rs` and `src/inspection.rs` — rooted HTTP selection and
   side-effect-free inspection reports.
-- `src/extract/` and `src/validation/` — native/validated request extraction and
-  ordered input issues.
+- `src/extract.rs` and `src/validation/` — native/validated request extraction
+  and ordered input issues.
 - `src/response.rs` — safe REST response envelopes and error mapping.
 - `src/jwt/`, `src/passport/`, and `src/cookie.rs` — authentication, guard
   policy, principals, strategies, and cookie handling.

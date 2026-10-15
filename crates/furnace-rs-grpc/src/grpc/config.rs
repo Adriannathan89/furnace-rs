@@ -295,16 +295,19 @@ impl GrpcClientConfig {
     }
 }
 
+/// Checks the lowercase configuration grammar for a named client.
 pub(crate) fn valid_client_name(name: &str) -> bool {
     name.bytes().next().is_some_and(|b| b.is_ascii_lowercase())
         && name
             .bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'_' | b'-'))
 }
+/// Checks whether a configuration path exists, including table paths.
 fn present(config: &Config, key: &str) -> bool {
     furnace_rs_core::__private::configuration::present(config, key)
 }
 #[allow(clippy::result_large_err)]
+/// Reads a scalar value or its default and rejects non-scalar values.
 fn scalar<'a>(config: &'a Config, key: &str, default: &'a str) -> Result<&'a str> {
     if let Some(value) = config.get(key) {
         Ok(value)
@@ -315,6 +318,7 @@ fn scalar<'a>(config: &'a Config, key: &str, default: &'a str) -> Result<&'a str
     }
 }
 #[allow(clippy::result_large_err)]
+/// Requires the selected configuration path to be a table.
 fn reject_scalar_or_array(config: &Config, key: &str) -> Result<()> {
     if config.get(key).is_some() || config.get_string_array(key).is_some() {
         Err(invalid(config, key, "must be a table"))
@@ -323,6 +327,7 @@ fn reject_scalar_or_array(config: &Config, key: &str) -> Result<()> {
     }
 }
 #[allow(clippy::result_large_err)]
+/// Resolves a required path relative to its configuration source.
 fn path(config: &Config, key: &str) -> Result<PathBuf> {
     let value = scalar(config, key, "")?;
     if value.trim().is_empty() {
@@ -333,6 +338,7 @@ fn path(config: &Config, key: &str) -> Result<PathBuf> {
         .ok_or_else(|| invalid(config, key, "invalid path"))
 }
 #[allow(clippy::result_large_err)]
+/// Parses a positive millisecond duration that fits a deadline.
 fn duration(config: &Config, key: &str, default: u64) -> Result<Duration> {
     let value = if present(config, key) {
         scalar(config, key, "")?.parse::<u64>().ok()
@@ -352,6 +358,7 @@ fn duration(config: &Config, key: &str, default: u64) -> Result<Duration> {
     })
 }
 #[allow(clippy::result_large_err)]
+/// Parses a positive message-size limit supported by the transport.
 fn size(config: &Config, key: &str) -> Result<usize> {
     scalar(config, key, "4194304")?
         .parse::<usize>()
@@ -360,12 +367,14 @@ fn size(config: &Config, key: &str) -> Result<usize> {
         .ok_or_else(|| invalid(config, key, "must be a positive supported message size"))
 }
 #[allow(clippy::result_large_err)]
+/// Parses a boolean setting or returns its configured default.
 fn boolean(config: &Config, key: &str, default: bool) -> Result<bool> {
     scalar(config, key, if default { "true" } else { "false" })?
         .parse()
         .map_err(|_| invalid(config, key, "must be a boolean"))
 }
 #[allow(clippy::result_large_err)]
+/// Rejects TLS settings when the crate TLS feature is disabled.
 fn require_tls_feature(config: &Config, key: &str) -> Result<()> {
     if cfg!(feature = "tls") {
         Ok(())
@@ -377,6 +386,7 @@ fn require_tls_feature(config: &Config, key: &str) -> Result<()> {
         ))
     }
 }
+/// Builds a source-aware diagnostic for an invalid gRPC setting.
 fn invalid(config: &Config, key: &str, rule: &str) -> Error {
     let source = config
         .source_of(key)

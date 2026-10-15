@@ -48,6 +48,7 @@ pub(crate) struct CauldronImport {
 }
 
 #[track_caller]
+/// Captures the declaration call site for stable registration diagnostics.
 fn location() -> SourceLocation {
     let caller = std::panic::Location::caller();
     SourceLocation::new(caller.file(), caller.line(), caller.column())

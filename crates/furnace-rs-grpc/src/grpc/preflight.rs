@@ -9,6 +9,7 @@ use furnace_rs_core::{
 #[derive(Clone)]
 pub(crate) struct SelectedGrpcMetadata(pub(crate) Result<GrpcApplicationScope, Vec<Diagnostic>>);
 impl SelectedGrpcMetadata {
+    /// Memoizes the selected application or focused-test service scope.
     pub(crate) fn select(
         graph: Option<&furnace_rs_core::CauldronGraph>,
         focus: Option<std::any::TypeId>,
@@ -22,6 +23,7 @@ impl SelectedGrpcMetadata {
                 .map_err(|error| error.diagnostics().to_vec()),
         )
     }
+    /// Returns the selected scope or reconstructs its diagnostics as a core error.
     pub(crate) fn scope(self) -> furnace_rs_core::Result<GrpcApplicationScope> {
         self.0.map_err(|diagnostics| {
             let mut diagnostics = diagnostics.into_iter();
@@ -96,6 +98,7 @@ furnace_rs_core::__private::inventory::submit! {
     PreflightDescriptor::new("furnace.common.grpc.preflight", SourceLocation::new(file!(), line!(), column!()), preflight_grpc)
 }
 
+/// Validates selected named-client registrations and their configuration.
 fn preflight_clients(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
     let mut names = std::collections::BTreeSet::new();
     let mut diagnostics = Vec::new();
@@ -131,6 +134,7 @@ furnace_rs_core::__private::inventory::submit! {
 }
 
 #[cfg(feature = "jwt")]
+/// Selects JWT guard metadata for the core Passport preflight catalog.
 fn passport_scope(
     context: &furnace_rs_core::__private::AutoConfigurationContext<'_>,
 ) -> furnace_rs_core::Result<Vec<crate::common::passport::__private::ScopedGuard>> {

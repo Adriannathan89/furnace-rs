@@ -75,6 +75,7 @@ impl GrpcClientError {
     }
 }
 impl fmt::Display for GrpcClientError {
+    /// Formats the stable client error category without exposing its cause.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self.kind {
             GrpcClientErrorKind::InvalidCredential => "invalid gRPC credential",
@@ -85,6 +86,7 @@ impl fmt::Display for GrpcClientError {
     }
 }
 impl fmt::Debug for GrpcClientError {
+    /// Formats the stable client error category without exposing its cause.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("GrpcClientError")
             .field("kind", &self.kind)
@@ -93,6 +95,7 @@ impl fmt::Debug for GrpcClientError {
     }
 }
 impl StdError for GrpcClientError {
+    /// Returns only the redacted boundary around the underlying operational cause.
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         self.source.as_ref().map(|s| s as _)
     }
@@ -100,11 +103,13 @@ impl StdError for GrpcClientError {
 
 struct RedactedCause(Box<dyn StdError + Send + Sync>);
 impl fmt::Debug for RedactedCause {
+    /// Formats the stable client error category without exposing its cause.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("RedactedCause(..)")
     }
 }
 impl fmt::Display for RedactedCause {
+    /// Formats the stable client error category without exposing its cause.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("gRPC operation failed")
     }

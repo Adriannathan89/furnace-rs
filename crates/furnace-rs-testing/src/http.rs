@@ -15,6 +15,7 @@ pub struct TestClient {
     router: axum::Router,
 }
 impl TestClient {
+    /// Binds the fixture context and router into an in-process test client.
     pub(crate) fn new(context: TestContext, router: axum::Router) -> Self {
         Self { context, router }
     }

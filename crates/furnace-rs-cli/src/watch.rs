@@ -1,3 +1,5 @@
+//! Project watch-root selection and mapping filesystem events to dev-loop impacts.
+
 use std::{
     ffi::OsStr,
     path::{Component, Path, PathBuf},
@@ -18,6 +20,7 @@ pub(crate) enum ChangeImpact {
 }
 
 impl ChangeImpact {
+    /// Combines impacts using rebuild over restart over no change.
     pub(crate) fn merge(impacts: impl IntoIterator<Item = Self>) -> Self {
         impacts.into_iter().max().unwrap_or(Self::None)
     }
@@ -30,10 +33,12 @@ pub(crate) struct WatchRoot {
 }
 
 impl WatchRoot {
+    /// Returns the filesystem root registered with the watcher.
     pub(crate) fn path(&self) -> &Path {
         &self.path
     }
 
+    /// Reports whether the watcher traverses descendants of this root.
     pub(crate) const fn recursive(&self) -> bool {
         self.recursive
     }
@@ -48,6 +53,7 @@ pub(crate) struct WatchSet {
 }
 
 impl WatchSet {
+    /// Builds reachable source roots and excludes unrelated local packages.
     pub(crate) fn for_application(
         project: &CargoProject,
         application: &ResolvedApplication,
@@ -89,10 +95,12 @@ impl WatchSet {
         }
     }
 
+    /// Returns the paths and recursion modes passed to the filesystem watcher.
     pub(crate) fn roots(&self) -> &[WatchRoot] {
         &self.notify_roots
     }
 
+    /// Maps a path to no change, restart, or rebuild while filtering ignored roots.
     pub(crate) fn classify(&self, path: impl AsRef<Path>) -> ChangeImpact {
         let path = path.as_ref();
         if is_ignored_path(path) || self.owner_is_excluded(path) {
@@ -112,6 +120,7 @@ impl WatchSet {
         }
     }
 
+    /// Merges the impacts of changed paths and ignores access-only events.
     pub(crate) fn classify_event(&self, event: &Event) -> ChangeImpact {
         match event.kind {
             EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_) => {
@@ -121,11 +130,13 @@ impl WatchSet {
         }
     }
 
+    /// Checks whether the most specific owning package is outside the selected dependency graph.
     fn owner_is_excluded(&self, path: &Path) -> bool {
         self.owning_root(path)
             .is_some_and(|(_, reachable)| !reachable)
     }
 
+    /// Finds the deepest reachable or excluded local package root containing a path.
     fn owning_root(&self, path: &Path) -> Option<(&Path, bool)> {
         self.local_roots
             .iter()
@@ -139,6 +150,7 @@ impl WatchSet {
             .max_by_key(|(root, _)| root.components().count())
     }
 
+    /// Recognizes workspace manifests and selected source, migration, and schema files.
     fn is_rebuild_path(&self, path: &Path) -> bool {
         if path == self.workspace_root.join("Cargo.toml")
             || path == self.workspace_root.join("Cargo.lock")
@@ -171,6 +183,7 @@ pub(crate) struct WatchEvents {
 }
 
 impl WatchEvents {
+    /// Registers notify watchers for every configured root and forwards their events.
     pub(crate) fn start(watch_set: &WatchSet) -> Result<Self, CliError> {
         let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
         let mut watcher = notify::recommended_watcher(move |event| {
@@ -203,6 +216,7 @@ impl WatchEvents {
         }
     }
 
+    /// Receives one filesystem event and maps watcher failures to CLI diagnostics.
     pub(crate) async fn recv(&mut self) -> Result<Event, CliError> {
         match self.receiver.recv().await {
             Some(Ok(event)) => Ok(event),
@@ -216,6 +230,7 @@ impl WatchEvents {
     }
 }
 
+/// Filters build output, VCS data, editor temporary files, and Finder metadata.
 fn is_ignored_path(path: &Path) -> bool {
     path.components().any(|component| {
         matches!(component, Component::Normal(name) if name == OsStr::new("target") || name == OsStr::new(".git"))
@@ -227,10 +242,12 @@ fn is_ignored_path(path: &Path) -> bool {
     })
 }
 
+/// Uses a canonical path when available and otherwise keeps the supplied path.
 fn canonical_path(path: &Path) -> PathBuf {
     path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
 }
 
+/// Wraps a notify failure in the stable file-watcher diagnostic.
 fn watch_error(error: notify::Error) -> CliError {
     CliError::new(
         FURNACE220,

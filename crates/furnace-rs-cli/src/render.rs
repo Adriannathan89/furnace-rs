@@ -1,3 +1,5 @@
+//! Stable human-readable rendering and ordering for application inspection reports.
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Write,
@@ -8,6 +10,7 @@ use furnace_rs_common::__private::{
     DoctorStatus, InspectionReport, ProviderReport, RouteReport,
 };
 
+/// Renders route rows in stable order with handler, guard, and source details.
 pub(crate) fn render_routes(report: &InspectionReport) -> String {
     let routes = ordered_routes(report);
 
@@ -37,6 +40,7 @@ pub(crate) fn render_routes(report: &InspectionReport) -> String {
     output
 }
 
+/// Renders module, provider, dependency, and construction-order sections.
 pub(crate) fn render_graph(report: &InspectionReport) -> String {
     let mut output = String::from("Cauldrons\n");
     render_modules(report, &mut output);
@@ -99,6 +103,7 @@ pub(crate) fn render_graph(report: &InspectionReport) -> String {
     output
 }
 
+/// Renders the cauldron import tree and any remaining unvisited modules.
 fn render_modules(report: &InspectionReport, output: &mut String) {
     let Some(root) = report.graph.root_cauldron.as_deref() else {
         let mut cauldrons = report
@@ -143,6 +148,7 @@ fn render_modules(report: &InspectionReport, output: &mut String) {
     }
 }
 
+/// Recursively renders sorted imports while avoiding repeated module visits.
 fn render_imports<'a>(
     module: &'a str,
     prefix: &str,
@@ -164,6 +170,7 @@ fn render_imports<'a>(
     }
 }
 
+/// Renders doctor checks grouped and sorted by stable status order.
 pub(crate) fn render_doctor(report: &InspectionReport) -> String {
     let checks = ordered_checks(report);
     if checks.is_empty() {
@@ -193,6 +200,7 @@ pub(crate) fn render_doctor(report: &InspectionReport) -> String {
         .join("\n")
 }
 
+/// Returns the fixed display rank for a doctor-check group.
 fn doctor_group_rank(group: &str) -> u8 {
     match group {
         "configuration" => 0,
@@ -206,6 +214,7 @@ fn doctor_group_rank(group: &str) -> u8 {
     }
 }
 
+/// Returns the fixed sort rank for a doctor status.
 const fn doctor_status_rank(status: DoctorStatus) -> u8 {
     match status {
         DoctorStatus::Pass => 0,
@@ -215,6 +224,7 @@ const fn doctor_status_rank(status: DoctorStatus) -> u8 {
     }
 }
 
+/// Returns the stable human label for a doctor status.
 const fn doctor_status(status: DoctorStatus) -> &'static str {
     match status {
         DoctorStatus::Pass => "PASS",
@@ -224,6 +234,7 @@ const fn doctor_status(status: DoctorStatus) -> &'static str {
     }
 }
 
+/// Renders ordered diagnostics separated by a blank line.
 pub(crate) fn render_diagnostics(report: &InspectionReport) -> String {
     let diagnostics = ordered_diagnostics(report);
     diagnostics
@@ -233,6 +244,7 @@ pub(crate) fn render_diagnostics(report: &InspectionReport) -> String {
         .join("\n\n")
 }
 
+/// Sorts route records by method, path, controller, and handler.
 pub(crate) fn ordered_routes(report: &InspectionReport) -> Vec<&RouteReport> {
     let mut routes = report.routes.iter().collect::<Vec<_>>();
     routes.sort_by(|left, right| {
@@ -245,6 +257,7 @@ pub(crate) fn ordered_routes(report: &InspectionReport) -> Vec<&RouteReport> {
     routes
 }
 
+/// Sorts cauldron records by type, namespace, and source location.
 pub(crate) fn ordered_modules(report: &InspectionReport) -> Vec<&CauldronReport> {
     let mut cauldrons = report.graph.cauldrons.iter().collect::<Vec<_>>();
     cauldrons.sort_by(|left, right| {
@@ -258,6 +271,7 @@ pub(crate) fn ordered_modules(report: &InspectionReport) -> Vec<&CauldronReport>
     cauldrons
 }
 
+/// Sorts module import records by importer and imported module.
 pub(crate) fn ordered_imports(report: &InspectionReport) -> Vec<&CauldronImportReport> {
     let mut imports = report.graph.imports.iter().collect::<Vec<_>>();
     imports.sort_by(|left, right| {
@@ -268,6 +282,7 @@ pub(crate) fn ordered_imports(report: &InspectionReport) -> Vec<&CauldronImportR
     imports
 }
 
+/// Sorts provider records by identity, state, and optional source location.
 pub(crate) fn ordered_providers(report: &InspectionReport) -> Vec<&ProviderReport> {
     let mut providers = report.graph.providers.iter().collect::<Vec<_>>();
     providers.sort_by(|left, right| {
@@ -282,6 +297,7 @@ pub(crate) fn ordered_providers(report: &InspectionReport) -> Vec<&ProviderRepor
     providers
 }
 
+/// Sorts dependency edges by provider and dependency name.
 pub(crate) fn ordered_dependencies(report: &InspectionReport) -> Vec<&DependencyReport> {
     let mut dependencies = report.graph.dependencies.iter().collect::<Vec<_>>();
     dependencies.sort_by(|left, right| {
@@ -292,6 +308,7 @@ pub(crate) fn ordered_dependencies(report: &InspectionReport) -> Vec<&Dependency
     dependencies
 }
 
+/// Sorts checks by fixed group rank, summary, and status rank.
 pub(crate) fn ordered_checks(report: &InspectionReport) -> Vec<&DoctorCheck> {
     let mut checks = report.checks.iter().collect::<Vec<_>>();
     checks.sort_by(|left, right| {
@@ -303,6 +320,7 @@ pub(crate) fn ordered_checks(report: &InspectionReport) -> Vec<&DoctorCheck> {
     checks
 }
 
+/// Sorts diagnostics by code, source, subject, text, and suggestions.
 pub(crate) fn ordered_diagnostics(report: &InspectionReport) -> Vec<&DiagnosticReport> {
     let mut diagnostics = report.diagnostics.iter().collect::<Vec<_>>();
     diagnostics.sort_by(|left, right| {
@@ -317,6 +335,7 @@ pub(crate) fn ordered_diagnostics(report: &InspectionReport) -> Vec<&DiagnosticR
     diagnostics
 }
 
+/// Returns the comparable source tuple when the provider has a location.
 fn provider_location(provider: &ProviderReport) -> Option<(&str, u32, u32)> {
     provider
         .location
@@ -324,6 +343,7 @@ fn provider_location(provider: &ProviderReport) -> Option<(&str, u32, u32)> {
         .map(|location| (location.file.as_str(), location.line, location.column))
 }
 
+/// Returns the comparable source tuple when the diagnostic has a location.
 fn diagnostic_location(diagnostic: &DiagnosticReport) -> Option<(&str, u32, u32)> {
     diagnostic
         .location
@@ -331,6 +351,7 @@ fn diagnostic_location(diagnostic: &DiagnosticReport) -> Option<(&str, u32, u32)
         .map(|location| (location.file.as_str(), location.line, location.column))
 }
 
+/// Renders one structured diagnostic in the CLI human format.
 pub(crate) fn render_diagnostic(diagnostic: &DiagnosticReport) -> String {
     let mut output = format!("error[{}]: {}", diagnostic.code, diagnostic.title);
     if let Some(location) = &diagnostic.location {
@@ -351,6 +372,7 @@ pub(crate) fn render_diagnostic(diagnostic: &DiagnosticReport) -> String {
     output
 }
 
+/// Renders protobuf methods with streaming shape and admission protection.
 pub(crate) fn render_grpc(report: &InspectionReport) -> String {
     let mut output = String::from("SERVICE  METHOD  SHAPE  PROTECTION");
     if report.grpc_services.is_empty() {

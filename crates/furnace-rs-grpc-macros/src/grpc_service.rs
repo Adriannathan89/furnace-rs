@@ -14,6 +14,7 @@ struct Arguments {
     guard: Option<Path>,
 }
 impl Parse for Arguments {
+    /// Parses service or method arguments according to the accepted attribute grammar.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let (mut server, mut descriptor, mut guard) = (None, None, None);
         while !input.is_empty() {
@@ -61,6 +62,7 @@ struct MethodArguments {
     guard: Option<Path>,
 }
 impl Parse for MethodArguments {
+    /// Parses service or method arguments according to the accepted attribute grammar.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let (mut name, mut guard, mut public) = (None, None, false);
         while !input.is_empty() {
@@ -112,6 +114,7 @@ impl Parse for MethodArguments {
     }
 }
 
+/// Validates a generated service implementation and emits its registration adapter.
 pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     let args: Arguments = syn::parse2(arguments)?;
     let mut implementation: ItemImpl = syn::parse2(item)?;
@@ -210,6 +213,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         #(#cfg)*
         #[doc(hidden)]
         #[allow(non_snake_case)]
+        #[doc = "Registers the resolved implementation's generated Tonic server routes."]
         fn #register_ident(
             context: &#common::GrpcRegistrationContext<'_>,
             routes: #common::tonic::service::Routes,
@@ -236,6 +240,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         }
         #(#cfg)*
         impl #common::GrpcService for #ty {
+            /// Returns the static descriptor generated for this service implementation.
             fn grpc_descriptor() -> &'static #common::GrpcServiceDescriptor { &#descriptor_ident }
         }
         #(#cfg)*

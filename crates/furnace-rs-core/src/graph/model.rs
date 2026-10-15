@@ -25,6 +25,7 @@ pub enum ProviderOrigin {
 }
 
 impl From<ProviderKind> for ProviderOrigin {
+    /// Maps the declaration category to its graph-facing origin.
     fn from(kind: ProviderKind) -> Self {
         match kind {
             ProviderKind::Service => Self::Service,
@@ -57,6 +58,7 @@ pub(crate) struct SatisfiedProvider {
 
 #[allow(dead_code)]
 impl SatisfiedProvider {
+    /// Records a value supplied directly by the builder.
     pub(crate) fn provided<T>() -> Self
     where
         T: Send + Sync + 'static,
@@ -68,6 +70,7 @@ impl SatisfiedProvider {
         }
     }
 
+    /// Records a value that the builder constructed before automatic planning.
     pub(crate) fn preconstructed<T>() -> Self
     where
         T: Send + Sync + 'static,
@@ -79,6 +82,7 @@ impl SatisfiedProvider {
         }
     }
 
+    /// Records a provider selected by an official integration.
     pub(crate) fn auto_configured(type_id: TypeId, type_name: &'static str) -> Self {
         Self {
             type_id,
@@ -194,10 +198,12 @@ pub struct ConstructionStep {
 }
 
 impl ConstructionStep {
+    /// Returns the concrete output identity used by the construction registry.
     pub(crate) const fn type_id(&self) -> TypeId {
         self.type_id
     }
 
+    /// Returns the static constructor selected by graph analysis.
     pub(crate) const fn descriptor(&self) -> &'static ProviderDescriptor {
         self.descriptor
     }
@@ -276,6 +282,7 @@ impl GraphAnalysis {
         self.diagnostics.is_empty() && self.construction_plan.is_some()
     }
 
+    /// Prepends diagnostics and invalidates a plan that predates those findings.
     pub(crate) fn prepend_diagnostics(&mut self, mut diagnostics: Vec<Diagnostic>) {
         if diagnostics.is_empty() {
             return;
@@ -285,6 +292,7 @@ impl GraphAnalysis {
         self.diagnostics = diagnostics;
     }
 
+    /// Appends diagnostics and removes any now-invalid construction plan.
     pub(crate) fn append_diagnostics(&mut self, diagnostics: Vec<Diagnostic>) {
         if diagnostics.is_empty() {
             return;
@@ -293,10 +301,12 @@ impl GraphAnalysis {
         self.diagnostics.extend(diagnostics);
     }
 
+    /// Attaches the validated module graph used to scope provider access.
     pub(crate) fn set_cauldron_graph(&mut self, cauldron_graph: CauldronGraph) {
         self.cauldron_graph = Some(cauldron_graph);
     }
 
+    /// Creates an invalid result with no graph, plan, or module scope.
     pub(crate) fn invalid(diagnostics: Vec<Diagnostic>) -> Self {
         Self {
             graph: ApplicationGraph {
@@ -310,6 +320,7 @@ impl GraphAnalysis {
         }
     }
 
+    /// Extracts construction state or combines ordered diagnostics into an error.
     pub(crate) fn into_valid_parts(
         self,
     ) -> crate::Result<(

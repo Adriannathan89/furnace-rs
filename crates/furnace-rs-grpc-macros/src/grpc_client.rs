@@ -12,6 +12,7 @@ struct Arguments {
     provider: Option<Path>,
 }
 impl Parse for Arguments {
+    /// Parses named-client attribute arguments and rejects duplicates or unknown keys.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let (mut name, mut client, mut provider) = (None, None, None);
         while !input.is_empty() {
@@ -55,6 +56,7 @@ impl Parse for Arguments {
         })
     }
 }
+/// Validates a client wrapper declaration and emits its DI and lifecycle integration.
 pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     let args: Arguments = syn::parse2(arguments)?;
     let item: ItemStruct = syn::parse2(item)?;
@@ -121,12 +123,14 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         #(#cfg)*
         impl #common::core::Injector for #ty {
             type Dependencies = #dependencies;
+            #[doc = "Builds the managed named client from application configuration and dependencies."]
             async fn inject(#pattern: Self::Dependencies) -> #common::core::Result<Self> {
                 let options = #common::GrpcClientConfig::parse(&config, #name)?;
                 let encoding_limit = options.max_encoding_message_bytes(); let decoding_limit = options.max_decoding_message_bytes();
                 let channel = #common::GrpcChannel::from_config(options, #provider).await?;
                 Ok(Self { channel, encoding_limit, decoding_limit })
             }
+            #[doc = "Attaches the managed channel's startup and shutdown lifecycle hook."]
             fn lifecycle(value: Self) -> #common::core::LifecycleResource<Self> {
                 let hook = #common::GrpcClientLifecycle::new(value.channel.clone(), #name);
                 #common::core::LifecycleResource::new(value).with_infrastructure_hook("furnace.common.grpc.clients", hook)

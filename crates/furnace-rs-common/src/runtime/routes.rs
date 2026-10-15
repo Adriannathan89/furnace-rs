@@ -89,6 +89,7 @@ pub async fn serve_transports(
     }
     super::serve_prepared_transports(application, prepared, shutdown).await
 }
+/// Builds the bootstrap error for missing, unmatched, or unlinked route/binding pairs.
 fn invalid_composition() -> ApplicationRuntimeError {
     ApplicationRuntimeError::Bootstrap(furnace_rs_core::Error::new(
         furnace_rs_core::Diagnostic::new(

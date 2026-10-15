@@ -129,7 +129,7 @@ reaches it through the facade and common integration crates.
   application state.
 - `src/graph/` — provider graph, module graph, scopes, diagnostics, and plans.
 - `src/auto_configuration/` — generic official-default evaluation and reports.
-- `src/config/` and `src/configuration/` — loaded values, typed parsing, and
+- `src/config.rs` and `src/configuration/` — loaded values, typed parsing, and
   secrets.
 - `src/descriptor.rs` and `src/catalog.rs` — static metadata and catalog
   normalization.

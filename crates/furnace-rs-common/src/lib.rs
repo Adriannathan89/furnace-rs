@@ -248,6 +248,7 @@ pub mod __private {
     pub use crate::passport::{PassportGuardLayer, PassportGuardState};
     #[cfg(all(feature = "http", feature = "jwt"))]
     #[allow(clippy::result_large_err)]
+    /// Resolves strategy bindings for Passport guards selected by an analyzed module graph.
     pub fn preflight_scoped(
         cauldron_graph: Option<&furnace_rs_core::CauldronGraph>,
     ) -> furnace_rs_core::Result<crate::passport::PassportStrategyPreflight<'static>> {

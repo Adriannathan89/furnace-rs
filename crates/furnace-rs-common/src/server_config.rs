@@ -33,6 +33,7 @@ pub(crate) struct ServerBinding {
 }
 
 impl ServerBinding {
+    /// Reads and validates the automatic HTTP bind host and port from configuration.
     pub(crate) fn from_config(config: &Config) -> Result<Self> {
         let host = config.get("server.host").unwrap_or("127.0.0.1");
         let host = parse_host(host, config.source_of("server.host"))?;
@@ -42,34 +43,41 @@ impl ServerBinding {
         Ok(Self { host, port })
     }
 
+    /// Returns the validated host name or IP address used for binding.
     pub(crate) fn host(&self) -> &str {
         &self.host
     }
 
+    /// Returns the validated nonzero TCP port used for binding.
     pub(crate) const fn port(&self) -> u16 {
         self.port
     }
 
+    /// Returns the host and port as a bind-address pair.
     pub(crate) fn address(&self) -> (&str, u16) {
         (self.host(), self.port())
     }
 }
 
 impl fmt::Debug for ServerBinding {
+    /// Formats the binding without revealing configured network details.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("[REDACTED]")
     }
 }
 
+/// Enables the conventional automatic HTTP listener during application building.
 pub(crate) fn enable_automatic_server(builder: &mut FurnaceBuilder) -> bool {
     builder.__auto_configuration_input(SERVER_AUTO_CONFIGURATION_ID, HttpRuntimeMode::Automatic)
 }
 
 #[allow(dead_code)]
+/// Loads `.env`, `furnace.toml`, and the conventional `FURNACE_` environment overrides.
 pub(crate) fn load_standard_config_from(root: &Path) -> Result<Config> {
     load_standard_config_from_with_environment(root, EnvSource::new("FURNACE_"))
 }
 
+/// Loads conventional configuration sources with an explicitly supplied environment source.
 pub(crate) fn load_standard_config_from_with_environment(
     root: &Path,
     environment: EnvSource,
@@ -81,10 +89,12 @@ pub(crate) fn load_standard_config_from_with_environment(
         .build()
 }
 
+/// Supplies the type identity used to register automatic HTTP binding configuration.
 fn server_binding_type_id() -> TypeId {
     TypeId::of::<ServerBinding>()
 }
 
+/// Decides whether automatic HTTP binding applies and reports its configuration evidence.
 fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluation {
     if context.input::<HttpRuntimeMode>().is_none() {
         return AutoConfigurationEvaluation::overridden(
@@ -142,12 +152,14 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
     }
 }
 
+/// Contributes the validated HTTP binding after automatic-configuration evaluation succeeds.
 fn apply(context: &AutoConfigurationApplyContext<'_>) -> Result<AutoConfigurationContribution> {
     Ok(AutoConfigurationContribution::new(
         ServerBinding::from_config(context.config())?,
     ))
 }
 
+/// Validates and normalizes an IPv4 address, IPv6 address, or DNS host name.
 fn parse_host(host: &str, source: Option<&str>) -> Result<String> {
     if host.trim().is_empty() {
         return Err(invalid_server_configuration(
@@ -178,6 +190,7 @@ fn parse_host(host: &str, source: Option<&str>) -> Result<String> {
     Ok(host.to_owned())
 }
 
+/// Checks the DNS label rules accepted for an automatic server host.
 pub(crate) fn is_valid_hostname(host: &str) -> bool {
     let hostname = host.strip_suffix('.').unwrap_or(host);
     !hostname.is_empty()
@@ -193,6 +206,7 @@ pub(crate) fn is_valid_hostname(host: &str) -> bool {
         })
 }
 
+/// Parses a nonzero TCP port and attaches source context to invalid values.
 fn parse_port(port: &str, source: Option<&str>) -> Result<u16> {
     let Ok(port) = port.parse::<u16>() else {
         return Err(invalid_server_configuration(
@@ -212,6 +226,7 @@ fn parse_port(port: &str, source: Option<&str>) -> Result<u16> {
     Ok(port)
 }
 
+/// Builds a configuration diagnostic while limiting the source label to safe values.
 fn invalid_server_configuration(key: &'static str, source: Option<&str>, rule: &str) -> Error {
     Error::new(
         Diagnostic::new(
@@ -224,6 +239,7 @@ fn invalid_server_configuration(key: &'static str, source: Option<&str>, rule: &
     )
 }
 
+/// Maps arbitrary configuration source paths to non-sensitive diagnostic labels.
 fn safe_source_label(source: Option<&str>) -> &'static str {
     match source {
         None => "defaults",
@@ -242,6 +258,7 @@ fn safe_source_label(source: Option<&str>) -> &'static str {
     }
 }
 
+/// Collects source metadata for the automatic HTTP host and port settings.
 fn server_evidence(context: &AutoConfigurationContext<'_>) -> Vec<AutoConfigurationConfigEvidence> {
     ["server.host", "server.port"]
         .into_iter()

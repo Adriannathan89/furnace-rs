@@ -23,6 +23,7 @@ pub struct PassportCookies<'a> {
 
 #[cfg(feature = "cookies")]
 impl<'a> PassportCookies<'a> {
+    /// Builds the cookie view while recording the authentication cookie to hide.
     const fn new(cookies: &'a CookieJar, excluded_name: Option<String>) -> Self {
         Self {
             cookies,
@@ -55,6 +56,7 @@ impl<'a> PassportCookies<'a> {
         }
     }
 
+    /// Checks whether the named cookie contains the credential selected by the guard.
     fn is_excluded(&self, name: &str) -> bool {
         self.excluded_name.as_deref() == Some(name)
     }
@@ -62,6 +64,7 @@ impl<'a> PassportCookies<'a> {
 
 #[cfg(feature = "cookies")]
 impl fmt::Debug for PassportCookies<'_> {
+    /// Formats whether an authentication cookie is hidden without exposing its name.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PassportCookies")
@@ -132,6 +135,7 @@ impl<'a> PassportContext<'a> {
     }
 
     #[allow(clippy::too_many_arguments)]
+    /// Builds a context after redacting credential headers and applying cookie filtering.
     fn from_parts(
         headers: &'a HeaderMap,
         method: &'a Method,
@@ -188,6 +192,7 @@ impl<'a> PassportContext<'a> {
     }
 }
 
+/// Copies request headers after removing all supported credential-bearing fields.
 fn safe_headers(headers: &HeaderMap) -> HeaderMap {
     let mut safe = headers.clone();
     safe.remove(AUTHORIZATION);
@@ -197,6 +202,7 @@ fn safe_headers(headers: &HeaderMap) -> HeaderMap {
 }
 
 impl fmt::Debug for PassportContext<'_> {
+    /// Formats safe request metadata counts without exposing header values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug = formatter.debug_struct("PassportContext");
         debug

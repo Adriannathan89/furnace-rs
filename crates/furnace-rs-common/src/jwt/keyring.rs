@@ -32,6 +32,7 @@ struct CachedKey {
 }
 
 impl KeyRing {
+    /// Loads configured keys into signing and verification key objects.
     pub(crate) fn from_config(config: &PassportConfig) -> JwtResult<Self> {
         let mode = match config.key_mode() {
             PassportKeyMode::SimpleHmac { secret } => {
@@ -59,6 +60,7 @@ impl KeyRing {
         Ok(Self { mode })
     }
 
+    /// Returns the active signing key, algorithm, and named key id when available.
     pub(crate) fn active_signer(&self) -> JwtResult<(&EncodingKey, JwtAlgorithm, Option<&str>)> {
         match &self.mode {
             KeyRingMode::Simple {
@@ -79,6 +81,7 @@ impl KeyRing {
         }
     }
 
+    /// Selects a verification key by `kid`, or the active legacy HMAC key without one.
     pub(crate) fn verifier(&self, key_id: Option<&str>) -> JwtResult<(&DecodingKey, JwtAlgorithm)> {
         match &self.mode {
             KeyRingMode::Simple {
@@ -98,6 +101,7 @@ impl KeyRing {
 }
 
 impl CachedKey {
+    /// Reads configured key material and prepares the matching encoding/decoding handles.
     fn from_configured(configured: &ConfiguredKey) -> JwtResult<Self> {
         match configured.secret.as_deref() {
             Some(secret) => Ok(Self {

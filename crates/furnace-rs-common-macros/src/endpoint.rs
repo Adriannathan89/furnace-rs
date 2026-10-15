@@ -31,6 +31,7 @@ pub(crate) fn validate_body_extractor_order(
     Ok(())
 }
 
+/// Recognizes fully qualified FURNACE and Axum extractors that consume request bodies.
 pub(crate) fn known_body_consumer(ty: &Type, common: &syn::Path) -> bool {
     let Type::Path(type_path) = ty else {
         return false;
@@ -52,10 +53,12 @@ pub(crate) fn known_body_consumer(ty: &Type, common: &syn::Path) -> bool {
     false
 }
 
+/// Matches a FURNACE type under the configured common-crate path or facade path.
 fn is_furnace_type(path: &syn::Path, common: &syn::Path, name: &str) -> bool {
     path_with_suffix_is(path, common, &[name]) || facade_path_with_suffix_is(path, common, &[name])
 }
 
+/// Matches native Axum extractor paths, including supported re-export forms.
 fn is_axum_type(path: &syn::Path, common: &syn::Path, name: &str) -> bool {
     path_is(path, &["axum", name])
         || path_is(path, &["axum", "extract", name])
@@ -65,6 +68,7 @@ fn is_axum_type(path: &syn::Path, common: &syn::Path, name: &str) -> bool {
         || facade_path_with_suffix_is(path, common, &["axum", "extract", name])
 }
 
+/// Matches a type path reached through the facade's `common` module.
 fn facade_path_with_suffix_is(path: &syn::Path, common: &syn::Path, suffix: &[&str]) -> bool {
     let Some(last) = common.segments.last() else {
         return false;
@@ -90,6 +94,7 @@ fn facade_path_with_suffix_is(path: &syn::Path, common: &syn::Path, suffix: &[&s
             .all(|(segment, expected)| segment.ident == *expected)
 }
 
+/// Matches a path with an exact prefix and trailing sequence of identifiers.
 fn path_with_suffix_is(path: &syn::Path, prefix: &syn::Path, suffix: &[&str]) -> bool {
     let prefix_len = prefix.segments.len();
     let path_len = path.segments.len();
@@ -108,6 +113,7 @@ fn path_with_suffix_is(path: &syn::Path, prefix: &syn::Path, suffix: &[&str]) ->
             .all(|(segment, expected)| segment.ident == *expected)
 }
 
+/// Checks whether a syntax path exactly matches a sequence of identifiers.
 fn path_is(path: &syn::Path, expected: &[&str]) -> bool {
     path.segments.len() == expected.len()
         && path
@@ -117,6 +123,7 @@ fn path_is(path: &syn::Path, expected: &[&str]) -> bool {
             .all(|(segment, expected)| segment.ident == *expected)
 }
 
+/// Identifies `cfg` attributes that must be preserved on generated route items.
 pub(crate) fn is_conditional_attribute(attribute: &Attribute) -> bool {
     attribute.path().is_ident("cfg") || attribute.path().is_ident("cfg_attr")
 }
@@ -131,6 +138,7 @@ pub(crate) enum HttpVerb {
 }
 
 impl HttpVerb {
+    /// Converts a previously validated endpoint attribute name to its verb variant.
     pub(crate) fn from_name(name: &str) -> Self {
         match name {
             "get" => Self::Get,
@@ -142,6 +150,7 @@ impl HttpVerb {
         }
     }
 
+    /// Emits the matching common-crate `HttpMethod` token.
     pub(crate) fn tokens(self, common: &syn::Path) -> proc_macro2::TokenStream {
         match self {
             Self::Get => quote!(#common::HttpMethod::Get),
@@ -152,6 +161,7 @@ impl HttpVerb {
         }
     }
 
+    /// Emits the matching Axum route constructor token.
     pub(crate) fn routing_tokens(self, common: &syn::Path) -> proc_macro2::TokenStream {
         match self {
             Self::Get => quote!(#common::__private::get),
@@ -163,15 +173,18 @@ impl HttpVerb {
     }
 }
 
+/// Returns the recognized HTTP verb name for an attribute, if present.
 pub(crate) fn route_verb(attribute: &Attribute) -> Option<&'static str> {
     route_verb_path(attribute.path())
 }
 
+/// Recognizes an HTTP verb from the final identifier in an attribute path.
 fn route_verb_path(path: &syn::Path) -> Option<&'static str> {
     let ident = path.segments.last()?.ident.to_string();
     VERBS.iter().copied().find(|verb| ident == *verb)
 }
 
+/// Detects endpoint verbs nested in `cfg_attr`, which endpoint expansion does not support.
 pub(crate) fn cfg_attr_contains_route_verb(attribute: &Attribute) -> syn::Result<bool> {
     let nested = attribute.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
     Ok(nested
@@ -180,6 +193,7 @@ pub(crate) fn cfg_attr_contains_route_verb(attribute: &Attribute) -> syn::Result
         .any(|meta| route_verb_path(meta.path()).is_some()))
 }
 
+/// Joins a validated prefix and endpoint path while handling root paths.
 pub(crate) fn join_paths(prefix: &LitStr, path: &LitStr) -> syn::Result<LitStr> {
     let prefix = prefix.value();
     let path_value = path.value();
@@ -213,6 +227,7 @@ pub(crate) struct HandlerAdapter<'a> {
 }
 
 impl HandlerAdapter<'_> {
+    /// Emits a typed Axum handler that consumes the validated route iterator.
     pub(crate) fn tokens(self, common: &syn::Path) -> TokenStream {
         let method = self.verb.tokens(common);
         let routing = self.verb.routing_tokens(common);

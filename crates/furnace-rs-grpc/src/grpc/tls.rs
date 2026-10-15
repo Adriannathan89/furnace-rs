@@ -56,6 +56,7 @@ pub async fn configure_grpc_server(
     Ok(server)
 }
 #[cfg(feature = "tls")]
+/// Creates a credential-free diagnostic for failed TLS material preparation.
 fn tls_error() -> Error {
     Error::new(Diagnostic::new(
         super::FURNACE151,

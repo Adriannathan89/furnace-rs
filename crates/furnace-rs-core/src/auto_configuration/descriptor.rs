@@ -64,6 +64,7 @@ impl AutoConfigurationDescriptor {
         self.focused_requirements = true;
         self
     }
+    /// Reports whether focused analysis may use this integration's metadata requirement.
     pub(crate) const fn focused_requirements(&self) -> bool {
         self.focused_requirements
     }
@@ -121,6 +122,7 @@ pub struct AutoConfigurationContext<'a> {
 }
 
 impl<'a> AutoConfigurationContext<'a> {
+    /// Creates the read-only condition context for one selected integration.
     pub(crate) const fn new(
         identifier: &'static str,
         config: &'a Config,
@@ -141,6 +143,7 @@ impl<'a> AutoConfigurationContext<'a> {
         }
     }
 
+    /// Attaches per-analysis memoization and the optional focused fixture target.
     pub(crate) fn with_analysis(
         mut self,
         memo: &'a crate::preflight::AnalysisMemo,
@@ -247,6 +250,7 @@ pub struct AutoConfigurationApplyContext<'a> {
 }
 
 impl<'a> AutoConfigurationApplyContext<'a> {
+    /// Creates the read-only apply context after integration validation succeeds.
     pub(crate) const fn new(
         identifier: &'static str,
         config: &'a Config,
@@ -370,6 +374,7 @@ impl AutoConfigurationEvaluation {
         )
     }
 
+    /// Stores the evaluation result and any structured failure for later preflight handling.
     fn new(
         status: AutoConfigurationStatus,
         reason_code: AutoConfigurationReasonCode,
@@ -388,6 +393,7 @@ impl AutoConfigurationEvaluation {
         }
     }
 
+    /// Builds the public, value-redacted report associated with this descriptor.
     pub(crate) fn report(
         &self,
         descriptor: &AutoConfigurationDescriptor,
@@ -403,18 +409,22 @@ impl AutoConfigurationEvaluation {
         )
     }
 
+    /// Returns the evaluation state used by graph selection.
     pub(crate) const fn status(&self) -> AutoConfigurationStatus {
         self.status
     }
 
+    /// Borrows the evaluator or applier error without consuming it.
     pub(crate) fn failure(&self) -> Option<&Error> {
         self.failure.as_ref()
     }
 
+    /// Removes the stored error when the builder needs to return it as primary.
     pub(crate) fn take_failure(&mut self) -> Option<Error> {
         self.failure.take()
     }
 
+    /// Replaces an earlier outcome with a later provisioning failure.
     pub(crate) fn replace_failure(
         &mut self,
         reason_code: AutoConfigurationReasonCode,
@@ -460,6 +470,7 @@ impl AutoConfigurationContribution {
         self
     }
 
+    /// Separates the provider value from hooks that the builder registers.
     pub(crate) fn into_parts(self) -> (ErasedProvider, Vec<Box<dyn LifecycleHook>>) {
         (self.provider, self.hooks)
     }
@@ -471,6 +482,7 @@ pub(crate) struct AutoConfigurationInputs {
 }
 
 impl AutoConfigurationInputs {
+    /// Stores one typed input per descriptor; returns false instead of replacing duplicates.
     pub(crate) fn insert<T>(&mut self, identifier: &'static str, value: T) -> bool
     where
         T: Send + Sync + 'static,
@@ -483,6 +495,7 @@ impl AutoConfigurationInputs {
         true
     }
 
+    /// Retrieves an input only when both its descriptor and concrete type match.
     pub(crate) fn get<T>(&self, identifier: &'static str) -> Option<&T>
     where
         T: Send + Sync + 'static,
@@ -493,6 +506,7 @@ impl AutoConfigurationInputs {
     }
 }
 
+/// Orders requirement evidence by provider identity and then authored location.
 fn requirement_order(
     left: &AutoConfigurationRequirement,
     right: &AutoConfigurationRequirement,
@@ -502,6 +516,7 @@ fn requirement_order(
         .then_with(|| location_order(left.location(), right.location()))
 }
 
+/// Compares optional source locations while keeping unknown locations first.
 fn location_order(
     left: Option<SourceLocation>,
     right: Option<SourceLocation>,

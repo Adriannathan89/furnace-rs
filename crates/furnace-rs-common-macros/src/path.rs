@@ -38,6 +38,7 @@ pub(crate) fn common_path() -> syn::Result<Path> {
     ))
 }
 
+/// Converts Cargo's crate-resolution result to a direct or facade common path.
 fn found_path(found: FoundCrate, facade: bool) -> syn::Result<Path> {
     match (found, facade) {
         (FoundCrate::Itself, false) => Ok(parse_quote!(crate)),
@@ -47,6 +48,7 @@ fn found_path(found: FoundCrate, facade: bool) -> syn::Result<Path> {
     }
 }
 
+/// Converts a dependency name to a Rust path, applying the facade module when requested.
 fn named_path(name: &str, facade: bool) -> syn::Result<Path> {
     let ident = syn::Ident::new(&name.replace('-', "_"), Span::call_site());
     if facade {

@@ -1,3 +1,5 @@
+//! The development loop that builds, watches, restarts, and drains an application.
+
 use std::{
     ffi::OsString,
     future::{Future, pending},
@@ -29,17 +31,24 @@ const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(3);
 type DriverFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, CliError>> + Send + 'a>>;
 
 trait DevDriver {
+    /// Starts an application build task for the selected target.
     fn build(&mut self, target: ResolvedApplication) -> Box<dyn BuildTask>;
+    /// Starts the built application with the original forwarded arguments.
     fn start(&mut self, built: BuiltApplication, arguments: Vec<OsString>) -> DriverFuture<'_, ()>;
+    /// Requests graceful application shutdown and waits for the child process.
     fn stop(&mut self) -> DriverFuture<'_, StopOutcome>;
+    /// Reports whether the managed application process has exited.
     fn application_exited(&mut self) -> Result<bool, CliError>;
 }
 
 trait BuildTask: Send {
+    /// Waits for the build task to produce its selected executable.
     fn wait(&mut self) -> DriverFuture<'_, BuiltApplication>;
+    /// Cancels the build task and waits for its child cleanup.
     fn cancel_and_wait(&mut self) -> DriverFuture<'_, ()>;
 }
 
+/// Loads the selected application, starts file watching, and runs until shutdown.
 pub(crate) async fn run_dev(
     command: ApplicationCommand,
     root: &Path,
@@ -62,6 +71,7 @@ pub(crate) async fn run_dev(
     Ok(ExitCode::SUCCESS)
 }
 
+/// Waits for a relevant event and merges further events during the debounce window.
 async fn next_change(
     events: &mut WatchEvents,
     watch_set: &WatchSet,
@@ -88,6 +98,7 @@ async fn next_change(
     }
 }
 
+/// Resolves the requested target before entering the injectable development loop.
 async fn run_dev_with<D, S>(
     command: ApplicationCommand,
     driver: &mut D,
@@ -106,6 +117,7 @@ where
     run_dev_with_target(command, driver, target, watch_set, events, shutdown).await
 }
 
+/// Runs the event loop while a watcher task forwards debounced impacts.
 async fn run_dev_with_target<D, S>(
     command: ApplicationCommand,
     driver: &mut D,
@@ -137,6 +149,7 @@ where
     result
 }
 
+/// Coordinates builds, application processes, watch changes, exit polling, and shutdown.
 async fn run_dev_with_event_loop<D, S>(
     command: ApplicationCommand,
     driver: &mut D,
@@ -226,6 +239,7 @@ where
     result
 }
 
+/// Awaits the active build or remains pending when no build is running.
 async fn wait_for_build(
     build: &mut Option<Box<dyn BuildTask>>,
 ) -> Option<Result<BuiltApplication, CliError>> {
@@ -235,6 +249,7 @@ async fn wait_for_build(
     }
 }
 
+/// Removes the active build task and awaits its cancellation cleanup.
 async fn cancel_active_build(build: &mut Option<Box<dyn BuildTask>>) -> Result<(), CliError> {
     let Some(mut build) = build.take() else {
         return Ok(());
@@ -242,6 +257,7 @@ async fn cancel_active_build(build: &mut Option<Box<dyn BuildTask>>) -> Result<(
     build.cancel_and_wait().await
 }
 
+/// Applies state-machine actions to builds and the managed application process.
 async fn execute_actions<D: DevDriver>(
     actions: &mut Vec<DevAction>,
     driver: &mut D,
@@ -279,6 +295,7 @@ async fn execute_actions<D: DevDriver>(
     Ok(false)
 }
 
+/// Creates the diagnostic used when the watcher event channel closes unexpectedly.
 fn watch_channel_closed() -> CliError {
     CliError::new(
         FURNACE220,
@@ -293,6 +310,7 @@ struct ProductionDevDriver {
 }
 
 impl DevDriver for ProductionDevDriver {
+    /// Starts an application build task for the selected target.
     fn build(&mut self, target: ResolvedApplication) -> Box<dyn BuildTask> {
         match CargoBuild::start(target) {
             Ok(build) => Box::new(build),
@@ -300,6 +318,7 @@ impl DevDriver for ProductionDevDriver {
         }
     }
 
+    /// Starts the built application with the original forwarded arguments.
     fn start(&mut self, built: BuiltApplication, arguments: Vec<OsString>) -> DriverFuture<'_, ()> {
         Box::pin(async move {
             if self.application.is_some() {
@@ -314,6 +333,7 @@ impl DevDriver for ProductionDevDriver {
         })
     }
 
+    /// Requests graceful application shutdown and waits for the child process.
     fn stop(&mut self) -> DriverFuture<'_, StopOutcome> {
         Box::pin(async move {
             let Some(mut application) = self.application.take() else {
@@ -323,6 +343,7 @@ impl DevDriver for ProductionDevDriver {
         })
     }
 
+    /// Reports whether the managed application process has exited.
     fn application_exited(&mut self) -> Result<bool, CliError> {
         let Some(application) = self.application.as_mut() else {
             return Ok(false);
@@ -339,21 +360,25 @@ impl DevDriver for ProductionDevDriver {
 struct FailedBuild(Option<CliError>);
 
 impl BuildTask for FailedBuild {
+    /// Waits for the build task to produce its selected executable.
     fn wait(&mut self) -> DriverFuture<'_, BuiltApplication> {
         let error = self.0.take().expect("failed builds are awaited once");
         Box::pin(async move { Err(error) })
     }
 
+    /// Cancels the build task and waits for its child cleanup.
     fn cancel_and_wait(&mut self) -> DriverFuture<'_, ()> {
         Box::pin(async { Ok(()) })
     }
 }
 
 impl BuildTask for CargoBuild {
+    /// Waits for the build task to produce its selected executable.
     fn wait(&mut self) -> DriverFuture<'_, BuiltApplication> {
         Box::pin(self.wait())
     }
 
+    /// Cancels the build task and waits for its child cleanup.
     fn cancel_and_wait(&mut self) -> DriverFuture<'_, ()> {
         Box::pin(self.cancel_and_wait())
     }

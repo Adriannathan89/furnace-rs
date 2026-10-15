@@ -198,7 +198,12 @@ pre-existing paths and failed staging remain untouched. It is offline and does
 not run Cargo, install dependencies, initialise Git, select a template, or
 generate database/JWT/cookie/migration code.
 
-## Deliberate non-goals
+## Deliberate non-goals in the 1.0.2 release
+
+This list records the scope of the released 1.0.2 architecture. The later
+2.0.0-beta.2 checkout adds protobuf gRPC, optional verified TLS, and shared
+HTTP/gRPC listener selection as described below; those additions do not change
+what the 1.0.2 release provided.
 
 1.0.2 does not add automatic validation to native extractors, asynchronous or
 database-backed derive validation, full-RFC or DNS email validation, automatic

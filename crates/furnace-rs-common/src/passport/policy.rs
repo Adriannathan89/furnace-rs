@@ -14,6 +14,7 @@ pub enum TokenSource {
 }
 
 impl fmt::Debug for TokenSource {
+    /// Redacts cookie names while identifying the token-source category.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Bearer => formatter.write_str("Bearer"),
@@ -301,6 +302,7 @@ pub fn authorizes(guard: &GuardDescriptor, authentication: &ErasedAuthentication
     })
 }
 
+/// Applies one optional role or permission clause using its any/all matching mode.
 fn matches_clause(clause: Option<PolicyClause>, matches: impl FnMut(&str) -> bool) -> bool {
     let Some(clause) = clause else {
         return true;
@@ -311,6 +313,7 @@ fn matches_clause(clause: Option<PolicyClause>, matches: impl FnMut(&str) -> boo
     }
 }
 
+/// Rejects incomplete or unsafe static policy metadata before route startup.
 fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
     let subject = guard_subject(guard);
     if guard.policy_name().is_empty() || guard.handler().is_empty() {
@@ -387,10 +390,12 @@ fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
     Ok(())
 }
 
+/// Produces a stable diagnostic subject from the policy and declaration names.
 fn guard_subject(guard: &GuardDescriptor) -> String {
     format!("{}::{}", guard.policy_name(), guard.handler())
 }
 
+/// Checks the lowercase ASCII syntax used to identify a Passport strategy.
 fn valid_strategy_name(value: &str) -> bool {
     !value.is_empty()
         && value.bytes().all(|byte| {
@@ -399,6 +404,7 @@ fn valid_strategy_name(value: &str) -> bool {
 }
 
 #[cfg(feature = "cookies")]
+/// Checks the cookie-name token syntax accepted for authentication sources.
 fn valid_cookie_name(value: &str) -> bool {
     !value.is_empty()
         && value.bytes().all(|byte| {
@@ -423,6 +429,7 @@ fn valid_cookie_name(value: &str) -> bool {
         })
 }
 
+/// Builds a source-located diagnostic for invalid guard metadata.
 fn metadata_error(subject: String, message: impl Into<String>, location: SourceLocation) -> Error {
     Error::new(
         Diagnostic::new(

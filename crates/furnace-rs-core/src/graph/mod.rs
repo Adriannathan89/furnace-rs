@@ -28,6 +28,7 @@ pub(crate) use focus::select_focused_providers;
 pub(crate) use model::SatisfiedProvider;
 pub(crate) use scope::select_scoped_providers;
 
+/// Analyzes an explicit descriptor set and pre-satisfied values.
 pub(crate) fn analyze_descriptors(
     descriptors: &[&'static crate::ProviderDescriptor],
     satisfied: &[SatisfiedProvider],
@@ -36,6 +37,7 @@ pub(crate) fn analyze_descriptors(
     analysis::analyze_parts(descriptors, satisfied, covered_missing)
 }
 
+/// Analyzes all providers registered in the process catalog.
 pub(crate) fn analyze_catalog(
     satisfied: &[SatisfiedProvider],
     covered_missing: &[std::any::TypeId],
@@ -44,6 +46,7 @@ pub(crate) fn analyze_catalog(
     analyze_descriptors(&descriptors, satisfied, covered_missing)
 }
 
+/// Analyzes descriptors while substituting authored cauldron locations where supplied.
 pub(crate) fn analyze_descriptors_with_locations(
     descriptors: &[&'static crate::ProviderDescriptor],
     satisfied: &[SatisfiedProvider],

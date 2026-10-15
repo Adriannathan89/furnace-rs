@@ -72,6 +72,7 @@ impl GrpcApplicationScope {
         Self::select(None, Some(target))
     }
     #[allow(clippy::result_large_err)]
+    /// Builds the service scope selected by the application or focused test.
     fn select(graph: Option<&CauldronGraph>, focus: Option<TypeId>) -> Result<Self> {
         let mut descriptors: Vec<_> =
             furnace_rs_core::__private::inventory::iter::<GrpcServiceRegistration>
@@ -103,6 +104,7 @@ impl GrpcApplicationScope {
         Self::for_cauldron_graph(application.cauldron_graph())
     }
     #[cfg(feature = "jwt")]
+    /// Returns the selected application root identity when graph metadata is available.
     pub(crate) const fn root_type_id(&self) -> Option<TypeId> {
         self.root
     }
@@ -111,6 +113,7 @@ impl GrpcApplicationScope {
         &self.services
     }
     #[cfg(feature = "jwt")]
+    /// Returns the method guards selected in this application scope.
     pub(crate) fn guards(&self) -> Vec<crate::common::passport::__private::ScopedGuard> {
         self.services
             .iter()
@@ -136,6 +139,7 @@ impl GrpcApplicationScope {
         &self.files
     }
     #[allow(clippy::result_large_err)]
+    /// Validates selected service descriptors and builds their merged scope.
     fn validate(
         descriptors: &[&'static GrpcServiceDescriptor],
         graph: Option<&CauldronGraph>,
@@ -299,6 +303,7 @@ impl GrpcApplicationScope {
         })
     }
 }
+/// Builds a registration diagnostic with the descriptor source location.
 fn metadata_error(descriptor: Option<&GrpcServiceDescriptor>, message: &'static str) -> Error {
     let mut diagnostic = Diagnostic::new(FURNACE150, "invalid gRPC registration", message);
     if let Some(descriptor) = descriptor {
@@ -309,6 +314,7 @@ fn metadata_error(descriptor: Option<&GrpcServiceDescriptor>, message: &'static 
     Error::new(diagnostic)
 }
 
+/// Converts a protobuf wire method name to its generated Rust identifier.
 fn rust_method_name(wire_name: &str) -> String {
     use heck::ToSnakeCase;
     let mut name = wire_name.to_snake_case();

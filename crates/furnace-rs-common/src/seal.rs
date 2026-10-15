@@ -55,6 +55,7 @@ impl<C> SealRegistration<C> {
 }
 
 impl<C> Default for SealRegistration<C> {
+    /// Creates an empty public-controller declaration.
     fn default() -> Self {
         Self::new()
     }
@@ -72,6 +73,7 @@ impl<C> SealProbe<C> {
 }
 
 impl<C> Default for SealProbe<C> {
+    /// Creates a type-only probe without constructing its controller.
     fn default() -> Self {
         Self::new()
     }
@@ -85,12 +87,14 @@ pub trait OptionalSeal {
 }
 
 impl<C> OptionalSeal for &SealProbe<C> {
+    /// Returns the implicit public declaration when no `Sealable` implementation exists.
     fn optional_seal(self) -> SealDefinition {
         SealDefinition::default()
     }
 }
 
 impl<C: Sealable> OptionalSeal for &&SealProbe<C> {
+    /// Resolves the controller's explicit seal declaration without constructing it.
     fn optional_seal(self) -> SealDefinition {
         C::seals().into_definition()
     }
