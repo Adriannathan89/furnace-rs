@@ -1,5 +1,5 @@
-#![cfg(all(feature = "http", feature = "grpc"))]
 //! Shared runtime lifecycle and supervised native protobuf connections.
+#![cfg(all(feature = "http", feature = "grpc"))]
 use furnace_grpc_test_support::{FILE_DESCRIPTOR_SET, pb};
 use furnace_rs_core::{ConfigBuilder, Furnace, Injector, MapSource, cauldron};
 use furnace_rs_grpc::{grpc_service, tonic};
