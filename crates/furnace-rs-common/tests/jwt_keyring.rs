@@ -4,7 +4,7 @@
 
 use std::fs;
 
-use furnace_rs_common::core::{Config, ConfigBuilder, TomlSource};
+use furnace_rs_common::core::{Config, ConfigBuilder, MapSource, TomlSource};
 use furnace_rs_common::{JwtErrorKind, PassportConfig};
 use tempfile::TempDir;
 
@@ -98,14 +98,6 @@ secret = "01234567890123456789012345678901"
 [passport]
 active_key = "current"
 algorithms = ["HS256"]
-[passport.keys.""]
-algorithm = "HS256"
-secret = "01234567890123456789012345678901"
-"#,
-        r#"
-[passport]
-active_key = "current"
-algorithms = ["HS256"]
 [passport.keys."current bear"]
 algorithm = "HS256"
 secret = "01234567890123456789012345678901"
@@ -121,6 +113,27 @@ secret = "01234567890123456789012345678901"
     ] {
         assert_invalid_configuration(input, &[]);
     }
+
+    // TOML rejects empty key segments before JWT loading; map sources can still
+    // represent one, so retain the Passport key-id validation regression here.
+    let config = ConfigBuilder::new()
+        .source(
+            MapSource::new(
+                "invalid key id",
+                [
+                    ("passport.active_key", "current"),
+                    ("passport.keys..algorithm", "HS256"),
+                    ("passport.keys..secret", "01234567890123456789012345678901"),
+                ],
+            )
+            .with_string_array("passport.algorithms", ["HS256"]),
+        )
+        .build()
+        .unwrap();
+    assert_eq!(
+        PassportConfig::from_config(&config).unwrap_err().kind(),
+        JwtErrorKind::InvalidConfiguration,
+    );
 }
 
 #[test]

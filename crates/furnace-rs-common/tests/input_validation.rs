@@ -125,8 +125,13 @@ fn derive_matrix_serde_paths_and_all_data_forms() {
         ),]
     );
     assert_eq!(
-        issue_summary(External::Tuple(String::new()).validate().unwrap_err()),
-        vec![(vec![Field("tuple".into()), Index(0)], "too_small".into()),]
+        issue_summary(
+            serde_json::from_str::<External>(r#"{"tuple":""}"#)
+                .unwrap()
+                .validate()
+                .unwrap_err()
+        ),
+        vec![(vec![Field("tuple".into())], "too_small".into()),]
     );
     #[derive(serde::Deserialize, Input)]
     #[serde(tag = "kind", content = "data")]
@@ -185,6 +190,98 @@ fn derive_matrix_serde_paths_and_all_data_forms() {
         ),
         vec![(vec![Field("value".into())], "too_small".into()),]
     );
+}
+
+#[test]
+fn newtype_and_transparent_paths_follow_deserialized_json() {
+    use ValidationPathSegment::Field;
+
+    #[derive(serde::Deserialize, Input)]
+    struct Newtype(#[validate(nonempty)] String);
+    #[derive(serde::Deserialize, Input)]
+    #[serde(transparent)]
+    struct Transparent {
+        #[serde(rename = "unused_wrapper_name")]
+        #[validate(nonempty)]
+        value: String,
+    }
+    #[derive(serde::Deserialize, Input)]
+    #[serde(transparent)]
+    struct TransparentTuple(#[validate(nested)] ProfileInput);
+    #[derive(serde::Deserialize, Input)]
+    struct NestedNewtype(#[validate(nested)] TransparentTuple);
+
+    let newtype: Newtype = serde_json::from_str(r#""""#).unwrap();
+    let transparent: Transparent = serde_json::from_str(r#""""#).unwrap();
+    assert!(
+        newtype.validate().unwrap_err().issues()[0]
+            .path()
+            .is_empty()
+    );
+    assert!(
+        transparent.validate().unwrap_err().issues()[0]
+            .path()
+            .is_empty()
+    );
+    let nested: NestedNewtype = serde_json::from_str(r#"{"name":"x"}"#).unwrap();
+    assert_eq!(
+        nested.validate().unwrap_err().issues()[0].path(),
+        [Field("name".into())]
+    );
+}
+
+#[test]
+fn enum_newtype_paths_follow_all_serde_tagging_modes() {
+    use ValidationPathSegment::{Field, Index};
+
+    #[derive(serde::Deserialize, Input)]
+    enum External {
+        #[serde(rename = "external")]
+        Value(#[validate(nonempty)] String),
+        Pair(#[validate(nonempty)] String, String),
+        #[serde(untagged)]
+        Bare(#[validate(nonempty)] String),
+    }
+    #[derive(serde::Deserialize, Input)]
+    #[serde(tag = "kind", content = "payload")]
+    enum Adjacent {
+        Value(#[validate(nonempty)] String),
+    }
+    #[derive(serde::Deserialize, Input)]
+    #[serde(tag = "kind")]
+    enum Internal {
+        Value(#[validate(nested)] ProfileInput),
+    }
+    #[derive(serde::Deserialize, Input)]
+    #[serde(untagged)]
+    enum Untagged {
+        Value(#[validate(nonempty)] String),
+    }
+
+    macro_rules! assert_path {
+        ($ty:ty, $json:expr, $expected:expr) => {{
+            let input: $ty = serde_json::from_str($json).unwrap();
+            assert_eq!(input.validate().unwrap_err().issues()[0].path(), $expected);
+        }};
+    }
+    assert_path!(External, r#"{"external":""}"#, [Field("external".into())]);
+    assert_path!(
+        External,
+        r#"{"Pair":["", "ok"]}"#,
+        [Field("Pair".into()), Index(0)]
+    );
+    assert_path!(External, r#""""#, []);
+    assert_path!(
+        Adjacent,
+        r#"{"kind":"Value","payload":""}"#,
+        [Field("payload".into())]
+    );
+    assert_path!(
+        Internal,
+        r#"{"kind":"Value","name":"x"}"#,
+        [Field("name".into())]
+    );
+    assert_path!(Untagged, r#""""#, []);
 }
 
 #[test]

@@ -47,6 +47,11 @@ Use `#[burner]` or a manual `Injector`. `grpc_method` is a helper consumed insid
 a service guard, while `guard = AnotherGuard` replaces the service policy for
 that method. Declare guards with the shared `#[guard]` attribute.
 
+Conditional methods apply their `cfg` and nested `cfg_attr` gates to their policy
+metadata as well. Put `grpc_method` directly on the method and condition the
+method; placing `grpc_method` inside `cfg_attr` is rejected. Disabled methods
+contribute no public or replacement guard override to active implementations.
+
 Cauldron ownership, imports, exports, and compile-time DI checks apply to gRPC
 implementations. Register ordinary dependencies in `providers`; a constructor
 that injects `JwtService` must explicitly declare that provider, as in the example.

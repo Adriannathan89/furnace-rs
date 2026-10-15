@@ -110,13 +110,17 @@ fn fields(
 ) -> syn::Result<(TokenStream, TokenStream)> {
     let mut patterns = Vec::new();
     let mut bodies = Vec::new();
+    // Serde newtypes and transparent wrappers share their field's representation.
+    // Enum tagging contributes only the prefix surrounding that representation.
+    let unwrap_field = naming.transparent
+        || matches!(fields, Fields::Unnamed(fields) if fields.unnamed.len() == 1);
     for (index, field) in fields.iter().enumerate() {
         let binding = format_ident!("__furnace_field_{index}");
         let field_naming = Naming::parse(&field.attrs)?;
         let mut path = prefix.to_vec();
         let access = if let Some(ident) = &field.ident {
             patterns.push(quote!(#ident: #binding));
-            if !field_naming.flatten {
+            if !field_naming.flatten && !unwrap_field {
                 let name = field_naming.rename.unwrap_or(serde_path::rename(
                     &ident.to_string(),
                     naming.rename_all.as_deref(),
@@ -127,7 +131,7 @@ fn fields(
             quote!(&self.#ident)
         } else {
             patterns.push(quote!(#binding));
-            if !field_naming.flatten {
+            if !field_naming.flatten && !unwrap_field {
                 path.push(quote!(#common::ValidationPathSegment::Index(#index)));
             }
             let index = syn::Index::from(index);

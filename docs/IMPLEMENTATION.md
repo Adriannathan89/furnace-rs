@@ -124,6 +124,11 @@ operation and shutdown failures. These rules are implemented by
 [`lifecycle.rs`](../crates/furnace-rs-core/src/lifecycle.rs) and the retained
 [`context.rs`](../crates/furnace-rs-core/src/context.rs).
 
+Lifecycle progress survives cancellation. After interrupted startup, call
+`shutdown()` to clean up completed starts; after interrupted shutdown or rollback,
+call it again to resume cleanup. Completed stops are not repeated. A pending
+startup hook owns its partial effects, and a pending stop must tolerate retry.
+
 ## HTTP request path
 
 HTTP controller and endpoint declarations create static descriptors. Selected

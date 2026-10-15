@@ -28,6 +28,21 @@ const DEBOUNCE: Duration = Duration::from_millis(150);
 const PROCESS_POLL_INTERVAL: Duration = Duration::from_millis(100);
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(3);
 
+struct ChangeBatch {
+    impact: ChangeImpact,
+    reload_project: bool,
+}
+
+struct BuildInputUpdate {
+    inputs: Vec<std::path::PathBuf>,
+    registered: tokio::sync::oneshot::Sender<Result<(), CliError>>,
+}
+
+struct WatchUpdate {
+    impact: ChangeImpact,
+    target: Option<ResolvedApplication>,
+}
+
 type DriverFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, CliError>> + Send + 'a>>;
 
 trait DevDriver {
@@ -74,26 +89,56 @@ pub(crate) async fn run_dev(
 /// Waits for a relevant event and merges further events during the debounce window.
 async fn next_change(
     events: &mut WatchEvents,
-    watch_set: &WatchSet,
-) -> Result<ChangeImpact, CliError> {
-    let mut impact = loop {
-        let impact = watch_set.classify_event(&events.recv().await?);
+    watch_set: &mut WatchSet,
+    inputs: &mut mpsc::UnboundedReceiver<BuildInputUpdate>,
+) -> Result<ChangeBatch, CliError> {
+    let mut batch = loop {
+        let event = next_watch_event(events, watch_set, inputs).await?;
+        let impact = watch_set.classify_event(&event);
         if impact != ChangeImpact::None {
-            break impact;
+            break ChangeBatch {
+                impact,
+                reload_project: watch_set.reloads_project(&event),
+            };
         }
     };
     let mut deadline = Instant::now() + DEBOUNCE;
 
     loop {
-        match tokio::time::timeout_at(deadline, events.recv()).await {
-            Err(_) => return Ok(impact),
+        match tokio::time::timeout_at(deadline, next_watch_event(events, watch_set, inputs)).await {
+            Err(_) => return Ok(batch),
             Ok(event) => {
-                let next = watch_set.classify_event(&event?);
+                let event = event?;
+                let next = watch_set.classify_event(&event);
+                batch.reload_project |= watch_set.reloads_project(&event);
                 if next != ChangeImpact::None {
-                    impact = ChangeImpact::merge([impact, next]);
+                    batch.impact = ChangeImpact::merge([batch.impact, next]);
                     deadline = Instant::now() + DEBOUNCE;
                 }
             }
+        }
+    }
+}
+
+/// Applies completed-build registrations without dropping events already being debounced.
+async fn next_watch_event(
+    events: &mut WatchEvents,
+    watch_set: &mut WatchSet,
+    inputs: &mut mpsc::UnboundedReceiver<BuildInputUpdate>,
+) -> Result<notify::Event, CliError> {
+    loop {
+        tokio::select! {
+            biased;
+            Some(update) = inputs.recv() => {
+                let next = watch_set.with_build_inputs(update.inputs);
+                if let Err(error) = events.replace_roots(watch_set, &next) {
+                    let _ = update.registered.send(Err(error));
+                    return Err(watch_channel_closed());
+                }
+                *watch_set = next;
+                let _ = update.registered.send(Ok(()));
+            }
+            event = events.recv() => return event,
         }
     }
 }
@@ -131,19 +176,65 @@ where
     S: Future<Output = ()>,
 {
     let (changes, mut changes_receiver) = mpsc::unbounded_channel();
+    let (build_inputs, mut build_input_receiver) = mpsc::unbounded_channel();
+    let invocation_root = target.package().invocation_root().to_path_buf();
+    let selection = command.target.clone();
     let watch_task = tokio::spawn(async move {
         let mut events = events;
+        let mut watch_set = watch_set;
         loop {
-            let change = next_change(&mut events, &watch_set).await;
-            let terminal = change.is_err();
-            if changes.send(change).is_err() || terminal {
-                break;
+            let change = async {
+                let batch =
+                    next_change(&mut events, &mut watch_set, &mut build_input_receiver).await?;
+                let target = if batch.reload_project {
+                    // Retain the active stream while metadata is reloaded. The event loop
+                    // continues owning and cancelling its active build independently.
+                    let project = match CargoProject::load_async(&invocation_root).await {
+                        Ok(project) => project,
+                        Err(error) => {
+                            eprintln!("{error}");
+                            eprintln!("furnace dev: metadata reload failed; continuing to watch");
+                            return Ok(None);
+                        }
+                    };
+                    let target = project.resolve_application(&selection)?;
+                    let next = WatchSet::for_application(&project, &target);
+                    events.replace_roots(&watch_set, &next)?;
+                    watch_set = next;
+                    Some(target)
+                } else {
+                    None
+                };
+                Ok(Some(WatchUpdate {
+                    impact: batch.impact,
+                    target,
+                }))
+            }
+            .await;
+            match change {
+                Ok(Some(change)) => {
+                    if changes.send(Ok(change)).is_err() {
+                        break;
+                    }
+                }
+                Ok(None) => {}
+                Err(error) => {
+                    let _ = changes.send(Err(error));
+                    break;
+                }
             }
         }
     });
 
-    let result =
-        run_dev_with_event_loop(command, driver, target, &mut changes_receiver, shutdown).await;
+    let result = run_dev_with_event_loop(
+        command,
+        driver,
+        target,
+        &mut changes_receiver,
+        build_inputs,
+        shutdown,
+    )
+    .await;
     watch_task.abort();
     let _ = watch_task.await;
     result
@@ -153,8 +244,9 @@ where
 async fn run_dev_with_event_loop<D, S>(
     command: ApplicationCommand,
     driver: &mut D,
-    target: ResolvedApplication,
-    changes: &mut mpsc::UnboundedReceiver<Result<ChangeImpact, CliError>>,
+    mut target: ResolvedApplication,
+    changes: &mut mpsc::UnboundedReceiver<Result<WatchUpdate, CliError>>,
+    build_inputs: mpsc::UnboundedSender<BuildInputUpdate>,
     shutdown: S,
 ) -> Result<(), CliError>
 where
@@ -193,21 +285,44 @@ where
                 actions = state.transition(DevEvent::Shutdown);
             }
             change = changes.recv() => {
-                let impact = match change
+                let update = match change
                     .ok_or_else(watch_channel_closed)
                     .and_then(|change| change)
                 {
                     Ok(impact) => impact,
                     Err(error) => break Err(error),
                 };
-                actions = state.transition(DevEvent::Changed(impact));
+                if let Some(refreshed) = update.target {
+                    target = refreshed;
+                }
+                actions = state.transition(DevEvent::Changed(update.impact));
             }
             result = wait_for_build(&mut build) => {
                 let result = result.expect("build future is only awaited while active");
                 actions = match result {
                     Ok(built) => {
-                        build = None;
-                        state.transition(DevEvent::BuildSucceeded(built))
+                        let (registered, registration) = tokio::sync::oneshot::channel();
+                        if build_inputs.send(BuildInputUpdate { inputs: built.build_inputs().to_vec(), registered }).is_err() {
+                            break Err(watch_channel_closed());
+                        }
+                        // The new process starts only after its declared input roots are live.
+                        tokio::select! {
+                            _ = &mut shutdown => {
+                                if let Err(error) = cancel_active_build(&mut build).await {
+                                    break Err(error);
+                                }
+                                state.transition(DevEvent::Shutdown)
+                            }
+                            result = registration => {
+                                match result {
+                                    Ok(Ok(())) => {},
+                                    Ok(Err(error)) => break Err(error),
+                                    Err(_) => break Err(watch_channel_closed()),
+                                }
+                                build = None;
+                                state.transition(DevEvent::BuildSucceeded(built))
+                            }
+                        }
                     }
                     Err(error) => {
                         if let Err(cleanup) = cancel_active_build(&mut build).await {
@@ -650,6 +765,39 @@ mod tests {
                 "exit",
             ]
         );
+    }
+
+    #[tokio::test]
+    async fn completed_build_inputs_are_registered_before_queued_file_events() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/run/single");
+        let project = CargoProject::load(&root).unwrap();
+        let target = project
+            .resolve_application(&TargetSelection::default())
+            .unwrap();
+        for _ in 0..32 {
+            let mut watch_set = WatchSet::for_application(&project, &target);
+            let input = root.join("schema.custom");
+            let (events, receiver) = tokio::sync::mpsc::unbounded_channel();
+            let mut events_receiver = WatchEvents::synthetic(receiver);
+            let (inputs, mut input_receiver) = tokio::sync::mpsc::unbounded_channel();
+            let (registered, mut registration) = tokio::sync::oneshot::channel();
+            inputs
+                .send(super::BuildInputUpdate {
+                    inputs: vec![input.clone()],
+                    registered,
+                })
+                .unwrap();
+            events.send(Ok(super::modified_event(input))).unwrap();
+            let event =
+                super::next_watch_event(&mut events_receiver, &mut watch_set, &mut input_receiver)
+                    .await
+                    .unwrap();
+            assert_eq!(
+                watch_set.classify_event(&event),
+                crate::watch::ChangeImpact::Rebuild
+            );
+            registration.try_recv().unwrap().unwrap();
+        }
     }
 
     #[tokio::test]

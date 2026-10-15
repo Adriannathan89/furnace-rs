@@ -86,6 +86,11 @@ defaults, and compatible validation are derive-checked. Issues preserve
 declaration order, full dotted keys, stable codes, and source labels, without
 values.
 
+TOML key segments must be nonempty and contain no literal dots; dotted TOML
+syntax still selects nested settings. Later sources replace incompatible scalar,
+array, and table shapes and remove obsolete descendants. Compatible tables merge
+by field, retaining the winning source for each value.
+
 `Secret<T>` has no implicit reference or serialization access. `.expose()` and
 `.into_exposed()` name the deliberate boundary; `Display` and `Debug` always
 render `[REDACTED]`. This redaction policy also applies to configuration

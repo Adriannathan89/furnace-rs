@@ -311,10 +311,13 @@ impl CookieJar {
         self
     }
 
-    /// Rejects response attributes that are unsafe or cannot fit in a header value.
+    /// Enforces request-compatible names and safe response attributes before emission.
     fn validate_pending(&self) -> CookieResult<()> {
         for pending in &self.pending {
             let cookie = pending.cookie();
+            if !is_valid_cookie_name(cookie.name()) {
+                return Err(CookieError::new(CookieErrorKind::InvalidResponse));
+            }
             if [cookie.path(), cookie.domain()]
                 .into_iter()
                 .flatten()

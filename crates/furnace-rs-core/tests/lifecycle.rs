@@ -260,3 +260,177 @@ async fn failed_application_start_rolls_back_application_then_infrastructure() {
         ],
     );
 }
+
+struct InterruptibleHook {
+    name: &'static str,
+    events: Arc<Mutex<Vec<String>>>,
+    interrupt_start: bool,
+    interrupt_stop_once: std::sync::atomic::AtomicBool,
+}
+
+impl LifecycleHook for InterruptibleHook {
+    fn name(&self) -> &str {
+        self.name
+    }
+
+    fn start<'a>(&'a self, _: &'a ApplicationContext) -> LifecycleFuture<'a> {
+        Box::pin(async move {
+            self.events
+                .lock()
+                .unwrap()
+                .push(format!("start:{}", self.name));
+            if self.interrupt_start {
+                std::future::pending::<()>().await;
+            }
+            Ok(())
+        })
+    }
+
+    fn stop<'a>(&'a self, _: &'a ApplicationContext) -> LifecycleFuture<'a> {
+        Box::pin(async move {
+            self.events
+                .lock()
+                .unwrap()
+                .push(format!("stop:{}", self.name));
+            if self
+                .interrupt_stop_once
+                .swap(false, std::sync::atomic::Ordering::SeqCst)
+            {
+                std::future::pending::<()>().await;
+            }
+            Ok(())
+        })
+    }
+}
+
+#[tokio::test]
+async fn interrupted_start_can_clean_up_successful_hooks() {
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let context = ApplicationContext::new(Default::default(), Config::empty());
+    let mut lifecycle = LifecycleManager::new();
+    lifecycle.add_hook(RecordingHook::new("database", Arc::clone(&events)));
+    lifecycle.add_hook(InterruptibleHook {
+        name: "worker",
+        events: Arc::clone(&events),
+        interrupt_start: true,
+        interrupt_stop_once: false.into(),
+    });
+    {
+        let mut start = std::pin::pin!(lifecycle.start(&context));
+        assert!(
+            std::future::poll_fn(|cx| std::task::Poll::Ready(start.as_mut().poll(cx)))
+                .await
+                .is_pending()
+        );
+    }
+    lifecycle
+        .shutdown(&context)
+        .await
+        .expect("interrupted startup must allow cleanup");
+    assert_eq!(lifecycle.state(), LifecycleState::Stopped);
+    assert_eq!(
+        *events.lock().unwrap(),
+        ["start:database", "start:worker", "stop:database"]
+    );
+}
+
+#[tokio::test]
+async fn interrupted_shutdown_resumes_without_repeating_completed_stops() {
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let context = ApplicationContext::new(Default::default(), Config::empty());
+    let mut lifecycle = LifecycleManager::new();
+    lifecycle.add_hook(RecordingHook::new("database", Arc::clone(&events)));
+    lifecycle.add_hook(InterruptibleHook {
+        name: "worker",
+        events: Arc::clone(&events),
+        interrupt_start: false,
+        interrupt_stop_once: true.into(),
+    });
+    lifecycle.add_hook(RecordingHook::failing_stop("last", Arc::clone(&events)));
+    lifecycle.start(&context).await.unwrap();
+    {
+        let mut stop = std::pin::pin!(lifecycle.shutdown(&context));
+        assert!(
+            std::future::poll_fn(|cx| std::task::Poll::Ready(stop.as_mut().poll(cx)))
+                .await
+                .is_pending()
+        );
+    }
+    let error = lifecycle
+        .shutdown(&context)
+        .await
+        .expect_err("the first completed failure must survive cancellation");
+    assert_eq!(error.code(), FURNACE011);
+    assert!(error.to_string().contains("subject: last"));
+    assert_eq!(lifecycle.state(), LifecycleState::Stopped);
+    assert_eq!(
+        *events.lock().unwrap(),
+        [
+            "start:database",
+            "start:worker",
+            "start:last",
+            "stop:last",
+            "stop:worker",
+            "stop:worker",
+            "stop:database"
+        ]
+    );
+}
+
+#[tokio::test]
+async fn interrupted_startup_rollback_retains_progress_and_original_failure() {
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let context = ApplicationContext::new(Default::default(), Config::empty());
+    let mut lifecycle = LifecycleManager::new();
+    lifecycle.add_hook(RecordingHook::new("database", Arc::clone(&events)));
+    lifecycle.add_hook(InterruptibleHook {
+        name: "worker",
+        events: Arc::clone(&events),
+        interrupt_start: false,
+        interrupt_stop_once: true.into(),
+    });
+    lifecycle.add_hook(RecordingHook::failing_stop(
+        "rollback-error",
+        Arc::clone(&events),
+    ));
+    lifecycle.add_hook(RecordingHook::failing_start("last", Arc::clone(&events)));
+    {
+        let mut start = std::pin::pin!(lifecycle.start(&context));
+        assert!(
+            std::future::poll_fn(|cx| std::task::Poll::Ready(start.as_mut().poll(cx)))
+                .await
+                .is_pending()
+        );
+    }
+    let error = lifecycle
+        .shutdown(&context)
+        .await
+        .expect_err("startup failure must survive interrupted rollback");
+    assert_eq!(error.code(), FURNACE011);
+    assert!(error.to_string().contains("subject: last"));
+    assert!(
+        error
+            .to_string()
+            .contains("rollback hook rollback-error failed")
+    );
+    assert!(
+        std::error::Error::source(&error)
+            .unwrap()
+            .to_string()
+            .contains("test startup failure")
+    );
+    assert_eq!(lifecycle.state(), LifecycleState::Stopped);
+    assert_eq!(
+        *events.lock().unwrap(),
+        [
+            "start:database",
+            "start:worker",
+            "start:rollback-error",
+            "start:last",
+            "stop:rollback-error",
+            "stop:worker",
+            "stop:worker",
+            "stop:database"
+        ]
+    );
+}

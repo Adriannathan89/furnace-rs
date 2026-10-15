@@ -53,6 +53,12 @@ pub(super) fn expand_controller_with_common(
             ));
         }
         for field in &mut fields.named {
+            if let Some(attribute) = field.attrs.iter().find(is_cfg) {
+                return Err(Error::new(
+                    attribute.span(),
+                    "conditional attributes are not supported on `#[controller]` fields; conditionally compile the complete controller instead",
+                ));
+            }
             let span = field.span();
             consume_inject(&mut field.attrs, span)?;
             if let Some(attribute) = field

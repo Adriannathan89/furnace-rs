@@ -35,6 +35,12 @@ pub enum LifecycleState {
 pub type LifecycleFuture<'a> = Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
 
 /// Starts and stops an application resource.
+///
+/// Hook futures can be dropped when their caller is cancelled. `start` must clean
+/// up any partial work if it is dropped or returns an error: only a successful
+/// start is registered for shutdown. `stop` must be safe to retry after its future
+/// is dropped, because interrupted cleanup invokes it again. The manager retains
+/// completed starts and stops, but cannot undo side effects inside a pending hook.
 pub trait LifecycleHook: Send + Sync {
     /// Returns a stable name used in lifecycle diagnostics.
     fn name(&self) -> &str;
@@ -108,6 +114,9 @@ pub struct LifecycleManager {
     state: LifecycleState,
     hooks: Vec<RegisteredHook>,
     next_sequence: usize,
+    started: Vec<usize>,
+    rollback_failure: Option<(Diagnostic, Error)>,
+    shutdown_failure: Option<Error>,
 }
 
 impl LifecycleManager {
@@ -117,6 +126,9 @@ impl LifecycleManager {
             state: LifecycleState::Created,
             hooks: Vec::new(),
             next_sequence: 0,
+            started: Vec::new(),
+            rollback_failure: None,
+            shutdown_failure: None,
         }
     }
 
@@ -175,6 +187,9 @@ impl LifecycleManager {
     }
 
     /// Starts infrastructure hooks by owner before application hooks in registration order.
+    ///
+    /// If this future is dropped, call [`Self::shutdown`] to clean up hooks that
+    /// completed startup. Startup cannot be retried on this manager.
     #[allow(clippy::result_large_err)]
     pub async fn start(&mut self, context: &ApplicationContext) -> Result<()> {
         if self.state != LifecycleState::Created {
@@ -197,52 +212,55 @@ impl LifecycleManager {
                     left.sequence.cmp(&right.sequence)
                 }
             });
-        let mut started: Vec<usize> = Vec::new();
-
         for index in 0..self.hooks.len() {
             let hook = self.hooks[index].hook.as_ref();
             if let Err(error) = hook.start(context).await {
-                let mut diagnostic = hook_failure_diagnostic(hook.name(), "startup");
-                for started_index in started.into_iter().rev() {
-                    let rollback_hook = self.hooks[started_index].hook.as_ref();
-                    if let Err(rollback_error) = rollback_hook.stop(context).await {
-                        diagnostic = diagnostic.with_suggestion(format!(
-                            "rollback hook {} failed: {rollback_error}",
-                            rollback_hook.name()
-                        ));
-                    }
-                }
-                self.state = LifecycleState::Stopped;
-                return Err(Error::with_source(diagnostic, error));
+                self.rollback_failure =
+                    Some((hook_failure_diagnostic(hook.name(), "startup"), error));
+                return self.shutdown(context).await;
             }
-            started.push(index);
+            self.started.push(index);
         }
 
         self.state = LifecycleState::Running;
         Ok(())
     }
 
-    /// Stops all hooks in reverse successful startup order.
+    /// Stops hooks in reverse successful startup order, including interrupted startup.
+    ///
+    /// A dropped shutdown or rollback future can be resumed by calling this
+    /// method again. Completed stops are not repeated; the pending stop is retried.
+    /// Earlier startup or shutdown failures are retained across cancellation.
     #[allow(clippy::result_large_err)]
     pub async fn shutdown(&mut self, context: &ApplicationContext) -> Result<()> {
-        if self.state != LifecycleState::Running {
+        if !matches!(
+            self.state,
+            LifecycleState::Starting | LifecycleState::Running | LifecycleState::Stopping
+        ) {
             return Err(invalid_transition(self.state, "shutdown"));
         }
 
         self.state = LifecycleState::Stopping;
-        let mut failure = None;
-
-        for registration in self.hooks.iter().rev() {
-            let hook = registration.hook.as_ref();
-            if let Err(error) = hook.stop(context).await
-                && failure.is_none()
-            {
-                failure = Some(hook_failure(hook.name(), "shutdown", error));
+        while let Some(&index) = self.started.last() {
+            let hook = self.hooks[index].hook.as_ref();
+            if let Err(error) = hook.stop(context).await {
+                if let Some((diagnostic, _)) = &mut self.rollback_failure {
+                    *diagnostic = diagnostic
+                        .clone()
+                        .with_suggestion(format!("rollback hook {} failed: {error}", hook.name()));
+                } else if self.shutdown_failure.is_none() {
+                    self.shutdown_failure = Some(hook_failure(hook.name(), "shutdown", error));
+                }
             }
+            // Keep the pending hook reachable until its stop future completes.
+            self.started.pop();
         }
 
         self.state = LifecycleState::Stopped;
-        failure.map_or(Ok(()), Err)
+        if let Some((diagnostic, error)) = self.rollback_failure.take() {
+            return Err(Error::with_source(diagnostic, error));
+        }
+        self.shutdown_failure.take().map_or(Ok(()), Err)
     }
 }
 

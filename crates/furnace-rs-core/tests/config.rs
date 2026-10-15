@@ -690,3 +690,120 @@ fn debug_redacts_document_and_resolved_string_array_values() {
         assert!(!rendered.contains(sentinel));
     }
 }
+
+#[test]
+fn toml_rejects_literal_dotted_and_empty_key_segments_without_values() {
+    for input in [
+        "\"app.port\" = 'secret-sentinel'\n[app]\nport = 3000\n",
+        "[app]\n\"\" = 'secret-sentinel'\n",
+        "[\"\"]\nport = 'secret-sentinel'\n",
+        "[app.\"nested.key\"]\nport = 'secret-sentinel'\n",
+        "[app]\n\"port.hidden\" = ['secret-sentinel']\n",
+    ] {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.toml");
+        fs::write(&path, input).unwrap();
+        for error in [
+            TomlSource::file(&path).load_document().unwrap_err(),
+            TomlSource::file(&path).load().unwrap_err(),
+        ] {
+            assert_eq!(error.code(), FURNACE020);
+            assert!(error.to_string().contains("configuration key"));
+            assert!(!error.to_string().contains("secret-sentinel"));
+            assert!(std::error::Error::source(&error).is_none());
+        }
+    }
+}
+
+#[test]
+fn later_table_replaces_earlier_scalar_and_array_shapes() {
+    for earlier in ["app = 'old'\n", "app = ['old']\n"] {
+        let directory = tempfile::tempdir().unwrap();
+        let first = directory.path().join("first.toml");
+        let second = directory.path().join("second.toml");
+        fs::write(&first, earlier).unwrap();
+        fs::write(&second, "[app]\nport = 3000\n").unwrap();
+        let config = ConfigBuilder::new()
+            .source(TomlSource::file(first))
+            .source(TomlSource::file(&second))
+            .build()
+            .unwrap();
+        assert_eq!(config.get("app"), None);
+        assert_eq!(config.get_string_array("app"), None);
+        assert_eq!(config.source_of("app"), None);
+        assert_eq!(config.source_of_string_array("app"), None);
+        assert_eq!(config.get("app.port"), Some("3000"));
+        assert_eq!(config.table_source("app"), second.to_str());
+    }
+}
+
+#[test]
+fn later_scalar_and_array_replace_tables_and_all_descendants() {
+    for later in ["app = 'new'\n", "app = ['new']\n"] {
+        let directory = tempfile::tempdir().unwrap();
+        let first = directory.path().join("first.toml");
+        let second = directory.path().join("second.toml");
+        fs::write(&first, "[app]\nport = 3000\nroots = ['old.pem']\n[app.empty]\n[app.nested]\npath = 'old.pem'\n[apple]\nkeep = true\n").unwrap();
+        fs::write(&second, later).unwrap();
+        let config = ConfigBuilder::new()
+            .source(TomlSource::file(first))
+            .source(TomlSource::file(&second))
+            .build()
+            .unwrap();
+        assert!(!config.contains_table("app"));
+        assert!(!config.contains_table("app.empty"));
+        assert!(!config.contains_table("app.nested"));
+        assert_eq!(config.table_source("app.nested"), None);
+        assert_eq!(config.get("app.port"), None);
+        assert_eq!(config.get_string_array("app.roots"), None);
+        assert_eq!(config.source_of("app.port"), None);
+        assert_eq!(config.source_of_string_array("app.roots"), None);
+        assert_eq!(config.resolve_path("app.nested.path"), None);
+        assert_eq!(config.get("apple.keep"), Some("true"));
+        assert_eq!(config.len(), 2);
+        if later.contains('[') {
+            assert_eq!(config.get_string_array("app").unwrap(), ["new"]);
+            assert_eq!(config.source_of_string_array("app"), second.to_str());
+        } else {
+            assert_eq!(config.get("app"), Some("new"));
+            assert_eq!(config.source_of("app"), second.to_str());
+        }
+    }
+}
+
+#[test]
+fn later_dotted_entries_replace_incompatible_ancestors() {
+    let config = ConfigBuilder::new()
+        .source(MapSource::new("first", [("app", "old")]))
+        .source(MapSource::new("second", [("app.port", "3000")]))
+        .build()
+        .unwrap();
+    assert_eq!(config.get("app"), None);
+    assert_eq!(config.source_of("app"), None);
+    assert_eq!(config.get("app.port"), Some("3000"));
+}
+
+#[test]
+fn compatible_tables_merge_fields_while_nested_shapes_replace() {
+    let directory = tempfile::tempdir().unwrap();
+    let first = directory.path().join("first.toml");
+    let second = directory.path().join("second.toml");
+    fs::write(
+        &first,
+        "[app]\nhost = 'localhost'\nport = 3000\n[app.worker]\ncount = 5\n",
+    )
+    .unwrap();
+    fs::write(&second, "[app]\nport = 8080\nworker = ['new']\n").unwrap();
+    let config = ConfigBuilder::new()
+        .source(TomlSource::file(&first))
+        .source(TomlSource::file(&second))
+        .build()
+        .unwrap();
+    assert_eq!(config.get("app.host"), Some("localhost"));
+    assert_eq!(config.source_of("app.host"), first.to_str());
+    assert_eq!(config.get("app.port"), Some("8080"));
+    assert_eq!(config.source_of("app.port"), second.to_str());
+    assert_eq!(config.get("app.worker.count"), None);
+    assert!(!config.contains_table("app.worker"));
+    assert_eq!(config.get_string_array("app.worker").unwrap(), ["new"]);
+}

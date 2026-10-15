@@ -6,6 +6,39 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### Security
+
+- Apply gRPC method admission overrides only when their conditional method is
+  compiled, preventing inactive public methods from weakening guarded RPC
+  policies. Reject unsupported conditional `grpc_method` attributes and
+  validate active duplicate overrides before route construction. See the
+  [F01 before/after reproduction](benchmark/GRPC_POLICY_SECURITY.md).
+- Update all committed Rustls lockfile entries to 0.23.46 and audit every
+  committed lockfile in beta and stable publication workflows.
+- Validate response cookie names with the same rules used for request cookies
+  before emitting `Set-Cookie` headers.
+
+### Fixed
+
+- Preserve lifecycle startup progress and failure records across cancellation;
+  retry pending shutdown hooks while skipping completed hooks.
+- Reject conditionally compiled controller dependency fields with a clear
+  diagnostic, and retain correct JSON paths for validated newtypes and tagged
+  Serde enums.
+- Reject empty and dotted literal TOML keys, and remove incompatible stale
+  configuration nodes when merging sources of different shapes.
+- Keep middleware security, CORS, and correlation headers on HTTP body-timeout
+  responses while updating status and removing stale body framing metadata.
+- Scope generated gRPC helpers to avoid collisions between qualified service
+  types that share a final type name.
+
+### CLI
+
+- Honor the invocation directory's Cargo configuration and provide Cargo's
+  native library paths when directly launching built applications.
+- Rebuild development applications when protobuf or declared build-script
+  inputs change, and reload Cargo metadata when manifests or lockfiles change.
+
 ## [2.0.0-beta.2] - 2026-10-15
 
 ### gRPC transport

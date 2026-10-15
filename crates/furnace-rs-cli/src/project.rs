@@ -16,6 +16,8 @@ pub(crate) struct CargoProject {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct ResolvedPackage {
+    invocation_root: PathBuf,
+    target_directory: PathBuf,
     workspace_root: PathBuf,
     package_root: PathBuf,
     manifest_path: PathBuf,
@@ -28,6 +30,7 @@ pub(crate) struct ResolvedApplication {
     package: ResolvedPackage,
     binary_name: String,
     furnace_version: Option<semver::Version>,
+    local_packages: Vec<(cargo_metadata::PackageId, PathBuf)>,
 }
 
 impl CargoProject {
@@ -37,14 +40,30 @@ impl CargoProject {
         let metadata = MetadataCommand::new()
             .current_dir(&invocation_root)
             .exec()
-            .map_err(|error| {
-                CliError::new(
-                    FURNACE201,
-                    "Cargo metadata could not be loaded",
-                    "failed to read Cargo project metadata",
-                )
-                .with_source(error)
-            })?;
+            .map_err(metadata_error)?;
+
+        Ok(Self {
+            metadata,
+            invocation_root,
+        })
+    }
+
+    /// Loads the same project metadata without blocking a runtime worker.
+    ///
+    /// Dropping this future kills the direct Cargo subprocess. Dependency
+    /// resolution and invocation-directory configuration match [`Self::load`].
+    pub(crate) async fn load_async(root: impl AsRef<Path>) -> Result<Self, CliError> {
+        let invocation_root = root.as_ref().to_path_buf();
+        let mut metadata_command = MetadataCommand::new();
+        metadata_command.current_dir(&invocation_root);
+        let output = tokio::process::Command::from(metadata_command.cargo_command())
+            .stdin(std::process::Stdio::null())
+            .kill_on_drop(true)
+            .output()
+            .await
+            .map_err(cargo_metadata::Error::from)
+            .map_err(metadata_error)?;
+        let metadata = parse_metadata_output(output).map_err(metadata_error)?;
 
         Ok(Self {
             metadata,
@@ -82,7 +101,16 @@ impl CargoProject {
         let selected = &self.metadata[package.package_id()];
         let binary_name = resolve_binary(selected, selection.binary.as_deref())?;
 
+        let reachable = self.reachable_package_ids(package.package_id());
+        let local_packages = self
+            .metadata
+            .packages
+            .iter()
+            .filter(|package| package.source.is_none() && reachable.contains(&package.id))
+            .map(|package| (package.id.clone(), package_root(package)))
+            .collect();
         Ok(ResolvedApplication {
+            local_packages,
             furnace_version: self.direct_furnace_version(selected),
             package,
             binary_name,
@@ -160,6 +188,8 @@ impl CargoProject {
             .to_path_buf();
 
         ResolvedPackage {
+            invocation_root: self.invocation_root.clone(),
+            target_directory: self.metadata.target_directory.as_std_path().to_path_buf(),
             workspace_root: self.metadata.workspace_root.as_std_path().to_path_buf(),
             package_root,
             manifest_path,
@@ -222,6 +252,16 @@ impl CargoProject {
 }
 
 impl ResolvedPackage {
+    /// Returns the directory whose Cargo configuration applies to this invocation.
+    pub(crate) fn invocation_root(&self) -> &Path {
+        &self.invocation_root
+    }
+
+    /// Returns Cargo's configured build output directory.
+    pub(crate) fn target_directory(&self) -> &Path {
+        &self.target_directory
+    }
+
     /// Returns the Cargo workspace root directory.
     pub(crate) fn workspace_root(&self) -> &Path {
         &self.workspace_root
@@ -249,6 +289,14 @@ impl ResolvedPackage {
 }
 
 impl ResolvedApplication {
+    /// Resolves local build-script input paths relative to their owning package.
+    pub(crate) fn local_package_root(&self, id: &cargo_metadata::PackageId) -> Option<&Path> {
+        self.local_packages
+            .iter()
+            .find(|(package, _)| package == id)
+            .map(|(_, root)| root.as_path())
+    }
+
     /// Returns the resolved package associated with this binary.
     pub(crate) fn package(&self) -> &ResolvedPackage {
         &self.package
@@ -268,6 +316,8 @@ impl ResolvedApplication {
     pub(crate) fn test_identity(binary_name: &str) -> Self {
         Self {
             package: ResolvedPackage {
+                invocation_root: PathBuf::from("/tmp/furnace-dev-state"),
+                target_directory: PathBuf::from("/tmp/furnace-dev-state/target"),
                 workspace_root: PathBuf::from("/tmp/furnace-dev-state"),
                 package_root: PathBuf::from("/tmp/furnace-dev-state"),
                 manifest_path: PathBuf::from("/tmp/furnace-dev-state/Cargo.toml"),
@@ -279,8 +329,35 @@ impl ResolvedApplication {
             },
             binary_name: binary_name.into(),
             furnace_version: None,
+            local_packages: Vec::new(),
         }
     }
+}
+
+/// Matches `MetadataCommand::exec` output handling and retained source errors.
+fn parse_metadata_output(
+    output: std::process::Output,
+) -> Result<cargo_metadata::Metadata, cargo_metadata::Error> {
+    if !output.status.success() {
+        return Err(cargo_metadata::Error::CargoMetadata {
+            stderr: String::from_utf8(output.stderr)?,
+        });
+    }
+    let stdout = std::str::from_utf8(&output.stdout)?
+        .lines()
+        .find(|line| line.starts_with('{'))
+        .ok_or(cargo_metadata::Error::NoJson)?;
+    MetadataCommand::parse(stdout)
+}
+
+/// Preserves the stable diagnostic shared by synchronous and asynchronous loads.
+fn metadata_error(error: cargo_metadata::Error) -> CliError {
+    CliError::new(
+        FURNACE201,
+        "Cargo metadata could not be loaded",
+        "failed to read Cargo project metadata",
+    )
+    .with_source(error)
 }
 
 /// Builds a selection diagnostic listing workspace package choices.
@@ -412,6 +489,38 @@ mod tests {
             .unwrap();
         assert_eq!(app.package().package_name(), "single-app");
         assert_eq!(app.binary_name(), "single-app");
+    }
+
+    #[tokio::test]
+    async fn async_metadata_retains_sync_selection_and_invocation_identity() {
+        for name in ["single", "multiple/api"] {
+            let root = fixture(name);
+            let synchronous = CargoProject::load(&root).unwrap();
+            let asynchronous = CargoProject::load_async(&root).await.unwrap();
+            let selection = TargetSelection::default();
+            assert_eq!(
+                asynchronous.resolve_application(&selection).unwrap(),
+                synchronous.resolve_application(&selection).unwrap(),
+            );
+            assert_eq!(
+                asynchronous.local_package_roots(),
+                synchronous.local_package_roots(),
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn async_metadata_preserves_the_failed_cargo_error_source() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::write(root.path().join("Cargo.toml"), "invalid manifest").unwrap();
+        let error = CargoProject::load_async(root.path()).await.err().unwrap();
+        assert_eq!(error.code(), FURNACE201);
+        assert!(matches!(
+            std::error::Error::source(&error)
+                .unwrap()
+                .downcast_ref::<cargo_metadata::Error>(),
+            Some(cargo_metadata::Error::CargoMetadata { .. })
+        ));
     }
 
     #[test]

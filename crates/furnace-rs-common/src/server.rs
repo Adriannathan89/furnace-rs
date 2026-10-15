@@ -395,10 +395,25 @@ pub(crate) async fn serve_http_supervised(
                         let request = request.map(|body| axum::body::Body::new(body::IdleTimeoutBody::new(body, BODY_READ_IDLE_TIMEOUT, Arc::clone(&expired))));
                         let response = router.oneshot(request).await?;
                         let response = if expired.load(Ordering::Relaxed) {
-                            let mut response = (
+                            let mut response = response;
+                            let (timeout, body) = (
                                 axum::http::StatusCode::REQUEST_TIMEOUT,
                                 axum::Json(serde_json::json!({"error": {"code": "request_timeout", "message": "request body read timed out"}})),
-                            ).into_response();
+                            ).into_response().into_parts();
+                            *response.status_mut() = timeout.status;
+                            *response.body_mut() = body;
+                            // Keep middleware headers (including CORS, Vary, security,
+                            // and correlation) while replacing metadata for the old body.
+                            for name in [
+                                "content-type", "content-length", "content-encoding",
+                                "content-language", "content-location", "content-disposition",
+                                "content-range", "content-md5", "content-digest", "repr-digest",
+                                "digest", "etag", "last-modified", "accept-ranges",
+                                "transfer-encoding", "trailer",
+                            ] {
+                                response.headers_mut().remove(name);
+                            }
+                            response.headers_mut().extend(timeout.headers);
                             if matches!(version, axum::http::Version::HTTP_10 | axum::http::Version::HTTP_11) {
                                 response.headers_mut().insert(axum::http::header::CONNECTION, axum::http::HeaderValue::from_static("close"));
                             }
@@ -554,6 +569,36 @@ mod tests {
     static BINDS: AtomicUsize = AtomicUsize::new(0);
     static TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
+    /// Adds real middleware headers and obsolete representation metadata to upload responses.
+    fn timeout_header_router(router: axum::Router) -> axum::Router {
+        router
+            .layer(axum::middleware::from_fn(
+                async |request: axum::extract::Request, next: axum::middleware::Next| {
+                    let upload = request.uri().path() == "/upload";
+                    let mut response = next.run(request).await;
+                    if !upload {
+                        return response;
+                    }
+                    for (name, value) in [
+                        ("x-request-id", "upload-correlation"),
+                        ("content-security-policy", "default-src 'none'"),
+                        ("x-content-type-options", "nosniff"),
+                        ("content-type", "text/plain"),
+                        ("content-encoding", "gzip"),
+                        ("content-length", "99999"),
+                        ("content-range", "bytes 0-9/10"),
+                        ("etag", "\"obsolete-body\""),
+                    ] {
+                        response.headers_mut().insert(name, value.parse().unwrap());
+                    }
+                    response
+                },
+            ))
+            .layer(tower_http::cors::CorsLayer::new().allow_origin(
+                axum::http::HeaderValue::from_static("https://client.example"),
+            ))
+    }
+
     async fn assert_socket_peer_metadata(http2: bool) {
         use axum::extract::ConnectInfo;
         use hyper_util::rt::{TokioExecutor, TokioIo};
@@ -697,6 +742,7 @@ mod tests {
                 axum::routing::post(|_: axum::Json<serde_json::Value>| async { "accepted" }),
             )
             .route("/health", axum::routing::get(|| async { "healthy" }));
+        let router = timeout_header_router(router);
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
@@ -711,6 +757,7 @@ mod tests {
             .method("POST")
             .uri("http://localhost/upload")
             .header("content-type", "application/json")
+            .header("origin", "https://client.example")
             .body(axum::body::Body::new(StalledBody))
             .unwrap();
         let response = tokio::time::timeout(Duration::from_secs(12), sender.send_request(upload))
@@ -718,6 +765,27 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(response.status(), axum::http::StatusCode::REQUEST_TIMEOUT);
+        assert_eq!(
+            response.headers()["access-control-allow-origin"],
+            "https://client.example"
+        );
+        assert!(
+            response
+                .headers()
+                .get_all("vary")
+                .iter()
+                .any(|value| value.to_str().unwrap().contains("origin"))
+        );
+        assert_eq!(response.headers()["x-request-id"], "upload-correlation");
+        assert_eq!(
+            response.headers()["content-security-policy"],
+            "default-src 'none'"
+        );
+        assert_eq!(response.headers()["x-content-type-options"], "nosniff");
+        assert_eq!(response.headers()["content-type"], "application/json");
+        for stale in ["content-encoding", "content-range", "etag"] {
+            assert!(!response.headers().contains_key(stale));
+        }
         assert!(
             !response
                 .headers()
@@ -765,12 +833,13 @@ mod tests {
                 axum::routing::post(|_: axum::Json<serde_json::Value>| async { "accepted" }),
             )
             .route("/health", axum::routing::get(|| async { "healthy" }));
+        let router = timeout_header_router(router);
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
         let mut stalled = tokio::net::TcpStream::connect(address).await.unwrap();
-        stalled.write_all(b"POST /upload HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: 10\r\n\r\n{").await.unwrap();
+        stalled.write_all(b"POST /upload HTTP/1.1\r\nHost: localhost\r\nOrigin: https://client.example\r\nContent-Type: application/json\r\nContent-Length: 10\r\n\r\n{").await.unwrap();
         let mut response = Vec::new();
         let expired =
             tokio::time::timeout(Duration::from_secs(12), stalled.read_to_end(&mut response)).await;
@@ -804,6 +873,30 @@ mod tests {
         assert!(
             response.starts_with(b"HTTP/1.1 408"),
             "expected safe timeout response: {response:?}"
+        );
+        let response = String::from_utf8(response).unwrap();
+        let (headers, body) = response.split_once("\r\n\r\n").unwrap();
+        assert!(headers.contains("access-control-allow-origin: https://client.example\r\n"));
+        assert!(headers.contains("vary: origin"));
+        assert!(headers.contains("x-request-id: upload-correlation\r\n"));
+        assert!(headers.contains("content-security-policy: default-src 'none'\r\n"));
+        assert!(headers.contains("x-content-type-options: nosniff\r\n"));
+        assert!(headers.contains("content-type: application/json\r\n"));
+        assert!(headers.contains("connection: close"));
+        for stale in [
+            "content-encoding:",
+            "content-range:",
+            "etag:",
+            "content-length: 99999",
+        ] {
+            assert!(
+                !headers.contains(stale),
+                "obsolete header remained: {stale}"
+            );
+        }
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(body).unwrap(),
+            serde_json::json!({"error": {"code": "request_timeout", "message": "request body read timed out"}})
         );
     }
 

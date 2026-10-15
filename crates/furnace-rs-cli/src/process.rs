@@ -39,6 +39,7 @@ pub(crate) async fn spawn_dev_application(
         built.executable(),
         built.target().package().package_root(),
         arguments,
+        Some(built),
     )
     .await
 }
@@ -48,6 +49,7 @@ async fn spawn_dev_application_from_parts(
     executable: &Path,
     package_root: &Path,
     arguments: &[OsString],
+    built: Option<&BuiltApplication>,
 ) -> Result<ApplicationProcess, CliError> {
     let control_directory = crate::private_temp_dir::create().map_err(|error| {
         process_error(
@@ -79,6 +81,9 @@ async fn spawn_dev_application_from_parts(
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .kill_on_drop(true);
+    if let Some(built) = built {
+        built.configure_runtime(&mut command);
+    }
     let child = spawn_dev_child(&mut command)
         .await
         .map_err(|error| process_error("could not start the selected application", error))?;
@@ -167,6 +172,7 @@ pub(crate) fn application_command(built: &BuiltApplication, arguments: &[OsStrin
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .kill_on_drop(true);
+    built.configure_runtime(&mut command);
     command
 }
 
@@ -266,9 +272,10 @@ mod tests {
         let executable = std::env::current_exe().unwrap();
         let root = tempfile::tempdir().unwrap();
         let arguments = fixture_arguments(GRACEFUL_FIXTURE);
-        let mut process = spawn_dev_application_from_parts(&executable, root.path(), &arguments)
-            .await
-            .unwrap();
+        let mut process =
+            spawn_dev_application_from_parts(&executable, root.path(), &arguments, None)
+                .await
+                .unwrap();
         let ready = process.control_directory.path().join("ready");
         let completion = process.control_directory.path().join("completion");
 
@@ -286,9 +293,10 @@ mod tests {
         let executable = std::env::current_exe().unwrap();
         let root = tempfile::tempdir().unwrap();
         let arguments = fixture_arguments(FORCED_FIXTURE);
-        let mut process = spawn_dev_application_from_parts(&executable, root.path(), &arguments)
-            .await
-            .unwrap();
+        let mut process =
+            spawn_dev_application_from_parts(&executable, root.path(), &arguments, None)
+                .await
+                .unwrap();
         let ready = process.control_directory.path().join("ready");
 
         wait_for_file(&ready, Duration::from_secs(2)).await.unwrap();

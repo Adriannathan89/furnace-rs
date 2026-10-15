@@ -8,6 +8,7 @@ pub(super) struct Naming {
     pub rename_all: Option<String>,
     pub rename_all_fields: Option<String>,
     pub flatten: bool,
+    pub transparent: bool,
     pub untagged: bool,
     pub tag: Option<String>,
     pub content: Option<String>,
@@ -28,6 +29,8 @@ impl Naming {
                 let path = item.path();
                 if path.is_ident("flatten") {
                     naming.flatten = true;
+                } else if path.is_ident("transparent") {
+                    naming.transparent = true;
                 } else if path.is_ident("untagged") {
                     naming.untagged = true;
                 } else if path.is_ident("rename") {

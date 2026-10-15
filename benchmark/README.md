@@ -2,6 +2,19 @@
 
 ## Security regression workload (local source)
 
+For F01 conditional gRPC authentication policy, run the defensive before/after
+comparison with synthetic credentials and in-process RPCs:
+
+```sh
+python3 benchmark/tool/grpc_policy_security.py --rounds 200 \
+  --output /tmp/furnace-grpc-policy-before-after.json
+```
+
+It verifies the original failure on the recorded beta commit and the corrected
+admission policy on current source, including authenticated and explicitly public
+controls. No sockets, external services, or database are used. See the
+[measured comparison and evidence](GRPC_POLICY_SECURITY.md).
+
 For database maintenance settings, core inventory output safety, JWT algorithm
 binding, and native PostgreSQL recovery, run the isolated before/after comparison:
 

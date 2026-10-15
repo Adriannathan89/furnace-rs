@@ -83,7 +83,9 @@ jobs:
       - name: Fetch locked dependencies for offline regression runners
         run: cargo fetch --locked
       - name: Check known dependency vulnerabilities
-        run: cargo audit --no-yanked --file Cargo.lock
+        run: |
+          cargo audit --no-yanked --file Cargo.lock
+          python3 benchmark/tool/audit_lockfiles.py
       - name: Verify security report integrity
         run: python3 -m unittest discover -s benchmark/tool -p 'test_*security.py'
       - name: Run core and database security contracts

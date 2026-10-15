@@ -1,0 +1,80 @@
+{
+  "timestamp_utc": "2026-10-15T08:07:57.890407+00:00",
+  "source_commit": "286c1c707c3035e00f38d195af48e71cc4ae86a6",
+  "branch": "test/beta-v2-validation-test",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "source_scope": "all tracked Rust files and Cargo manifests/lockfiles",
+  "source_files": 714,
+  "source_sha256": "5902dda40ae1dabc13696f85f447f13a51f28bc318a98b1d9eb13b3b8e565c30",
+  "checks": [
+    {
+      "command": "cargo test --locked --offline --workspace --exclude furnace-rs-cli --all-features --no-fail-fast",
+      "exit_code": 0,
+      "reported_passes": 778,
+      "reported_failures": 0,
+      "ignored": 7,
+      "summary_count": 157,
+      "log_sha256": "84909fe07e5f122e5214e13a4b5a97a676f61cee497bc679b5e87ca62e99128f"
+    },
+    {
+      "command": "cargo test --offline --locked -p furnace-rs-cli --all-features --no-fail-fast",
+      "exit_code": 0,
+      "top_level_passes": 172,
+      "nested_fixture_executions": 2,
+      "scope_note": "Full suite preceded final small lexical path-normalization refinement; final watcher tests and Clippy below validate that last change.",
+      "reported_passes": 174,
+      "reported_failures": 0,
+      "ignored": 0,
+      "summary_count": 19,
+      "log_sha256": "5b8407a6572f85a68a1ad972e1d89acad05a0f39bdf3b52e43d62302458579e4"
+    },
+    {
+      "command": "cargo test --locked --offline -p furnace-rs-cli --lib watch::tests",
+      "exit_code": 0,
+      "reported_passes": 7,
+      "reported_failures": 0,
+      "ignored": 0,
+      "summary_count": 1,
+      "log_sha256": "a9df1f47d61c0223ca92459459e5351db59b4b491dc354892e3d8dc0e6ffd397"
+    },
+    {
+      "command": "cargo clippy --locked --offline --workspace --exclude furnace-rs-cli --all-targets --all-features -- -D warnings",
+      "exit_code": 0,
+      "log_sha256": "de75760ae972cad2e927c89870f2031627128569a8d5808ebf68131c9277f7a1"
+    },
+    {
+      "command": "cargo clippy --locked --offline -p furnace-rs-cli --all-features --all-targets -- -D warnings",
+      "exit_code": 0,
+      "log_sha256": "0097d01cf1d9c629cf3609e18a5b6226d2e4358e860a220f62321912a40763c7"
+    },
+    {
+      "command": "python3 -m unittest discover -s benchmark/tool -p 'test_*security.py'",
+      "exit_code": 0,
+      "tests_passed": 21
+    },
+    {
+      "command": "python3 benchmark/tool/audit_lockfiles.py",
+      "exit_code": 0,
+      "committed_lockfiles": 11,
+      "advisory_database_commit": "caee11f4",
+      "advisory_database_date": "2026-10-14",
+      "known_vulnerability_matches": 0,
+      "yanks_checked": false
+    },
+    {
+      "command": "cargo fmt --all --check",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "f01_comparison": "2026-10-15-grpc-policy-before-after.json",
+  "limits": [
+    "Linux execution only; no Windows/macOS runtime validation",
+    "Seven live PostgreSQL tests ignored; no live database used",
+    "Local socket/signal tests required permitted loopback/signal execution"
+  ],
+  "passed": true
+}
