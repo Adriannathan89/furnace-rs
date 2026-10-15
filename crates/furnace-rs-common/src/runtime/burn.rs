@@ -14,6 +14,7 @@ pub trait FurnaceBurnExt {
 }
 impl FurnaceBurnExt for Furnace {
     #[allow(clippy::manual_async_fn)] // Explicit Send promise on the public trait.
+    /// Loads conventional settings, prepares selected transports, and runs their shared lifecycle.
     fn burn<M: Cauldron>() -> impl Future<Output = Result<(), ApplicationRuntimeError>> + Send {
         async move {
             let root = std::env::current_dir().map_err(|source| {

@@ -380,6 +380,7 @@ impl GraphInspectionSnapshot {
     }
 }
 
+/// Collects concrete runtime names for generic provider descriptors.
 fn runtime_type_names() -> HashMap<TypeId, &'static str> {
     Catalog::providers()
         .into_iter()
@@ -391,6 +392,7 @@ fn runtime_type_names() -> HashMap<TypeId, &'static str> {
         .collect()
 }
 
+/// Prefers a concrete runtime type name and falls back to descriptor metadata.
 fn inspection_type_name(
     runtime_type_names: &HashMap<TypeId, &'static str>,
     type_id: TypeId,
@@ -403,6 +405,7 @@ fn inspection_type_name(
         .to_owned()
 }
 
+/// Copies a static declaration location into the snapshot's owned representation.
 fn owned_location(location: SourceLocation) -> OwnedSourceLocation {
     OwnedSourceLocation {
         file: location.file.to_owned(),
@@ -411,6 +414,7 @@ fn owned_location(location: SourceLocation) -> OwnedSourceLocation {
     }
 }
 
+/// Orders copied diagnostics by their stable public fields.
 fn diagnostic_order(left: &Diagnostic, right: &Diagnostic) -> std::cmp::Ordering {
     left.code()
         .as_str()
@@ -422,6 +426,7 @@ fn diagnostic_order(left: &Diagnostic, right: &Diagnostic) -> std::cmp::Ordering
         .then_with(|| left.suggestions().cmp(right.suggestions()))
 }
 
+/// Orders optional source coordinates with missing locations before authored ones.
 fn location_order(
     left: Option<SourceLocation>,
     right: Option<SourceLocation>,

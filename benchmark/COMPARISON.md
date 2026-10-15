@@ -1,6 +1,6 @@
 # FURNACE vs native Axum vs Go Fiber v2 — local benchmark
 
-Measured 2026-09-25. The [raw result](results/2026-09-25-furnace-rs-axum-fiber-stress.json)
+Measured 2026-09-25. The [raw result](results/2026-09-25-mads-axum-fiber-stress.json)
 contains all five measured runs for every combination, including status counts,
 client-observed p50/p95/p99 latency, and errors. All 420,000 measured HTTP
 responses had the expected status, and content checks on valid-response paths

@@ -12,6 +12,7 @@ define behavior.
 | [2.0.0-beta.1 release preparation](releases/2.0.0-beta.1.md) | Mandatory injection markers, migration and checker verification |
 | [2.0.0-beta.2 release notes](releases/2.0.0-beta.2.md) | Native protobuf gRPC serving, clients, security and shared runtime |
 | [Architecture](ARCHITECTURE.md) | Crate boundaries, graph selection, construction, and lifecycle |
+| [Implementation guide](IMPLEMENTATION.md) | Source-linked walkthrough of the workspace and its major compile-time and runtime flows |
 | [CLI](CLI.md) | Scaffolding, run/dev, inspection, target selection, and JSON schema 2 |
 | [Persistence](furnace-rs-persistence.md) | Native SeaORM PostgreSQL setup, configuration, and errors |
 | [Migration from MADS](importance/furnace-rs-migration.md) | Removed declarations and their FURNACE replacements |

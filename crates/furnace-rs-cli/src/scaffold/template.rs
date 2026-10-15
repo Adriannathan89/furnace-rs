@@ -81,6 +81,7 @@ impl TemplateError {
 }
 
 impl fmt::Display for TemplateError {
+    /// Formats the fixed bundled-template diagnostic.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("the bundled project template contains an invalid file path")
     }
@@ -111,6 +112,7 @@ pub fn render_project(name: &ProjectName) -> Result<RenderedProject, TemplateErr
         .map(|files| RenderedProject { files })
 }
 
+/// Accepts only nonempty relative paths composed of normal path components.
 fn is_safe_relative_path(path: &Path) -> bool {
     !path.as_os_str().is_empty()
         && path.is_relative()

@@ -64,6 +64,7 @@ struct InspectionRequest {
 }
 
 impl InspectionRequest {
+    /// Reads the private request protocol from the process environment.
     fn from_environment() -> furnace_rs_core::Result<Option<Self>> {
         Self::from_values(
             [
@@ -84,6 +85,7 @@ impl InspectionRequest {
         )
     }
 
+    /// Validates required request fields, rejects duplicates, and parses the protocol kind.
     fn from_values<I, K>(values: I) -> furnace_rs_core::Result<Option<Self>>
     where
         I: IntoIterator<Item = (K, OsString)>,
@@ -171,29 +173,35 @@ impl InspectionRequest {
         }))
     }
 
+    /// Returns the requested inspection report kind.
     const fn kind(&self) -> InspectionKind {
         self.kind
     }
 
+    /// Returns the per-request token used to bind the acknowledgement and response.
     fn token(&self) -> &str {
         &self.token
     }
 
+    /// Returns the acknowledgement output path.
     fn ack_path(&self) -> &Path {
         &self.ack_path
     }
 
+    /// Returns the response output path.
     fn response_path(&self) -> &Path {
         &self.response_path
     }
 }
 
+/// Converts an environment value to Unicode or reports which request field is invalid.
 fn unicode_field(value: OsString, field: &str) -> furnace_rs_core::Result<String> {
     value
         .into_string()
         .map_err(|_| inspection_error(format!("the private {field} must be valid Unicode")))
 }
 
+/// Creates a redacted private-inspection diagnostic.
 fn inspection_error(message: impl Into<String>) -> Error {
     Error::new(
         Diagnostic::new(FURNACE032, "application inspection failed", message)
@@ -203,6 +211,7 @@ fn inspection_error(message: impl Into<String>) -> Error {
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
+/// Atomically renames a file only when the destination does not already exist.
 fn rename_noreplace(from: &Path, to: &Path) -> std::io::Result<()> {
     rustix::fs::renameat_with(
         rustix::fs::CWD,
@@ -215,11 +224,13 @@ fn rename_noreplace(from: &Path, to: &Path) -> std::io::Result<()> {
 }
 
 #[cfg(target_os = "windows")]
+/// Renames a temporary file to a new destination on Windows.
 fn rename_noreplace(from: &Path, to: &Path) -> std::io::Result<()> {
     std::fs::rename(from, to)
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+/// Uses an existence check before rename on targets without a no-replace primitive.
 fn rename_noreplace(from: &Path, to: &Path) -> std::io::Result<()> {
     if to.try_exists()? {
         return Err(std::io::Error::new(
@@ -230,6 +241,7 @@ fn rename_noreplace(from: &Path, to: &Path) -> std::io::Result<()> {
     std::fs::rename(from, to)
 }
 
+/// Writes and syncs a uniquely named temporary file before publishing without replacement.
 fn publish_atomic(path: &Path, bytes: &[u8]) -> furnace_rs_core::Result<()> {
     if path
         .try_exists()
@@ -285,6 +297,7 @@ fn publish_atomic(path: &Path, bytes: &[u8]) -> furnace_rs_core::Result<()> {
     publication
 }
 
+/// Publishes a token-bound acknowledgement and the requested rooted-application report.
 fn run_inspection<M: Cauldron>(
     root: &Path,
     request: InspectionRequest,
@@ -310,6 +323,7 @@ fn run_inspection<M: Cauldron>(
     publish_atomic(&response_path, &response)
 }
 
+/// Runs private inspection only when its environment request is present and valid.
 pub(crate) fn try_run_inspection<M: Cauldron>(
     root: &Path,
 ) -> Option<Result<(), crate::runtime::ApplicationRuntimeError>> {
@@ -502,6 +516,7 @@ impl DoctorCheck {
         Self::new(group, DoctorStatus::Failed, summary)
     }
 
+    /// Constructs a grouped doctor result with its explicit status and summary.
     fn new(group: impl Into<String>, status: DoctorStatus, summary: impl Into<String>) -> Self {
         Self {
             group: group.into(),
@@ -592,6 +607,7 @@ impl InspectionEnvelope {
 }
 
 /// Assembles a side-effect-free report for a rooted standard HTTP application.
+/// Assembles a report from selected graph metadata without constructing providers or binding listeners.
 pub(crate) fn inspect_standard_application<M: Cauldron>(
     root: &Path,
     kind: InspectionKind,
@@ -699,6 +715,7 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
 }
 
 #[cfg(feature = "http")]
+/// Collects selected route metadata and validates route and Passport bindings.
 fn inspect_scope(
     scope: &HttpApplicationScope,
     _cauldron_graph: Option<&CauldronGraph>,
@@ -744,6 +761,7 @@ fn inspect_scope(
     (routes, route_ok, guard_ok)
 }
 
+/// Copies the graph snapshot into owned inspection protocol records.
 fn graph_report(snapshot: &GraphInspectionSnapshot) -> GraphReport {
     GraphReport {
         root_cauldron: snapshot.root_cauldron().map(str::to_owned),
@@ -815,6 +833,7 @@ fn graph_report(snapshot: &GraphInspectionSnapshot) -> GraphReport {
     }
 }
 
+/// Builds grouped readiness checks from configuration, graph, route, and auto-config state.
 fn doctor_checks(
     configuration_ok: bool,
     root_ok: bool,
@@ -871,6 +890,7 @@ fn doctor_checks(
     ]
 }
 
+/// Selects a passing or failing check using fixed success and failure summaries.
 fn check_for(ok: bool, group: &str, success: &str, failure: &str) -> DoctorCheck {
     if ok {
         DoctorCheck::pass(group, success)
@@ -879,6 +899,7 @@ fn check_for(ok: bool, group: &str, success: &str, failure: &str) -> DoctorCheck
     }
 }
 
+/// Reports guard preflight status or a skipped result when JWT support is disabled.
 fn guard_check(_guard_ok: bool) -> DoctorCheck {
     #[cfg(feature = "jwt")]
     {
@@ -895,6 +916,7 @@ fn guard_check(_guard_ok: bool) -> DoctorCheck {
     }
 }
 
+/// Summarizes selected auto-configurations using failure, active, override, then skipped precedence.
 fn auto_configuration_group(
     reports: &[AutoConfigurationReport],
     identifiers: &[&str],
@@ -925,6 +947,7 @@ fn auto_configuration_group(
     (status, summary)
 }
 
+/// Converts a core source location into the owned inspection representation.
 fn source_report(location: furnace_rs_core::SourceLocation) -> SourceReport {
     SourceReport {
         file: location.file.to_owned(),
@@ -933,10 +956,12 @@ fn source_report(location: furnace_rs_core::SourceLocation) -> SourceReport {
     }
 }
 
+/// Converts a diagnostic slice to owned records while preserving its order.
 fn diagnostic_reports(diagnostics: &[Diagnostic]) -> Vec<DiagnosticReport> {
     diagnostics.iter().map(diagnostic_report).collect()
 }
 
+/// Copies one framework diagnostic and its remediation suggestions for transport.
 fn diagnostic_report(diagnostic: &Diagnostic) -> DiagnosticReport {
     DiagnosticReport {
         code: diagnostic.code().as_str().to_owned(),
@@ -948,6 +973,7 @@ fn diagnostic_report(diagnostic: &Diagnostic) -> DiagnosticReport {
     }
 }
 
+/// Orders diagnostic reports deterministically by identity, location, and suggestions.
 fn diagnostic_report_order(
     left: &DiagnosticReport,
     right: &DiagnosticReport,
@@ -971,6 +997,7 @@ fn diagnostic_report_order(
         .then_with(|| left.suggestions.cmp(&right.suggestions))
 }
 
+/// Converts provider origin to its stable lowercase wire representation.
 fn provider_origin(origin: ProviderOrigin) -> &'static str {
     match origin {
         ProviderOrigin::Provided => "provided",
@@ -981,6 +1008,7 @@ fn provider_origin(origin: ProviderOrigin) -> &'static str {
     }
 }
 
+/// Converts provider visibility to its stable lowercase wire representation.
 fn provider_visibility(visibility: ProviderVisibility) -> &'static str {
     match visibility {
         ProviderVisibility::Public => "public",
@@ -988,6 +1016,7 @@ fn provider_visibility(visibility: ProviderVisibility) -> &'static str {
     }
 }
 
+/// Converts provider selection state to its stable lowercase wire representation.
 fn provider_state(state: ProviderState) -> &'static str {
     match state {
         ProviderState::Provided => "provided",
@@ -997,6 +1026,7 @@ fn provider_state(state: ProviderState) -> &'static str {
     }
 }
 
+/// Converts auto-configuration status to its stable lowercase wire representation.
 fn auto_configuration_status(status: AutoConfigurationStatus) -> &'static str {
     match status {
         AutoConfigurationStatus::Active => "active",

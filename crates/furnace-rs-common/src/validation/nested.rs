@@ -9,23 +9,27 @@ use super::{
 };
 
 impl<T: Input> Input for Option<T> {
+    /// Validates the contained value when present and accepts `None`.
     fn validate(&self) -> ValidationResult {
         self.as_ref().map_or(Ok(()), Input::validate)
     }
 }
 
 impl<T: Input> Input for Vec<T> {
+    /// Validates every element and prefixes failures with its vector index.
     fn validate(&self) -> ValidationResult {
         sequence(self.iter())
     }
 }
 
 impl<T: Input, const N: usize> Input for [T; N] {
+    /// Validates every element and prefixes failures with its array index.
     fn validate(&self) -> ValidationResult {
         sequence(self.iter())
     }
 }
 
+/// Collects indexed validation failures while preserving sequence order.
 fn sequence<'a, T: Input + 'a>(values: impl Iterator<Item = &'a T>) -> ValidationResult {
     let mut errors = None;
     for (index, value) in values.enumerate() {
@@ -40,6 +44,7 @@ fn sequence<'a, T: Input + 'a>(values: impl Iterator<Item = &'a T>) -> Validatio
 }
 
 impl<T: Input, S: BuildHasher> Input for HashMap<String, T, S> {
+    /// Validates values in sorted-key order for deterministic diagnostics.
     fn validate(&self) -> ValidationResult {
         let mut values: Vec<_> = self.iter().collect();
         values.sort_unstable_by_key(|(key, _)| *key);
@@ -48,11 +53,13 @@ impl<T: Input, S: BuildHasher> Input for HashMap<String, T, S> {
 }
 
 impl<T: Input> Input for BTreeMap<String, T> {
+    /// Validates values in the map's natural sorted-key order.
     fn validate(&self) -> ValidationResult {
         mapping(self.iter())
     }
 }
 
+/// Collects map-value failures and prefixes each path with its string key.
 fn mapping<'a, T: Input + 'a>(
     values: impl Iterator<Item = (&'a String, &'a T)>,
 ) -> ValidationResult {

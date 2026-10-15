@@ -20,6 +20,7 @@ pub async fn authenticate_bearer(
     adapter(application, &context, token).await
 }
 
+/// Extracts exactly one syntactically valid Bearer token from request headers.
 pub(crate) fn bearer_token(headers: &http::HeaderMap) -> PassportResult<&str> {
     crate::bearer::parse(headers).ok_or_else(PassportError::reject)
 }

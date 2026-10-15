@@ -158,6 +158,7 @@ where
     }
     finish(application, result).await
 }
+/// Converts a completed server task into its application-level result.
 fn server_result(
     result: Option<Result<Result<(), ApplicationRuntimeError>, tokio::task::JoinError>>,
 ) -> Result<(), ApplicationRuntimeError> {
@@ -170,6 +171,7 @@ fn server_result(
         None => Ok(()),
     }
 }
+/// Shuts down the application and combines shutdown failures with operation failures.
 async fn finish(
     mut application: Furnace,
     operation: Result<(), ApplicationRuntimeError>,

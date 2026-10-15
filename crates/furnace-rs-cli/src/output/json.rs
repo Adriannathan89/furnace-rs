@@ -15,6 +15,7 @@ pub fn render(envelope: &Envelope) -> serde_json::Result<String> {
     Ok(output)
 }
 
+/// Serializes the envelope and writes one JSON document to stdout.
 pub(crate) fn write(envelope: &Envelope) -> Result<(), OutputError> {
     let output = render(envelope).map_err(OutputError::Serialize)?;
     io::stdout()
@@ -30,12 +31,14 @@ pub(crate) enum OutputError {
 }
 
 impl fmt::Display for OutputError {
+    /// Formats serialization and write failures with a credential-free message.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("could not write schema-v1 output")
     }
 }
 
 impl Error for OutputError {
+    /// Returns the serialization or I/O error that caused output failure.
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Serialize(error) => Some(error),

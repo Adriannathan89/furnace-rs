@@ -94,6 +94,7 @@ impl ConfigurationErrors {
         &self.issues
     }
 
+    /// Qualifies each local issue key with its containing nested-configuration path.
     pub(super) fn prefix(&mut self, prefix: &str) {
         if prefix.is_empty() {
             return;
@@ -109,6 +110,7 @@ impl ConfigurationErrors {
 }
 
 impl fmt::Display for ConfigurationErrors {
+    /// Renders ordered, value-free issues with their available source labels.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (index, issue) in self.issues.iter().enumerate() {
             if index > 0 {
@@ -130,6 +132,7 @@ impl fmt::Display for ConfigurationErrors {
 impl std::error::Error for ConfigurationErrors {}
 
 impl From<ConfigurationErrors> for Error {
+    /// Converts each issue into an ordered framework diagnostic without parser causes.
     fn from(errors: ConfigurationErrors) -> Self {
         let mut diagnostics = errors.issues.into_iter().map(|issue| {
             let mut message = format!("[{}]: {}", issue.code, issue.message);

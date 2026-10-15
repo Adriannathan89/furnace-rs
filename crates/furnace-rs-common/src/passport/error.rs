@@ -62,6 +62,7 @@ impl PassportError {
 }
 
 impl fmt::Debug for PassportError {
+    /// Formats the stable error category and whether a private cause is retained.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PassportError")
@@ -72,6 +73,7 @@ impl fmt::Debug for PassportError {
 }
 
 impl fmt::Display for PassportError {
+    /// Formats a stable message that does not reveal credentials or strategy details.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self.kind {
             PassportErrorKind::Rejected => "authentication was rejected",
@@ -82,6 +84,7 @@ impl fmt::Display for PassportError {
 }
 
 impl std::error::Error for PassportError {
+    /// Returns an operational source error when this is an internal failure.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.source
             .as_deref()
@@ -90,6 +93,7 @@ impl std::error::Error for PassportError {
 }
 
 impl From<crate::JwtError> for PassportError {
+    /// Maps configuration/key failures to internal errors and token failures to rejection.
     fn from(error: crate::JwtError) -> Self {
         match error.kind() {
             crate::JwtErrorKind::InvalidConfiguration

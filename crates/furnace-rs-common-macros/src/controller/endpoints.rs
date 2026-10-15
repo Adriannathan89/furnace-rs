@@ -10,6 +10,7 @@ struct Arguments {
     route: LitStr,
 }
 impl Parse for Arguments {
+    /// Parses an optional controller route prefix.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         if input.is_empty() {
             return Ok(Self {
@@ -32,6 +33,7 @@ impl Parse for Arguments {
     }
 }
 
+/// Validates an inherent endpoint impl and emits its static route catalog and registrar.
 pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<TokenStream> {
     let arguments: Arguments = syn::parse2(arguments)?;
     if item.trait_.is_some()
@@ -271,6 +273,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
         #(#conditional)*
         const _: () = {
             #[allow(non_snake_case)]
+            #[doc = "Registers routes after the application metadata passes validation."]
             fn #registrar(
                 mut __furnace_router: #common::__private::Router,
                 __furnace_runtime: &#common::__private::RouterBuildContext<'_>,
@@ -297,6 +300,7 @@ struct SelfNormalizer<'a> {
     controller: &'a syn::Path,
 }
 impl SelfNormalizer<'_> {
+    /// Replaces leading `Self` path segments with the concrete controller path.
     fn normalize(&self, path: &mut syn::Path) {
         if path
             .segments
@@ -310,12 +314,14 @@ impl SelfNormalizer<'_> {
     }
 }
 impl VisitMut for SelfNormalizer<'_> {
+    /// Normalizes unqualified type paths before recursively visiting their children.
     fn visit_type_path_mut(&mut self, value: &mut syn::TypePath) {
         if value.qself.is_none() {
             self.normalize(&mut value.path);
         }
         visit_mut::visit_type_path_mut(self, value);
     }
+    /// Normalizes unqualified expression paths before recursively visiting their children.
     fn visit_expr_path_mut(&mut self, value: &mut syn::ExprPath) {
         if value.qself.is_none() {
             self.normalize(&mut value.path);

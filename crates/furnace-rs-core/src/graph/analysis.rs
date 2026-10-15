@@ -15,6 +15,7 @@ use super::model::{
 };
 use super::{cycle, plan};
 
+/// Validates provider uniqueness, dependency resolution, and cycles for a graph.
 pub(crate) fn analyze_parts(
     descriptors: &[&'static ProviderDescriptor],
     satisfied: &[SatisfiedProvider],
@@ -23,6 +24,7 @@ pub(crate) fn analyze_parts(
     analyze_parts_with_locations(descriptors, satisfied, covered_missing, &[])
 }
 
+/// Builds stable provider/dependency records, honoring root-authored diagnostic locations.
 pub(crate) fn analyze_parts_with_locations(
     descriptors: &[&'static ProviderDescriptor],
     satisfied: &[SatisfiedProvider],
@@ -194,6 +196,7 @@ pub(crate) fn analyze_parts_with_locations(
     }
 }
 
+/// Orders descriptors so duplicate grouping and diagnostic selection are reproducible.
 fn descriptor_order(left: &ProviderDescriptor, right: &ProviderDescriptor) -> Ordering {
     left.type_name()
         .cmp(right.type_name())
@@ -201,6 +204,7 @@ fn descriptor_order(left: &ProviderDescriptor, right: &ProviderDescriptor) -> Or
         .then_with(|| location_order(left.location(), right.location()))
 }
 
+/// Distinguishes a repeated copy of one binding from two competing bindings.
 fn exact_identity(left: &ProviderDescriptor, right: &ProviderDescriptor) -> bool {
     left.type_id() == right.type_id()
         && left.kind() == right.kind()
@@ -217,6 +221,7 @@ fn exact_identity(left: &ProviderDescriptor, right: &ProviderDescriptor) -> bool
             .all(|(left, right)| left.type_id() == right.type_id())
 }
 
+/// Assigns a stable ordering to pre-satisfied provider origins.
 fn provider_state_order(state: ProviderState) -> u8 {
     match state {
         ProviderState::Provided => 0,
@@ -226,6 +231,7 @@ fn provider_state_order(state: ProviderState) -> u8 {
     }
 }
 
+/// Compares source coordinates lexically for stable diagnostic ordering.
 fn location_order(left: SourceLocation, right: SourceLocation) -> Ordering {
     left.file
         .cmp(right.file)
@@ -240,6 +246,7 @@ struct PendingDiagnostic {
 }
 
 impl PendingDiagnostic {
+    /// Creates the diagnostic for one exact repeated descriptor.
     fn duplicate(descriptor: &'static ProviderDescriptor) -> Self {
         Self {
             diagnostic: Diagnostic::new(
@@ -255,6 +262,7 @@ impl PendingDiagnostic {
         }
     }
 
+    /// Creates the diagnostic for multiple distinct descriptors with one output type.
     fn ambiguous(descriptor: &'static ProviderDescriptor) -> Self {
         Self {
             diagnostic: Diagnostic::new(
@@ -270,6 +278,7 @@ impl PendingDiagnostic {
         }
     }
 
+    /// Creates a diagnostic for a declared dependency with no selected provider.
     fn missing(provider: &ProviderNode, dependency: &crate::DependencyDescriptor) -> Self {
         Self {
             diagnostic: Diagnostic::new(
@@ -293,6 +302,7 @@ impl PendingDiagnostic {
         }
     }
 
+    /// Converts a detected graph cycle into a stable, actionable diagnostic.
     fn cycle(cycle: cycle::Cycle) -> Self {
         let subject = cycle.names[0];
         let message = format!("provider dependency cycle: {}", cycle.names.join(" -> "));
@@ -306,6 +316,7 @@ impl PendingDiagnostic {
         }
     }
 
+    /// Orders diagnostics by code, subject, and optional source location.
     fn order(left: &Self, right: &Self) -> Ordering {
         left.diagnostic
             .code()

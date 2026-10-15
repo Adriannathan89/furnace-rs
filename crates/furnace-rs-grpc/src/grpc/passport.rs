@@ -53,6 +53,7 @@ pub struct GrpcPassportService<S> {
     bindings: Arc<BTreeMap<String, Option<PassportStrategyBinding<'static>>>>,
 }
 impl<S> GrpcPassportService<S> {
+    /// Wraps a generated service with its application context and method bindings.
     pub(crate) fn new(
         inner: S,
         application: ApplicationContext,
@@ -77,9 +78,11 @@ where
     type Response = http::Response<Body>;
     type Error = S::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    /// Delegates readiness polling to the generated service.
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
     }
+    /// Authenticates guarded RPC metadata before dispatching to the generated service.
     fn call(&mut self, mut request: http::Request<Body>) -> Self::Future {
         let application = self.application.clone();
         let binding = self.bindings.get(request.uri().path()).cloned();

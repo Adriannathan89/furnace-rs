@@ -38,6 +38,7 @@ pub(crate) enum KeyMaterial {
 }
 
 impl KeyMaterial {
+    /// Loads key bytes from inline material or the configured file path.
     pub(crate) fn read(&self) -> JwtResult<Vec<u8>> {
         match self {
             Self::Inline(bytes) => Ok(bytes.to_vec()),
@@ -136,12 +137,14 @@ impl PassportConfig {
     }
 
     #[allow(dead_code)]
+    /// Returns the parsed key mode for the service's signing and verification setup.
     pub(crate) fn key_mode(&self) -> &PassportKeyMode {
         &self.mode
     }
 }
 
 impl fmt::Debug for PassportConfig {
+    /// Formats configuration shape and limits without exposing key material or identifiers.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (key_mode, named_key_count) = match &self.mode {
             PassportKeyMode::SimpleHmac { secret } => {
@@ -163,6 +166,7 @@ impl fmt::Debug for PassportConfig {
     }
 }
 
+/// Parses legacy single-secret HMAC configuration and enforces algorithm key-length rules.
 fn parse_simple_hmac_mode(config: &Config) -> JwtResult<(PassportKeyMode, Vec<JwtAlgorithm>)> {
     let secret = required_scalar(config, "passport.secret")?;
     let algorithms = match optional_string_array(config, "passport.algorithms")? {
@@ -187,6 +191,7 @@ fn parse_simple_hmac_mode(config: &Config) -> JwtResult<(PassportKeyMode, Vec<Jw
     ))
 }
 
+/// Parses named HMAC or asymmetric keys and requires the active key to be present.
 fn parse_named_key_mode(config: &Config) -> JwtResult<(PassportKeyMode, Vec<JwtAlgorithm>)> {
     reject_named_string_arrays(config)?;
     let algorithms = named_algorithms(config)?;
@@ -228,6 +233,7 @@ fn parse_named_key_mode(config: &Config) -> JwtResult<(PassportKeyMode, Vec<JwtA
     ))
 }
 
+/// Detects whether configuration selects named-key mode.
 fn has_named_key_fields(config: &Config) -> bool {
     config.iter().any(|(key, _)| named_key_prefix(key))
         || config
@@ -235,10 +241,12 @@ fn has_named_key_fields(config: &Config) -> bool {
             .any(|(key, _)| named_key_prefix(key))
 }
 
+/// Recognizes keys that select or describe the named Passport key ring.
 fn named_key_prefix(key: &str) -> bool {
     key == "passport.active_key" || key.starts_with("passport.keys.")
 }
 
+/// Rejects array-valued active-key and named-key fields before scalar parsing.
 fn reject_named_string_arrays(config: &Config) -> JwtResult<()> {
     if config
         .iter_string_arrays()
@@ -249,6 +257,7 @@ fn reject_named_string_arrays(config: &Config) -> JwtResult<()> {
     Ok(())
 }
 
+/// Parses a nonempty, duplicate-free algorithm allowlist for named keys.
 fn named_algorithms(config: &Config) -> JwtResult<Vec<JwtAlgorithm>> {
     let values =
         optional_string_array(config, "passport.algorithms")?.ok_or_else(invalid_configuration)?;
@@ -267,11 +276,13 @@ fn named_algorithms(config: &Config) -> JwtResult<Vec<JwtAlgorithm>> {
     Ok(algorithms)
 }
 
+/// Splits a named-key setting into its key identifier and field suffix.
 fn named_key_field(key: &str) -> Option<(&str, &str)> {
     let remainder = key.strip_prefix("passport.keys.")?;
     remainder.rsplit_once('.')
 }
 
+/// Validates the bounded ASCII syntax accepted for a named key identifier.
 fn valid_key_id(key_id: &str) -> bool {
     !key_id.is_empty()
         && key_id.len() <= 128
@@ -291,6 +302,7 @@ struct NamedKeyFields {
 }
 
 impl NamedKeyFields {
+    /// Inserts one supported field and rejects duplicates or unknown field names.
     fn insert(&mut self, field: &str, value: &str) -> JwtResult<()> {
         let target = match field {
             "algorithm" => &mut self.algorithm,
@@ -308,6 +320,7 @@ impl NamedKeyFields {
     }
 }
 
+/// Validates one named key's algorithm and compatible HMAC or asymmetric materials.
 fn configured_key(
     config: &Config,
     key_id: &str,
@@ -380,6 +393,7 @@ fn configured_key(
     }
 }
 
+/// Resolves one key-material setting and rejects simultaneous inline and file sources.
 fn material_source(
     config: &Config,
     key_id: &str,
@@ -403,6 +417,7 @@ fn material_source(
     }
 }
 
+/// Loads asymmetric public/private material and proves that the pair matches when supplied.
 fn validate_asymmetric_material(
     algorithm: JwtAlgorithm,
     public_material: &KeyMaterial,
@@ -432,6 +447,7 @@ fn validate_asymmetric_material(
     Ok(())
 }
 
+/// Creates an asymmetric JWT signing key from validated PEM bytes.
 pub(super) fn encoding_key(
     algorithm: JwtAlgorithm,
     bytes: &[u8],
@@ -449,6 +465,7 @@ pub(super) fn encoding_key(
     }
 }
 
+/// Creates an asymmetric JWT verification key from validated PEM bytes.
 pub(super) fn decoding_key(
     algorithm: JwtAlgorithm,
     bytes: &[u8],
@@ -466,6 +483,7 @@ pub(super) fn decoding_key(
     }
 }
 
+/// Confirms that the configured asymmetric key can be used by the selected algorithm.
 fn validate_decoding_key(
     algorithm: JwtAlgorithm,
     key: &jsonwebtoken::DecodingKey,
@@ -480,6 +498,7 @@ fn validate_decoding_key(
     .map_err(invalid_key_material_with_source)
 }
 
+/// Wraps key parser failures while retaining the low-level cause for diagnostics.
 fn invalid_key_material_with_source<E>(source: E) -> JwtError
 where
     E: std::error::Error + Send + Sync + 'static,
@@ -487,10 +506,12 @@ where
     JwtError::with_source(JwtErrorKind::InvalidKeyMaterial, source)
 }
 
+/// Reads a required nonempty scalar setting.
 fn required_scalar<'a>(config: &'a Config, key: &str) -> JwtResult<&'a str> {
     optional_scalar(config, key)?.ok_or_else(invalid_configuration)
 }
 
+/// Reads an optional scalar and rejects array-valued or empty values.
 fn optional_scalar<'a>(config: &'a Config, key: &str) -> JwtResult<Option<&'a str>> {
     if config.get_string_array(key).is_some() {
         return Err(invalid_configuration());
@@ -501,6 +522,7 @@ fn optional_scalar<'a>(config: &'a Config, key: &str) -> JwtResult<Option<&'a st
     }
 }
 
+/// Reads an optional nonempty string array and rejects scalar or empty elements.
 fn optional_string_array<'a>(config: &'a Config, key: &str) -> JwtResult<Option<&'a [String]>> {
     if config.get(key).is_some() {
         return Err(invalid_configuration());
@@ -513,18 +535,21 @@ fn optional_string_array<'a>(config: &'a Config, key: &str) -> JwtResult<Option<
     }
 }
 
+/// Parses an optional scalar setting as an unsigned 64-bit integer.
 fn parse_optional_u64(config: &Config, key: &str) -> JwtResult<Option<u64>> {
     optional_scalar(config, key)?
         .map(|value| value.parse().map_err(|_| invalid_configuration()))
         .transpose()
 }
 
+/// Parses an optional scalar setting as a platform-sized positive integer.
 fn parse_optional_usize(config: &Config, key: &str) -> JwtResult<Option<usize>> {
     optional_scalar(config, key)?
         .map(|value| value.parse().map_err(|_| invalid_configuration()))
         .transpose()
 }
 
+/// Parses algorithms in input order while retaining only their first occurrence.
 fn deduplicate_algorithms(values: &[String]) -> JwtResult<Vec<JwtAlgorithm>> {
     let mut seen = HashSet::new();
     let mut algorithms = Vec::new();
@@ -537,6 +562,7 @@ fn deduplicate_algorithms(values: &[String]) -> JwtResult<Vec<JwtAlgorithm>> {
     Ok(algorithms)
 }
 
+/// Removes duplicate strings while preserving their first-seen order.
 fn deduplicate_strings(values: &[String]) -> Vec<String> {
     let mut seen = HashSet::new();
     values
@@ -546,6 +572,7 @@ fn deduplicate_strings(values: &[String]) -> Vec<String> {
         .collect()
 }
 
+/// Returns the minimum HMAC secret size in bytes for the selected digest.
 const fn minimum_hmac_secret_bytes(algorithm: JwtAlgorithm) -> usize {
     match algorithm {
         JwtAlgorithm::Hs256 => 32,
@@ -559,6 +586,7 @@ const fn minimum_hmac_secret_bytes(algorithm: JwtAlgorithm) -> usize {
     }
 }
 
+/// Creates the common redacted error for invalid Passport JWT configuration.
 const fn invalid_configuration() -> JwtError {
     JwtError::new(JwtErrorKind::InvalidConfiguration)
 }

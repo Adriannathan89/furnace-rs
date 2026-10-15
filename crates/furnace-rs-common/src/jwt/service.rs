@@ -41,6 +41,7 @@ struct JwtValidationPolicy {
 }
 
 impl fmt::Debug for JwtService {
+    /// Formats policy settings without exposing keys or claim values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("JwtService")
@@ -160,6 +161,7 @@ impl JwtService {
         self.verify_with_time(token, validation, || Ok(now))
     }
 
+    /// Performs token verification with an injected clock for deterministic validation.
     fn verify_with_time<C: DeserializeOwned>(
         &self,
         token: &str,
@@ -180,6 +182,7 @@ impl JwtService {
         Ok(VerifiedJwt { header, claims })
     }
 
+    /// Rejects encoded tokens that exceed the configured byte limit.
     fn ensure_token_size(&self, token: &str) -> JwtResult<()> {
         if token.len() > self.inner.policy.max_token_bytes {
             return Err(JwtError::new(JwtErrorKind::TokenTooLarge));
@@ -187,6 +190,7 @@ impl JwtService {
         Ok(())
     }
 
+    /// Enforces token profile, time, configured issuer/audience, and call-specific requirements.
     fn validate_claims(
         &self,
         header: &JwtHeader,
@@ -260,6 +264,7 @@ impl JwtService {
 impl furnace_rs_core::Injector for JwtService {
     type Dependencies = (furnace_rs_core::Config,);
 
+    /// Constructs the service from resolved configuration and redacts provisioning failures.
     async fn inject((config,): Self::Dependencies) -> furnace_rs_core::Result<Self> {
         Self::from_config(&config).map_err(|_| {
             furnace_rs_core::Error::new(
@@ -274,6 +279,7 @@ impl furnace_rs_core::Injector for JwtService {
     }
 }
 
+/// Returns the current Unix timestamp in seconds.
 fn unix_now() -> JwtResult<u64> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -281,6 +287,7 @@ fn unix_now() -> JwtResult<u64> {
         .map_err(|_| JwtError::new(JwtErrorKind::Serialization))
 }
 
+/// Serializes custom claims as an object and rejects FURNACE-reserved claim names.
 fn object_custom_claims<C>(custom_claims: C) -> JwtResult<Map<String, Value>>
 where
     C: serde::Serialize,
@@ -300,6 +307,7 @@ where
     Ok(object)
 }
 
+/// Inserts the service-owned registered claims into the serialized custom-claims object.
 fn insert_registered_claims(claims: &mut Map<String, Value>, registered: RegisteredJwtClaims) {
     if let Some(issuer) = registered.issuer {
         claims.insert("iss".to_owned(), Value::String(issuer));
@@ -339,6 +347,7 @@ fn insert_registered_claims(claims: &mut Map<String, Value>, registered: Registe
     );
 }
 
+/// Splits a compact JWT into its three nonempty encoded segments.
 fn jwt_parts(token: &str) -> JwtResult<(&str, &str, &str)> {
     let mut parts = token.split('.');
     let (Some(header), Some(payload), Some(signature), None) =
@@ -352,6 +361,7 @@ fn jwt_parts(token: &str) -> JwtResult<(&str, &str, &str)> {
     Ok((header, payload, signature))
 }
 
+/// Decodes the supported JWT header fields and rejects unknown members.
 fn decode_jwt_header(encoded_header: &str) -> JwtResult<JwtHeader> {
     let mut object = decode_json_object(encoded_header)?;
     if object
@@ -375,6 +385,7 @@ fn decode_jwt_header(encoded_header: &str) -> JwtResult<JwtHeader> {
     })
 }
 
+/// Verifies the compact token's signature using the selected decoding key and algorithm.
 fn verify_signature(
     token: &str,
     key: &jsonwebtoken::DecodingKey,
@@ -397,6 +408,7 @@ fn verify_signature(
     }
 }
 
+/// Maps JWT library signing failures to stable FURNACE error categories.
 fn map_signing_error(error: jsonwebtoken::errors::Error) -> JwtError {
     use jsonwebtoken::errors::ErrorKind;
 
@@ -410,6 +422,7 @@ fn map_signing_error(error: jsonwebtoken::errors::Error) -> JwtError {
     JwtError::new(kind)
 }
 
+/// Maps JWT library verification failures without retaining untrusted parser text.
 fn map_verification_error(error: jsonwebtoken::errors::Error) -> JwtError {
     use jsonwebtoken::errors::ErrorKind;
 
@@ -427,6 +440,7 @@ fn map_verification_error(error: jsonwebtoken::errors::Error) -> JwtError {
     JwtError::new(kind)
 }
 
+/// Separates required FURNACE claims from typed application claims.
 fn decode_claims<C>(encoded_payload: &str) -> JwtResult<JwtClaims<C>>
 where
     C: DeserializeOwned,
@@ -461,6 +475,7 @@ where
     })
 }
 
+/// Removes a required unsigned integer claim or returns its missing/malformed error.
 fn take_required_u64(
     object: &mut Map<String, Value>,
     name: &str,
@@ -472,6 +487,7 @@ fn take_required_u64(
         .ok_or_else(|| JwtError::new(JwtErrorKind::MalformedToken))
 }
 
+/// Removes an optional unsigned integer claim and rejects a value of another type.
 fn take_optional_u64(object: &mut Map<String, Value>, name: &str) -> JwtResult<Option<u64>> {
     object
         .remove(name)
@@ -483,6 +499,7 @@ fn take_optional_u64(object: &mut Map<String, Value>, name: &str) -> JwtResult<O
         .transpose()
 }
 
+/// Removes an optional string claim and rejects a value of another type.
 fn take_string(object: &mut Map<String, Value>, name: &str) -> JwtResult<Option<String>> {
     object
         .remove(name)
@@ -493,6 +510,7 @@ fn take_string(object: &mut Map<String, Value>, name: &str) -> JwtResult<Option<
         .transpose()
 }
 
+/// Accepts an audience as one string or an array of strings.
 fn take_audiences(object: &mut Map<String, Value>) -> JwtResult<Vec<String>> {
     let Some(value) = object.remove("aud") else {
         return Ok(Vec::new());
@@ -510,6 +528,7 @@ fn take_audiences(object: &mut Map<String, Value>) -> JwtResult<Vec<String>> {
     }
 }
 
+/// Decodes unpadded base64url JSON and requires an object with no duplicate keys.
 fn decode_json_object(encoded: &str) -> JwtResult<Map<String, Value>> {
     let bytes = URL_SAFE_NO_PAD
         .decode(encoded)
@@ -532,6 +551,7 @@ enum StrictJsonValue {
 }
 
 impl StrictJsonValue {
+    /// Converts the ordered strict parse tree into `serde_json::Value` recursively.
     fn into_value(self) -> Value {
         match self {
             Self::Null => Value::Null,
@@ -550,6 +570,7 @@ impl StrictJsonValue {
 }
 
 impl<'de> serde::Deserialize<'de> for StrictJsonValue {
+    /// Parses any JSON value through the duplicate-key-rejecting visitor.
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -563,10 +584,12 @@ struct StrictJsonVisitor;
 impl<'de> Visitor<'de> for StrictJsonVisitor {
     type Value = StrictJsonValue;
 
+    /// Describes the exact JSON shape accepted by this visitor.
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("a JSON value without duplicate object keys")
     }
 
+    /// Represents a unit value as JSON null.
     fn visit_unit<E>(self) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
@@ -574,6 +597,7 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         Ok(StrictJsonValue::Null)
     }
 
+    /// Represents an absent optional value as JSON null.
     fn visit_none<E>(self) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
@@ -581,6 +605,7 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         Ok(StrictJsonValue::Null)
     }
 
+    /// Preserves a JSON boolean.
     fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
@@ -588,6 +613,7 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         Ok(StrictJsonValue::Bool(value))
     }
 
+    /// Preserves a signed JSON integer.
     fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
@@ -595,6 +621,7 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         Ok(StrictJsonValue::Number(Number::from(value)))
     }
 
+    /// Preserves an unsigned JSON integer.
     fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
@@ -602,6 +629,7 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         Ok(StrictJsonValue::Number(Number::from(value)))
     }
 
+    /// Preserves a finite floating-point value as a JSON number.
     fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
@@ -611,6 +639,7 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
             .ok_or_else(|| E::custom("invalid JSON number"))
     }
 
+    /// Copies a borrowed JSON string into the owned parse tree.
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
@@ -618,6 +647,7 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         Ok(StrictJsonValue::String(value.to_owned()))
     }
 
+    /// Preserves an owned JSON string in the parse tree.
     fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
@@ -625,6 +655,7 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         Ok(StrictJsonValue::String(value))
     }
 
+    /// Collects a JSON sequence while recursively applying strict value parsing.
     fn visit_seq<A>(self, mut sequence: A) -> Result<Self::Value, A::Error>
     where
         A: SeqAccess<'de>,
@@ -636,6 +667,7 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         Ok(StrictJsonValue::Array(values))
     }
 
+    /// Collects an ordered JSON object and rejects repeated keys.
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,

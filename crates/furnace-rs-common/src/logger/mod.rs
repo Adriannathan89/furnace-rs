@@ -1,3 +1,5 @@
+//! Default console logging provider and logger abstractions.
+
 mod console_logger_service;
 mod logger_service;
 
@@ -34,9 +36,11 @@ pub fn logger() -> Logger {
 
 impl crate::core::Injector for Logger {
     type Dependencies = ();
+    /// Constructs the default console logger for the global logger provider.
     async fn inject((): ()) -> crate::core::Result<Self> {
         Ok(logger())
     }
+    /// Returns the static metadata registered for the default logger provider.
     fn descriptor() -> &'static crate::core::ProviderDescriptor {
         &LOGGER_DESCRIPTOR
     }

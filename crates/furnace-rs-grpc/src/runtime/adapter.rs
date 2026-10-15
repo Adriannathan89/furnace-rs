@@ -12,6 +12,7 @@ pub trait RuntimeGrpcExt: Sized {
 }
 impl RuntimeGrpcExt for RuntimeRoutes {
     type Grpc = tonic::service::Routes;
+    /// Adds native gRPC routes or listener settings to the runtime builder.
     fn with_grpc(mut self, grpc: Self::Grpc) -> Self {
         self.insert("grpc", grpc);
         self
@@ -19,11 +20,13 @@ impl RuntimeGrpcExt for RuntimeRoutes {
 }
 impl RuntimeGrpcExt for RuntimeBindings {
     type Grpc = GrpcServerConfig;
+    /// Adds native gRPC routes or listener settings to the runtime builder.
     fn with_grpc(mut self, grpc: Self::Grpc) -> Self {
         self.insert("grpc", grpc);
         self
     }
 }
+/// Validates listener configuration and requires a selected service.
 fn validate(graph: &CauldronGraph, config: &Config) -> furnace_rs_core::Result<()> {
     GrpcServerConfig::parse(config)?;
     if GrpcApplicationScope::for_cauldron_graph(Some(graph))?
@@ -40,7 +43,9 @@ fn validate(graph: &CauldronGraph, config: &Config) -> furnace_rs_core::Result<(
     }
     Ok(())
 }
+/// Registers gRPC runtime integration with the application builder.
 fn configure(_: &mut FurnaceBuilder) {}
+/// Builds the selected routes and server bindings before runtime startup.
 fn prepare<'a>(
     app: &'a Furnace,
     routes: Option<&'a mut RuntimeRoutes>,

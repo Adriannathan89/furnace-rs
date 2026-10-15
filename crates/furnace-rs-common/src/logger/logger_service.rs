@@ -1,3 +1,5 @@
+//! Severity levels, backend contracts, and the cloneable application logger façade.
+
 use std::sync::Arc;
 
 use super::ConsoleLoggerService;
@@ -122,6 +124,7 @@ impl Logger {
 }
 
 impl Default for Logger {
+    /// Creates a logger backed by [`ConsoleLoggerService`].
     fn default() -> Self {
         Self::new(ConsoleLoggerService)
     }

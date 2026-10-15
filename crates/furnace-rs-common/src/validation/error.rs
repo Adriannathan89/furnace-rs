@@ -152,6 +152,7 @@ impl ValidationErrors {
 }
 
 impl fmt::Display for ValidationErrors {
+    /// Formats issues in insertion order using their safe paths, codes, and messages.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (index, issue) in self.issues.iter().enumerate() {
             if index != 0 {

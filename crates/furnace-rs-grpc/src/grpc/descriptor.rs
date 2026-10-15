@@ -26,6 +26,7 @@ impl GrpcGuard {
     }
 }
 impl fmt::Debug for GrpcGuard {
+    /// Formats the registration identity without exposing function pointers.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("GrpcGuard(..)")
     }
@@ -86,6 +87,7 @@ impl GrpcServiceDescriptor {
         self.rust_methods = Some(methods);
         self
     }
+    /// Returns the authored Rust trait methods used for descriptor coverage checks.
     pub(crate) const fn rust_methods(&self) -> Option<&'static [&'static str]> {
         self.rust_methods
     }
@@ -128,6 +130,7 @@ impl GrpcServiceDescriptor {
     }
 }
 impl fmt::Debug for GrpcServiceDescriptor {
+    /// Formats the registration identity without exposing function pointers.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("GrpcServiceDescriptor")
             .field("service", &self.name())

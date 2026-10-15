@@ -78,6 +78,7 @@ pub fn build_test_router_for<T: Send + Sync + 'static>(
     )
 }
 
+/// Registers the validated controller routes in one application-scoped Axum router.
 fn register_scope(
     application: &furnace_rs_core::Furnace,
     http_scope: HttpApplicationScope,

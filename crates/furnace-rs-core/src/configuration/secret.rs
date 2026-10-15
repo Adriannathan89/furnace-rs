@@ -27,12 +27,14 @@ impl<T> Secret<T> {
 }
 
 impl<T> fmt::Debug for Secret<T> {
+    /// Writes a constant marker without inspecting the wrapped value.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("[REDACTED]")
     }
 }
 
 impl<T> fmt::Display for Secret<T> {
+    /// Writes a constant marker instead of the wrapped value.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("[REDACTED]")
     }

@@ -287,6 +287,7 @@ impl ControllerEndpointDescriptor {
     pub const fn endpoints(&self) -> &'static [RouteDescriptor] {
         self.endpoints
     }
+    /// Iterates the static route descriptors recorded for this endpoint set.
     pub(crate) fn routes(&self) -> impl Iterator<Item = &RouteDescriptor> {
         self.endpoints.iter()
     }
@@ -301,6 +302,7 @@ impl ControllerEndpointDescriptor {
     }
 }
 
+/// Builds a source-located diagnostic for inconsistent controller declarations.
 fn direct_metadata_error(controller: &ControllerDescriptor, message: &'static str) -> Error {
     Error::new(
         Diagnostic::new(
@@ -326,6 +328,7 @@ pub struct RouterBuildContext<'a> {
 
 impl<'a> RouterBuildContext<'a> {
     #[cfg(feature = "jwt")]
+    /// Resolves the preflight binding for an exact sealed route occurrence.
     pub(crate) fn endpoint_guard_state(
         &self,
         occurrence: crate::http_scope::RouteIdentity,
@@ -342,6 +345,7 @@ impl<'a> RouterBuildContext<'a> {
             })?;
         Ok(PassportGuardState::from_binding(self.application, binding))
     }
+    /// Captures the application context and optional Passport preflight result.
     pub(crate) const fn new(
         application: &'a furnace_rs_core::ApplicationContext,
         #[cfg(feature = "jwt")] passport: &'a PassportStrategyPreflight<'static>,
@@ -377,6 +381,7 @@ impl<'a> RouterBuildContext<'a> {
 }
 
 #[cfg(feature = "jwt")]
+/// Creates a diagnostic when selected route metadata lacks its Passport binding.
 fn missing_scoped_binding_error(guard: &GuardDescriptor) -> Error {
     Error::new(
         Diagnostic::new(
@@ -575,6 +580,7 @@ impl RouteCatalog {
         entries
     }
 
+    /// Joins controller declarations to endpoint sets and applies a type-id selector.
     pub(crate) fn route_controllers(
         select: impl Fn(TypeId) -> bool,
     ) -> Result<Vec<&'static ControllerEndpointDescriptor>> {
@@ -738,6 +744,7 @@ struct RouteSelection {
 }
 
 impl RouteSelection {
+    /// Selects every route in the supplied descriptor set.
     const fn all() -> Self {
         Self {
             selected: true,
@@ -748,6 +755,7 @@ impl RouteSelection {
         }
     }
 
+    /// Selects no routes from the supplied descriptor set.
     const fn none() -> Self {
         Self {
             selected: false,
@@ -759,6 +767,7 @@ impl RouteSelection {
     }
 }
 
+/// Validates routes selected by one analyzed application scope.
 pub(crate) fn validate_scoped_descriptors(
     descriptors: &[ScopedController],
 ) -> Result<Vec<ValidatedController>> {
@@ -787,6 +796,7 @@ pub(crate) fn validate_scoped_descriptors(
     Ok(validated)
 }
 
+/// Performs deterministic identity, path, capture, and route-conflict validation.
 fn validate_with_selection(
     descriptors: &[&ControllerEndpointDescriptor],
     selection_for: impl Fn(&ControllerEndpointDescriptor, &RouteDescriptor) -> RouteSelection,
@@ -849,12 +859,14 @@ fn validate_with_selection(
     Ok(validated)
 }
 
+/// Copies a controller's route metadata for catalog validation.
 fn routes_for_descriptor(
     controller: &'static ControllerEndpointDescriptor,
 ) -> impl Iterator<Item = RouteDescriptor> {
     controller.routes().copied()
 }
 
+/// Rejects empty and duplicate endpoint-set controller identities.
 fn validate_controller_identity(
     controller: &ControllerEndpointDescriptor,
     previous: &[&ControllerEndpointDescriptor],
@@ -886,6 +898,7 @@ fn validate_controller_identity(
     Ok(())
 }
 
+/// Validates a route's canonical paths, prefix join, and declaration location.
 fn validate_route(route: &RouteDescriptor) -> Result<()> {
     validate_path(route.prefix(), true, "route prefix", route.location())?;
     validate_path(route.path(), false, "route path", route.location())?;
@@ -905,6 +918,7 @@ fn validate_route(route: &RouteDescriptor) -> Result<()> {
     validate_source_location(route.location())
 }
 
+/// Joins a controller prefix and endpoint path using the canonical route rules.
 fn canonical_join(prefix: &str, path: &str) -> String {
     if prefix.is_empty() || prefix == "/" {
         path.to_owned()
@@ -915,6 +929,7 @@ fn canonical_join(prefix: &str, path: &str) -> String {
     }
 }
 
+/// Checks path syntax, capture names, and the final-position wildcard restriction.
 fn validate_path(
     value: &str,
     is_prefix: bool,
@@ -969,6 +984,7 @@ fn validate_path(
     Ok(())
 }
 
+/// Requires a nonempty source file and one-based line and column values.
 fn validate_source_location(location: SourceLocation) -> Result<()> {
     if location.file.is_empty() || location.line == 0 || location.column == 0 {
         return Err(metadata_error(
@@ -980,6 +996,7 @@ fn validate_source_location(location: SourceLocation) -> Result<()> {
     Ok(())
 }
 
+/// Rejects conflicting method/path pairs and incompatible Axum capture names.
 fn validate_routes(
     scope: &'static str,
     routes: impl IntoIterator<Item = (&'static str, RouteDescriptor)>,
@@ -1004,6 +1021,7 @@ fn validate_routes(
 
 // Axum shares a path tree across HTTP methods. Capture names must agree
 // for the same complete path shape, but may differ on divergent branches.
+/// Ensures routes sharing Axum path shapes use compatible capture names.
 fn validate_capture_names(
     seen: &mut BTreeMap<String, (&'static str, RouteDescriptor)>,
     controller: &'static str,
@@ -1049,6 +1067,7 @@ fn validate_capture_names(
     Ok(())
 }
 
+/// Replaces capture names with placeholders for route-shape conflict comparisons.
 fn canonical_pattern(path: &str) -> String {
     path.split('/')
         .map(|segment| {
@@ -1064,6 +1083,7 @@ fn canonical_pattern(path: &str) -> String {
         .join("/")
 }
 
+/// Produces a deterministic key from controller identity, namespace, and source location.
 fn controller_sort_key(
     controller: &ControllerEndpointDescriptor,
 ) -> (&'static str, Option<&'static str>, &'static str, u32, u32) {
@@ -1077,10 +1097,12 @@ fn controller_sort_key(
     )
 }
 
+/// Returns the first route's location as the controller endpoint-set location.
 fn controller_location(controller: &ControllerEndpointDescriptor) -> Option<SourceLocation> {
     controller.routes().next().map(|route| route.location())
 }
 
+/// Reports duplicate controller metadata and points to its earlier declaration.
 fn duplicate_controller_identity(
     subject: &str,
     current: &ControllerEndpointDescriptor,
@@ -1103,6 +1125,7 @@ fn duplicate_controller_identity(
     Error::from_diagnostics(primary, [related])
 }
 
+/// Reports both source locations for a conflicting HTTP route pair.
 fn conflicting_routes(
     controller: &str,
     route: RouteDescriptor,
@@ -1132,6 +1155,7 @@ fn conflicting_routes(
     Error::from_diagnostics(primary, [related])
 }
 
+/// Wraps a route metadata problem in the standard FURNACE030 diagnostic.
 fn metadata_error(
     subject: impl Into<String>,
     message: impl Into<String>,
@@ -1140,6 +1164,7 @@ fn metadata_error(
     Error::new(metadata_diagnostic(subject, message, location))
 }
 
+/// Creates a source-aware route metadata diagnostic with its standard suggestion.
 fn metadata_diagnostic(
     subject: impl Into<String>,
     message: impl Into<String>,

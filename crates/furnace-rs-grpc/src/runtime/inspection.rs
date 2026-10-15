@@ -4,6 +4,7 @@ use furnace_rs_common::__private::{
 };
 use furnace_rs_core::{CauldronGraph, Config, Result};
 #[allow(clippy::result_large_err)]
+/// Reports selected gRPC services and listener checks without opening a socket.
 fn inspect(
     graph: Option<&CauldronGraph>,
     config: &Config,
@@ -80,6 +81,7 @@ fn inspect(
     Ok((services, checks))
 }
 #[cfg(feature = "jwt")]
+/// Converts a selected guard descriptor into the public inspection report.
 fn protection(
     guard: &'static crate::GuardDescriptor,
 ) -> furnace_rs_common::__private::GrpcProtectionReport {

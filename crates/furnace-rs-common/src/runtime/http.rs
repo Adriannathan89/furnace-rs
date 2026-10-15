@@ -5,6 +5,7 @@ use super::{
 };
 use furnace_rs_core::{CauldronGraph, Config, Furnace, FurnaceBuilder};
 use futures_util::future::BoxFuture;
+/// Checks selected HTTP routes and validates their automatic bind configuration.
 fn validate(graph: &CauldronGraph, config: &Config) -> furnace_rs_core::Result<()> {
     if !crate::http_scope::HttpApplicationScope::for_cauldron_graph(Some(graph))?.has_routes() {
         return Err(crate::server::no_runnable_route_error());
@@ -12,6 +13,7 @@ fn validate(graph: &CauldronGraph, config: &Config) -> furnace_rs_core::Result<(
     crate::server_config::ServerBinding::from_config(config)?;
     Ok(())
 }
+/// Enables the automatic HTTP and CORS configuration inputs for a Furnace builder.
 fn configure(builder: &mut FurnaceBuilder) {
     crate::server_config::enable_automatic_server(builder);
     builder.__auto_configuration_input(
@@ -19,6 +21,7 @@ fn configure(builder: &mut FurnaceBuilder) {
         crate::server_config::HttpRuntimeMode::Automatic,
     );
 }
+/// Builds an HTTP router and packages its address, summary, and supervised serving operation.
 fn prepare<'a>(
     app: &'a Furnace,
     routes: Option<&'a mut RuntimeRoutes>,

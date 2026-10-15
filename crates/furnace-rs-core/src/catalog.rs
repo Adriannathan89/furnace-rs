@@ -120,6 +120,7 @@ impl Catalog {
     }
 }
 
+/// Initializes and retains the provider catalog in deterministic order.
 fn provider_cache() -> &'static Vec<&'static ProviderDescriptor> {
     static PROVIDERS: OnceLock<Vec<&'static ProviderDescriptor>> = OnceLock::new();
     PROVIDERS.get_or_init(|| {
@@ -134,6 +135,7 @@ fn provider_cache() -> &'static Vec<&'static ProviderDescriptor> {
     })
 }
 
+/// Breaks declaration-order ties using the authored source position.
 fn compare_locations(
     left: crate::SourceLocation,
     right: crate::SourceLocation,
@@ -144,6 +146,7 @@ fn compare_locations(
         .then_with(|| left.column.cmp(&right.column))
 }
 
+/// Checks whether two provider records are duplicate copies of one declaration.
 fn exact_identity(left: &ProviderDescriptor, right: &ProviderDescriptor) -> bool {
     left.type_id() == right.type_id()
         && left.kind() == right.kind()
@@ -160,6 +163,7 @@ fn exact_identity(left: &ProviderDescriptor, right: &ProviderDescriptor) -> bool
             .all(|(left, right)| left.type_id() == right.type_id())
 }
 
+/// Checks whether two cauldron records contain identical static topology.
 fn module_exact_identity(left: &CauldronDescriptor, right: &CauldronDescriptor) -> bool {
     left.type_id() == right.type_id()
         && left.type_name() == right.type_name()

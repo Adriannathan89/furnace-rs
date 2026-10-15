@@ -180,6 +180,7 @@ where
     serve_configured_router_with(application, router, address, binder, shutdown).await
 }
 
+/// Creates the diagnostic returned when no managed HTTP route is reachable.
 pub(crate) fn no_runnable_route_error() -> Error {
     Error::new(
         Diagnostic::new(
@@ -291,6 +292,7 @@ where
     serve_router_with(application, router, address, binder, shutdown).await
 }
 
+/// Applies application router layers before delegating to the listener lifecycle.
 async fn serve_router_with<Address, B, BindFuture, Shutdown>(
     application: Furnace,
     router: axum::Router,
@@ -307,6 +309,7 @@ where
     serve_configured_router_with(application, router, address, binder, shutdown).await
 }
 
+/// Starts lifecycle hooks, binds the listener, serves requests, and always attempts shutdown.
 async fn serve_configured_router_with<Address, B, BindFuture, Shutdown>(
     mut application: Furnace,
     router: axum::Router,
@@ -338,6 +341,7 @@ where
 
 // Axum's convenience server does not install a Hyper timer. Without one,
 // incomplete request headers retain their socket and task indefinitely.
+/// Serves an HTTP router using Hyper's connection timers and graceful shutdown.
 async fn serve_http(
     debug: bool,
     listener: TcpListener,
@@ -347,6 +351,7 @@ async fn serve_http(
     serve_http_supervised(debug, listener, router, shutdown, None).await
 }
 
+/// Accepts HTTP connections with header/body idle limits and optional shared task supervision.
 pub(crate) async fn serve_http_supervised(
     debug: bool,
     mut listener: TcpListener,
@@ -454,6 +459,7 @@ pub(crate) async fn serve_http_supervised(
     Ok(())
 }
 
+/// Shuts down the application and combines operation and lifecycle errors when both fail.
 async fn finish(
     mut application: Furnace,
     operation: Result<(), HttpRuntimeError>,
@@ -469,6 +475,7 @@ async fn finish(
     }
 }
 
+/// Runs application shutdown after a bind failure and retains either or both errors.
 async fn finish_after_error(
     application: Furnace,
     operation: HttpRuntimeError,
@@ -476,6 +483,7 @@ async fn finish_after_error(
     finish(application, Err(operation)).await
 }
 
+/// Waits for either the OS termination signal or the development supervisor marker file.
 async fn shutdown_signal() {
     let Some(path) = std::env::var_os(crate::__private::DEV_SHUTDOWN_ENV).map(PathBuf::from) else {
         os_shutdown_signal().await;
@@ -488,6 +496,7 @@ async fn shutdown_signal() {
     }
 }
 
+/// Waits for Ctrl-C or, on Unix, SIGTERM.
 async fn os_shutdown_signal() {
     #[cfg(unix)]
     if let Ok(mut terminate) =
@@ -503,6 +512,7 @@ async fn os_shutdown_signal() {
     let _ = tokio::signal::ctrl_c().await;
 }
 
+/// Polls the development shutdown path until it names a regular file.
 async fn wait_for_dev_shutdown(path: PathBuf) {
     loop {
         if tokio::fs::metadata(&path)
@@ -1730,6 +1740,7 @@ where
     F: Future + Send + 'static,
     F::Output: Send + 'static,
 {
+    /// Schedules a Hyper connection future under runtime tracking when available.
     fn execute(&self, future: F) {
         if let Some(tasks) = &self.0 {
             tasks.spawn(async move {

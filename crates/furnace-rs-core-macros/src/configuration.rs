@@ -22,6 +22,7 @@ struct Attributes {
     validators: Option<Vec<validate::Validator>>,
 }
 
+/// Validates a configuration struct and emits ordered source-aware field reads.
 pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     let core = core_path()?;
     // Rustdoc compiles examples as separate crates while package discovery can
@@ -119,6 +120,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     Ok(quote! {
         impl #impl_generics #core::Configuration for #name #ty_generics #where_clause {
+            #[doc = "Reads and validates this type's fields from an already loaded configuration."]
             fn from_config(__furnace_config: &#core::Config) -> #core::ConfigurationResult<Self> {
                 let mut __furnace_errors: ::core::option::Option<#core::ConfigurationErrors> = None;
                 #(#reads)*
@@ -131,6 +133,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     })
 }
 
+/// Parses one field's rename, default, parser, and validator attributes.
 fn field_attributes(field: &syn::Field) -> syn::Result<Attributes> {
     let mut result = Attributes::default();
     for attribute in field
@@ -158,6 +161,7 @@ fn field_attributes(field: &syn::Field) -> syn::Result<Attributes> {
     Ok(result)
 }
 
+/// Enforces one-segment key syntax, optionally allowing the empty prefix.
 fn validate_key(value: &LitStr, allow_empty: bool) -> syn::Result<()> {
     let key = value.value();
     if key.contains('.') || (!allow_empty && key.is_empty()) {
@@ -169,6 +173,7 @@ fn validate_key(value: &LitStr, allow_empty: bool) -> syn::Result<()> {
     Ok(())
 }
 
+/// Returns the final path segment used to classify supported field shapes.
 fn type_name(ty: &Type) -> syn::Result<String> {
     match ty {
         Type::Path(path) if path.qself.is_none() => {
@@ -181,6 +186,7 @@ fn type_name(ty: &Type) -> syn::Result<String> {
     }
 }
 
+/// Extracts the single type argument from `Option`, `Secret`, `Vec`, or another wrapper.
 fn inner_type(ty: &Type) -> syn::Result<&Type> {
     if let Type::Path(path) = ty
         && let PathArguments::AngleBracketed(arguments) =
@@ -196,6 +202,7 @@ fn inner_type(ty: &Type) -> syn::Result<&Type> {
     ))
 }
 
+/// Identifies primitive scalar names supported by the generated parser.
 fn is_scalar(name: &str) -> bool {
     matches!(
         name,
@@ -219,6 +226,7 @@ fn is_scalar(name: &str) -> bool {
     )
 }
 
+/// Emits a typed read expression while rejecting unsupported nested shapes early.
 fn field_read(
     ty: &Type,
     attributes: &Attributes,
@@ -307,6 +315,7 @@ fn field_read(
             ));
         }
         quote_spanned! {ty.span()=> {
+            #[doc = "Reads one nested configuration value at the requested dotted prefix."]
             fn __furnace_read_nested_configuration<T: #core::Configuration>(
                 __furnace_config: &#core::Config,
                 __furnace_key: &str,
@@ -329,6 +338,7 @@ fn field_read(
     Ok(read)
 }
 
+/// Checks inline and where-clause bounds for a generic nested Configuration type.
 fn configuration_bound(name: &str, generics: &Generics) -> bool {
     let matches_bound = |bound: &TypeParamBound| {
         matches!(bound, TypeParamBound::Trait(bound)
@@ -346,6 +356,7 @@ fn configuration_bound(name: &str, generics: &Generics) -> bool {
         })
 }
 
+/// Validates a compatible literal default and emits its type-correct expression.
 fn default_value(expression: &Expr, name: &str) -> syn::Result<TokenStream> {
     let literal = match expression {
         Expr::Lit(literal) => &literal.lit,

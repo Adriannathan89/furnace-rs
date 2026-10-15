@@ -72,6 +72,7 @@ impl JwtError {
     }
 
     #[allow(dead_code)]
+    /// Retains a JWT library error without exposing its text through the public message.
     pub(crate) fn with_source<E>(kind: JwtErrorKind, source: E) -> Self
     where
         E: std::error::Error + Send + Sync + 'static,
@@ -84,6 +85,7 @@ impl JwtError {
 }
 
 impl fmt::Debug for JwtError {
+    /// Formats only the stable error kind and whether a cause is retained.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("JwtError")
@@ -94,6 +96,7 @@ impl fmt::Debug for JwtError {
 }
 
 impl fmt::Display for JwtError {
+    /// Formats the stable user-facing description for the JWT failure kind.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self.kind {
             JwtErrorKind::InvalidConfiguration => "JWT configuration is invalid",
@@ -122,6 +125,7 @@ impl fmt::Display for JwtError {
 }
 
 impl std::error::Error for JwtError {
+    /// Exposes the retained cryptographic or parsing cause for server-side diagnostics.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.source
             .as_deref()

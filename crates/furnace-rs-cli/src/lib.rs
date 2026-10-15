@@ -45,6 +45,7 @@ pub fn run() -> ExitCode {
     ))
 }
 
+/// Parses arguments, selects a renderer, and maps command results to an exit code.
 async fn run_with(arguments: Vec<OsString>, current_dir: io::Result<PathBuf>) -> ExitCode {
     let invocation = match command::parse(&arguments) {
         Ok(invocation) => invocation,
@@ -72,6 +73,7 @@ async fn run_with(arguments: Vec<OsString>, current_dir: io::Result<PathBuf>) ->
     }
 }
 
+/// Dispatches a parsed command while resolving the invocation directory when needed.
 async fn run_command(
     command: Command,
     format: OutputFormat,
@@ -114,6 +116,7 @@ async fn run_command(
     }
 }
 
+/// Renders and atomically publishes a starter project, then emits one outcome.
 fn run_new_command(
     command: NewCommand,
     format: OutputFormat,
@@ -159,10 +162,12 @@ fn run_new_command(
     Ok(ExitCode::SUCCESS)
 }
 
+/// Converts a bundled-template error to the stable CLI diagnostic type.
 fn template_error(error: scaffold::TemplateError) -> CliError {
     CliError::new(error.code(), error.title(), error.to_string())
 }
 
+/// Builds the selected application, runs private inspection, and renders its report.
 async fn run_inspection_command(
     command: InspectionCommand,
     format: OutputFormat,
@@ -202,6 +207,7 @@ async fn run_inspection_command(
     }
 }
 
+/// Wraps failure to read the invocation directory as a project diagnostic.
 fn current_directory_error(error: io::Error) -> CliError {
     CliError::new(
         FURNACE201,
@@ -211,6 +217,7 @@ fn current_directory_error(error: io::Error) -> CliError {
     .with_source(error)
 }
 
+/// Renders a syntax failure through the selected finite-command output format.
 fn render_parse_error(failure: &ParseFailure) -> Result<(), CliError> {
     let diagnostic = parse_diagnostic(&failure.error);
     let command = failure.command.map(output::command_name).map(str::to_owned);
@@ -227,6 +234,7 @@ fn render_parse_error(failure: &ParseFailure) -> Result<(), CliError> {
     output::write(failure.format.unwrap_or_default(), &outcome)
 }
 
+/// Maps project-name validation and CLI grammar errors to stable diagnostics.
 fn parse_diagnostic(error: &ParseError) -> CliError {
     match error {
         ParseError::InvalidProjectName(error) => {
@@ -236,6 +244,7 @@ fn parse_diagnostic(error: &ParseError) -> CliError {
     }
 }
 
+/// Returns the static command and application-selection help text.
 const fn help() -> &'static str {
     "Usage: furnace <command> [options]\n\nCommands:\n  run       Build and run a FURNACE application\n  dev       Watch, rebuild, and restart a FURNACE application\n  new       Create a minimal FURNACE application\n  routes    Inspect application routes\n  grpc      Inspect protobuf services and admission policies\n  graph     Inspect the application graph\n  doctor    Diagnose application configuration and metadata\n\nApplication selection:\n  -p, --package <package>\n      --bin <binary>"
 }

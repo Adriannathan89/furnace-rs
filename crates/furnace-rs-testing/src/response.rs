@@ -15,6 +15,7 @@ pub struct TestResponse {
     body: Bytes,
 }
 impl TestResponse {
+    /// Consumes the response body once and retains status, headers, and bytes for assertions.
     pub(crate) async fn buffer(response: Response) -> TestResult<Self> {
         let (parts, body) = response.into_parts();
         let body = to_bytes(body, usize::MAX)

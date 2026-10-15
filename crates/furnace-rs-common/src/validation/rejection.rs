@@ -35,6 +35,7 @@ struct ErrorBody {
     message: &'static str,
 }
 
+/// Converts Axum JSON errors into stable schema or transport responses.
 pub(super) fn json_rejection_response(rejection: JsonRejection) -> Response {
     match rejection {
         JsonRejection::JsonDataError(error) => {
@@ -50,6 +51,7 @@ pub(super) fn json_rejection_response(rejection: JsonRejection) -> Response {
     }
 }
 
+/// Converts Axum query errors into a query-sourced validation response.
 pub(super) fn query_rejection_response(rejection: QueryRejection) -> Response {
     let issue = match rejection {
         QueryRejection::FailedToDeserializeQueryString(error) => query_issue(&error),
@@ -58,6 +60,7 @@ pub(super) fn query_rejection_response(rejection: QueryRejection) -> Response {
     schema_error_response(issue, ValidationSource::Query)
 }
 
+/// Converts client path parse failures to validation errors and other failures to transport errors.
 pub(super) fn path_rejection_response(rejection: PathRejection) -> Response {
     match rejection {
         PathRejection::FailedToDeserializePathParams(error) if error.status().is_client_error() => {
@@ -70,10 +73,12 @@ pub(super) fn path_rejection_response(rejection: PathRejection) -> Response {
     }
 }
 
+/// Wraps one classified deserialization issue in a sourced validation response.
 fn schema_error_response(issue: ValidationIssue, source: ValidationSource) -> Response {
     ValidationError::new([issue.with_source(source)]).into_response()
 }
 
+/// Classifies JSON schema/type failures and retains only structured field paths.
 fn data_issue(error: &JsonDataError) -> ValidationIssue {
     let path_error = find_source::<PathError<serde_json::Error>>(error);
     let missing_field = path_error.is_some_and(|error| is_missing_field(error.inner()));
@@ -90,6 +95,7 @@ fn data_issue(error: &JsonDataError) -> ValidationIssue {
     issue
 }
 
+/// Classifies JSON syntax failures and extracts a structured path when available.
 fn syntax_issue(error: &JsonSyntaxError) -> ValidationIssue {
     let issue = support::issue(support::IssueKind::InvalidSyntax);
     if let Some(error) = find_source::<PathError<serde_json::Error>>(error) {
@@ -99,6 +105,7 @@ fn syntax_issue(error: &JsonSyntaxError) -> ValidationIssue {
     }
 }
 
+/// Classifies query deserialization failures without exposing parser text.
 fn query_issue(error: &FailedToDeserializeQueryString) -> ValidationIssue {
     let Some(error) = find_source::<PathError<serde_urlencoded::de::Error>>(error) else {
         return support::issue(support::IssueKind::InvalidType);
@@ -111,6 +118,7 @@ fn query_issue(error: &FailedToDeserializeQueryString) -> ValidationIssue {
     apply_path(support::issue(kind), error.path())
 }
 
+/// Maps Axum path parser categories to stable issue codes and path segments.
 fn path_issue(error: &FailedToDeserializePathParams) -> ValidationIssue {
     match error.kind() {
         PathErrorKind::InvalidUtf8InPathParam { key } => {
@@ -135,6 +143,7 @@ fn path_issue(error: &FailedToDeserializePathParams) -> ValidationIssue {
     }
 }
 
+/// Appends structured serde path segments to a relative validation issue.
 fn apply_path(mut issue: ValidationIssue, path: &serde_path_to_error::Path) -> ValidationIssue {
     for segment in path {
         issue = match segment {
@@ -149,6 +158,7 @@ fn apply_path(mut issue: ValidationIssue, path: &serde_path_to_error::Path) -> V
 // Native error text may originate in an application/custom deserializer and
 // contain private data. Use its shape only to select a fixed issue code; never
 // promote any substring into client-visible field/path metadata.
+/// Identifies serde JSON's missing-field error shape without exposing the field text.
 fn is_missing_field(error: &serde_json::Error) -> bool {
     let message = error.to_string();
     let Some(remainder) = message.strip_prefix("missing field `") else {
@@ -167,6 +177,7 @@ fn is_missing_field(error: &serde_json::Error) -> bool {
         && column.bytes().all(|byte| byte.is_ascii_digit())
 }
 
+/// Recognizes serde's plain missing-field shape without copying arbitrary text to clients.
 fn is_plain_missing_field(message: &str) -> bool {
     message
         .strip_prefix("missing field `")
@@ -174,6 +185,7 @@ fn is_plain_missing_field(message: &str) -> bool {
         .is_some_and(|field| !field.is_empty())
 }
 
+/// Searches an error's source chain for a concrete serde path error.
 fn find_source<'a, T>(mut error: &'a (dyn Error + 'static)) -> Option<&'a T>
 where
     T: Error + 'static,
@@ -186,6 +198,7 @@ where
     }
 }
 
+/// Maps native extractor failures to fixed client messages or a redacted 500 response.
 fn transport_error_response(
     status: StatusCode,
     source: impl Error + Send + Sync + 'static,
@@ -207,6 +220,7 @@ fn transport_error_response(
     }
 }
 
+/// Serializes one fixed error envelope for transport-level request failures.
 fn fixed_error_response(status: StatusCode, code: &'static str, message: &'static str) -> Response {
     (
         status,

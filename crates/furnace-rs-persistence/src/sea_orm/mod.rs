@@ -20,10 +20,12 @@ use lifecycle::SeaOrmLifecycle;
 )]
 pub struct DatabaseCauldron;
 
+/// Constructs the stateless database factory provider.
 fn database_factory() -> DatabaseFactory {
     DatabaseFactory
 }
 
+/// Builds a PostgreSQL connector from application configuration.
 fn sea_orm_postgres_connector(
     config: furnace_rs_core::Config,
 ) -> furnace_rs_core::Result<SeaOrmPostgres> {
@@ -41,18 +43,22 @@ pub async fn sea_orm_database(
 
 impl Injector for DatabaseFactory {
     type Dependencies = ();
+    /// Returns the stateless factory provider.
     async fn inject((): ()) -> furnace_rs_core::Result<Self> {
         Ok(database_factory())
     }
+    /// Returns the static provider descriptor for the factory.
     fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
         &FACTORY_DESCRIPTOR
     }
 }
 impl Injector for SeaOrmPostgres {
     type Dependencies = (furnace_rs_core::Config,);
+    /// Builds the connector from its configuration dependency.
     async fn inject((config,): Self::Dependencies) -> furnace_rs_core::Result<Self> {
         sea_orm_postgres_connector(config)
     }
+    /// Returns the static provider descriptor for the PostgreSQL connector.
     fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
         &CONNECTOR_DESCRIPTOR
     }
@@ -62,6 +68,7 @@ impl Injector for SeaOrmPostgres {
 pub struct SeaOrmDatabaseInjector;
 impl Injector<DatabaseConnection> for SeaOrmDatabaseInjector {
     type Dependencies = (DatabaseFactory, SeaOrmPostgres);
+    /// Opens the configured database connection after the factory and connector resolve.
     async fn inject(
         (factory, connector): Self::Dependencies,
     ) -> furnace_rs_core::Result<DatabaseConnection> {
@@ -70,10 +77,12 @@ impl Injector<DatabaseConnection> for SeaOrmDatabaseInjector {
             .await
             .map_err(furnace_rs_core::Error::from)
     }
+    /// Attaches the PostgreSQL readiness and graceful-close infrastructure hook.
     fn lifecycle(database: DatabaseConnection) -> LifecycleResource<DatabaseConnection> {
         LifecycleResource::new(database)
             .with_infrastructure_hook("furnace.persistence.seaorm.postgres", SeaOrmLifecycle)
     }
+    /// Returns the static provider descriptor for the native database connection.
     fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
         &DATABASE_DESCRIPTOR
     }

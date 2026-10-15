@@ -1,3 +1,5 @@
+//! Native PostgreSQL connection preparation, validation, and establishment.
+
 use std::fmt;
 
 use ::sea_orm::{ConnectOptions, DatabaseConnection, SqlxPostgresConnector};
@@ -35,6 +37,7 @@ impl SeaOrmPostgres {
     }
 
     #[allow(dead_code)] // Used by DatabaseCauldron in the next implementation task.
+    /// Parses source-aware database settings without opening a connection.
     pub(crate) fn from_config(config: &Config) -> PersistenceResult<Self> {
         let config = SeaOrmConfig::parse(config).map_err(|source| {
             PersistenceError::with_source(
@@ -50,6 +53,7 @@ impl SeaOrmPostgres {
 }
 
 impl fmt::Debug for SeaOrmPostgres {
+    /// Formats the connector identity without exposing its URL or options.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("SeaOrmPostgres")
@@ -61,6 +65,7 @@ impl fmt::Debug for SeaOrmPostgres {
 impl DatabaseConnector for SeaOrmPostgres {
     type Database = DatabaseConnection;
 
+    /// Validates native options and opens the PostgreSQL connection with credential tracing suppressed.
     async fn connect(self) -> PersistenceResult<Self::Database> {
         validate_postgres_scheme(self.options.get_url())?;
         // SQLx allocates an ArrayQueue whose capacity must be nonzero.
@@ -115,6 +120,7 @@ impl DatabaseConnector for SeaOrmPostgres {
     }
 }
 
+/// Accepts only PostgreSQL URL schemes before invoking SeaORM.
 fn validate_postgres_scheme(url: &str) -> PersistenceResult<()> {
     if url.starts_with("postgres://") || url.starts_with("postgresql://") {
         Ok(())

@@ -10,6 +10,7 @@ struct Arguments {
     guard: Path,
 }
 impl Parse for Arguments {
+    /// Parses the required reflection guard attribute argument.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let key: Ident = input.parse()?;
         if key != "guard" {
@@ -29,6 +30,7 @@ impl Parse for Arguments {
         Ok(Self { guard })
     }
 }
+/// Validates the reflection provider declaration and emits its registration.
 pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     let args: Arguments = syn::parse2(arguments)?;
     let item: ItemStruct = syn::parse2(item)?;

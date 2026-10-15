@@ -87,6 +87,7 @@ impl ProviderContribution {
         }
     }
 
+    /// Splits the type-erased value from hooks for builder-owned registration.
     pub(crate) fn into_parts(self) -> (ErasedProvider, Vec<LifecycleRegistration>) {
         (self.provider, self.registrations)
     }

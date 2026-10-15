@@ -1,5 +1,6 @@
 //! Temporary directories for private CLI control and inspection transport.
 
+/// Creates the private directory used for local CLI control files.
 pub(crate) fn create() -> std::io::Result<tempfile::TempDir> {
     // Set the mode on mkdir itself: chmod after creation would leave a
     // window in which another local user could alter our control files.

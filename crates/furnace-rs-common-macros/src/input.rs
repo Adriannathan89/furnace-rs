@@ -9,6 +9,7 @@ use quote::{format_ident, quote, quote_spanned};
 use serde_path::Naming;
 use syn::{Data, DeriveInput, Error, Fields, Generics, Path, Type, parse_quote, spanned::Spanned};
 
+/// Expands `Input` by generating representation-aware field checks and custom validators.
 pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     let mut common = crate::path::common_path()?;
     if common.is_ident("crate") {
@@ -87,6 +88,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     Ok(quote! {
         impl #impl_generics #common::Input for #ident #ty_generics #where_clause {
+            #[doc = "Validates this value and returns ordered issues relative to its representation."]
             fn validate(&self) -> #common::ValidationResult {
                 let mut __furnace_errors: Option<#common::ValidationErrors> = None;
                 #body
@@ -97,6 +99,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     })
 }
 
+/// Generates field bindings, Serde-compatible paths, and checks for a struct or variant.
 fn fields(
     fields: &Fields,
     naming: &Naming,
@@ -149,6 +152,7 @@ fn fields(
     Ok((pattern, quote!(#(#bodies)*)))
 }
 
+/// Returns the final path identifier used to select supported built-in types.
 fn type_name(ty: &Type) -> String {
     match ungroup(ty) {
         Type::Path(path) => path
@@ -161,6 +165,7 @@ fn type_name(ty: &Type) -> String {
     }
 }
 
+/// Returns type arguments from the final angle-bracketed path segment.
 fn arguments(ty: &Type) -> Vec<&Type> {
     if let Type::Path(path) = ungroup(ty)
         && let Some(segment) = path.path.segments.last()
@@ -181,6 +186,7 @@ fn arguments(ty: &Type) -> Vec<&Type> {
     Vec::new()
 }
 
+/// Removes parenthesized and grouped wrappers before inspecting a type.
 fn ungroup(ty: &Type) -> &Type {
     match ty {
         Type::Group(group) => ungroup(&group.elem),

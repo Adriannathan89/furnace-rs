@@ -44,8 +44,7 @@ macros through `furnace-rs-core` re-exports.
 
 - `src/lib.rs` — macro exports and shared expansion helpers.
 - `src/cauldron.rs` — cauldron declarations and registration callbacks.
-- `src/managed.rs` and `src/provider.rs` — managed type/function expansion and
-  dependency extraction.
+- `src/managed.rs` — managed type/function expansion and dependency extraction.
 - `src/configuration/` — `Configuration` derive parsing and validation.
 - `src/main.rs` — async entry-point expansion.
 - `src/path.rs` — crate-path and generated-path resolution.

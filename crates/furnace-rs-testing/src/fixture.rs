@@ -20,6 +20,7 @@ pub struct TestFixtureBuilder {
     error: Option<TestError>,
 }
 impl TestFixtureBuilder {
+    /// Creates a focused application builder that requires explicit database mocks.
     pub(crate) fn new() -> Self {
         let mut builder = Furnace::builder();
         builder.__test_require_provided::<DatabaseConnection>();
@@ -79,6 +80,7 @@ impl TestFixtureBuilder {
         }
     }
 
+    /// Focuses graph analysis on the subject and rejects missing database mocks before building.
     pub(crate) async fn build<T: Send + Sync + 'static>(mut self) -> TestResult<Furnace> {
         if let Some(error) = self.error {
             return Err(error);
@@ -150,6 +152,7 @@ pub struct TestContext {
     context: ApplicationContext,
 }
 impl TestContext {
+    /// Stores the immutable application context shared by fixture clients.
     pub(crate) fn new(context: ApplicationContext) -> Self {
         Self { context }
     }
@@ -160,6 +163,7 @@ impl TestContext {
     }
 }
 
+/// Starts the application, catches body panics, awaits shutdown, and then resumes a panic.
 pub(crate) async fn run_scoped<C, F, Fut>(mut app: Furnace, context: C, body: F) -> TestResult<()>
 where
     F: FnOnce(C) -> Fut,

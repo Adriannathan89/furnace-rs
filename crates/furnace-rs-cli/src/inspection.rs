@@ -1,3 +1,5 @@
+//! Private child-process handshake and conversion of inspection reports to CLI output.
+
 use crate::output::model::{GrpcData, GrpcServiceData};
 use std::{
     fs,
@@ -50,6 +52,7 @@ enum InspectionStreams {
 }
 
 impl InspectionTimeouts {
+    /// Uses the fixed handshake, report, and polling budgets for production inspection.
     const fn production() -> Self {
         Self {
             handshake: HANDSHAKE_TIMEOUT,
@@ -145,6 +148,7 @@ pub(crate) fn inspection_failure_outcome(kind: InspectionKind, error: &CliError)
     )
 }
 
+/// Converts report data into the stable output model for its inspection kind.
 fn inspection_data(report: &InspectionReport, package_root: &Path) -> CommandData {
     match report.kind {
         InspectionKind::Grpc => CommandData::Grpc(GrpcData {
@@ -223,6 +227,7 @@ fn inspection_data(report: &InspectionReport, package_root: &Path) -> CommandDat
     }
 }
 
+/// Converts and orders inspection diagnostics for the CLI output envelope.
 fn inspection_diagnostics(report: &InspectionReport, package_root: &Path) -> Vec<CliDiagnostic> {
     render::ordered_diagnostics(report)
         .into_iter()
@@ -243,6 +248,7 @@ fn inspection_diagnostics(report: &InspectionReport, package_root: &Path) -> Vec
         .collect()
 }
 
+/// Normalizes a report source path relative to the selected package root.
 fn source_location(source: &SourceReport, package_root: &Path) -> SourceLocation {
     SourceLocation::new(
         normalize_path(package_root, Path::new(&source.file)),
@@ -251,6 +257,7 @@ fn source_location(source: &SourceReport, package_root: &Path) -> SourceLocation
     )
 }
 
+/// Maps the private inspection status to its stable CLI representation.
 const fn doctor_status(status: InspectionDoctorStatus) -> DoctorStatus {
     match status {
         InspectionDoctorStatus::Pass => DoctorStatus::Pass,
@@ -260,6 +267,7 @@ const fn doctor_status(status: InspectionDoctorStatus) -> DoctorStatus {
     }
 }
 
+/// Returns the public command spelling corresponding to an inspection kind.
 const fn inspection_command_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
@@ -279,6 +287,7 @@ async fn inspect_application_with_timeouts(
         .await
 }
 
+/// Launches an application and performs the private inspection protocol.
 async fn inspect_application_with_timeouts_and_streams(
     built: &BuiltApplication,
     kind: InspectionKind,
@@ -315,6 +324,7 @@ async fn inspect_application_with_timeouts_and_streams(
     result
 }
 
+/// Requires a direct Furnace dependency with the CLI's matching major/minor version.
 fn ensure_supported_furnace_version(built: &BuiltApplication) -> Result<(), CliError> {
     let version = built.target().furnace_version();
     let current = semver::Version::parse(furnace::FRAMEWORK_VERSION)
@@ -334,6 +344,7 @@ fn ensure_supported_furnace_version(built: &BuiltApplication) -> Result<(), CliE
     .with_suggestion(format!("use FURNACE {supported} in the selected application")))
 }
 
+/// Creates a per-inspection correlation token used by both protocol messages.
 fn inspection_token() -> Result<String, CliError> {
     let nanoseconds = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -344,6 +355,7 @@ fn inspection_token() -> Result<String, CliError> {
     Ok(format!("{}-{nanoseconds}", std::process::id()))
 }
 
+/// Builds the child command and supplies its private protocol environment.
 fn inspection_command(
     built: &BuiltApplication,
     kind: InspectionKind,
@@ -381,6 +393,7 @@ fn inspection_command(
     command
 }
 
+/// Returns the private protocol spelling corresponding to an inspection kind.
 const fn inspection_kind_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
@@ -390,6 +403,7 @@ const fn inspection_kind_name(kind: InspectionKind) -> &'static str {
     }
 }
 
+/// Validates the acknowledgement and report, then waits for a successful child exit.
 async fn supervise(
     child: &mut Child,
     kind: InspectionKind,
@@ -455,6 +469,7 @@ async fn supervise(
     Ok(envelope.into_report())
 }
 
+/// Detects child exit while allowing a final protocol file published at exit to be read.
 fn output_published_on_exit(child: &mut Child, output: &Path) -> Result<bool, CliError> {
     match child.try_wait().map_err(|error| {
         inspection_error("could not observe the inspection application").with_source(error)
@@ -469,6 +484,7 @@ fn output_published_on_exit(child: &mut Child, output: &Path) -> Result<bool, Cl
     }
 }
 
+/// Waits for a successful child exit before the shared deadline expires.
 async fn wait_for_successful_exit(
     child: &mut Child,
     deadline: Instant,
@@ -494,6 +510,7 @@ async fn wait_for_successful_exit(
     }
 }
 
+/// Rejects an explicit private-protocol version that differs from the CLI version.
 fn ensure_private_protocol_version(value: &serde_json::Value) -> Result<(), CliError> {
     if let Some(version) = value
         .get("protocol_version")
@@ -506,6 +523,7 @@ fn ensure_private_protocol_version(value: &serde_json::Value) -> Result<(), CliE
     }
     Ok(())
 }
+/// Deserializes a parsed protocol value into its expected message type.
 fn decode_json<T: for<'de> Deserialize<'de>>(value: serde_json::Value) -> Result<T, CliError> {
     serde_json::from_value(value).map_err(|error| {
         inspection_error("the application returned malformed private inspection output")
@@ -513,6 +531,7 @@ fn decode_json<T: for<'de> Deserialize<'de>>(value: serde_json::Value) -> Result
     })
 }
 
+/// Reads and deserializes one private protocol file from the child process.
 fn read_json<T>(path: &Path) -> Result<T, CliError>
 where
     T: for<'de> Deserialize<'de>,
@@ -526,10 +545,12 @@ where
     })
 }
 
+/// Constructs a consistent diagnostic for a failed private inspection exchange.
 fn inspection_error(message: impl Into<String>) -> CliError {
     CliError::new(FURNACE203, "Application inspection failed", message)
 }
 
+/// Kills a still-running inspection child and always waits to reap it.
 async fn terminate_child(child: &mut Child) {
     if matches!(child.try_wait(), Ok(None)) {
         let _ = child.kill().await;

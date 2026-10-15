@@ -17,6 +17,7 @@ pub(super) struct IdleTimeoutBody<B> {
 }
 
 impl<B> IdleTimeoutBody<B> {
+    /// Wraps a request body with a deadline for each period in which its reader waits for data.
     pub(super) fn new(inner: B, timeout: Duration, expired: Arc<AtomicBool>) -> Self {
         Self {
             inner,
@@ -36,6 +37,7 @@ where
     type Data = B::Data;
     type Error = axum::BoxError;
 
+    /// Polls the inner stream and emits one terminal timeout error after an idle interval.
     fn poll_frame(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -71,10 +73,12 @@ where
         }
     }
 
+    /// Reports completion after the body ends or times out, otherwise delegates to the inner body.
     fn is_end_stream(&self) -> bool {
         self.finished || self.inner.is_end_stream()
     }
 
+    /// Returns an empty size hint after completion and the inner body's hint while active.
     fn size_hint(&self) -> SizeHint {
         if self.finished {
             SizeHint::with_exact(0)

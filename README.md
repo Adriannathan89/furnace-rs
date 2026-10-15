@@ -3,9 +3,10 @@
 [![Latest release](https://img.shields.io/github/v/release/Adriannathan89/furnace-rs?display_name=tag&sort=semver)](https://github.com/Adriannathan89/furnace-rs/releases/latest)
 [![CI](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml)
 
-furnace-rs is a Rust application framework with a framework-neutral
-core, a scoped Axum HTTP runtime, source-aware typed configuration, safe REST
-errors, request validation, and opt-in native SeaORM persistence. A root
+The released 1.0.2 framework provides a framework-neutral core, a scoped Axum
+HTTP runtime, source-aware typed configuration, safe REST errors, request
+validation, and opt-in native SeaORM persistence. This 2.0.0-beta.2 checkout
+also includes the optional protobuf gRPC transport described below. A root
 module selects one application; startup validates its scoped graph and routes
 before it starts lifecycle hooks, checks a database, or binds a socket.
 
@@ -230,6 +231,10 @@ common integrations consume the validated application. See
 [Architecture](docs/ARCHITECTURE.md) for invariants and the individual crate
 guides for dependencies, source layout, and change ownership.
 
+For a source-linked walkthrough of how macros, graph analysis, startup,
+transports, persistence, and CLI inspection fit together, see the
+[implementation guide](docs/IMPLEMENTATION.md).
+
 ## Installation and feature selection
 
 ~~~toml
@@ -337,7 +342,8 @@ seconds. Pending request-body reads have a ten-second idle deadline renewed by
 progress. A stalled body returns a safe 408 before response headers are sent;
 a timeout during response streaming terminates the stream. These deadlines do
 not impose a handler execution limit. HTTP/2 and upgrades remain supported;
-there is no built-in TLS configuration.
+the HTTP listener has no built-in TLS configuration. The separate gRPC
+transport adds optional verified TLS in 2.0.0-beta.2.
 
 ## Validated requests and REST errors
 

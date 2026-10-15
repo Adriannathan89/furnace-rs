@@ -1,3 +1,5 @@
+//! Cargo workspace discovery and deterministic package and binary selection.
+
 use std::path::{Path, PathBuf};
 
 use cargo_metadata::{MetadataCommand, Package, TargetKind};
@@ -29,6 +31,7 @@ pub(crate) struct ResolvedApplication {
 }
 
 impl CargoProject {
+    /// Reads Cargo metadata from the invocation directory and retains workspace identity.
     pub(crate) fn load(root: impl AsRef<Path>) -> Result<Self, CliError> {
         let invocation_root = root.as_ref().to_path_buf();
         let metadata = MetadataCommand::new()
@@ -49,6 +52,7 @@ impl CargoProject {
         })
     }
 
+    /// Selects the named, root, or unambiguous default workspace package.
     pub(crate) fn resolve_package(
         &self,
         package: Option<&str>,
@@ -69,6 +73,7 @@ impl CargoProject {
         Ok(self.resolved_package(selected))
     }
 
+    /// Selects the application package and binary and records a direct Furnace version.
     pub(crate) fn resolve_application(
         &self,
         selection: &TargetSelection,
@@ -84,6 +89,7 @@ impl CargoProject {
         })
     }
 
+    /// Returns local packages reachable from the selected application for source watching.
     pub(crate) fn local_watch_roots(&self, application: &ResolvedApplication) -> Vec<PathBuf> {
         let reachable = self.reachable_package_ids(application.package().package_id());
         let mut roots = self
@@ -103,6 +109,7 @@ impl CargoProject {
         roots
     }
 
+    /// Returns all local workspace package roots for watcher exclusions.
     pub(crate) fn local_package_roots(&self) -> Vec<PathBuf> {
         let mut roots = self
             .metadata
@@ -116,6 +123,7 @@ impl CargoProject {
         roots
     }
 
+    /// Requires exactly one Cargo default member when the workspace root is virtual.
     fn resolve_default_package(&self) -> Result<&Package, CliError> {
         let candidates = self.metadata.workspace_default_packages();
         match candidates.as_slice() {
@@ -143,6 +151,7 @@ impl CargoProject {
         }
     }
 
+    /// Copies stable package identity and resolved paths from Cargo metadata.
     fn resolved_package(&self, package: &Package) -> ResolvedPackage {
         let manifest_path = package.manifest_path.as_std_path().to_path_buf();
         let package_root = manifest_path
@@ -159,10 +168,12 @@ impl CargoProject {
         }
     }
 
+    /// Returns workspace package names in sorted order.
     fn workspace_package_names(&self) -> Vec<String> {
         sorted_package_names(self.metadata.workspace_packages())
     }
 
+    /// Finds the selected package’s direct furnace-rs or furnace-rs-grpc dependency version.
     fn direct_furnace_version(&self, package: &Package) -> Option<semver::Version> {
         let node = self
             .metadata
@@ -184,6 +195,7 @@ impl CargoProject {
         })
     }
 
+    /// Traverses dependency edges starting from the selected package.
     fn reachable_package_ids(
         &self,
         selected: &cargo_metadata::PackageId,
@@ -210,36 +222,44 @@ impl CargoProject {
 }
 
 impl ResolvedPackage {
+    /// Returns the Cargo workspace root directory.
     pub(crate) fn workspace_root(&self) -> &Path {
         &self.workspace_root
     }
 
+    /// Returns the selected package directory.
     pub(crate) fn package_root(&self) -> &Path {
         &self.package_root
     }
 
+    /// Returns the selected package manifest path.
     pub(crate) fn manifest_path(&self) -> &Path {
         &self.manifest_path
     }
 
+    /// Returns Cargo’s exact identity for the selected package.
     pub(crate) fn package_id(&self) -> &cargo_metadata::PackageId {
         &self.package_id
     }
 
+    /// Returns the selected Cargo package name.
     pub(crate) fn package_name(&self) -> &str {
         &self.package_name
     }
 }
 
 impl ResolvedApplication {
+    /// Returns the resolved package associated with this binary.
     pub(crate) fn package(&self) -> &ResolvedPackage {
         &self.package
     }
 
+    /// Returns the selected binary target name.
     pub(crate) fn binary_name(&self) -> &str {
         &self.binary_name
     }
 
+    /// Returns the direct Furnace dependency version when present.
     pub(crate) fn furnace_version(&self) -> Option<&semver::Version> {
         self.furnace_version.as_ref()
     }
@@ -263,6 +283,7 @@ impl ResolvedApplication {
     }
 }
 
+/// Builds a selection diagnostic listing workspace package choices.
 fn unknown_package(name: &str, package_names: Vec<String>) -> CliError {
     let available = if package_names.is_empty() {
         "the workspace contains no packages".to_owned()
@@ -279,6 +300,7 @@ fn unknown_package(name: &str, package_names: Vec<String>) -> CliError {
     .with_suggestion("pass --package <package>")
 }
 
+/// Selects the requested binary or requires an unambiguous package target.
 fn resolve_binary(package: &Package, binary: Option<&str>) -> Result<String, CliError> {
     let binaries = package
         .targets
@@ -354,6 +376,7 @@ fn resolve_binary(package: &Package, binary: Option<&str>) -> Result<String, Cli
     }
 }
 
+/// Sorts package names for deterministic diagnostics and selection output.
 fn sorted_package_names(packages: Vec<&Package>) -> Vec<String> {
     let mut names = packages
         .into_iter()
@@ -363,6 +386,7 @@ fn sorted_package_names(packages: Vec<&Package>) -> Vec<String> {
     names
 }
 
+/// Returns the selected package directory.
 fn package_root(package: &Package) -> PathBuf {
     let manifest = package.manifest_path.as_std_path();
     let root = manifest
@@ -371,6 +395,7 @@ fn package_root(package: &Package) -> PathBuf {
     canonical_path(root)
 }
 
+/// Uses the filesystem canonical path when available and otherwise preserves the input path.
 fn canonical_path(path: &Path) -> PathBuf {
     path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
 }

@@ -1,3 +1,5 @@
+//! Timestamped standard-error implementation of the logger backend contract.
+
 use chrono::Local;
 
 use super::{LogLevel, LoggerService};
@@ -6,6 +8,7 @@ use super::{LogLevel, LoggerService};
 pub struct ConsoleLoggerService;
 
 impl LoggerService for ConsoleLoggerService {
+    /// Writes a timestamped, color-coded line to standard error.
     fn log(&self, level: LogLevel, message: &str) {
         let level_str = match level {
             LogLevel::Trace => "\x1b[34mTRACE\x1b[0m", // Blue

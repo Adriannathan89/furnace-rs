@@ -44,6 +44,7 @@ impl JwtAlgorithm {
     }
 
     #[allow(dead_code)]
+    /// Converts this allowlisted algorithm to the JWT library's algorithm enum.
     pub(super) const fn as_jsonwebtoken(self) -> jsonwebtoken::Algorithm {
         match self {
             Self::Hs256 => jsonwebtoken::Algorithm::HS256,
@@ -58,6 +59,7 @@ impl JwtAlgorithm {
     }
 
     #[allow(dead_code)]
+    /// Converts a JWT library algorithm only when FURNACE supports it.
     pub(super) const fn from_jsonwebtoken(algorithm: jsonwebtoken::Algorithm) -> Option<Self> {
         match algorithm {
             jsonwebtoken::Algorithm::HS256 => Some(Self::Hs256),
@@ -76,6 +78,7 @@ impl JwtAlgorithm {
 impl FromStr for JwtAlgorithm {
     type Err = JwtError;
 
+    /// Parses one of the explicitly supported uppercase JWT algorithm identifiers.
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value {
             "HS256" => Ok(Self::Hs256),
@@ -140,6 +143,7 @@ pub struct RegisteredJwtClaims {
 }
 
 impl fmt::Debug for RegisteredJwtClaims {
+    /// Formats claim presence and token kind without revealing claim values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("RegisteredJwtClaims")
@@ -165,6 +169,7 @@ pub struct JwtClaims<C> {
 }
 
 impl<C> fmt::Debug for JwtClaims<C> {
+    /// Formats registered-claim metadata and the custom claim type, not its data.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("JwtClaims")
@@ -184,6 +189,7 @@ pub struct VerifiedJwt<C> {
 }
 
 impl<C> fmt::Debug for VerifiedJwt<C> {
+    /// Formats the validated header and redacted claim summaries.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("VerifiedJwt")
@@ -215,6 +221,7 @@ pub struct JwtSignOptions {
 }
 
 impl fmt::Debug for JwtSignOptions {
+    /// Formats signing options without exposing subject or JWT identifier values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("JwtSignOptions")
@@ -238,6 +245,7 @@ impl JwtSignOptions {
         Self::new(JwtTokenKind::Refresh, lifetime)
     }
 
+    /// Builds options for the selected token profile and lifetime.
     const fn new(kind: JwtTokenKind, lifetime: Duration) -> Self {
         Self {
             kind,
@@ -305,6 +313,7 @@ pub struct JwtValidation {
 }
 
 impl fmt::Debug for JwtValidation {
+    /// Formats which claim constraints are active without exposing expected values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("JwtValidation")
@@ -330,6 +339,7 @@ impl JwtValidation {
         Self::new(JwtTokenKind::Refresh)
     }
 
+    /// Starts a validation policy for the selected token profile with no extra constraints.
     const fn new(kind: JwtTokenKind) -> Self {
         Self {
             kind,

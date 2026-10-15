@@ -41,6 +41,7 @@ pub struct PreflightContext<'a> {
     supplied: &'a [crate::graph::SatisfiedProvider],
 }
 impl<'a> PreflightContext<'a> {
+    /// Stores selected configuration, graph analysis, and supplied outputs for validators.
     pub(crate) const fn new(
         config: &'a Config,
         analysis: &'a GraphAnalysis,
@@ -97,6 +98,7 @@ pub(crate) struct AnalysisMemo {
     values: RefCell<HashMap<TypeId, Box<dyn Any>>>,
 }
 impl AnalysisMemo {
+    /// Builds one typed value per analysis and returns clones to later validators.
     pub(crate) fn get_or_insert<T: Clone + 'static>(&self, build: impl FnOnce() -> T) -> T {
         if let Some(value) = self.values.borrow().get(&TypeId::of::<T>()) {
             return value
@@ -112,6 +114,7 @@ impl AnalysisMemo {
     }
 }
 
+/// Runs registered validators in stable descriptor order and removes duplicate findings.
 pub(crate) fn validate(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
     let mut descriptors: Vec<_> = inventory::iter::<PreflightDescriptor>.into_iter().collect();
     descriptors.sort_by_key(|descriptor| {

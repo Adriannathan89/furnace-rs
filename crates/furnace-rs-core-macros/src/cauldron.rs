@@ -6,6 +6,7 @@ use syn::{Error, Fields, ItemStruct};
 pub(crate) mod contract;
 mod declaration;
 
+/// Validates a unit cauldron and emits its fluent registration and metadata contracts.
 pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     const FORM: &str = "`#[furnace_rs::cauldron]` supports only non-generic unit structs; legacy registration uses `Cauldron::register`";
     let declaration = if arguments.is_empty() {
@@ -41,6 +42,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         let global = d.global.then(|| quote!(.global()));
         quote! {
             impl #core::Cauldron for #ident {
+                #[doc = "Returns this declaration's static provider, controller, import, and export topology."]
                 fn register(self) -> #core::CauldronRegistration<Self> {
                     #core::CauldronRegistration::new(self) #(#providers)* #(#grpc_services)* #(#controllers)* #(#imports)* #(#exports)* #global
                 }
