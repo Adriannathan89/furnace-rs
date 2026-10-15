@@ -2,9 +2,10 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    Error, Ident, ImplItem, ItemImpl, LitStr, Path, Token, Type,
+    Attribute, Error, Ident, ImplItem, ItemImpl, LitStr, Meta, Path, Token, Type,
     ext::IdentExt,
-    parse::{Parse, ParseStream},
+    parse::{Parse, ParseStream, Parser},
+    punctuated::Punctuated,
     spanned::Spanned,
 };
 
@@ -152,18 +153,13 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     };
     let mut overrides = Vec::new();
     let mut rust_methods = Vec::new();
-    let mut wire_names = std::collections::HashSet::new();
     for item in &mut implementation.items {
         let ImplItem::Fn(method) = item else {
             continue;
         };
         let rust_name = method.sig.ident.unraw().to_string();
-        let method_cfg: Vec<_> = method
-            .attrs
-            .iter()
-            .filter(|a| a.path().is_ident("cfg"))
-            .collect();
-        rust_methods.push(quote!(#(#method_cfg)* #rust_name));
+        let method_cfg = conditions(&method.attrs)?;
+        rust_methods.push(quote!(#(#[#method_cfg])* #rust_name));
         let attrs: Vec<_> = method
             .attrs
             .iter()
@@ -182,16 +178,13 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         }
         if let Some(attr) = attrs.first() {
             let args: MethodArguments = attr.parse_args()?;
-            if !wire_names.insert(args.name.value()) {
-                return Err(Error::new(
-                    args.name.span(),
-                    "duplicate protobuf method override",
-                ));
-            }
             let name = &args.name;
             let rust_name = method.sig.ident.unraw().to_string();
             let guard = guard_value(&args.guard);
-            overrides.push(quote!(#common::GrpcMethodOverride { wire_name: #name, rust_name: #rust_name, guard: #guard }));
+            // Scope validation checks duplicate overrides after rustc has
+            // removed inactive entries. Mutually exclusive methods may name
+            // the same wire operation without sharing its active policy.
+            overrides.push(quote!(#(#[#method_cfg])* #common::GrpcMethodOverride { wire_name: #name, rust_name: #rust_name, guard: #guard }));
         }
         method.attrs.retain(|a| {
             a.path()
@@ -203,14 +196,11 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     let server = &args.server;
     let descriptor = &args.descriptor;
     let guard = guard_value(&args.guard);
-    let cfg: Vec<_> = implementation
-        .attrs
-        .iter()
-        .filter(|a| a.path().is_ident("cfg"))
-        .collect();
+    let cfg = conditions(&implementation.attrs)?;
     Ok(quote! {
         #implementation
-        #(#cfg)*
+        #(#[#cfg])*
+        const _: () = {
         #[doc(hidden)]
         #[allow(non_snake_case)]
         #[doc = "Registers the resolved implementation's generated Tonic server routes."]
@@ -224,7 +214,6 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
                 .max_decoding_message_size(context.config.max_decoding_message_bytes());
             context.add_service::<#ty, _>(server, routes)
         }
-        #(#cfg)*
         #[doc(hidden)]
         #[allow(non_upper_case_globals)]
         static #descriptor_ident: #common::GrpcServiceDescriptor = #common::GrpcServiceDescriptor::new(
@@ -234,16 +223,94 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             #descriptor, #guard, &[#(#overrides),*],
             #common::core::SourceLocation::new(file!(), line!(), column!()),
         ).with_registrar(#register_ident).with_rust_methods(&[#(#rust_methods),*]);
-        #(#cfg)*
         impl #common::core::__private::TransportProvider for #ty {
             const TRANSPORT: &'static str = "grpc";
         }
-        #(#cfg)*
         impl #common::GrpcService for #ty {
             /// Returns the static descriptor generated for this service implementation.
             fn grpc_descriptor() -> &'static #common::GrpcServiceDescriptor { &#descriptor_ident }
         }
-        #(#cfg)*
         #common::core::__private::inventory::submit! { #common::GrpcServiceRegistration { descriptor: &#descriptor_ident } }
+        };
     })
+}
+
+/// Copies only conditional gates, including gates nested inside `cfg_attr`.
+fn conditions(attributes: &[Attribute]) -> syn::Result<Vec<Meta>> {
+    attributes
+        .iter()
+        .filter_map(|attribute| condition(&attribute.meta).transpose())
+        .collect()
+}
+
+/// Projects conditional attributes without repeating unrelated item attributes.
+fn condition(meta: &Meta) -> syn::Result<Option<Meta>> {
+    if meta.path().is_ident("cfg") {
+        return Ok(Some(meta.clone()));
+    }
+    if !meta.path().is_ident("cfg_attr") {
+        return Ok(None);
+    }
+    let Meta::List(list) = meta else {
+        return Err(Error::new_spanned(meta, "expected cfg_attr arguments"));
+    };
+    let mut arguments = Punctuated::<Meta, Token![,]>::parse_terminated
+        .parse2(list.tokens.clone())?
+        .into_iter();
+    let predicate = arguments
+        .next()
+        .ok_or_else(|| Error::new_spanned(meta, "cfg_attr requires a predicate"))?;
+    let mut nested = Vec::new();
+    for argument in arguments {
+        if argument
+            .path()
+            .segments
+            .last()
+            .is_some_and(|segment| segment.ident == "grpc_method")
+        {
+            return Err(Error::new_spanned(
+                argument,
+                "put grpc_method directly on a conditionally compiled method, not inside cfg_attr",
+            ));
+        }
+        if let Some(gate) = condition(&argument)? {
+            nested.push(gate);
+        }
+    }
+    if nested.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(syn::parse_quote!(cfg_attr(#predicate, #(#nested),*))))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn conditional_projection_retains_nested_gates_only() {
+        let attribute: Meta = syn::parse_quote!(cfg_attr(
+            all(),
+            allow(dead_code),
+            cfg_attr(all(), cfg(any()))
+        ));
+        let actual = condition(&attribute).unwrap().unwrap();
+        let expected: Meta = syn::parse_quote!(cfg_attr(all(), cfg_attr(all(), cfg(any()))));
+        assert_eq!(quote!(#actual).to_string(), quote!(#expected).to_string());
+    }
+
+    #[test]
+    fn conditional_policy_attributes_are_rejected_explicitly() {
+        let attribute: Meta = syn::parse_quote!(cfg_attr(
+            all(),
+            cfg_attr(all(), grpc_method(name = "Secret", public))
+        ));
+        assert!(
+            condition(&attribute)
+                .unwrap_err()
+                .to_string()
+                .contains("put grpc_method directly")
+        );
+    }
 }
