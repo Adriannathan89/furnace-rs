@@ -1,8 +1,19 @@
 error[E0308]: mismatched types
+ --> tests/ui/storage/fail/wrong_type.rs:8:35
+  |
+8 | struct Repo { #[inject] database: String }
+  |                                   ^^^^^^ expected `DatabaseConnection`, found `String`
+
+error[E0308]: mismatched types
  --> tests/ui/storage/fail/wrong_type.rs:7:57
   |
-7 | #[storage(entity = entities::post::Entity, connection = database)]
-  |                                                         ^^^^^^^^ expected `&DatabaseConnection`, found `&String`
+7 |   #[storage(entity = entities::post::Entity, connection = database)]
+  |  _________________________________________________________^
+8 | | struct Repo { #[inject] database: String }
+  | |                                   -----^
+  | |___________________________________|____|
+  |                                     |    expected `&DatabaseConnection`, found `&String`
+  |                                     expected due to this
   |
   = note: expected reference `&DatabaseConnection`
              found reference `&std::string::String`

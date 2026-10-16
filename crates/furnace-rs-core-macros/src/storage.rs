@@ -9,7 +9,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use std::collections::BTreeSet;
 use syn::{
-    Error, ExprPath, Fields, Ident, ItemStruct, Token, Type, TypePath,
+    Error, ExprPath, Fields, Ident, ItemStruct, Path, Token, Type, TypePath,
     ext::IdentExt,
     parse::{Parse, ParseStream},
     spanned::Spanned,
@@ -111,8 +111,15 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     let managed = managed::expand(ManagedKind::Repository, TokenStream::new(), item)?;
     let connection = select_connection(&options, &declaration)?;
     let persistence = persistence_path()?;
+    let connection_type = &declaration
+        .fields
+        .iter()
+        .find(|field| field.ident.as_ref() == Some(&connection))
+        .ok_or_else(|| Error::new(connection.span(), "storage connection field is missing"))?
+        .ty;
+    let binding = connection_binding(&connection, connection_type, &persistence);
     if !options.relations.is_empty() {
-        let accessor = relations::expand(&options, &declaration, &connection, &persistence);
+        let accessor = relations::expand(&options, &declaration, &binding, &persistence);
         return Ok(quote! {#persistence::__furnace_storage_enabled! {#managed #accessor}});
     }
     let entity = &options.entity;
@@ -121,12 +128,21 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         impl #name {
             /// Borrows typed entity operations using this storage's declared connection.
             pub fn entity(&self)->#persistence::storage::EntityStore<'_,#entity> {
-                let database: &#persistence::storage::__sea_orm::DatabaseConnection = &self.0.#connection;
+                #binding
                 #persistence::storage::EntityStore::new(database)
             }
         }
     };
     Ok(quote! { #persistence::__furnace_storage_enabled! { #managed #accessor } })
+}
+
+fn connection_binding(connection: &Ident, ty: &Type, persistence: &Path) -> TokenStream {
+    quote_spanned! {ty.span()=>
+        // Owned type equality prevents deref coercions from admitting wrappers.
+        // The identity function is never invoked and consumes no connection.
+        let _: fn(#ty)->#persistence::storage::__sea_orm::DatabaseConnection = |value| value;
+        let database: &#persistence::storage::__sea_orm::DatabaseConnection = &self.0.#connection;
+    }
 }
 
 fn select_connection(options: &StorageArgs, declaration: &ItemStruct) -> syn::Result<Ident> {

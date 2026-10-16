@@ -2,12 +2,12 @@
 use super::StorageArgs;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{Ident, ItemStruct, Path, ext::IdentExt};
+use syn::{ItemStruct, Path, ext::IdentExt};
 
 pub(super) fn expand(
     options: &StorageArgs,
     declaration: &ItemStruct,
-    connection: &Ident,
+    binding: &TokenStream,
     persistence: &Path,
 ) -> TokenStream {
     let name = &declaration.ident;
@@ -100,7 +100,7 @@ pub(super) fn expand(
             impl #name {
                 /// Borrows entity operations and the declared native relation query API.
                 pub fn entity(&self)->#access<'_> {
-                    let database:&#persistence::storage::__sea_orm::DatabaseConnection=&self.0.#connection;
+                    #binding
                     #access {store:#persistence::storage::EntityStore::new(database)}
                 }
             }
