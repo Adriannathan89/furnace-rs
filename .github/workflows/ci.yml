@@ -31,6 +31,13 @@ jobs:
         run: |
           cargo check -p furnace-rs-persistence --no-default-features
           cargo check -p furnace-rs-persistence --no-default-features --features sea-orm-postgres
+          cargo check --locked -p furnace-rs-persistence --no-default-features --features sea-orm-storage
+          cargo check --locked -p furnace-rs-persistence --no-default-features --features sea-orm-storage,sea-orm-postgres
+      - name: Fetch independent storage consumer dependencies
+        run: |
+          for manifest in crates/furnace-rs-persistence/tests/consumers/storage_*/Cargo.toml; do
+            cargo fetch --manifest-path "$manifest"
+          done
       - name: Check gRPC feature boundaries and example
         run: |
           cargo check --locked -p furnace-rs-grpc --no-default-features
