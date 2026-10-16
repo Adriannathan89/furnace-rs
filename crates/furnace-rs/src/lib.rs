@@ -488,3 +488,7 @@ pub use furnace_rs_grpc::{
     ApplicationRuntimeError, FurnaceBurnExt, RuntimeBindings, RuntimeRoutes, RuntimeSelection,
     serve_transports,
 };
+
+/// Standard WebSocket server transport.
+#[cfg(feature = "socket")]
+pub use furnace_rs_socket as socket;
