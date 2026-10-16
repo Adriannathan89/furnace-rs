@@ -3,6 +3,14 @@
 Native persistence connector integration for furnace-rs. Connector features are
 opt-in; the crate has no default database backend.
 
+Enable `sea-orm-storage` for optional entity-bound `#[storage(entity = ...)]`
+CRUD, typed filters, explicit ASC/DESC ordering, page-number pagination, and
+named native relation loaders. Pagination requires an explicit order and
+fetches the requested size without lookahead or counts. The helper feature
+selects no driver; combine it with `sea-orm-postgres` for the native connector.
+See the [storage guide](../../docs/storage.md) for the API, optional connection
+selection, model formats, errors, and application-owned transaction behavior.
+
 For PostgreSQL, depend explicitly on:
 
 ```toml

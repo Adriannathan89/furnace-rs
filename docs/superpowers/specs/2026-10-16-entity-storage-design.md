@@ -1,6 +1,6 @@
 # Entity-bound storage design
 
-Status: draft for user review. This document authorizes no product implementation.
+Status: implemented and verified on 2026-10-16; see the implementation plan execution record.
 Date: 2026-10-16.
 Workspace observed: branch `develop`, version `2.0.0-beta.2`.
 
@@ -32,13 +32,12 @@ Confirmed requirements:
 - No generated transaction accessor, transaction creation, commit, rollback,
   or transaction propagation. Applications use native SeaORM for transactions.
 
-Technical details below are proposed for review as part of this draft. They
-make the confirmed contract precise rather than representing implemented APIs.
+The sections below define the approved API and its implementation contract.
 
-## Existing architecture
+## Baseline architecture before this feature
 
-The core macro in crates/furnace-rs-core-macros/src/managed.rs currently rejects
-all storage arguments and generates an Arc-backed handle, an Injector
+The core macro in crates/furnace-rs-core-macros/src/managed.rs rejected
+all storage arguments and generated an Arc-backed handle, an Injector
 implementation, and a static provider descriptor. Every field requires
 parameterless `#[inject]`. The managed-provider shape and DI behavior must
 remain intact.
@@ -51,7 +50,8 @@ to redacted HTTP errors; it does not enable a persistence repository helper.
 The workspace lockfile currently resolves SeaORM 2.0.3, while the independent
 posts-crud example pins 2.0.4. The design uses public APIs present in the
 workspace version and must be checked with both resolved versions where
-consumers select them. Planning does not change dependency versions or locks.
+consumers select them. The feature does not upgrade dependency versions;
+root lockfile changes add local package dependency edges only.
 
 The existing PostRepository performs application-specific input construction
 and Model-to-Post conversion. A generic helper cannot infer these mappings.

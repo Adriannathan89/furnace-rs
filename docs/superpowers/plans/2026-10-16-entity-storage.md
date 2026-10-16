@@ -1,6 +1,6 @@
 # Entity-bound Storage Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add optional entity-bound storage CRUD, typed ordering, explicit relation
 loading, and caller-controlled page-number pagination.
@@ -15,9 +15,9 @@ Serde, Tokio, trybuild, PostgreSQL acceptance tests.
 
 **Spec:** [Entity-bound storage design](../specs/2026-10-16-entity-storage-design.md)
 
-**Status:** Draft for review alongside the spec. No implementation or execution
-method has been approved. The user explicitly requested both documents before
-implementation; review them together before starting Task 1.
+**Status:** Implemented and verified on 2026-10-16. All seven tasks and final
+author self-review are complete.
+The user explicitly requested execution without subagents.
 
 ## Global Constraints
 
@@ -116,7 +116,7 @@ Cargo.lock, tests/storage_pagination.rs.
   ordering, database sources, and missing-update sources. Formatting always
   redacts source text.
 
-- [ ] **Step 1: Write arithmetic and envelope tests.** Assert window(1,20)
+- [x] **Step 1: Write arithmetic and envelope tests.** Assert window(1,20)
   has offset 0 and fetch_limit 20; window(2,20) has offset 20;
   window(2,1_000_000) is accepted. Zero arguments, multiplication overflow,
   such as window(3,u64::MAX), return InvalidPagination. Windows (1,u64::MAX)
@@ -126,10 +126,10 @@ Cargo.lock, tests/storage_pagination.rs.
   envelope fields and no navigation/count fields.
   Assert Page<NonSerializable> can be constructed and serializable models
   produce the documented JSON field names.
-- [ ] **Step 2: Run the failing tests.**
+- [x] **Step 2: Run the failing tests.**
   Run: cargo test --offline -p furnace-rs-persistence --features sea-orm-storage --test storage_pagination
   Expected: feature/types absent.
-- [ ] **Step 3: Implement the feature, errors, page math, and result envelopes.**
+- [x] **Step 3: Implement the feature, errors, page math, and result envelopes.**
   Enable optional SeaORM/macros and Serde only in sea-orm-storage, independently
   of the driver feature. Export a doc-hidden SeaORM path for generated code.
   Export a doc-hidden __furnace_storage_enabled! item-forwarding macro in both
@@ -138,11 +138,11 @@ Cargo.lock, tests/storage_pagination.rs.
   Use page_size directly as fetch_limit. Finish by wrapping the returned
   vector unchanged; never allocate according to a requested capacity.
   Add redaction tests retaining a synthetic secret-bearing DbErr through source().
-- [ ] **Step 4: Run tests and boundary checks.**
+- [x] **Step 4: Run tests and boundary checks.**
   Run the Task 1 command again, then cargo check --locked --offline
   -p furnace-rs-persistence --no-default-features and the same command with
   --features sea-orm-storage. Expected: success without selecting a driver.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
   Commit message: feat(persistence): add optional storage pagination contracts
 
 ### Task 2: Native entity CRUD
@@ -170,20 +170,20 @@ impl<'db, E: EntityTrait> EntityStore<'db, E> {
 Apply the native IntoActiveModel bounds required by insert/update; do not
 erase types or use dynamic dispatch.
 
-- [ ] **Step 1: Write MockDatabase CRUD tests.** Cover found/missing lookup,
+- [x] **Step 1: Write MockDatabase CRUD tests.** Cover found/missing lookup,
   generated insert ID, Set versus Unchanged/NotSet on update, missing-update
   mapping to NotFound, delete with zero/one affected rows, composite-key SQL
   predicates, before/after-save hook counters, and redacted database failure.
   Include an unset composite-key component and a model with no changed
   fields; assert native errors/results and logged query counts rather than
   inventing a helper SELECT.
-- [ ] **Step 2: Run cargo test --locked --offline -p furnace-rs-persistence
+- [x] **Step 2: Run cargo test --locked --offline -p furnace-rs-persistence
   --features sea-orm-storage --test storage_entity.** Expected: missing CRUD.
-- [ ] **Step 3: Implement CRUD through native ActiveModel operations and
+- [x] **Step 3: Implement CRUD through native ActiveModel operations and
   Entity find/delete operations.** Map only RecordNotUpdated to NotFound,
   retaining its source. Preserve other DbErr variants as Database.
-- [ ] **Step 4: Repeat Task 2 tests.** Expected: all assertions pass.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Repeat Task 2 tests.** Expected: all assertions pass.
+- [x] **Step 5: Commit.**
   Commit message: feat(persistence): add typed entity storage operations
 
 ### Task 3: Filtering, ordering, and root pagination
@@ -213,7 +213,7 @@ The prepared page contains the bounded root selection with authored ordering,
 calculated offset, and LIMIT page_size. No count query is retained. Generated
 code uses the doc-hidden interfaces without reaching into private fields.
 
-- [ ] **Step 1: Write query SQL/result tests.** Assert AND/OR filters survive
+- [x] **Step 1: Write query SQL/result tests.** Assert AND/OR filters survive
   pagination; pagination without authored ordering returns MissingOrder with
   an empty query log. Explicit ID DESC is retained; title DESC stays the sole
   criterion unless the caller adds a tie breaker. Composite-key criteria
@@ -224,18 +224,18 @@ code uses the doc-hidden interfaces without reaching into private fields.
   A large valid size appears unchanged as LIMIT in SQL; page_size=u64::MAX
   is accepted by preparation when offset arithmetic succeeds. Unordered
   one() emits LIMIT 1 without adding ORDER BY or returning MissingOrder.
-- [ ] **Step 2: Run cargo test --locked --offline -p furnace-rs-persistence
+- [x] **Step 2: Run cargo test --locked --offline -p furnace-rs-persistence
   --features sea-orm-storage --test storage_query.** Expected: missing builder.
-- [ ] **Step 3: Implement the builder and prepared interfaces.** Forward typed
+- [x] **Step 3: Implement the builder and prepared interfaces.** Forward typed
   filters and ordering to native Select, tracking only whether an order was
   supplied. Validate the window first and require ordering before pagination
   executes. Apply the calculated offset and LIMIT page_size without query
   rewriting, implicit primary-key criteria, count queries, or result trimming.
   Make one() preserve optional authored ordering and apply LIMIT 1.
-- [ ] **Step 4: Repeat Tasks 1–3 tests.** Expected: pass, including a chained
+- [x] **Step 4: Repeat Tasks 1–3 tests.** Expected: pass, including a chained
   EntityStore::new(&database).query() lifetime fixture that stores the returned page
   query in a local variable before awaiting it.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
   Commit message: feat(persistence): add ordered storage queries and pagination
 
 ### Task 4: Storage macro binding and optional connections
@@ -250,18 +250,20 @@ tests/ui/storage/pass/*.rs, tests/ui/storage/fail/*.rs and expected snapshots.
 optional automatic field selection, and documented `entity()` access.
 The parser also defines relation alias/selector AST entries for Task 5.
 
-- [ ] **Step 1: Write parser and UI tests.** Passing cases include one injected
+- [x] **Step 1: Write parser and UI tests.** Passing cases include one injected
   unqualified connection, one qualified connection, explicit alias selection,
   a core import, and a facade import. Failing cases include missing entity,
   unknown/duplicate arguments, zero/multiple candidates, missing selected
   field, selected wrong type, unrelated type named DatabaseConnection,
   alias without explicit selection, missing inject, entity-bound unit struct,
-  keyless entity, and storage arguments on burner. Preserve bare storage tests.
-- [ ] **Step 2: Run cargo test --locked --offline -p furnace-rs-core-macros
+  and storage arguments on burner. Preserve bare storage tests. Keyless entity
+  rejection is verified in Task 6's independent consumer because upstream
+  compiler candidate lists vary with enabled features.
+- [x] **Step 2: Run cargo test --locked --offline -p furnace-rs-core-macros
   and cargo test --locked --offline -p furnace-rs-persistence
   --features sea-orm-storage --test storage_ui.**
   Expected: new option acceptance cases fail before implementation.
-- [ ] **Step 3: Implement storage-only parsing and generation.** Keep common
+- [x] **Step 3: Implement storage-only parsing and generation.** Keep common
   managed expansion responsible for the Arc handle, Injector and descriptor.
   Resolve the direct persistence dependency with proc-macro-crate; select
   qualified/unqualified native connection names syntactically, then type-check
@@ -272,11 +274,11 @@ The parser also defines relation alias/selector AST entries for Task 5.
   Wrap feature-dependent output with __furnace_storage_enabled!, resolved
   through the persistence dependency; do not inspect consuming-crate features.
   Include a repository.entity().query() fixture stored before its final await.
-- [ ] **Step 4: Repeat tests and existing core macro consumer tests.**
+- [x] **Step 4: Repeat tests and existing core macro consumer tests.**
   Expected: supported shapes and existing snapshots remain compatible;
   diagnostics point to the new argument/field. Store native trait diagnostic
   variants under the established MSRV/stable fixture layout where necessary.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
   Commit message: feat(macros): bind storage to optional entity helpers
 
 ### Task 5: Declared native relation loaders
@@ -294,7 +296,7 @@ filter, order_by_asc, order_by_desc, with_<alias>, one,
 paginate(page_number, page_size).
 Query terminals return E::ModelEx, including when no relation is selected.
 
-- [ ] **Step 1: Write loader fixtures and tests.** Define dense-format entities
+- [x] **Step 1: Write loader fixtures and tests.** Define dense-format entities
   for posts, author/editor users, comments, tags and a post-tag junction.
   Assert author and editor selectors distinguish two FKs to users, both
   selectors can be selected together, repeated with_author() is idempotent,
@@ -304,10 +306,10 @@ Query terminals return E::ModelEx, including when no relation is selected.
   native wrappers, a query with no selected relations, duplicate aliases,
   two storage declarations for the same entity, and qualified equal-final-name
   storages in different modules.
-- [ ] **Step 2: Run cargo test --locked --offline -p furnace-rs-persistence
+- [x] **Step 2: Run cargo test --locked --offline -p furnace-rs-persistence
   --features sea-orm-storage --test storage_relations and storage_ui.**
   Expected: named loader methods absent.
-- [ ] **Step 3: Generate the relation facade and query wrapper.** Keep one
+- [x] **Step 3: Generate the relation facade and query wrapper.** Keep one
   boolean per alias and delegate root filters/order to EntityQuery. At each
   terminal, construct E::load() with inferred native loader type, apply
   selected native with(selector) calls, replace its public QueryFilter
@@ -315,20 +317,20 @@ Query terminals return E::ModelEx, including when no relation is selected.
   Use a generated named query wrapper so selected aliases need no reflection
   or guessed EntityLoader sibling type. Keep helper types scoped, documented,
   and visible sufficiently for the storage's public return types.
-- [ ] **Step 4: Add and run page-boundary regressions.** For size 20/page 2,
+- [x] **Step 4: Add and run page-boundary regressions.** For size 20/page 2,
   assert root OFFSET 20 LIMIT 20 before native relation loading. For size 2,
   a parent with three children must still occupy one root slot. Verify
   exactly the selected parents' children are loaded, with no extra parent,
   result trimming, or COUNT. Missing explicit ordering must return MissingOrder
   before any parent or relation query. A native selector that silently
   fails to activate a loader field is a failing test, not accepted support.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
   Commit message: feat(storage): generate explicit native relation loaders
 
 ### Task 6: Consumer compatibility and real database acceptance
 
 **Files:** persistence/tests/storage_consumers.rs,
-tests/consumers/storage_{core,facade,renamed,disabled}/Cargo.toml and src/main.rs,
+tests/consumers/storage_{core,facade,renamed,renamed_core,version204,disabled,missing,keyless}/Cargo.toml and src/main.rs,
 tests/storage_postgres.rs, .github/workflows/ci.yml.
 
 **Consumes:** Completed storage public APIs.
@@ -336,15 +338,16 @@ tests/storage_postgres.rs, .github/workflows/ci.yml.
 **Interfaces produced:** independent Cargo consumer coverage, documented
 PostgreSQL acceptance command, and CI feature-boundary checks.
 
-- [ ] **Step 1: Add consumer fixtures.** Check direct core plus persistence,
+- [x] **Step 1: Add consumer fixtures.** Check direct core plus persistence,
   facade plus persistence, renamed core/facade/persistence packages, missing
-  persistence dependency, and disabled storage feature independently of the
+  persistence dependency, disabled storage feature, and a keyless entity
+  independently of the
   main workspace's all-features unification. Use missing-docs deny in positive
   generated-code consumers; retain Rust 1.94-compatible fixture syntax.
-- [ ] **Step 2: Run the consumer harness.** Each positive cargo check must
+- [x] **Step 2: Run the consumer harness.** Each positive cargo check must
   succeed; each negative check must fail with its targeted message. Do not
   accept unrelated dependency or compilation failure as a negative pass.
-- [ ] **Step 3: Add PostgreSQL tests gated like existing persistence tests.**
+- [x] **Step 3: Add PostgreSQL tests gated like existing persistence tests.**
   Use FURNACE_TEST_DATABASE_URL and isolated test-owned tables/schema with
   cleanup. Verify tied sort values/composite PK ordering, pages 1 and 2,
   collection fan-out, author/editor distinction, many-to-many loading,
@@ -352,7 +355,7 @@ PostgreSQL acceptance command, and CI feature-boundary checks.
   update/delete missing records, and hook behavior.
   Application-owned transaction examples use the transaction handle directly;
   generated CRUD does not implicitly join it.
-- [ ] **Step 4: Run targeted acceptance and feature checks.**
+- [x] **Step 4: Run targeted acceptance and feature checks.**
   Run: cargo test --locked --offline -p furnace-rs-persistence
   --features sea-orm-storage,sea-orm-postgres --test storage_postgres -- --ignored
   when a test database is available. If unavailable, report it explicitly and
@@ -362,7 +365,7 @@ PostgreSQL acceptance command, and CI feature-boundary checks.
   toolchain, or report its unavailability without silently claiming coverage.
   Check native loader consumers against workspace SeaORM 2.0.3 and an isolated
   SeaORM 2.0.4 consumer without changing the root lockfile version.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
   Commit message: test(storage): cover consumers features and native database behavior
 
 ### Task 7: Documentation and integrated verification
@@ -372,7 +375,7 @@ docs/ARCHITECTURE.md, CHANGELOG.md, relevant crate API documentation.
 
 **Consumes:** Verified signatures and behavior from Tasks 1–6.
 
-- [ ] **Step 1: Document direct dependencies/features and a complete example.**
+- [x] **Step 1: Document direct dependencies/features and a complete example.**
   Include inferred/explicit alias connections, every CRUD result shape,
   caller-authored ascending/descending criteria and unique tie breakers,
   page-number arguments, three-field JSON envelopes, MissingOrder failures,
@@ -382,10 +385,10 @@ docs/ARCHITECTURE.md, CHANGELOG.md, relevant crate API documentation.
   using DatabaseConnection do not enlist in separately created transactions.
   Explain native delete-by-id versus ActiveModel hooks, child collection size,
   concurrency limits of offset pages, and error redaction.
-- [ ] **Step 2: Add compiled documentation examples.** Reuse test entity
+- [x] **Step 2: Add compiled documentation examples.** Reuse test entity
   fixtures for runtime behavior, and make public code examples compile with
   feature requirements stated. Add the implemented feature to Unreleased.
-- [ ] **Step 3: Run affected suites and required checks.**
+- [x] **Step 3: Run affected suites and required checks.**
   Run cargo fmt --all --check; cargo test --locked --offline
   -p furnace-rs-core-macros; cargo test --locked --offline
   -p furnace-rs-persistence --all-features; and cargo clippy --locked --offline
@@ -393,28 +396,127 @@ docs/ARCHITECTURE.md, CHANGELOG.md, relevant crate API documentation.
   -- -D warnings. Run cargo test --locked --offline -p furnace-rs-persistence
   --all-features --doc and build its docs with RUSTDOCFLAGS="-D warnings".
   Repeat independent consumer feature checks after final edits.
-- [ ] **Step 4: Run integration checks after scoped checks pass.**
+- [x] **Step 4: Run integration checks after scoped checks pass.**
   Run cargo test --locked --offline --workspace --all-features and workspace
   all-target/all-feature Clippy. Run only relevant previously passing checks
   again when later changes invalidate them. Record commands, versions, skipped
   database/MSRV checks, and failures without overstating results. Test outcomes
   and generated SQL counts must support any performance claim; none is promised
   by this design.
-- [ ] **Step 5: Review the final diff against every spec acceptance criterion.**
+- [x] **Step 5: Review the final diff against every spec acceptance criterion.**
   Confirm only planned features and lockfile edges changed, no transactions or
   pagination caps were introduced, and generated public APIs satisfy docs lint.
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
   Commit message: docs(storage): document entity repository contracts
 
 ## Review and execution handoff
 
-Review this plan together with the draft spec before product implementation.
-Suggested execution is native (the implementing agent works through tasks)
-because parser generation, shared prepared-query interfaces, and native loader
-integration depend closely on each other. No subagent is spawned by this plan.
+The user approved native execution through superpowers:executing-plans,
+explicitly without subagents. Work proceeds in the existing develop checkout.
+The final review is a separate author self-review; no merge, push, or publish
+is part of implementation. Progress and verification are recorded with the
+implementation commits and final execution notes.
 
-Once the user approves the documents and chooses an execution method, use
-superpowers:executing-plans for native execution or
-superpowers:subagent-driven-development for delegated execution. Establish the
-approved implementation branch/worktree at that time; this documentation task
-does not switch branches or execute the plan.
+
+## Execution record — 2026-10-16
+
+Implementation ran directly in the existing `develop` checkout, as requested;
+no subagents were used. This leaves the commits on the assigned checkout and
+provides author self-review rather than an independent reviewer. Nothing was
+pushed, merged, or published.
+
+### Implementation batches
+
+| Commit | Change |
+| --- | --- |
+| ed5166e | Optional feature, checked page arithmetic, envelope, redacted errors |
+| 13b2e70 | Native CRUD and hook forwarding |
+| 581ad45 | Typed predicates, explicit ordering, bounded pagination |
+| 13618c8 | Entity macro arguments, connection selection, dependency resolution |
+| f8bcac2 | Explicit native relation loaders |
+| 07f9112 | Independent consumers, feature matrix, PostgreSQL acceptance, CI |
+| dafad80 | Exact native connection type enforcement and regression cases |
+| 35dfcdf | Portable compiler diagnostics and isolated keyless rejection |
+
+### Review findings and resolved issues
+
+Author review checked the spec's ten acceptance criteria against implementation,
+SQL assertions, compiler fixtures, and real database results. It found one
+Important contract mismatch: Rust deref coercion admitted an explicitly chosen
+Arc<DatabaseConnection>, although the contract requires the native type or an
+alias. Ordinary and relation-enabled negative fixtures first compiled
+unexpectedly, demonstrating the issue. An owned identity type check now rejects
+both wrappers without moving or cloning a connection; positive native alias
+fixtures still compile.
+
+The keyless entity negative case uses an isolated consumer with a targeted
+upstream diagnostic instead of a full stderr snapshot: enabled drivers change
+upstream compiler candidate lists. Rust 1.94 has separate native diagnostic
+snapshots for two loader errors. These choices preserve semantic rejection
+checks without depending on irrelevant compiler formatting or driver candidates.
+
+The first broad test run found that the release package-content gate excludes
+untracked fixture files. Staging the intended fixtures resolved that failure;
+the targeted gate verified all eleven crate archives and the subsequent full
+workspace run passed. A fresh run additionally covers the final connection guard.
+
+### Acceptance coverage
+
+| Spec criteria | Evidence |
+| --- | --- |
+| 1–3: existing macros, dependency naming, connection rules | Existing macro suites; eight independent consumer cases; positive and negative storage compiler fixtures |
+| 4: CRUD, hooks, composite keys, errors | storage_entity; storage_postgres |
+| 5–7: predicates, ordering, arithmetic, exact page limits | storage_query; storage_pagination; relation SQL assertions; storage_postgres |
+| 8: selected author/editor, collections, parent boundaries | storage_relations; real PostgreSQL acceptance |
+| 9: serialization and redaction | storage_pagination |
+| 10: feature isolation, docs, MSRV, live database | Four feature combinations; renamed consumers with documentation deny lint; Rust 1.94 checks; compiled examples; PostgreSQL 16 |
+
+Storage-only selects no driver. Runtime core remains SeaORM-free. The root
+lockfile changes only the persistence package's Serde dependency edges;
+SeaORM versions were not updated. Isolated fixtures pin matching SeaORM runtime
+and macro versions for 2.0.3 and 2.0.4 compatibility checks.
+
+### Verification
+
+- RED→GREEN checks preceded the feature, CRUD, query, macro, loader, and exact
+  connection type changes. Final compiler checks run without snapshot overwrite.
+- Four dependency boundaries passed: no default features, storage-only,
+  postgres-only, and storage plus postgres.
+- Rust 1.94 storage-only library and native loader consumer compilation passed.
+- `cargo test --locked --offline -p furnace-rs-persistence
+  --features sea-orm-storage,sea-orm-postgres --test storage_postgres -- --ignored`
+  passed against a private PostgreSQL 16 fixture using a Unix socket and no TCP
+  listener. It checks distinct author/editor loading, child collections,
+  many-to-many relations, parent pages, composite sorting, CRUD/hooks, and an
+  application-owned transaction rollback. The server was stopped and its
+  temporary directory removed afterward.
+- Existing database-dependent ignored tests are not claimed as executed. The
+  new storage PostgreSQL test was executed separately as described above.
+- Verification checks SQL shape and query counts; no latency or allocation
+  benchmark was performed and no numerical performance improvement is claimed.
+
+- Standard compiler: rustc 1.96.0; MSRV: rustc/cargo 1.94.0.
+- `cargo test --locked --offline -p furnace-rs-persistence --all-features
+  --test storage_ui --test storage_binding --test storage_relations` passed
+  after the final connection fix: 21 compiler cases (2 positive, 19 negative),
+  injection coverage, and six native relation regressions.
+- `cargo +1.94.0 test --locked --offline -p furnace-rs-persistence
+  --all-features --test storage_ui` passed after that fix without snapshot
+  overwrite.
+- `cargo clippy --workspace --all-targets --all-features --locked --offline
+  -j 4 -- -D warnings` passed after the final production change.
+- `RUSTDOCFLAGS="-D warnings" cargo doc --locked --offline
+  -p furnace-rs-persistence --all-features --no-deps` passed.
+- `cargo fmt --all --check` and `git diff --check` passed.
+
+- `cargo test --workspace --all-features --locked --offline -j 4` passed
+  after the final production change, including independent consumers, release
+  package contents, and both compiled storage documentation examples.
+- Final author self-review found no remaining Important or Critical issues in
+  the implemented scope after the connection guard fix. Review covered the
+  complete implementation range and documentation, not only the last commit.
+  An independent reviewer was not used because the user requested no subagents.
+
+All seven plan tasks are complete. The final documentation batch updates the
+guide, crate API examples, architecture, approved spec status, this execution
+record, and Unreleased changelog. Commits remain local on `develop`.

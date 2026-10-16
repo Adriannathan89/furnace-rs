@@ -6,6 +6,15 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### Added
+
+- Add optional `furnace-rs-persistence/sea-orm-storage` entity-bound storage
+  helpers through `#[storage(entity = ...)]`, optional connection selection,
+  native CRUD, typed filters, explicit ASC/DESC ordering, page-number pagination,
+  and declared SeaORM 2 relation loaders. Pagination fetches the requested
+  parent page without lookahead or counts; applications own limits and
+  transactions. See the [storage guide](docs/storage.md).
+
 ### Security
 
 - Apply gRPC method admission overrides only when their conditional method is

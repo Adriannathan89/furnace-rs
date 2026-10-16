@@ -81,6 +81,12 @@ pub fn burner(arguments: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Declares a named-field or unit struct as a persistence repository.
 /// Every named dependency field requires parameterless `#[inject]`.
+///
+/// Optional `entity = path::Entity` binds native SeaORM CRUD through `entity()`.
+/// `connection = field` selects an injected native connection when inference is
+/// ambiguous or an alias is used. `relations(alias = selector, ...)` generates
+/// explicit native relation loader methods. Entity options require a direct
+/// `furnace-rs-persistence` dependency with its `sea-orm-storage` feature.
 #[proc_macro_attribute]
 pub fn storage(arguments: TokenStream, item: TokenStream) -> TokenStream {
     storage::expand(arguments.into(), item.into())
