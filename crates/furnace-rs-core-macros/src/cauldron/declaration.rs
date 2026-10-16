@@ -30,6 +30,8 @@ pub(super) struct Declaration {
     pub providers: Vec<Provider>,
     pub controllers: Vec<Type>,
     pub grpc_services: Vec<Type>,
+    pub socket_gateways: Vec<Type>,
+    pub socket_endpoints: Vec<Type>,
     pub imports: Vec<Path>,
     pub exports: Vec<Type>,
     pub global: bool,
@@ -61,7 +63,8 @@ impl Parse for Declaration {
             match option.as_str() {
                 "root" => declaration.root = true,
                 "global" => declaration.global = true,
-                "providers" | "controllers" | "grpc_services" | "imports" | "exports" => {
+                "providers" | "controllers" | "grpc_services" | "socket_gateways"
+                | "socket_endpoints" | "imports" | "exports" => {
                     input.parse::<Token![=]>()?;
                     let list;
                     bracketed!(list in input);
@@ -92,6 +95,18 @@ impl Parse for Declaration {
                                 .into_iter()
                                 .collect();
                             unique(&declaration.grpc_services)?;
+                        }
+                        "socket_gateways" | "socket_endpoints" => {
+                            let values: Vec<Type> = list
+                                .parse_terminated(Type::parse, Token![,])?
+                                .into_iter()
+                                .collect();
+                            unique(&values)?;
+                            if option == "socket_gateways" {
+                                declaration.socket_gateways = values;
+                            } else {
+                                declaration.socket_endpoints = values;
+                            }
                         }
                         "imports" => {
                             declaration.imports = list

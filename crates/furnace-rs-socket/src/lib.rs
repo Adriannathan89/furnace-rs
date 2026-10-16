@@ -26,6 +26,15 @@ pub use runtime::build_socket_routes;
 /// Macro expansion implementation contracts.
 #[doc(hidden)]
 pub mod __private {
-    pub use crate::runtime::owned_route;
+    pub use crate::descriptor::SocketGuard;
+    pub use crate::dispatch::{SocketGateway, SocketInput};
+    pub use crate::runtime::{gateway_route, owned_route};
+    pub use axum::routing::MethodRouter;
     pub use futures_util::future::BoxFuture;
 }
+/// Gateway and owned-socket registration attributes.
+pub use furnace_rs_socket_macros::{socket_endpoint, socket_gateway};
+
+mod hub;
+pub use hub::{SocketGatewayHub, SocketHub};
+mod dispatch;

@@ -14,6 +14,10 @@ pub(crate) fn core_path() -> syn::Result<Path> {
         return found_path(found, true);
     }
 
+    if let Ok(found) = crate_name("furnace-rs-socket") {
+        return found_path(found, true);
+    }
+
     if let Ok(found) = crate_name("furnace-rs-grpc") {
         return found_path(found, true);
     }
