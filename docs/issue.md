@@ -12,7 +12,7 @@ Reviewed on 2026-10-15 at commit `bd8ade6aa4759ad5072dd82a63b7c2006c31affc`, bra
 
 | Finding | Implemented correction | Regression evidence |
 | --- | --- | --- |
-| F01 | Conditional method gates also control policy metadata, including nested `cfg_attr`; conditional helper declarations get an explicit diagnostic. | [Before/after comparison](../benchmark/GRPC_POLICY_SECURITY.md), [machine-readable evidence](../benchmark/results/2026-10-15-grpc-policy-before-after.json), and [conditional attributes](../crates/furnace-rs-grpc/tests/grpc_conditional_attributes.rs). |
+| F01 | Conditional method gates also control policy metadata, including nested `cfg_attr`; conditional helper declarations get an explicit diagnostic. | [Before/after comparison](../benchmark/SECURITY.md#f01-conditional-grpc-admission-policy), [machine-readable evidence](../benchmark/results/2026-10-15-grpc-policy-before-after.json), and [conditional attributes](../crates/furnace-rs-grpc/tests/grpc_conditional_attributes.rs). |
 | F02 | Three Rustls locks updated to 0.23.46; CI audits every committed lockfile. | [Audit runner](../benchmark/tool/audit_lockfiles.py); all 11 committed locks pass the cached RustSec scan. |
 | F03 | Lifecycle progress and failures survive interruption; shutdown resumes cleanup of completed starts and retries pending stops. | [Cancellation regressions](../crates/furnace-rs-core/tests/lifecycle.rs). Hooks retain documented responsibility for partial startup effects and retry-safe stops. |
 | F04 | Unsupported conditional controller fields are rejected before invalid dependency code is emitted. | [Compile-fail fixture](../crates/furnace-rs/tests/ui/fail/controller_conditional_fields.rs), plus macro tests. |

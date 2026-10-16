@@ -25,7 +25,7 @@ migration are consolidated into the first 1.0.0 release.
   compiled, preventing inactive public methods from weakening guarded RPC
   policies. Reject unsupported conditional `grpc_method` attributes and
   validate active duplicate overrides before route construction. See the
-  [F01 before/after reproduction](benchmark/GRPC_POLICY_SECURITY.md).
+  [F01 before/after reproduction](benchmark/SECURITY.md#f01-conditional-grpc-admission-policy).
 - Update all committed Rustls lockfile entries to 0.23.46 and audit every
   committed lockfile in beta and stable publication workflows.
 - Validate response cookie names with the same rules used for request cookies
@@ -155,7 +155,7 @@ configuration, and inventory provider construction.
   options can still disable these policies with `None`.
 - Reject inventory constructor outputs whose concrete type differs from their
   declared type identifier before application construction succeeds.
-- Record [before/after database and inventory regression measurements](benchmark/DATABASE_INVENTORY_SECURITY.md),
+- Record [before/after database and inventory regression measurements](benchmark/SECURITY.md#database-jwt-and-inventory-regressions),
   including retained JWT algorithm binding and native PostgreSQL recovery controls.
 - Bound incomplete initial HTTP requests, including idle sockets and partial
   protocol prefaces, and HTTP/1 request headers to ten seconds. Preserve HTTP/2,
@@ -165,7 +165,7 @@ configuration, and inventory provider construction.
   headers are sent and close the affected HTTP/1 connection. A timeout during
   response streaming terminates that stream. Body-size limits remain enforced.
 - Record isolated before/after regression measurements in the
-  [HTTP runtime security report](benchmark/HTTP_RUNTIME_SECURITY.md).
+  [HTTP runtime security report](benchmark/SECURITY.md#http-runtime-request-deadlines).
 
 ## [1.0.0] - 2026-10-03
 

@@ -7,8 +7,8 @@ Use 1.0.2 for the latest released security and availability fixes.
 Version 1.0.1 adds ten-second initial-request/header and idle-body deadlines,
 rejects zero database maintenance durations, and validates inventory output
 types during construction. See the [release notes](releases/1.0.1.md),
-[HTTP runtime report](../benchmark/HTTP_RUNTIME_SECURITY.md), and
-[database/inventory report](../benchmark/DATABASE_INVENTORY_SECURITY.md).
+[HTTP runtime summary](../benchmark/SECURITY.md#http-runtime-request-deadlines), and
+[database/inventory summary](../benchmark/SECURITY.md#database-jwt-and-inventory-regressions).
 The [1.0.0 audit](SECURITY_AUDIT.md) retains evidence for earlier fixes.
 
 The released **1.0.2** includes the
