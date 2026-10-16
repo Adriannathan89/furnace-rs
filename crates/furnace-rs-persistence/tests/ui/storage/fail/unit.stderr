@@ -1,0 +1,5 @@
+error: entity-bound storage requires a named injected database field
+ --> tests/ui/storage/fail/unit.rs:8:1
+  |
+8 | struct Repo;
+  | ^^^^^^

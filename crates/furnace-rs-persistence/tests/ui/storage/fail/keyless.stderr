@@ -1,0 +1,172 @@
+error: Entity must have a primary key column. See <https://github.com/SeaQL/sea-orm/issues/485> for details.
+ --> tests/ui/storage/fail/keyless.rs:7:39
+  |
+7 |     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+  |                                       ^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `DeriveEntityModel` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `PrimaryKey: PrimaryKeyToColumn` is not satisfied
+ --> tests/ui/storage/fail/keyless.rs:7:39
+  |
+7 |     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+  |                                       ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `PrimaryKeyToColumn` is not implemented for `PrimaryKey`
+ --> tests/ui/storage/fail/keyless.rs:7:39
+  |
+7 |     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+  |                                       ^^^^^^^^^^^^^^^^^
+note: required by a bound in `sea_orm::EntityTrait::PrimaryKey`
+ --> $CARGO/sea-orm-$VERSION/src/entity/base_entity.rs
+  |
+  |     type PrimaryKey: PrimaryKeyTrait + PrimaryKeyToColumn<Column = Self::Column>;
+  |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `EntityTrait::PrimaryKey`
+  = note: this error originates in the derive macro `sea_orm::prelude::DeriveEntity` which comes from the expansion of the derive macro `DeriveEntityModel` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `(): PrimaryKeyArity` is not satisfied
+ --> tests/ui/storage/fail/keyless.rs:7:39
+  |
+7 |     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+  |                                       ^^^^^^^^^^^^^^^^^ the trait `TryGetable` is not implemented for `()`
+  |
+  = help: the following other types implement trait `TryGetable`:
+            Option<T>
+            Vec<T>
+            Vec<u8>
+            bool
+            f32
+            f64
+            i16
+            i32
+          and $N others
+  = note: required for `()` to implement `PrimaryKeyArity`
+note: required by a bound in `sea_orm::PrimaryKeyTrait::ValueType`
+ --> $CARGO/sea-orm-$VERSION/src/entity/primary_key.rs
+  |
+  |     type ValueType: Sized
+  |          --------- required by a bound in this associated type
+...
+  |         + PrimaryKeyArity;
+  |           ^^^^^^^^^^^^^^^ required by this bound in `PrimaryKeyTrait::ValueType`
+  = note: this error originates in the derive macro `DeriveEntityModel` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `(): TryFromU64` is not satisfied
+ --> tests/ui/storage/fail/keyless.rs:7:39
+  |
+7 |     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+  |                                       ^^^^^^^^^^^^^^^^^ the trait `ActiveEnum` is not implemented for `()`
+  |
+  = help: the following other types implement trait `TryFromU64`:
+            (T0, T1)
+            (T0, T1, T2)
+            (T0, T1, T2, T3)
+            (T0, T1, T2, T3, T4)
+            (T0, T1, T2, T3, T4, T5)
+            (T0, T1, T2, T3, T4, T5, T6)
+            (T0, T1, T2, T3, T4, T5, T6, T7)
+            (T0, T1, T2, T3, T4, T5, T6, T7, T8)
+          and $N others
+  = note: required for `()` to implement `TryFromU64`
+note: required by a bound in `sea_orm::PrimaryKeyTrait::ValueType`
+ --> $CARGO/sea-orm-$VERSION/src/entity/primary_key.rs
+  |
+  |     type ValueType: Sized
+  |          --------- required by a bound in this associated type
+...
+  |         + TryFromU64
+  |           ^^^^^^^^^^ required by this bound in `PrimaryKeyTrait::ValueType`
+  = note: this error originates in the derive macro `DeriveEntityModel` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `(): FromValueTuple` is not satisfied
+ --> tests/ui/storage/fail/keyless.rs:7:39
+  |
+7 |     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+  |                                       ^^^^^^^^^^^^^^^^^ the trait `ValueType` is not implemented for `()`
+  |
+  = help: the following other types implement trait `ValueType`:
+            Cow<'_, str>
+            Option<T>
+            Vec<u8>
+            bool
+            char
+            f32
+            f64
+            i16
+          and $N others
+  = note: required for `()` to implement `FromValueTuple`
+note: required by a bound in `sea_orm::PrimaryKeyTrait::ValueType`
+ --> $CARGO/sea-orm-$VERSION/src/entity/primary_key.rs
+  |
+  |     type ValueType: Sized
+  |          --------- required by a bound in this associated type
+...
+  |         + FromValueTuple
+  |           ^^^^^^^^^^^^^^ required by this bound in `PrimaryKeyTrait::ValueType`
+  = note: this error originates in the derive macro `DeriveEntityModel` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `sea_orm::Value: From<()>` is not satisfied
+ --> tests/ui/storage/fail/keyless.rs:7:39
+  |
+7 |     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+  |                                       ^^^^^^^^^^^^^^^^^ the trait `From<()>` is not implemented for `sea_orm::Value`
+  |
+  = help: `sea_orm::Value` implements trait `From<T>`:
+            From<&[u8]>
+            From<&bool>
+            From<&char>
+            From<&f32>
+            From<&f64>
+            From<&i16>
+            From<&i32>
+            From<&i64>
+            From<&i8>
+            From<&std::string::String>
+            From<&str>
+            From<&u16>
+            From<&u32>
+            From<&u64>
+            From<&u8>
+            From<Cow<'_, str>>
+            From<Option<T>>
+            From<Vec<u8>>
+            From<bool>
+            From<char>
+            From<f32>
+            From<f64>
+            From<i16>
+            From<i32>
+            From<i64>
+            From<i8>
+            From<sea_orm::sea_query::Enum>
+            From<std::string::String>
+            From<u16>
+            From<u32>
+            From<u64>
+            From<u8>
+  = note: required for `()` to implement `Into<sea_orm::Value>`
+  = note: required for `()` to implement `FromValueTuple`
+note: required by a bound in `sea_orm::PrimaryKeyTrait::ValueType`
+ --> $CARGO/sea-orm-$VERSION/src/entity/primary_key.rs
+  |
+  |     type ValueType: Sized
+  |          --------- required by a bound in this associated type
+...
+  |         + FromValueTuple
+  |           ^^^^^^^^^^^^^^ required by this bound in `PrimaryKeyTrait::ValueType`
+  = note: this error originates in the derive macro `DeriveEntityModel` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0004]: non-exhaustive patterns: type `&PrimaryKey` is non-empty
+ --> tests/ui/storage/fail/keyless.rs:7:39
+  |
+7 |     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+  |                                       ^^^^^^^^^^^^^^^^^
+  |
+note: `PrimaryKey` defined here
+ --> tests/ui/storage/fail/keyless.rs:7:39
+  |
+7 |     #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+  |                                       ^^^^^^^^^^^^^^^^^
+  = note: the matched value is of type `&PrimaryKey`
+  = note: references are always considered inhabited
+  = note: this error originates in the derive macro `DerivePrimaryKey` which comes from the expansion of the derive macro `DeriveEntityModel` (in Nightly builds, run with -Z macro-backtrace for more info)

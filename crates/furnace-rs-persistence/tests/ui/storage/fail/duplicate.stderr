@@ -1,0 +1,5 @@
+error: duplicate storage entity
+ --> tests/ui/storage/fail/duplicate.rs:7:44
+  |
+7 | #[storage(entity = entities::post::Entity, entity = entities::post::Entity)]
+  |                                            ^^^^^^

@@ -3,6 +3,8 @@
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
+extern crate self as furnace_rs_persistence;
+
 mod error;
 mod factory;
 #[cfg(feature = "sea-orm-postgres")]

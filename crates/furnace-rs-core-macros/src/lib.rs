@@ -11,6 +11,7 @@ mod configuration;
 mod main_attribute;
 mod managed;
 mod path;
+mod storage;
 mod test_fn;
 
 /// Derives an explicit typed view over an already loaded configuration.
@@ -82,13 +83,9 @@ pub fn burner(arguments: TokenStream, item: TokenStream) -> TokenStream {
 /// Every named dependency field requires parameterless `#[inject]`.
 #[proc_macro_attribute]
 pub fn storage(arguments: TokenStream, item: TokenStream) -> TokenStream {
-    managed::expand(
-        managed::ManagedKind::Repository,
-        arguments.into(),
-        item.into(),
-    )
-    .unwrap_or_else(syn::Error::into_compile_error)
-    .into()
+    storage::expand(arguments.into(), item.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 /// Registers a zero-argument async Cargo test with a function-local fixture builder.

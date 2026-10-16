@@ -1,0 +1,5 @@
+error: dependency fields require #[inject]
+ --> tests/ui/storage/fail/missing_inject.rs:8:15
+  |
+8 | struct Repo { database: DatabaseConnection }
+  |               ^^^^^^^^
