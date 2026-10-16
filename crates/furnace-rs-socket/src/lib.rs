@@ -13,3 +13,7 @@ mod protocol;
 pub use config::*;
 pub use error::*;
 pub use protocol::*;
+mod descriptor;
+mod scope;
+pub use descriptor::*;
+pub use scope::*;

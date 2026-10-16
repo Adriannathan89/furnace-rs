@@ -625,10 +625,9 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
         furnace_rs_core::__private::inventory::iter::<crate::runtime::RuntimeTransportDescriptor>
             .into_iter()
             .collect();
-    let selection = crate::runtime::RuntimeSelection::parse(
+    let selection = crate::runtime::RuntimeSelection::parse_registered(
         &config,
-        adapters.iter().any(|a| a.name == "http"),
-        adapters.iter().any(|a| a.name == "grpc"),
+        &adapters.iter().map(|a| a.name).collect::<Vec<_>>(),
     );
     if let Err(error) = &selection {
         diagnostics.extend(diagnostic_reports(error.diagnostics()));
@@ -646,6 +645,7 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
         for adapter in adapters {
             if (adapter.name == "http" && selection.http)
                 || (adapter.name == "grpc" && selection.grpc)
+                || (adapter.name == "socket" && selection.socket)
             {
                 (adapter.configure)(&mut builder);
             }
