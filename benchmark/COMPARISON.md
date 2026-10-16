@@ -1,5 +1,9 @@
 # FURNACE vs native Axum vs Go Fiber v2 — local benchmark
 
+The current Rust/reqwest fixed-64 and capacity-ramp measurements are in
+[the 2026-10-16 report](REQWEST_REPORT.md). The results below retain their
+original Python-client methodology and dates.
+
 Measured 2026-09-25. The [raw result](results/2026-09-25-furnace-axum-fiber-stress.json)
 contains all five measured runs for every combination, including status counts,
 client-observed p50/p95/p99 latency, and errors. All 420,000 measured HTTP

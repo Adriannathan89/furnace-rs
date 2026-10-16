@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Compare randomized HTTP workloads and startup across FURNACE DI versions."""
+"""Compare randomized HTTP workloads and startup across FURNACE DI versions.
+
+Legacy HTTP performance client. Use benchmark/runner (Rust + reqwest) for
+new performance measurements. Retained for historical and correctness tools.
+"""
 
 from __future__ import annotations
 

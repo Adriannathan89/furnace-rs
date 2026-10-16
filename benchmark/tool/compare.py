@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Run equivalent FURNACE, Axum, and Fiber HTTP workloads sequentially."""
+"""Run equivalent FURNACE, Axum, and Fiber HTTP workloads sequentially.
+
+Legacy HTTP performance client. Use benchmark/runner (Rust + reqwest) for
+new performance measurements. Retained for historical and correctness tools.
+"""
 
 from __future__ import annotations
 

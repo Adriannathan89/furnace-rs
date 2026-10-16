@@ -16,12 +16,13 @@ curl http://127.0.0.1:3000/
 # Hello, world!
 ```
 
-`furnace.toml` sets the listener address and enables debug request logging in
-this checkout. The annotated controller implementation declares its endpoints.
+`furnace.toml` sets the listener address. Request logging stays disabled unless
+`furnace.mode = "debug"` is configured. The annotated controller implementation
+declares its endpoints.
 Controllers without `impl Sealable` are public.
 `#[cauldron(root, controllers = [HelloController])]` registers the controller
 and checks its constructor dependencies at compile time. `Furnace::burn` loads local configuration and
 starts the server.
 
 Continue with [posts-crud](../posts-crud/) for persistence or
-[protected-route](../protected-route/) for authentication and logging.
+[protected-route](../protected-route/) for authentication.

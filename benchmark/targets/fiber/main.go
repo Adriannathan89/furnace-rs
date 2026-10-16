@@ -157,7 +157,6 @@ func authApp(app *fiber.App, username, password, secret string) {
 			return apiError(c, fiber.StatusUnprocessableEntity, "validation_error")
 		}
 		if input.Username != username || input.Password != password {
-			log.Print("login rejected")
 			return apiError(c, fiber.StatusUnauthorized, "unauthorized")
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"sub": "1", "user_id": 1, "exp": time.Now().Add(15 * time.Minute).Unix()})
@@ -165,7 +164,6 @@ func authApp(app *fiber.App, username, password, secret string) {
 		if err != nil {
 			return apiError(c, fiber.StatusInternalServerError, "internal")
 		}
-		log.Print("login succeeded")
 		return c.JSON(fiber.Map{"access_token": signed})
 	})
 	app.Get("/auth/me", func(c *fiber.Ctx) error {
@@ -186,7 +184,6 @@ func authApp(app *fiber.App, username, password, secret string) {
 		if !ok || claims["sub"] != "1" || claims["user_id"] != float64(1) {
 			return passportUnauthorized(c)
 		}
-		log.Print("protected profile read")
 		return c.JSON(fiber.Map{"id": 1, "username": username})
 	})
 }

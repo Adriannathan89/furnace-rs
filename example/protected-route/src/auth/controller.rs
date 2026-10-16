@@ -35,10 +35,7 @@ impl AuthController {
 #[guard(strategy = "jwt", principal = UserPrincipal, source = bearer, roles(any = ["reader"]))]
 struct ProfileGuard;
 #[controller]
-pub struct ProfileController {
-    #[inject]
-    logger: Logger,
-}
+pub struct ProfileController {}
 impl Sealable for ProfileController {
     fn seals() -> SealRegistration<Self> {
         Self::seal::<ProfileGuard>()
@@ -51,7 +48,6 @@ impl ProfileController {
         &self,
         principal: Authenticated<UserPrincipal>,
     ) -> HttpResult<Json<ProfileResponse>> {
-        self.logger.info("protected profile read");
         Ok(Json(ProfileResponse {
             id: principal.id,
             username: principal.username.clone(),

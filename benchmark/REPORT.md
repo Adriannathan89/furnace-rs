@@ -1,5 +1,9 @@
 # Benchmark findings — 2026-09-24
 
+The current Rust/reqwest fixed-64 and capacity-ramp measurements are in
+[the 2026-10-16 report](REQWEST_REPORT.md). The results below retain their
+original Python-client methodology and dates.
+
 Hotfix follow-up (2026-09-25): the `mads-common` response for oversized JSON
 now includes `Connection: close`. With the protected-route example built against
 the local hotfix source, `oversized-reuse` returned eight 413 responses across
