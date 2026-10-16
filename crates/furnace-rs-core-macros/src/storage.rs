@@ -3,6 +3,8 @@ use crate::{
     managed::{self, ManagedKind},
     path::persistence_path,
 };
+
+mod relations;
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use std::collections::BTreeSet;
@@ -110,13 +112,8 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     let connection = select_connection(&options, &declaration)?;
     let persistence = persistence_path()?;
     if !options.relations.is_empty() {
-        return Err(Error::new(
-            options.relations[0].selector.span(),
-            format!(
-                "relation loader `{}` is not yet available",
-                options.relations[0].alias
-            ),
-        ));
+        let accessor = relations::expand(&options, &declaration, &connection, &persistence);
+        return Ok(quote! {#persistence::__furnace_storage_enabled! {#managed #accessor}});
     }
     let entity = &options.entity;
     let name = &declaration.ident;

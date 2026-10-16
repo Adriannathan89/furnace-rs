@@ -1,0 +1,8 @@
+error[E0599]: no method named `with_secret` found for struct `__FurnaceRepoQuery<'db>` in the current scope
+ --> tests/ui/storage/fail/undeclared_loader.rs:9:54
+  |
+7 | #[storage(entity=post::Entity,relations(author=post::Relation::Author))]
+  | ------------------------------------------------------------------------ method `with_secret` not found for this struct
+8 | struct Repo { #[inject] database:DatabaseConnection }
+9 | fn exercise(repo:&Repo) {let _=repo.entity().query().with_secret();}
+  |                                                      ^^^^^^^^^^^ method not found in `__FurnaceRepoQuery<'_>`
