@@ -17,3 +17,15 @@ mod descriptor;
 mod scope;
 pub use descriptor::*;
 pub use scope::*;
+
+mod context;
+pub use context::*;
+/// Separate-listener runtime integration.
+pub mod runtime;
+pub use runtime::build_socket_routes;
+/// Macro expansion implementation contracts.
+#[doc(hidden)]
+pub mod __private {
+    pub use crate::runtime::owned_route;
+    pub use futures_util::future::BoxFuture;
+}

@@ -22,12 +22,44 @@ pub struct SocketEndpointDescriptor {
     /// Per-connection scheduling.
     pub processing: ProcessingMode,
     /// Static operation metadata.
+    /// Typed route constructor; absent metadata cannot be served.
+    pub route: Option<
+        fn(
+            furnace_rs_core::ApplicationContext,
+        ) -> furnace_rs_core::Result<axum::routing::MethodRouter>,
+    >,
+    /// Static handler declarations.
     pub handlers: &'static [SocketHandlerDescriptor],
 }
 impl SocketEndpointDescriptor {
+    /// Attaches a native route factory.
+    pub const fn with_route(
+        mut self,
+        route: fn(
+            furnace_rs_core::ApplicationContext,
+        ) -> furnace_rs_core::Result<axum::routing::MethodRouter>,
+    ) -> Self {
+        self.route = Some(route);
+        self
+    }
     /// Constructs side-effect-free registration metadata.
-    pub const fn new(provider: fn() -> TypeId, implementation: &'static str, path: &'static str, mode: EndpointMode, processing: ProcessingMode, handlers: &'static [SocketHandlerDescriptor]) -> Self {
-        Self { provider, implementation, path, mode, processing, handlers }
+    pub const fn new(
+        provider: fn() -> TypeId,
+        implementation: &'static str,
+        path: &'static str,
+        mode: EndpointMode,
+        processing: ProcessingMode,
+        handlers: &'static [SocketHandlerDescriptor],
+    ) -> Self {
+        Self {
+            provider,
+            implementation,
+            path,
+            mode,
+            processing,
+            handlers,
+            route: None,
+        }
     }
 }
 /// Link-time descriptor entry.
