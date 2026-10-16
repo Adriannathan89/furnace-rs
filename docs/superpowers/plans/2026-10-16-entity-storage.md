@@ -23,8 +23,12 @@ implementation; review them together before starting Task 1.
 
 - Use `entity()` as the generated namespace for CRUD and queries.
 - Pagination is `paginate(page_number, page_size)`, with one-based page numbers.
+- Pagination requires caller-authored ordering. Do not add an implicit order
+  or primary-key tie breaker; applications choose their ordering columns.
 - Applications choose both pagination arguments. There are no framework
   maximum sizes, maximum offsets, clamping, defaults, or TOML pagination settings.
+- Fetch at most the requested number of parent records. Page results contain
+  items, page_number, and page_size; no has_next, lookahead, or total counts.
 - Relation-enabled storage uses SeaORM 2's native loader-compatible
   `#[sea_orm::model]` or `#[sea_orm::compact_model]` entity format.
 - No generated transaction accessor, transaction creation, commit, rollback,
@@ -44,7 +48,8 @@ implementation; review them together before starting Task 1.
 
 ## Review Focus
 
-- Page 2 with relation lookahead must use offset 20 for size 20, never 21.
+- Page 2 with relations must use OFFSET 20 and LIMIT 20 for size 20, with no
+  extra parent or COUNT query.
   Covered by Task 5's relation pagination SQL test and Task 6's live test.
 - Two foreign keys to the same entity must load the selected relationship,
   including selection of both. Covered by Task 5 author/editor fixtures.
@@ -55,6 +60,7 @@ implementation; review them together before starting Task 1.
   query. Covered by Task 2's update tests.
 - Huge but representable pagination requests must not acquire policy caps,
   preallocate their requested capacity, or issue SQL after arithmetic failure.
+  Missing explicit ordering must also fail before SQL without adding a default.
   Covered by Tasks 1 and 3.
 
 ---
@@ -65,9 +71,9 @@ Create under crates/furnace-rs-persistence/src/storage/:
 
 - mod.rs: public exports and doc-hidden macro support re-exports.
 - error.rs: StorageError, StorageErrorKind, StorageResult.
-- pagination.rs: Page, CountedPage, validated PageWindow, envelope finishing.
+- pagination.rs: Page, validated PageWindow, envelope finishing.
 - entity.rs: EntityStore CRUD.
-- query.rs: EntityQuery, deterministic ordering, prepared page/one support.
+- query.rs: EntityQuery, explicit ordering, prepared page/one support.
 
 Create under crates/furnace-rs-core-macros/src/:
 
@@ -97,27 +103,27 @@ Cargo.lock, tests/storage_pagination.rs.
 **Interfaces produced:**
 
 - Feature-gated public module storage and optional feature sea-orm-storage.
-- StorageErrorKind::{InvalidPagination, NotFound, Database}.
+- StorageErrorKind::{InvalidPagination, MissingOrder, NotFound, Database}.
 - StorageError::kind() -> StorageErrorKind and standard Error::source().
 - From<sea_orm::DbErr> for StorageError maps to Database and retains its source.
 - StorageResult<T> = Result<T, StorageError>.
-- Page<T> and CountedPage<T> with the exact fields in the spec.
+- Page<T> with exactly items, page_number, and page_size from the spec.
 - Doc-hidden PageWindow::new(page_number: u64, page_size: u64)
   -> StorageResult<PageWindow>, plus page_number(), page_size(), offset(),
   and fetch_limit() -> u64 accessors.
 - PageWindow::finish<T>(self, items: Vec<T>) -> Page<T>.
-- PageWindow::finish_counted<T>(self, items: Vec<T>, total_items: u64)
-  -> CountedPage<T>.
-- Crate-private StorageError constructors for invalid pagination, database
-  sources, and missing-update sources. Formatting always redacts source text.
+- Crate-private StorageError constructors for invalid pagination, missing
+  ordering, database sources, and missing-update sources. Formatting always
+  redacts source text.
 
 - [ ] **Step 1: Write arithmetic and envelope tests.** Assert window(1,20)
-  has offset 0 and fetch_limit 21; window(2,20) has offset 20;
+  has offset 0 and fetch_limit 20; window(2,20) has offset 20;
   window(2,1_000_000) is accepted. Zero arguments, multiplication overflow,
-  and page_size=u64::MAX return InvalidPagination.
-  Finish 21 items into 20 with has_next=true; finish empty items into an
-  empty page with the requested number/size. Assert totals 0/20 -> 0 pages,
-  21/20 -> 2, and u64::MAX/2 -> 9_223_372_036_854_775_808 without overflow.
+  such as window(3,u64::MAX), return InvalidPagination. Windows (1,u64::MAX)
+  and (2,u64::MAX) are accepted by the arithmetic layer. Finish 20 returned
+  items unchanged; finish empty items into an empty page with the requested
+  number/size. Check that serialization has exactly the three specified
+  envelope fields and no navigation/count fields.
   Assert Page<NonSerializable> can be constructed and serializable models
   produce the documented JSON field names.
 - [ ] **Step 2: Run the failing tests.**
@@ -129,8 +135,8 @@ Cargo.lock, tests/storage_pagination.rs.
   Export a doc-hidden __furnace_storage_enabled! item-forwarding macro in both
   feature states; the disabled implementation emits a focused compile error
   naming sea-orm-storage, while the enabled implementation emits its input.
-  Finish by comparing returned length with page_size and truncating only the
-  existing vector; never allocate according to a requested capacity.
+  Use page_size directly as fetch_limit. Finish by wrapping the returned
+  vector unchanged; never allocate according to a requested capacity.
   Add redaction tests retaining a synthetic secret-bearing DbErr through source().
 - [ ] **Step 4: Run tests and boundary checks.**
   Run the Task 1 command again, then cargo check --locked --offline
@@ -196,36 +202,36 @@ tests/storage_query.rs, tests/storage_pagination.rs.
 - EntityQuery::one(self) -> async StorageResult<Option<E::Model>>.
 - EntityQuery::paginate(self, page_number: u64, page_size: u64)
   -> async StorageResult<Page<E::Model>>.
-- EntityQuery::paginate_with_total(self, page_number: u64, page_size: u64)
-  -> async StorageResult<CountedPage<E::Model>>.
 - Doc-hidden PreparedPage<'db, E> returned by EntityQuery::prepare_page(self,
   page_number, page_size) -> StorageResult<PreparedPage<'db, E>>.
 - PreparedPage::database(&self) -> &'db DatabaseConnection;
-  statement(&self) -> SelectStatement; total_items(&self)
-  -> async StorageResult<u64>; finish<T>(self, Vec<T>) -> Page<T>;
-  finish_counted<T>(self, Vec<T>, u64) -> CountedPage<T>.
+  statement(&self) -> SelectStatement; finish<T>(self, Vec<T>) -> Page<T>.
 - Doc-hidden EntityQuery::prepare_one(self) -> (&'db DatabaseConnection,
-  SelectStatement ), with final ordering and LIMIT 1.
+  SelectStatement ), preserving authored ordering and applying LIMIT 1.
 
-The prepared page keeps an unpaginated root select for counting and a
-separate bounded statement for data. Generated code uses the doc-hidden
-interfaces without reaching into private fields.
+The prepared page contains the bounded root selection with authored ordering,
+calculated offset, and LIMIT page_size. No count query is retained. Generated
+code uses the doc-hidden interfaces without reaching into private fields.
 
 - [ ] **Step 1: Write query SQL/result tests.** Assert AND/OR filters survive
-  pagination/counting; ordering defaults to each PK column ascending; explicit
-  ID DESC is retained; custom title DESC adds missing PK ASC; composite keys
-  append only missing parts. Assert paginate(2,20) emits OFFSET 20 LIMIT 21,
-  ordinary reads log no COUNT, counted reads count the filtered roots and
-  preserve the same data bounds, and beyond-end pages remain empty.
-  Invalid arithmetic must leave the query log empty, including counted reads.
-  A large valid size must appear unchanged as size+1 in SQL.
+  pagination; pagination without authored ordering returns MissingOrder with
+  an empty query log. Explicit ID DESC is retained; title DESC stays the sole
+  criterion unless the caller adds a tie breaker. Composite-key criteria
+  retain exactly the authored sequence and direction. Assert paginate(2,20)
+  emits OFFSET 20 LIMIT 20, loads no lookahead root, logs no COUNT, and
+  beyond-end pages remain empty. Invalid arithmetic leaves the query log
+  empty and takes precedence over MissingOrder when both apply.
+  A large valid size appears unchanged as LIMIT in SQL; page_size=u64::MAX
+  is accepted by preparation when offset arithmetic succeeds. Unordered
+  one() emits LIMIT 1 without adding ORDER BY or returning MissingOrder.
 - [ ] **Step 2: Run cargo test --locked --offline -p furnace-rs-persistence
   --features sea-orm-storage --test storage_query.** Expected: missing builder.
-- [ ] **Step 3: Implement the builder and prepared interfaces.** Track authored
-  typed columns for tie breakers, comparing IdenStatic identifiers without
-  requiring Column: Eq or rendered SQL comparison. Validate windows before SQL.
-  Use checked offset independent from the lookahead limit; avoid native fetch_page with
-  an increased page size. Make one() use the same ordering with LIMIT 1.
+- [ ] **Step 3: Implement the builder and prepared interfaces.** Forward typed
+  filters and ordering to native Select, tracking only whether an order was
+  supplied. Validate the window first and require ordering before pagination
+  executes. Apply the calculated offset and LIMIT page_size without query
+  rewriting, implicit primary-key criteria, count queries, or result trimming.
+  Make one() preserve optional authored ordering and apply LIMIT 1.
 - [ ] **Step 4: Repeat Tasks 1–3 tests.** Expected: pass, including a chained
   EntityStore::new(&database).query() lifetime fixture that stores the returned page
   query in a local variable before awaiting it.
@@ -280,12 +286,12 @@ persistence/tests/storage_relations.rs, tests/support/storage_entities.rs,
 tests/ui/storage/{pass,fail} relation fixtures.
 
 **Consumes:** Parsed aliases/selectors, EntityStore CRUD, EntityQuery prepared
-interfaces, Page/CountedPage, StorageResult.
+interfaces, Page, StorageResult.
 
 **Interfaces produced:** relation-enabled storage facades with matching basic
 CRUD signatures and a generated query wrapper containing:
 filter, order_by_asc, order_by_desc, with_<alias>, one,
-paginate(page_number, page_size), paginate_with_total(page_number, page_size).
+paginate(page_number, page_size).
 Query terminals return E::ModelEx, including when no relation is selected.
 
 - [ ] **Step 1: Write loader fixtures and tests.** Define dense-format entities
@@ -310,10 +316,11 @@ Query terminals return E::ModelEx, including when no relation is selected.
   or guessed EntityLoader sibling type. Keep helper types scoped, documented,
   and visible sufficiently for the storage's public return types.
 - [ ] **Step 4: Add and run page-boundary regressions.** For size 20/page 2,
-  assert root OFFSET 20 LIMIT 21 before native relation loading. For size 2,
-  a parent with three children must still count as one root; lookahead
-  removal must not remove or misattach children of retained roots. Counted
-  relation reads count root filters only. A native selector that silently
+  assert root OFFSET 20 LIMIT 20 before native relation loading. For size 2,
+  a parent with three children must still occupy one root slot. Verify
+  exactly the selected parents' children are loaded, with no extra parent,
+  result trimming, or COUNT. Missing explicit ordering must return MissingOrder
+  before any parent or relation query. A native selector that silently
   fails to activate a loader field is a failing test, not accepted support.
 - [ ] **Step 5: Commit.**
   Commit message: feat(storage): generate explicit native relation loaders
@@ -341,7 +348,8 @@ PostgreSQL acceptance command, and CI feature-boundary checks.
   Use FURNACE_TEST_DATABASE_URL and isolated test-owned tables/schema with
   cleanup. Verify tied sort values/composite PK ordering, pages 1 and 2,
   collection fan-out, author/editor distinction, many-to-many loading,
-  zero/beyond-end totals, update/delete missing records, and hook behavior.
+  empty/beyond-end pages, exact root limits, absence of implicit ordering,
+  update/delete missing records, and hook behavior.
   Application-owned transaction examples use the transaction handle directly;
   generated CRUD does not implicitly join it.
 - [ ] **Step 4: Run targeted acceptance and feature checks.**
@@ -366,8 +374,10 @@ docs/ARCHITECTURE.md, CHANGELOG.md, relevant crate API documentation.
 
 - [ ] **Step 1: Document direct dependencies/features and a complete example.**
   Include inferred/explicit alias connections, every CRUD result shape,
-  ascending/descending tie breakers, page-number arguments, JSON envelopes,
-  count cost, relation ModelEx requirements, and absence of application caps.
+  caller-authored ascending/descending criteria and unique tie breakers,
+  page-number arguments, three-field JSON envelopes, MissingOrder failures,
+  relation ModelEx requirements, and absence of application caps. State that
+  pagination adds no lookahead read or count and generates no count method.
   Show domain/DTO mapping as application code. Explain that generated helpers
   using DatabaseConnection do not enlist in separately created transactions.
   Explain native delete-by-id versus ActiveModel hooks, child collection size,

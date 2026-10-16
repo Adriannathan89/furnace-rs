@@ -16,10 +16,14 @@ Confirmed requirements:
 
 - Use `entity()` as the generated namespace for CRUD and queries.
 - Support typed filtering and ascending/descending ordering.
+- Pagination requires caller-authored ordering. Do not add an implicit order
+  or primary-key tie breaker; applications choose their ordering columns.
 - Declare entity and relation availability in the macro.
 - Pagination is `paginate(page_number, page_size)`, with one-based page numbers.
 - Applications choose both pagination arguments. There are no framework
   maximum sizes, maximum offsets, clamping, defaults, or TOML pagination settings.
+- Fetch at most the requested number of parent records. Page results contain
+  items, page_number, and page_size; no has_next, lookahead, or total counts.
 - `connection = field_name` is optional. Automatic selection recognizes one
   field written as `DatabaseConnection`, including qualified paths; aliases
   and ambiguous declarations use explicit selection.
@@ -167,7 +171,7 @@ deserialization, application validation, or automatic HTTP status mapping.
 repository.entity().query()
     .filter(post::Column::Published.eq(true))
     .order_by_desc(post::Column::CreatedAt)
-    .order_by_asc(post::Column::Title)
+    .order_by_desc(post::Column::Id)
     .paginate(1, 20)
     .await?;
 ~~~
@@ -183,38 +187,43 @@ root identity.
 Calls append criteria in call order; repeated columns are retained with
 normal SQL ORDER BY precedence.
 
-Before execution, append every missing primary-key column ascending.
-Without authored ordering, this produces primary-key ascending ordering.
-A primary key already present retains its authored position and direction.
-Track typed root columns and compare their stable IdenStatic identifiers;
-do not compare rendered SQL strings or require an extra Column: Eq bound.
-The same final ordering applies to ordinary and relation-aware reads.
-SQL NULL ordering remains the backend's behavior.
+Pagination requires at least one explicit order_by_asc/order_by_desc call.
+Without it, return StorageErrorKind::MissingOrder before any database query
+or relation loading. Track only whether ordering was supplied; forward the
+authored criteria to SeaORM without normalization, inferred defaults, or
+primary-key insertion.
 
-`one().await` returns the first matching root, or None, using that ordering.
-The generated collection terminal methods are the two pagination methods
-below. Applications can write native SeaORM queries for unbounded reads,
-custom joins, aggregates, related-column sorting, or projections.
+Applications include a unique tie breaker, such as every primary-key column,
+when stable page boundaries matter. The helper does not prove uniqueness or
+alter an insufficient order. It preserves authored ordering for ordinary and
+relation-aware reads. SQL NULL ordering remains the backend's behavior.
+
+`one().await` returns the first matching root, or None. It preserves explicit
+ordering when supplied, but does not require it or add an implicit order;
+without an order, the selected matching row is unspecified. Pagination is
+the generated collection terminal method. Applications can write native
+SeaORM queries for unbounded reads, counts, custom joins, aggregates,
+related-column sorting, or projections.
 
 ## Pagination API, arithmetic, and results
 
 ~~~rust
 query.paginate(page_number, page_size).await?;
-query.paginate_with_total(page_number, page_size).await?;
 ~~~
 
 Both arguments are required u64 values. There are no hidden policy limits.
 Reject zero page_number or page_size as InvalidPagination before any SQL.
 Compute offset as `(page_number - 1).checked_mul(page_size)`.
-Compute lookahead limit as `page_size.checked_add(1)`.
 Arithmetic overflow is InvalidPagination, a representational failure rather
 than an application size policy. Do not preallocate a vector using the
-requested page size.
+requested page size. A page_size of u64::MAX is representable and accepted
+when offset arithmetic succeeds; the database may impose its own limits.
 
-Ordinary pagination fetches at most page_size + 1 root records at the calculated
-offset, removes the extra root if present, and reports has_next. Relations
-are loaded for that bounded root selection, so the lookahead root may also
-have its relations loaded. There is no COUNT query.
+Validate numeric arguments first, then require explicit ordering. Pagination
+uses LIMIT page_size and the calculated OFFSET. It fetches at most page_size
+root records, with no extra-record probe, result trimming, or COUNT query.
+For example, paginate(2,20) uses OFFSET 20 and LIMIT 20. Selected relations
+are loaded only for roots in that requested page.
 
 ~~~rust
 #[derive(Clone, Debug, serde::Serialize)]
@@ -222,34 +231,21 @@ pub struct Page<T> {
     pub items: Vec<T>,
     pub page_number: u64,
     pub page_size: u64,
-    pub has_next: bool,
-}
-
-#[derive(Clone, Debug, serde::Serialize)]
-pub struct CountedPage<T> {
-    pub items: Vec<T>,
-    pub page_number: u64,
-    pub page_size: u64,
-    pub has_next: bool,
-    pub total_items: u64,
-    pub total_pages: u64,
 }
 ~~~
 
 Derives impose corresponding bounds only when used. Serializing Page<T>
 requires T: Serialize; declaring or using the page otherwise does not.
 
-`paginate_with_total` validates arguments first, then counts matching roots
-from the unpaginated filter query and performs the same lookahead read.
-Relation loading does not multiply the root count. Compute total_pages by
-division plus a nonzero-remainder increment, avoiding ceiling-add overflow.
-An empty filtered set has total_pages = 0. A page beyond the end has empty
-items and has_next = false while retaining its requested page_number and size.
+A page beyond the end has empty items while retaining its requested
+page_number and page_size. A full page does not indicate whether another
+page exists. No total-count fields or count terminal method are generated;
+applications that need them issue an explicit native SeaORM query.
 
-The count and data are separate statements. There is no snapshot consistency
-guarantee, implicit transaction, or promise that offset pages remain unchanged
-during concurrent writes. A collection relation can still be large even
-when its parent page is small; the application controls its data policy.
+There is no implicit transaction or promise that offset pages remain unchanged
+during concurrent writes, even with a unique order. A collection relation
+can still be large when its parent page is small; the application controls
+its data policy.
 
 ## Relation declaration and result types
 
@@ -305,19 +301,19 @@ No claims about row-level security are inferred from relation metadata.
 Separate shared algorithms from generated named relation methods:
 
 - Shared EntityStore and EntityQuery implement basic CRUD, typed predicates,
-  ordering, arithmetic, lookahead envelopes, and total counting.
+  explicit ordering, checked offset arithmetic, and page envelopes.
 - The macro emits thin storage-specific facades only when relations exist.
   A relation query holds the shared EntityQuery and one boolean per alias.
-- Prepare the root selection with final ordering, offset, and lookahead limit.
+- Prepare the root selection with authored ordering, offset, and LIMIT page_size.
   Construct the native loader through E::load(), configure selected relations,
   and transfer the prepared root SelectStatement through public QueryFilter.
   Execute its public all()/one() methods with the borrowed connection.
 - Do not name a generated EntityLoader sibling by modifying a Rust path.
   Do not rely on SeaORM's doc-hidden fetch(db, page, size) entry point.
-  Calling the native paginator with page_size + 1 would change later page
-  offsets; the prepared statement must carry the separately calculated offset.
-- The unpaginated count query retains the same root filters and excludes
-  relation fan-out and lookahead bounds.
+  The prepared statement carries the calculated offset and requested size.
+- Forward filter expressions and ordering directly to the root SeaORM Select;
+  do not add a custom query optimizer, string filter language, or automatic
+  query rewriting. Pagination adds only its explicit OFFSET/LIMIT.
 - All execution uses static dispatch. No dynamic entity registry, schema
   introspection, startup SQL, synchronization lock, or connection clone is
   required by the helper.
@@ -330,7 +326,8 @@ Malformed declarations return diagnostics rather than proc-macro panics.
 ## Errors and application integration
 
 Expose a separate StorageError, StorageErrorKind, and StorageResult<T>.
-Kinds are InvalidPagination, NotFound, and Database.
+Kinds are InvalidPagination, MissingOrder, NotFound, and Database.
+MissingOrder identifies pagination without caller-authored ordering.
 StorageError::kind() exposes the category. Standard Error::source() retains
 the native database cause where present. Display and Debug omit SQL,
 parameters, credentials, and retained cause text.
@@ -361,7 +358,7 @@ handle directly, avoiding an example that accidentally mixes handles.
 - core-macros/src/managed.rs: preserve common managed expansion and attach
   storage-only output without changing burner behavior.
 - persistence integration tests and UI fixtures: behavior and compiler contracts.
-- docs/storage.md and persistence README: usage, defaults, ownership, and
+- docs/storage.md and persistence README: usage, pagination behavior, ownership, and
   transaction boundaries. CHANGELOG.md records the feature only when implemented.
 
 ## Acceptance criteria
@@ -373,15 +370,19 @@ handle directly, avoiding an example that accidentally mixes handles.
    invalid cases produce focused diagnostics.
 4. Basic operations preserve native input/output and hook behavior. Composite
    keys, missing rows, unset update keys, and database errors are tested.
-5. ASC/DESC, filters, composite-key tie breakers, and one-based page offsets
-   produce the expected SQL and root records.
+5. ASC/DESC and filters are preserved exactly, including caller-authored
+   composite-key tie breakers. One-based page offsets produce the expected
+   SQL. Pagination without explicit ordering fails before any query, while
+   unordered one() remains available without an injected default.
 6. Zero values and arithmetic overflow cause no database query; large valid
-   requests are not capped. No COUNT occurs in ordinary pagination.
-7. Counted pages apply the same root filters; zero totals and pages beyond
-   the end retain the documented envelope behavior.
+   requests are not capped. A representable u64::MAX size is accepted without
+   lookahead overflow or requested-size preallocation.
+7. Pagination has no COUNT or extra-record read. LIMIT equals the requested
+   page_size; an empty/beyond-end page retains the three-field envelope.
+   No has_next, total-count fields, or count terminal method is generated.
 8. Native relation results distinguish author/editor correctly, collection
    loading does not duplicate or truncate parents, and page 2 uses the correct
-   offset despite the lookahead record.
+   offset and requested root limit without loading an extra parent.
 9. Result envelopes serialize when models do; errors redact retained causes.
 10. Feature-boundary, missing-docs, Rust 1.94, and public documentation checks
     cover generated consumers. PostgreSQL-backed checks verify real relation
