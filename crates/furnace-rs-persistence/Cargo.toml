@@ -19,6 +19,7 @@ required-features = ["sea-orm-postgres"]
 
 [features]
 default = []
+sea-orm-storage = ["dep:sea-orm", "sea-orm/macros", "dep:serde"]
 sea-orm-postgres = [
     "dep:sea-orm",
     "dep:tracing",
@@ -30,10 +31,12 @@ sea-orm-postgres = [
 [dependencies]
 furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0-beta.2" }
 sea-orm = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
 trybuild.workspace = true
+serde_json.workspace = true
 tokio.workspace = true
 sea-orm = { workspace = true, features = ["mock", "runtime-tokio-rustls"] }
 furnace-rs = { path = "../furnace-rs", version = "=2.0.0-beta.2", default-features = false, features = ["http", "runtime-tokio", "logger"] }

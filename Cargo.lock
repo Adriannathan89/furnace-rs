@@ -926,6 +926,8 @@ dependencies = [
  "furnace-rs",
  "furnace-rs-core",
  "sea-orm",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "trybuild",
