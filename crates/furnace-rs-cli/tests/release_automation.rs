@@ -357,6 +357,23 @@ fn persistence_release_gates_and_framework_publish_order() {
     }
 }
 
+#[test]
+fn independent_storage_consumers_are_fetched_for_workspace_test_jobs() {
+    let root = workspace_root();
+    for workflow_name in ["ci.yml", "beta-publish.yml", "stable-publish.yml"] {
+        let workflow = fs::read_to_string(root.join(".github/workflows").join(workflow_name))
+            .expect("workflow should exist");
+        for job_name in ["verify", "msrv", "coverage"] {
+            let job = workflow_job(&workflow, job_name);
+            assert!(
+                job.contains("Fetch independent storage consumer dependencies")
+                    && job.contains("cargo fetch --manifest-path \"$manifest\""),
+                "{workflow_name} {job_name} must fetch dependencies for offline storage consumers"
+            );
+        }
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn package_content_policy_checks_every_workspace_archive() {
