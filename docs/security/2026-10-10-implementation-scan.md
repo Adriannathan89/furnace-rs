@@ -40,21 +40,31 @@ implementation to establish failure, then against the patched implementation.
 | Native zero pool capacity | Database-free dependency panic; requires trusted native configuration control | [Writeup](2026-10-10-native-pool-capacity.md) |
 | Missing socket peer metadata | Native extractors return HTTP 500; Passport sees absent metadata; no application authorization bypass established | [Writeup](2026-10-10-http-peer-address.md) |
 
-## Remaining functional findings
+## Functional findings open at the scan date
+
+These findings were unresolved in the 2026-10-10 source snapshot. Later beta
+work fixed both; the entries below are historical evidence, not current open
+issues. Conditional controller fields are now rejected with a diagnostic and
+the [compile-fail regression](../../crates/furnace-rs/tests/ui/fail/controller_conditional_fields.rs).
+Response cookie names now follow the request parser's name policy, with regressions in
+[`cookie_response.rs`](../../crates/furnace-rs-common/tests/cookie_response.rs)
+and a summary in the [release changelog](../../CHANGELOG.md).
 
 - Conditional controller fields: `#[cfg(any())] disabled: MissingDependency`
   disappears from the inner struct while generated dependencies and initializer
   fields still reference it. A real authored `#[controller]` probe failed with
   E0425/E0560 for both `cfg` and `cfg_attr`; a unit-controller control compiled.
-  This needs a separate design for conditional dependency shapes, so this
-  security patch batch leaves it unchanged. No security impact was demonstrated.
+  At scan time this needed a separate design for conditional dependency shapes,
+  so that security patch batch left it unchanged. Later beta work adopted the
+  explicit-rejection fallback. No security impact was demonstrated.
   [Probe source](evidence/2026-10-10-controller-cfg-probe.rs),
   [failure](evidence/2026-10-10-controller-cfg-failure.txt),
   [control](evidence/2026-10-10-controller-cfg-control.txt).
 - Cookie name round trips: response encoding accepts names containing spaces,
   but request parsing decodes the name and rejects the space. Returning such a
   cookie can cause request rejection. This requires an application choosing
-  such a name; changing the existing name policy is outside this batch.
+  such a name; changing the existing name policy was outside that batch and was
+  addressed later.
 
 ## Checked hypotheses and limits
 
