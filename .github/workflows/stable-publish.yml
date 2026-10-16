@@ -249,6 +249,7 @@ jobs:
             furnace-rs-common-macros
             furnace-rs-grpc-macros
             furnace-rs-core
+            furnace-rs-persistence-types
             furnace-rs-extra
             furnace-rs-common
             furnace-rs-grpc

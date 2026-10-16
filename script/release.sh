@@ -57,6 +57,7 @@ packages = (
     "furnace-rs-common-macros",
     "furnace-rs-grpc-macros",
     "furnace-rs-core",
+    "furnace-rs-persistence-types",
     "furnace-rs-persistence",
     "furnace-rs-extra",
     "furnace-rs-common",
@@ -94,7 +95,11 @@ changes[root_manifest] = original_root[:version_start] + target + original_root[
 
 pin_pattern = re.compile(r'(\bversion\s*=\s*")=[^"]+("\s*[,}])')
 pin_count = 0
-for manifest in sorted((root / "crates").glob("*/Cargo.toml")):
+manifests = [
+    *(root / "crates").glob("*/Cargo.toml"),
+    *(root / "example").glob("*/Cargo.toml"),
+]
+for manifest in sorted(manifests):
     original = manifest.read_text(encoding="utf-8")
     output_lines = []
     for line in original.splitlines(keepends=True):

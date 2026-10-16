@@ -15,6 +15,7 @@ packages=(
   furnace-rs-common-macros
   furnace-rs-grpc-macros
   furnace-rs-core
+  furnace-rs-persistence-types
   furnace-rs-persistence
   furnace-rs-extra
   furnace-rs-common

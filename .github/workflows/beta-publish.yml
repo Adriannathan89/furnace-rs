@@ -239,6 +239,7 @@ jobs:
             furnace-rs-common-macros
             furnace-rs-grpc-macros
             furnace-rs-core
+            furnace-rs-persistence-types
             furnace-rs-extra
             furnace-rs-common
             furnace-rs-grpc
@@ -275,6 +276,31 @@ jobs:
             esac
           }
 
+          publish_with_retry() {
+            local package="$1"
+            local attempt
+            local status
+
+            for attempt in {1..6}; do
+              echo "Publishing ${package} ${version} (attempt ${attempt}/6)"
+              if cargo publish --locked --package "$package"; then
+                return 0
+              fi
+
+              if publication_status "$package"; then
+                echo "${package} ${version} reached crates.io despite the publish error."
+                return 0
+              else
+                status=$?
+              fi
+              if [[ "$status" -ne 1 || "$attempt" -eq 6 ]]; then
+                return 1
+              fi
+
+              sleep $((attempt * 5))
+            done
+          }
+
           for package in "${packages[@]}"; do
             echo "Checking ${package} ${version} on crates.io."
             if publication_status "$package"; then
@@ -288,8 +314,7 @@ jobs:
               exit "$status"
             fi
 
-            echo "Publishing ${package} ${version}"
-            cargo publish --locked --package "$package"
+            publish_with_retry "$package"
           done
       - name: Create GitHub prerelease and tag
         shell: bash
