@@ -13,6 +13,10 @@ pub struct EntityStore<'db, E: EntityTrait> {
 }
 
 impl<'db, E: EntityTrait> EntityStore<'db, E> {
+    /// Builds a native entity query borrowing the connection, not this helper.
+    pub fn query(&self) -> super::EntityQuery<'db, E> {
+        super::EntityQuery::new(self.database)
+    }
     /// Borrows a connection without opening, cloning, or executing anything.
     pub fn new(database: &'db DatabaseConnection) -> Self {
         Self {
