@@ -41,6 +41,18 @@ const PUBLISH_ORDER: &[&str] = &[
     "furnace-rs-cli",
 ];
 
+#[test]
+fn postgres_workflows_exercise_generated_storage_against_the_database() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for name in ["ci.yml", "beta-publish.yml", "stable-publish.yml"] {
+        let workflow = fs::read_to_string(root.join(".github/workflows").join(name)).unwrap();
+        assert!(
+            workflow.contains("--features sea-orm-storage,sea-orm-postgres --test storage_postgres -- --ignored --test-threads=1"),
+            "{name} must exercise the ignored generated storage PostgreSQL acceptance test"
+        );
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn beta_release_increments_a_matching_base_and_only_changes_versions() {

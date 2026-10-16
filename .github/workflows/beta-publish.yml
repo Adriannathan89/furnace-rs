@@ -168,6 +168,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --locked -p furnace-rs-persistence --features sea-orm-postgres --test postgres -- --ignored --test-threads=1
+      - run: cargo test --locked -p furnace-rs-persistence --features sea-orm-storage,sea-orm-postgres --test storage_postgres -- --ignored --test-threads=1
 
   coverage:
     name: Verify coverage
