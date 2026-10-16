@@ -13,7 +13,9 @@ migration are consolidated into the first 1.0.0 release.
   native CRUD, typed filters, explicit ASC/DESC ordering, page-number pagination,
   and declared SeaORM 2 relation loaders. Pagination fetches the requested
   parent page without lookahead or counts; applications own limits and
-  transactions. See the [storage guide](docs/storage.md).
+  transactions. Unmapped storage failures convert to redacted HTTP 500 responses
+  with `?` when `furnace-rs/sea-orm-storage` is enabled; handlers can override
+  individual mappings with `.map_err(...)`. See the [storage guide](docs/storage.md).
 
 ### Security
 

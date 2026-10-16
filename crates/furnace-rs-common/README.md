@@ -25,7 +25,7 @@ facade disables those defaults and maps its own features explicitly.
 | `jwt` | `JwtService`, claims, validation profiles, algorithms, keyrings, and JWT auto-configuration. | No Axum or database dependency. |
 | `cookies` | Strict cookie extraction and checked response-cookie composition. | Implies `http` and enables the cookie/Passport macro support. |
 | `sea-orm` | `From<sea_orm::DbErr> for HttpError`, enabling `?` in HTTP handlers. | Implies `http`; adds SeaORM without a database driver. |
-| `sea-orm-storage` | Converts unmapped persistence `StorageError` values to redacted HTTP 500 responses. | Implies `sea-orm`; enables the persistence crate's `sea-orm-storage` feature. |
+| `sea-orm-storage` | Converts unmapped persistence `StorageError` values to redacted HTTP 500 responses. | Implies `sea-orm`; enable the persistence crate's `sea-orm-storage` feature separately for entity operations. |
 
 Passport route guards and managed strategies are available when `http + jwt`
 are selected. Cookie-backed guards additionally need `cookies`.

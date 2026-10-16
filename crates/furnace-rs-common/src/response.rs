@@ -26,9 +26,9 @@ impl From<sea_orm::DbErr> for HttpError {
 }
 
 #[cfg(feature = "sea-orm-storage")]
-impl From<furnace_rs_persistence::storage::StorageError> for HttpError {
+impl From<furnace_rs_persistence_types::StorageError> for HttpError {
     /// Converts an unmapped storage failure to a redacted internal-server-error response.
-    fn from(source: furnace_rs_persistence::storage::StorageError) -> Self {
+    fn from(source: furnace_rs_persistence_types::StorageError) -> Self {
         Self::internal(source)
     }
 }

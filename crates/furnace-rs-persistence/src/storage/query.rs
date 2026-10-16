@@ -60,7 +60,7 @@ impl<'db, E: EntityTrait> EntityQuery<'db, E> {
     ) -> StorageResult<PreparedPage<'db, E>> {
         let window = PageWindow::new(page_number, page_size)?;
         if !self.ordered {
-            return Err(StorageError::new(StorageErrorKind::MissingOrder));
+            return Err(StorageError::__new(StorageErrorKind::MissingOrder));
         }
         Ok(PreparedPage {
             database: self.database,

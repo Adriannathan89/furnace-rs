@@ -818,7 +818,7 @@ dependencies = [
  "cookie",
  "furnace-rs-common-macros",
  "furnace-rs-core",
- "furnace-rs-persistence",
+ "furnace-rs-persistence-types",
  "futures-util",
  "http",
  "http-body",
@@ -926,12 +926,20 @@ version = "2.0.0-beta.2"
 dependencies = [
  "furnace-rs",
  "furnace-rs-core",
+ "furnace-rs-persistence-types",
  "sea-orm",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "trybuild",
+]
+
+[[package]]
+name = "furnace-rs-persistence-types"
+version = "2.0.0-beta.2"
+dependencies = [
+ "sea-orm",
 ]
 
 [[package]]

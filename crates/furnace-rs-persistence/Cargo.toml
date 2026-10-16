@@ -19,7 +19,7 @@ required-features = ["sea-orm-postgres"]
 
 [features]
 default = []
-sea-orm-storage = ["dep:sea-orm", "sea-orm/macros", "dep:serde"]
+sea-orm-storage = ["dep:furnace-rs-persistence-types", "dep:sea-orm", "sea-orm/macros", "dep:serde"]
 sea-orm-postgres = [
     "dep:sea-orm",
     "dep:tracing",
@@ -30,6 +30,7 @@ sea-orm-postgres = [
 
 [dependencies]
 furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0-beta.2" }
+furnace-rs-persistence-types = { path = "../furnace-rs-persistence-types", version = "=2.0.0-beta.2", optional = true }
 sea-orm = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }

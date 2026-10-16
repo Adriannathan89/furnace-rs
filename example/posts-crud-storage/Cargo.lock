@@ -522,7 +522,7 @@ dependencies = [
  "chrono",
  "furnace-rs-common-macros",
  "furnace-rs-core",
- "furnace-rs-persistence",
+ "furnace-rs-persistence-types",
  "futures-util",
  "http",
  "hyper",
@@ -586,9 +586,17 @@ name = "furnace-rs-persistence"
 version = "2.0.0-beta.2"
 dependencies = [
  "furnace-rs-core",
+ "furnace-rs-persistence-types",
  "sea-orm",
  "serde",
  "tracing",
+]
+
+[[package]]
+name = "furnace-rs-persistence-types"
+version = "2.0.0-beta.2"
+dependencies = [
+ "sea-orm",
 ]
 
 [[package]]

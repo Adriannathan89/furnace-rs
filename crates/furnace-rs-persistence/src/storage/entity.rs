@@ -53,7 +53,7 @@ impl<'db, E: EntityTrait> EntityStore<'db, E> {
     {
         model.update(self.database).await.map_err(|error| {
             if matches!(error, sea_orm::DbErr::RecordNotUpdated) {
-                StorageError::with_source(StorageErrorKind::NotFound, error)
+                StorageError::__with_source(StorageErrorKind::NotFound, error)
             } else {
                 error.into()
             }

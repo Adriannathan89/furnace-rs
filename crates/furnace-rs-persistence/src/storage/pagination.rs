@@ -28,7 +28,7 @@ impl PageWindow {
             .checked_sub(1)
             .filter(|_| page_size != 0)
             .and_then(|page| page.checked_mul(page_size))
-            .ok_or_else(|| StorageError::new(StorageErrorKind::InvalidPagination))?;
+            .ok_or_else(|| StorageError::__new(StorageErrorKind::InvalidPagination))?;
         Ok(Self {
             page_number,
             page_size,
