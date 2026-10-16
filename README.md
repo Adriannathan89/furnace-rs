@@ -102,6 +102,7 @@ Run commands from each example directory so configuration loads there.
 | --- | --- | --- | ---: |
 | [Hello World](example/hello-world/) | Public controller, root registration, debug request logging | `GET /` | 3000 |
 | [Posts CRUD](example/posts-crud/) | Native SeaORM PostgreSQL connection, controller/repository, validated input | `POST /posts`, `GET /posts`, `GET /posts/{id}`, `PUT /posts/{id}`, `DELETE /posts/{id}` | 3001 |
+| [Posts CRUD with entity storage](example/posts-crud-storage/) | Opt-in `sea-orm-storage` feature, controller calls generated entity CRUD and pagination directly | Same CRUD routes; `GET /posts?page_number=1&page_size=20` | 3004 |
 | [Posts CRUD with service](example/post-crud-with-service/) | The same CRUD routes with an optional service layer | `POST /posts`, `GET /posts`, `GET /posts/{id}`, `PUT /posts/{id}`, `DELETE /posts/{id}` | 3001 |
 | [Protected route](example/protected-route/) | Trait bindings, in-memory repository, validated login, JWT strategy, `reader` guard, application logger | `POST /auth/login`, `GET /auth/me` | 3002 |
 
@@ -115,10 +116,12 @@ curl http://127.0.0.1:3000/
 # Hello, world!
 ```
 
-Both CRUD projects require PostgreSQL, a local `.env` copied from `.env.example`,
+All CRUD projects require PostgreSQL, a local `.env` copied from `.env.example`,
 and their SQL migration applied with `psql` before startup. They use the same
-port 3001 and database name by default. Run them one at a time, or start the
-service variant on a different port from its directory:
+port 3001 and database name by default, except the separate entity-storage
+example, which uses port 3004 and its own database name. Run the original CRUD
+and service examples one at a time, or start the service variant on a
+different port:
 
 ```sh
 cd example/post-crud-with-service
@@ -126,7 +129,9 @@ FURNACE_SERVER__PORT=3003 cargo run --locked
 # Use http://127.0.0.1:3003/posts for requests to this instance.
 ```
 
-Set a different `DATABASE_URL` if the two instances need separate data.
+The entity-storage example enables the optional feature in its own manifest;
+the original [Posts CRUD](example/posts-crud/) remains the manual SeaORM
+implementation for comparison. Set a different `DATABASE_URL` for other data.
 For the protected-route example, copy `.env.example` to `.env` first.
 Its plaintext demo credentials illustrate wiring; applications own password
 hashing and session policy. See the example guides for setup and requests.

@@ -56,6 +56,7 @@ its own manifest.
 | `jwt` | `furnace-rs-common/jwt` | JWT service, claims, profiles, algorithms, and key handling without Axum. |
 | `cookies` | `http` + `furnace-rs-common/cookies` | Cookie extraction/response support; cookies imply HTTP. |
 | `sea-orm` | `http` + `furnace-rs-common/sea-orm` | Propagate SeaORM `DbErr` through `HttpResult` with `?` as redacted 500 errors. |
+| `sea-orm-storage` | `http` + `furnace-rs-common/sea-orm-storage` | Propagate entity-storage `StorageError` through `HttpResult` with `?` as redacted 500 errors; `.map_err(...)` remains available for custom mappings. |
 | `runtime-tokio` | `furnace-rs-core/runtime-tokio` | Tokio support for `#[furnace_rs::main]`. |
 | `extra` | `furnace-rs-extra` | Reserved extension boundary. |
 

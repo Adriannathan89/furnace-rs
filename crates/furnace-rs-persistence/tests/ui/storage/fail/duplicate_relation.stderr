@@ -1,0 +1,5 @@
+error: duplicate storage relation alias
+ --> tests/ui/storage/fail/duplicate_relation.rs:7:71
+  |
+7 | #[storage(entity=post::Entity,relations(author=post::Relation::Author,author=post::Relation::Editor))]
+  |                                                                       ^^^^^^

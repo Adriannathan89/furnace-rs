@@ -1,0 +1,5 @@
+error: storage requires exactly one DatabaseConnection field; use connection = field_name for aliases or multiple connections
+ --> tests/ui/storage/fail/no_connection.rs:8:8
+  |
+8 | struct Repo { #[inject] other: String }
+  |        ^^^^

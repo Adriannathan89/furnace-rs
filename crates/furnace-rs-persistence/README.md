@@ -3,6 +3,14 @@
 Native persistence connector integration for furnace-rs. Connector features are
 opt-in; the crate has no default database backend.
 
+Enable `sea-orm-storage` for optional entity-bound `#[storage(entity = ...)]`
+CRUD, typed filters, explicit ASC/DESC ordering, page-number pagination, and
+named native relation loaders. Pagination requires an explicit order and
+fetches the requested size without lookahead or counts. The helper feature
+selects no driver; combine it with `sea-orm-postgres` for the native connector.
+See the [storage guide](../../docs/storage.md) for the API, optional connection
+selection, model formats, errors, and application-owned transaction behavior.
+
 For PostgreSQL, depend explicitly on:
 
 ```toml
@@ -23,6 +31,10 @@ does not map connector failures automatically to HTTP responses. For query
 errors, enable the separate `sea-orm` feature on `furnace-rs` to propagate native
 `DbErr` through `HttpResult` with `?` as redacted 500 responses. See the
 [persistence design](../../docs/furnace-rs-persistence.md) for the connector model.
+For entity-bound `StorageError` values, enable `furnace-rs`'s separate
+`sea-orm-storage` feature to use `?` for a redacted 500 default. Controllers can
+still use `.map_err(...)` per operation to map selected storage kinds to other
+HTTP responses.
 
 Configured and native pool durations must fit the platform's monotonic-clock
 deadline range. Unrepresentable values return `InvalidConfiguration` before

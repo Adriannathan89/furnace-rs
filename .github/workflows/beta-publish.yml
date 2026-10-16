@@ -22,6 +22,11 @@ jobs:
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
+      - name: Fetch independent storage consumer dependencies
+        run: |
+          for manifest in crates/furnace-rs-persistence/tests/consumers/storage_*/Cargo.toml; do
+            cargo fetch --manifest-path "$manifest"
+          done
       - name: Require a prerelease workspace version
         shell: bash
         run: |
@@ -118,6 +123,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.94.0
       - uses: Swatinem/rust-cache@v2
+      - name: Fetch independent storage consumer dependencies
+        run: |
+          for manifest in crates/furnace-rs-persistence/tests/consumers/storage_*/Cargo.toml; do
+            cargo fetch --manifest-path "$manifest"
+          done
       - name: Test minimum supported Rust version
         run: cargo test --locked --workspace --all-features
 
@@ -184,6 +194,11 @@ jobs:
         with:
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
+      - name: Fetch independent storage consumer dependencies
+        run: |
+          for manifest in crates/furnace-rs-persistence/tests/consumers/storage_*/Cargo.toml; do
+            cargo fetch --manifest-path "$manifest"
+          done
       - uses: taiki-e/install-action@cargo-llvm-cov
       - name: Enforce line coverage
         run: cargo llvm-cov --workspace --all-features --ignore-filename-regex '(^|/)tests/ui/' --fail-under-lines 85

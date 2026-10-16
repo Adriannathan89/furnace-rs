@@ -1,0 +1,7 @@
+error: unexpected end of input, entity-bound storage requires entity = path::Entity
+ --> tests/ui/storage/fail/no_entity.rs:7:1
+  |
+7 | #[storage(connection = database)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `storage` (in Nightly builds, run with -Z macro-backtrace for more info)

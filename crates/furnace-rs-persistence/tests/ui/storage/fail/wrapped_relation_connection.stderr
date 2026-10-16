@@ -1,0 +1,8 @@
+error[E0308]: mismatched types
+ --> tests/ui/storage/fail/wrapped_relation_connection.rs:7:34
+  |
+7 | struct Repo { #[inject] database:std::sync::Arc<DatabaseConnection> }
+  |                                  ^^^ expected `DatabaseConnection`, found `Arc<DatabaseConnection>`
+  |
+  = note: expected struct `DatabaseConnection`
+             found struct `Arc<DatabaseConnection>`

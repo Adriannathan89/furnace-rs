@@ -11,6 +11,7 @@ mod configuration;
 mod main_attribute;
 mod managed;
 mod path;
+mod storage;
 mod test_fn;
 
 /// Derives an explicit typed view over an already loaded configuration.
@@ -80,15 +81,17 @@ pub fn burner(arguments: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Declares a named-field or unit struct as a persistence repository.
 /// Every named dependency field requires parameterless `#[inject]`.
+///
+/// Optional `entity = path::Entity` binds native SeaORM CRUD through `entity()`.
+/// `connection = field` selects an injected native connection when inference is
+/// ambiguous or an alias is used. `relations(alias = selector, ...)` generates
+/// explicit native relation loader methods. Entity options require a direct
+/// `furnace-rs-persistence` dependency with its `sea-orm-storage` feature.
 #[proc_macro_attribute]
 pub fn storage(arguments: TokenStream, item: TokenStream) -> TokenStream {
-    managed::expand(
-        managed::ManagedKind::Repository,
-        arguments.into(),
-        item.into(),
-    )
-    .unwrap_or_else(syn::Error::into_compile_error)
-    .into()
+    storage::expand(arguments.into(), item.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 /// Registers a zero-argument async Cargo test with a function-local fixture builder.

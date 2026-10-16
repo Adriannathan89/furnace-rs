@@ -1,0 +1,24 @@
+error[E0599]: no function or associated item named `load` found for struct `post::Entity` in the current scope
+ --> tests/ui/storage/fail/msrv/legacy_loader.rs:6:1
+  |
+6 | #[storage(entity=entities::post::Entity,relations(other=entities::composite::Entity))]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `post::Entity`
+  |
+ ::: tests/ui/storage/fail/msrv/../../../../support/storage_entities.rs
+  |
+  |     #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+  |                                           ----------------- function or associated item `load` not found for this struct
+  |
+  = help: items from traits can only be used if the trait is implemented and in scope
+  = note: the following traits define an item `load`, perhaps you need to implement one of them:
+          candidate #1: `ConfigSource`
+          candidate #2: `icu_provider::data_provider::DataProvider`
+  = note: this error originates in the attribute macro `storage` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0282]: type annotations needed
+ --> tests/ui/storage/fail/msrv/legacy_loader.rs:6:1
+  |
+6 | #[storage(entity=entities::post::Entity,relations(other=entities::composite::Entity))]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+  |
+  = note: this error originates in the attribute macro `storage` (in Nightly builds, run with -Z macro-backtrace for more info)

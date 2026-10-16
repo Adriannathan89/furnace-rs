@@ -47,6 +47,14 @@ exposes a global `DatabaseCauldron` providing native `DatabaseConnection`; the
 connector retains typed `PersistenceError` causes while redacting public
 formatting. It checks readiness before serving and closes on graceful shutdown.
 
+Its independent `sea-orm-storage` feature adds typed entity CRUD and query
+helpers. The storage macro binds native entity/connection types at compile
+time and generates named relation selectors over SeaORM's native Entity Loader.
+Queries forward explicit filters and ordering; pagination adds the requested
+OFFSET/LIMIT without lookahead, counts, or inferred sort keys. Applications
+own transaction boundaries and query-size policy. This feature introduces no
+database dependency into core. See the [storage guide](storage.md).
+
 ~~~text
 core                         no HTTP/database/JWT/cookie or direct Serde
 http                         Axum + validation + standard REST errors
@@ -56,6 +64,7 @@ cookies                      HTTP cookie support
 sea-orm                      HTTP + native DbErr conversion, no database driver
 http + jwt (+ cookies)       Passport Bearer (and cookie) guards
 furnace-rs-persistence/sea-orm-postgres  native SeaORM PostgreSQL connector
+furnace-rs-persistence/sea-orm-storage   optional typed repository helpers, no driver
 ~~~
 
 ## Startup, configuration, and secret boundary
