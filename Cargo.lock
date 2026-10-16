@@ -818,6 +818,7 @@ dependencies = [
  "cookie",
  "furnace-rs-common-macros",
  "furnace-rs-core",
+ "furnace-rs-persistence",
  "futures-util",
  "http",
  "http-body",

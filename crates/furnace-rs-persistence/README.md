@@ -31,6 +31,10 @@ does not map connector failures automatically to HTTP responses. For query
 errors, enable the separate `sea-orm` feature on `furnace-rs` to propagate native
 `DbErr` through `HttpResult` with `?` as redacted 500 responses. See the
 [persistence design](../../docs/furnace-rs-persistence.md) for the connector model.
+For entity-bound `StorageError` values, enable `furnace-rs`'s separate
+`sea-orm-storage` feature to use `?` for a redacted 500 default. Controllers can
+still use `.map_err(...)` per operation to map selected storage kinds to other
+HTTP responses.
 
 Configured and native pool durations must fit the platform's monotonic-clock
 deadline range. Unrepresentable values return `InvalidConfiguration` before

@@ -19,8 +19,11 @@ The storage feature alone selects no driver or runtime. The separate
 DatabaseCauldron. Import that cauldron in your application root and register
 the storage through the normal provider declaration.
 
-The facade's `sea-orm` feature is a separate HTTP conversion for native DbErr;
-it does not enable entity-bound storage or convert StorageError automatically.
+The facade's `sea-orm` feature is the HTTP conversion for native DbErr. To
+convert entity-bound `StorageError` values automatically to redacted HTTP 500
+responses when using `?`, also enable the separate `sea-orm-storage` feature on
+`furnace-rs`. A controller can use `.map_err(...)` on an individual operation
+to customize its response, such as returning 400 for invalid pagination.
 
 ## Declaration and connection selection
 

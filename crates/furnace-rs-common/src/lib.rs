@@ -1,8 +1,9 @@
 //! Standard integration contracts for furnace-rs.
 //!
-//! Enable the `http`, `jwt`, `cookies`, `logger`, or `sea-orm` feature to select only
-//! the integration contracts an application needs. The framework-neutral core
-//! boundary is always available through [`core`].
+//! Enable the `http`, `jwt`, `cookies`, `logger`, `sea-orm`, or
+//! `sea-orm-storage` feature to select only the integration contracts an
+//! application needs. The framework-neutral core boundary is always available
+//! through [`core`].
 #![cfg_attr(
     feature = "http",
     doc = "\nThe `http` feature provides managed controllers and inherent endpoints and the Axum runtime. [`build_router`] validates every controller selected for the application before it resolves a controller or invokes a typed registrar; [`serve`] performs that same validation before lifecycle startup or socket binding. Use [`serve_router`] to run a complete raw router after merging generated and native routes; it applies final application-wide router configuration before lifecycle startup. Use [`controller`] on a struct and exactly one inherent implementation to declare endpoints, and [`Sealable`] for their protection. The resulting descriptors can be inspected through [`RouteCatalog`] before the HTTP runtime installs handlers. [`axum`] is deliberately re-exported for native extractors, response types, routers, middleware, and Tower composition."
