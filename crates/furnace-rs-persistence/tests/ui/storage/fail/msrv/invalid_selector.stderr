@@ -1,0 +1,33 @@
+error[E0277]: the trait bound `post::Entity: sea_orm::Related<user::Entity>` is not satisfied
+ --> tests/ui/storage/fail/msrv/invalid_selector.rs:7:48
+  |
+7 | #[storage(entity=post::Entity,relations(author=user::Entity))]
+  | -----------------------------------------------^^^^^^^^^^^^---
+  | |                                              |
+  | |                                              unsatisfied trait bound
+  | required by a bound introduced by this call
+  |
+help: the trait `sea_orm::Related<user::Entity>` is not implemented for `post::Entity`
+ --> tests/ui/storage/fail/msrv/../../../../support/storage_relations.rs
+  |
+  |     #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+  |                                           ^^^^^^^^^^^^^^^^^
+help: the following other types implement trait `sea_orm::Related<R>`
+ --> tests/ui/storage/fail/msrv/../../../../support/storage_relations.rs
+  |
+  |     #[sea_orm::model]
+  |     ^^^^^^^^^^^^^^^^^
+  |     |
+  |     `post::Entity` implements `sea_orm::Related<comment::Entity>`
+  |     `post::Entity` implements `sea_orm::Related<tag::Entity>`
+note: required for `user::Entity` to implement `post::EntityLoaderWithParam`
+ --> tests/ui/storage/fail/msrv/../../../../support/storage_relations.rs
+  |
+  |     #[sea_orm::model]
+  |     ^^^^^^^^^^^^^^^^^ unsatisfied trait bound introduced in this `derive` macro
+note: required by a bound in `post::EntityLoader::with`
+ --> tests/ui/storage/fail/msrv/../../../../support/storage_relations.rs
+  |
+  |     #[sea_orm::model]
+  |     ^^^^^^^^^^^^^^^^^ required by this bound in `EntityLoader::with`
+  = note: this error originates in the derive macro `DeriveEntityModel` which comes from the expansion of the derive macro `DeriveModelEx` (in Nightly builds, run with -Z macro-backtrace for more info)

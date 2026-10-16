@@ -35,6 +35,7 @@ async fn generated_accessor_uses_the_selected_connection_and_keeps_query_lifetim
         storage.entity().find_by_id(1).await.unwrap(),
         Some(row.clone())
     );
+    assert!(storage.replica.clone().into_transaction_log().is_empty());
     let db = MockDatabase::new(DbBackend::Postgres)
         .append_query_results([vec![row.clone()]])
         .into_connection();

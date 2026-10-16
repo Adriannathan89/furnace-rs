@@ -12,6 +12,7 @@ fn independent_consumers_validate_features_and_renamed_dependencies() {
         ("renamed", None),
         ("renamed_core", None),
         ("version204", None),
+        ("keyless", Some("Entity must have a primary key column")),
         (
             "disabled",
             Some("entity-bound storage requires the `sea-orm-storage` feature"),

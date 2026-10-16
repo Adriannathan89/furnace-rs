@@ -1,4 +1,4 @@
-//! A keyless entity cannot satisfy the typed CRUD contract.
+//! Independent rejection of entities without a primary key.
 #![allow(dead_code)]
 use furnace_rs_core::storage;
 use sea_orm::DatabaseConnection;
