@@ -6,7 +6,7 @@ rust-version = "1.94"
 publish = false
 
 [dependencies]
-furnace-rs = { path = "../../crates/furnace-rs", version = "=2.0.0-beta.2", default-features = false, features = ["logger", "runtime-tokio"] }
+furnace-rs = { path = "../../crates/furnace-rs", version = "=2.0.0-beta.3", default-features = false, features = ["logger", "runtime-tokio"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies]

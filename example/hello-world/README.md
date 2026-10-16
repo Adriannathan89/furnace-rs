@@ -1,6 +1,6 @@
 # Hello World
 
-This is the smallest FURNACE 2.0.0-beta.2 HTTP application: a controller with inherent endpoints,
+This is the smallest FURNACE 2.0.0-beta.3 HTTP application: a controller with inherent endpoints,
 an application module, and the conventional `Furnace::burn` entry point.
 
 Requires Rust 1.94 or newer. From this directory:

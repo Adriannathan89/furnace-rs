@@ -1,5 +1,9 @@
 # 2.0.0-beta.2 review findings
 
+The subsequent [2.0.0-beta.3 release review](releases/2.0.0-beta.3-verification.md)
+records five additional release and validation findings, their fixes, and the
+new checkout's verification. The beta.2 review below is retained as history.
+
 Reviewed on 2026-10-15 at commit `bd8ade6aa4759ad5072dd82a63b7c2006c31affc`, branch `test/beta-v2-validation-test`.
 
 **Status: all 14 findings patched and validated.** The original findings and reproduction notes below describe the reviewed baseline. The requested column `serenity` means **severity**. High means a demonstrated security boundary failure; Medium means a functional failure or conditional dependency security exposure; Low means a narrower compatibility or response behavior problem. These are review priorities, not CVSS scores.

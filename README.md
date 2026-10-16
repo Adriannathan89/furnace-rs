@@ -5,8 +5,8 @@
 
 The released 1.0.2 framework provides a framework-neutral core, a scoped Axum
 HTTP runtime, source-aware typed configuration, safe REST errors, request
-validation, and opt-in native SeaORM persistence. This 2.0.0-beta.2 checkout
-also includes the optional protobuf gRPC transport described below. A root
+validation, and opt-in native SeaORM persistence. This 2.0.0-beta.3 checkout
+also includes optional protobuf gRPC transport and entity storage helpers. A root
 module selects one application; startup validates its scoped graph and routes
 before it starts lifecycle hooks, checks a database, or binds a socket.
 
@@ -19,7 +19,7 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 cargo install furnace-rs-cli --version 1.0.2 --locked
 ```
 
-This checkout and its local examples target **2.0.0-beta.2**, with [declarative DI and compile-time root checking](docs/declarative-di.md). Version 2.0.0-beta.2 is prepared for release. See the [beta.2 release notes](docs/releases/2.0.0-beta.2.md). To install the CLI
+This checkout and its local examples target **2.0.0-beta.3**, with [declarative DI and compile-time root checking](docs/declarative-di.md) and [optional entity storage](docs/storage.md). See the [beta.3 release notes](docs/releases/2.0.0-beta.3.md). To install the CLI
 from this checkout instead, use:
 
 ```sh

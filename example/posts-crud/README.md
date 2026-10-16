@@ -1,6 +1,6 @@
 # Posts CRUD with PostgreSQL
 
-This independent FURNACE 2.0.0-beta.2 project connects to PostgreSQL through the opt-in
+This independent FURNACE 2.0.0-beta.3 project connects to PostgreSQL through the opt-in
 `furnace-rs-persistence` SeaORM connector. `DatabaseCauldron` supplies the native
 `DatabaseConnection` to `PostRepository`; `PostController` calls the repository
 directly and exposes the HTTP routes. The connector checks readiness before

@@ -6,6 +6,8 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+## [2.0.0-beta.3] - 2026-10-16
+
 ### Added
 
 - Add optional `furnace-rs-persistence/sea-orm-storage` entity-bound storage
@@ -31,6 +33,17 @@ migration are consolidated into the first 1.0.0 release.
 
 ### Fixed
 
+- Include `furnace-rs-persistence-types` in version preparation, package
+  verification, and dependency-ordered publication. Update independent example
+  pins during release preparation and retry beta publication while new crates
+  propagate through the registry index.
+- Prepare standalone consumer dependencies in every workspace test job and
+  retain compiler-specific UI snapshots for Rust 1.94, 1.96, and 1.99.
+- Keep storage error conversion independent of PostgreSQL provider registration.
+- Run generated storage's PostgreSQL acceptance test in CI and both publication
+  gates, including CRUD, relation loading, ordering, and pagination.
+- Replace remaining yanked `yoke-derive` 0.8.3 lock entries with compatible,
+  non-yanked 0.8.2.
 - Preserve lifecycle startup progress and failure records across cancellation;
   retry pending shutdown hooks while skipping completed hooks.
 - Reject conditionally compiled controller dependency fields with a clear

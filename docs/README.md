@@ -10,6 +10,7 @@ define behavior.
 | [gRPC transport (2.0.0-beta.2)](grpc.md) | Protobuf services, named clients, Passport/JWT, shared runtime, TLS, and static inspection |
 | [Declarative DI beta](declarative-di.md) | Compile-time roots, API, visibility and migration |
 | [2.0.0-beta.1 release preparation](releases/2.0.0-beta.1.md) | Mandatory injection markers, migration and checker verification |
+| [2.0.0-beta.3 release notes](releases/2.0.0-beta.3.md) | Optional entity storage, beta review corrections, and release reliability |
 | [2.0.0-beta.2 release notes](releases/2.0.0-beta.2.md) | Native protobuf gRPC serving, clients, security and shared runtime |
 | [Architecture](ARCHITECTURE.md) | Crate boundaries, graph selection, construction, and lifecycle |
 | [Implementation guide](IMPLEMENTATION.md) | Source-linked walkthrough of the workspace and its major compile-time and runtime flows |
