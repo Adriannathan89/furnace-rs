@@ -226,7 +226,10 @@ async fn mixed_transports_share_provider_identity() {
             .with_address(grpc_address),
     );
     let mut transports = Vec::new();
-    for descriptor in furnace_rs_core::__private::inventory::iter::<RuntimeTransportDescriptor> {
+    for descriptor in furnace_rs_core::__private::inventory::iter::<RuntimeTransportDescriptor>
+        .into_iter()
+        .filter(|d| matches!(d.name, "http" | "grpc"))
+    {
         transports.push(
             (descriptor.prepare)(&app, Some(&mut routes), Some(&mut bindings))
                 .await

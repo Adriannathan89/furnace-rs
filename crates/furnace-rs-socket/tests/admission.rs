@@ -114,3 +114,103 @@ async fn authenticates_each_source_and_rejects_ambiguity() {
     assert!(tokio_tungstenite::connect_async(r).await.is_err());
     server.stop().await;
 }
+
+#[tokio::test]
+async fn origin_allowlist_is_exact_and_duplicate_origins_are_rejected() {
+    let server = support::Server::with_origins::<App>(
+        &[("passport.secret", SECRET)],
+        &["https://app.example:8443"],
+    )
+    .await;
+    let token = token();
+    for origin in [
+        None,
+        Some("https://app.example:8443"),
+        Some("https://app.example"),
+        Some("http://app.example:8443"),
+        Some("https://app.example:8443/"),
+        Some("null"),
+    ] {
+        let mut r = format!("ws://{}/private?access_token={token}", server.address)
+            .into_client_request()
+            .unwrap();
+        if let Some(origin) = origin {
+            r.headers_mut()
+                .insert("origin", HeaderValue::from_str(origin).unwrap());
+        }
+        let result = tokio_tungstenite::connect_async(r).await;
+        let allowed = origin.is_none() || origin == Some("https://app.example:8443");
+        assert_eq!(result.is_ok(), allowed, "{origin:?}");
+        if let Ok((mut c, _)) = result {
+            c.close(None).await.unwrap();
+        }
+    }
+    let mut r = format!("ws://{}/private?access_token={token}", server.address)
+        .into_client_request()
+        .unwrap();
+    for _ in 0..2 {
+        r.headers_mut().append(
+            "origin",
+            HeaderValue::from_static("https://app.example:8443"),
+        );
+    }
+    assert!(tokio_tungstenite::connect_async(r).await.is_err());
+    server.stop().await;
+}
+#[tokio::test]
+async fn conflicting_repeated_and_encoded_credentials_never_fall_back() {
+    let server = support::Server::configured::<App>(&[("passport.secret", SECRET)]).await;
+    let token = token();
+    for (authorization, cookie, query) in [
+        (
+            Some(format!("Bearer {token}")),
+            Some(format!("access_token={token}")),
+            String::new(),
+        ),
+        (
+            None,
+            Some(format!("access_token={token}")),
+            format!("?access_token={token}"),
+        ),
+        (
+            Some("Basic invalid".into()),
+            Some(format!("access_token={token}")),
+            String::new(),
+        ),
+        (
+            None,
+            Some(format!("access_token={token}; access_token={token}")),
+            String::new(),
+        ),
+        (
+            None,
+            None,
+            format!("?%61ccess_token={token}&access_token={token}"),
+        ),
+    ] {
+        let mut r = format!("ws://{}/private{query}", server.address)
+            .into_client_request()
+            .unwrap();
+        if let Some(v) = authorization {
+            r.headers_mut()
+                .insert("authorization", HeaderValue::from_str(&v).unwrap());
+        }
+        if let Some(v) = cookie {
+            r.headers_mut()
+                .insert("cookie", HeaderValue::from_str(&v).unwrap());
+        }
+        let failure = tokio_tungstenite::connect_async(r).await.unwrap_err();
+        assert!(!format!("{failure:?}").contains(&token));
+    }
+    let mut r = format!("ws://{}/private", server.address)
+        .into_client_request()
+        .unwrap();
+    for _ in 0..2 {
+        r.headers_mut().append(
+            "authorization",
+            HeaderValue::from_str(&format!("Bearer {token}")).unwrap(),
+        );
+    }
+    assert!(tokio_tungstenite::connect_async(r).await.is_err());
+    server.stop().await;
+}

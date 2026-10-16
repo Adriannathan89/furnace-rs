@@ -17,15 +17,17 @@ impl Server {
         Self::configured::<M>(&[]).await
     }
     pub async fn configured<M: Cauldron>(extra: &[(&str, &str)]) -> Self {
+        Self::with_origins::<M>(extra, &[]).await
+    }
+    pub async fn with_origins<M: Cauldron>(extra: &[(&str, &str)], origins: &[&str]) -> Self {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         drop(listener);
         let mut values = vec![("socket.address".to_string(), address.to_string())];
         values.extend(extra.iter().map(|(k, v)| (k.to_string(), v.to_string())));
-        let config = ConfigBuilder::new()
-            .source(MapSource::new("test", values))
-            .build()
-            .unwrap();
+        let source = MapSource::new("test", values)
+            .with_string_array("socket.origins", origins.iter().copied());
+        let config = ConfigBuilder::new().source(source).build().unwrap();
         let mut b = Furnace::builder_with_config(config.clone());
         b.root::<M>().unwrap();
         let app = b.build().await.unwrap();
@@ -65,6 +67,12 @@ impl Server {
             .await
             .unwrap()
             .0
+    }
+    pub async fn crash(mut self) {
+        let task = self.task.take().unwrap();
+        task.abort();
+        let _ = task.await;
+        self.stop.take();
     }
     pub async fn stop(mut self) {
         let _ = self.stop.take().unwrap().send(());

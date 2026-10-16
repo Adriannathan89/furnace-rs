@@ -86,3 +86,43 @@ async fn redis_outage_keeps_direct_sends_and_rejects_room_sends() {
     c.close(None).await.unwrap();
     s.stop().await;
 }
+
+#[tokio::test]
+async fn expired_instance_membership_does_not_prevent_room_deletion_forever() {
+    let redis = redis_fixture::Redis::start().await;
+    let extra = [
+        ("socket.redis.url", redis.url.as_str()),
+        ("socket.namespace", "crash-test"),
+        ("socket.lease_refresh_ms", "100"),
+        ("socket.lease_expiry_ms", "500"),
+    ];
+    let a = support::Server::configured::<App>(&extra).await;
+    let b = support::Server::configured::<App>(&extra).await;
+    let mut ca = a.connect("/chat").await;
+    let mut cb = b.connect("/chat").await;
+    send(&mut cb, "furnace.join", json!({"room":"room"})).await;
+    assert_eq!(recv(&mut cb).await["event"], "furnace.ok");
+    b.crash().await;
+    tokio::time::timeout(std::time::Duration::from_secs(3), async {
+        loop {
+            send(&mut ca, "delete", json!({})).await;
+            let result = recv(&mut ca).await;
+            if result["event"] == "deleted" {
+                break;
+            }
+            assert!(
+                matches!(
+                    result["data"]["code"].as_str(),
+                    Some("room_not_empty" | "backend_unavailable")
+                ),
+                "{result}"
+            );
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
+    })
+    .await
+    .unwrap();
+    drop(cb);
+    ca.close(None).await.unwrap();
+    a.stop().await;
+}
