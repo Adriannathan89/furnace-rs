@@ -18,6 +18,6 @@ PostgreSQL databases; select `--scenario hello --scenario auth` to omit CRUD.
 Use `--help` for options. Loopback sockets and subprocesses must be permitted
 for integration tests and benchmarks.
 
-See the [benchmark guide](../README.md) for setup, profiles, CPU measurement,
-DI targets, and retained correctness tools; see the
-[measurement report](../REQWEST_REPORT.md) for results and limitations.
+See the [benchmark guide](../README.md) for the documentation index and the
+[performance report](../PERFORMANCE.md) for results, historical comparisons,
+and measurement limits.

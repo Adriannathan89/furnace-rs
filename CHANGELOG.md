@@ -6,16 +6,6 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
-### Changed
-
-- Use the standalone Rust `furnace-bench` CLI with Tokio and reqwest for HTTP
-  performance measurements. Preserve response contracts, warmups, seeded trial
-  and operation ordering, failure accounting, and JSON reports; record client
-  and server CPU use and binary hashes. Retain Python security/fault tools and
-  an explicitly historical client replay for comparison evidence.
-- Remove request-path console logging from the FURNACE, Axum, and Fiber auth
-  benchmark apps and disable FURNACE debug request logging during comparisons.
-
 ## [2.0.0-beta.3] - 2026-10-16
 
 ### Added

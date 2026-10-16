@@ -864,14 +864,11 @@ listener.
 
 ## Benchmarks
 
-The repository includes HTTP stress workloads, security regression runners,
-and a [recorded FURNACE/native Axum/Go Fiber comparison](benchmark/COMPARISON.md)
-for Hello World, PostgreSQL CRUD, and login plus protected JWT requests.
-That comparison was measured on 2026-09-25 using FURNACE 0.9.1 source; it is
-historical evidence for that revision, not a measurement of the 1.0.2 release.
-
-See [the benchmark guide](benchmark/README.md) for runnable workloads, raw results,
-methodology, and limits. Throughput and latency depend on the host, client,
+The repository includes HTTP performance workloads and security regression
+runners. [PERFORMANCE.md](benchmark/PERFORMANCE.md) contains the latest
+FURNACE/Axum/Fiber comparison and historical results; [SECURITY.md](benchmark/SECURITY.md)
+indexes security findings, fixes, and evidence. See the [benchmark guide](benchmark/README.md)
+for the documentation map. Throughput and latency depend on the host, client,
 database access pattern, and application workload.
 
 ## Current scope

@@ -1,4 +1,10 @@
-# Rust reqwest benchmark — 2026-10-16
+# Performance benchmarks
+
+This is the central index for FURNACE performance measurements. The current
+full-application comparison is dated 2026-10-16; older measurements remain
+linked below with their original versions, clients, and limitations.
+
+## Current comparison — 2026-10-16
 
 This run compares the complete FURNACE 2.0.0-beta.3, Axum 0.8.9, and Fiber 2.52.15 example applications. The standalone Rust runner sends all measured HTTP traffic with reqwest 0.13.4.
 
@@ -77,3 +83,129 @@ All 54 schema 2 trials passed. Across both schemas, all 99 measured trials compl
 - [Posts CRUD ramp at 128](results/2026-10-16-reqwest/schema2-posts-128.json), [at 256](results/2026-10-16-reqwest/schema2-posts-256.json)
 - [Auth ramp at 128](results/2026-10-16-reqwest/schema2-auth-128.json), [at 256](results/2026-10-16-reqwest/schema2-auth-256.json)
 - [Auth request-log silence check](results/2026-10-16-reqwest/request-logging-check.json)
+
+## Reproduce the Rust reqwest comparison
+
+The standalone runner uses Rust, Tokio, and reqwest for all measured HTTP
+traffic. Build it and the three app targets from the repository root:
+
+```sh
+cargo build --release --locked --manifest-path benchmark/runner/Cargo.toml
+benchmark/runner/target/release/furnace-bench build
+```
+
+For posts CRUD, provision three disposable PostgreSQL databases, apply
+`example/posts-crud/migrations/001_create_posts.sql` to each, then set
+`BENCH_FURNACE_DATABASE_URL`, `BENCH_AXUM_DATABASE_URL`, and
+`BENCH_FIBER_DATABASE_URL`. The runner does not create or drop databases.
+
+Run the fixed 64-worker comparison with:
+
+```sh
+benchmark/runner/target/release/furnace-bench compare \
+  --scenario hello --scenario posts --scenario auth --profile extended \
+  --concurrency 64 --runs 5 --seed 20261016 \
+  --output /tmp/furnace-schema1-64.json
+```
+
+Other useful commands are:
+
+```sh
+# Run the FURNACE-only HTTP and PostgreSQL correctness workload.
+benchmark/runner/target/release/furnace-bench stress --profile stress \
+  --output /tmp/furnace-stress.json
+
+# Measure an endpoint that is already running.
+benchmark/runner/target/release/furnace-bench measure --scenario hello \
+  --url http://127.0.0.1:3000 --operations 50000 --concurrency 64 \
+  --seed 20261016 --output /tmp/furnace-single.json
+
+# Override the operations and concurrency for a comparison.
+benchmark/runner/target/release/furnace-bench compare --scenario hello \
+  --operations 200000 --concurrency 128 --runs 5 --seed 20261016 \
+  --output /tmp/furnace-hello-128.json
+```
+
+For the schema 2 ramp, run each workload at 128 and 256 workers. Set operations
+to workers × 512 for Hello World, workers × 64 for CRUD cycles, or workers × 256
+for auth pairs; use three runs per level. The report records each output and the
+throughput-plateau rule used to stop the ramp. See the [runner guide](runner/README.md)
+for CLI behavior, response contracts, CPU accounting, and limitations.
+
+The runner supports repeatable `--framework` and `--scenario` options;
+`--case` is an alias for `--scenario`. `compare` defaults to all three
+frameworks and the hello/posts/auth workloads. `--operations`, `--concurrency`,
+`--runs`, and `--seed` select the measured load and randomized schedule. A
+fresh server process starts for each framework/workload trial. Readiness,
+warmup, statuses, bodies, transport completion, and response contracts must
+pass before results are accepted. JSON includes each run, response counts,
+nearest-rank p50/p95/p99, medians across runs, startup and CPU time, trial order,
+and source/binary hashes.
+
+The Linux CPU meter samples process thread accounting outside the timed
+interval; `100%` represents one core, and unavailable readings are `null`.
+Affinity is optional. To isolate the client and server, launch the runner under
+`taskset` and set `BENCH_SERVER_CPUS`; inspect `lscpu --parse=CPU,CORE` to avoid
+placing SMT siblings in both partitions. The recorded run was closed loop with
+no think time and did not pin CPU frequency. The client and app share one host,
+so the result is an end-to-end application comparison.
+
+To replay a successful Rust report with the historical Python HTTP client, use
+the same database URLs and CPU placement:
+
+```sh
+python3 benchmark/tool/python_reference.py \
+  --reference /tmp/furnace-schema1-64.json \
+  --output /tmp/furnace-python-reference.json
+```
+
+The adapter checks binary and operation-order hashes. It exists to compare the
+old request client; current framework measurements should use the Rust runner.
+
+The CLI can also measure already-built dependency-graph fixtures. These are
+separate from the current three-app comparison and require the historical graph
+binaries:
+
+```sh
+benchmark/runner/target/release/furnace-bench compare \
+  --framework furnace-rs-1.0.2 --framework furnace-rs-beta \
+  --scenario hello --scenario auth --scenario di-graph-noop \
+  --scenario di-graph-traverse --dependency-counts 1,16,64,256 \
+  --profile stress --runs 5 --seed 20261016 \
+  --output /tmp/furnace-di-reqwest.json
+```
+
+## Historical performance reports
+
+These reports preserve their original test dates and Python-client methods; do
+not compare their absolute rates directly with the current Rust reqwest run:
+
+- [FURNACE, Axum, and Fiber comparison](COMPARISON.md): 2025-09-25 app
+  comparison and 2026-10-11/12 declarative-DI measurements. Raw results are
+  [2025-09-25](results/2026-09-25-furnace-axum-fiber-stress.json),
+  [2026-10-11](results/2026-10-11-di-runtime-comparison.json), and
+  [2026-10-12](results/2026-10-12-di-randomized-comparison.json).
+- [Historical HTTP workload report](REPORT.md): 2025-09-24/25 measurements
+  for FURNACE 0.9.0/0.9.1, including CRUD, connection churn, validation, and
+  recovery behavior. Its raw results remain under `results/2026-09-24-*`.
+- Security and availability correctness comparisons are collected separately
+  in [SECURITY.md](SECURITY.md); their correctness timings are not performance
+  benchmarks.
+
+The archived Python comparison tools can also reproduce older measurement
+methods when their framework versions, databases, and host setup are available:
+
+```sh
+python3 benchmark/tool/build_furnace.py --offline
+python3 benchmark/tool/compare.py --profile stress --runs 5 \
+  --output /tmp/furnace-python-comparison.json
+python3 benchmark/tool/build_di_comparison.py \
+  --dependency-counts 1,16,64,256
+python3 benchmark/tool/di_comparison.py --profile stress --runs 5 \
+  --dependency-counts 1,16,64,256 --seed 20261012 \
+  --output /tmp/furnace-python-di.json
+```
+
+These legacy rates include Python client overhead and use older benchmark
+targets; their reports retain the actual versions, setup, raw results, and
+measurement limits.
