@@ -110,10 +110,14 @@ Conversion to a core error uses `FURNACE140`.
 The opt-in `sea-orm` feature on `furnace-rs` lets HTTP handlers propagate native
 query `DbErr` values with `?` into redacted HTTP 500 responses. The
 [simple CRUD example](../example/posts-crud/) uses this conversion and returns
-`NotFound` for absent posts; the [service variant](../example/post-crud-with-service/)
-shows an optional layer for business logic. Applications own domain-specific
-query policies and client messages. Typed connector `PersistenceError` values
-remain separate from query errors.
+`NotFound` for absent posts. The separate `sea-orm-storage` feature converts
+entity-bound `StorageError` values the same way; handlers can use `.map_err(...)`
+to map selected failures to domain-specific responses. The
+[entity-storage example](../example/posts-crud-storage/) demonstrates that
+feature, and the [service variant](../example/post-crud-with-service/) shows an
+optional layer for business logic. Applications own domain-specific query
+policies and client messages. Typed connector `PersistenceError` values remain
+separate from query errors.
 
 The connector suppresses tracing while polling SeaORM connection establishment,
 including callbacks inside that operation, because native connection spans can
