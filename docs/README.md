@@ -45,3 +45,5 @@ Use the [runnable examples](../example/) for Hello World, PostgreSQL CRUD, and
 JWT-protected routes. The [crate guides](../README.md#workspace-crates) cover
 individual packages; the [benchmark suite](../benchmark/) retains performance
 results and security evidence for their recorded revisions.
+
+[WebSocket transport](socket.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

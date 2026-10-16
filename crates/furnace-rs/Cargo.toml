@@ -17,6 +17,8 @@ furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0-beta.3" }
 furnace-rs-extra = { path = "../furnace-rs-extra", version = "=2.0.0-beta.3", optional = true }
 
 [dev-dependencies]
+futures-util.workspace = true
+tokio-tungstenite = "0.29"
 furnace-grpc-test-support = { path = "../../tests/grpc-support" }
 furnace-rs-testing = { path = "../furnace-rs-testing", version = "=2.0.0-beta.3" }
 serde.workspace = true

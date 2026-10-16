@@ -94,6 +94,8 @@ pub(crate) enum CanonicalCommand {
     Routes,
     /// `furnace grpc`.
     Grpc,
+    /// `furnace socket`.
+    Socket,
     /// `furnace graph`.
     Graph,
     /// `furnace doctor`.
@@ -191,6 +193,9 @@ pub(crate) fn parse(arguments: &[OsString]) -> Result<Invocation, ParseFailure> 
         Some("dev") => parse_streaming_command(remaining, global_format)
             .map(|command| (Command::Dev(command), OutputFormat::Human)),
         Some("new") => parse_new_command(remaining, format, global_format),
+        Some("socket") => {
+            parse_finite_inspection(InspectionKind::Socket, remaining, format, global_format)
+        }
         Some("grpc") => {
             parse_finite_inspection(InspectionKind::Grpc, remaining, format, global_format)
         }
@@ -451,6 +456,7 @@ fn canonical_command(arguments: &[OsString]) -> Option<CanonicalCommand> {
         "new" => Some(CanonicalCommand::New),
         "routes" => Some(CanonicalCommand::Routes),
         "grpc" => Some(CanonicalCommand::Grpc),
+        "socket" => Some(CanonicalCommand::Socket),
         "graph" => Some(CanonicalCommand::Graph),
         "doctor" => Some(CanonicalCommand::Doctor),
         _ => None,

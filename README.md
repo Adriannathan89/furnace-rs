@@ -965,3 +965,5 @@ All participants are expected to follow the [code of conduct](CODE_OF_CONDUCT.md
 
 furnace-rs is licensed under either the [Apache License 2.0](LICENSE-APACHE) or
 the [MIT License](LICENSE-MIT), at your option.
+
+[WebSocket transport](docs/socket.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

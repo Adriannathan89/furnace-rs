@@ -38,3 +38,11 @@ pub use furnace_rs_socket_macros::{socket_endpoint, socket_gateway};
 mod hub;
 pub use hub::{SocketGatewayHub, SocketHub};
 mod dispatch;
+
+mod admission;
+
+mod rooms;
+pub use rooms::RoomMode;
+
+/// Native socket composition builder extension.
+pub use runtime::RuntimeSocketExt;

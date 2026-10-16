@@ -28,3 +28,5 @@ providers bind them to implementations, repositories handle data access, and
 services implement use cases. Controllers are the HTTP boundary. The JWT
 example follows that pattern with an in-memory repository. The reference uses
 FURNACE 0.8 APIs, so these projects use the current 2.0 crate boundaries.
+
+[WebSocket server example](socket-transport/README.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

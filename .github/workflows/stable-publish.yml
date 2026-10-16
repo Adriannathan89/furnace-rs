@@ -50,6 +50,8 @@ jobs:
         run: cargo fmt --all --check
       - name: Lint
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Install Redis for isolated socket integration tests
+        run: sudo apt-get update && sudo apt-get install -y redis-server
       - name: Test
         run: cargo test --locked --workspace --all-features
       - name: Test documentation
@@ -67,6 +69,9 @@ jobs:
           cargo check -p furnace-rs-common --no-default-features --features jwt
           cargo check -p furnace-rs-common --no-default-features --features cookies
           cargo check -p furnace-rs-common --no-default-features --features sea-orm
+          cargo check -p furnace-rs-socket --no-default-features
+          cargo check -p furnace-rs-socket --no-default-features --features jwt,tls,redis
+          cargo check -p furnace-rs --no-default-features --features socket,jwt,socket-tls,socket-redis,runtime-tokio
           cargo check -p furnace-rs-grpc --no-default-features
           cargo check -p furnace-rs-grpc --no-default-features --features jwt,tls
           cargo check -p furnace-rs --no-default-features --features grpc,jwt,grpc-tls,runtime-tokio
@@ -138,6 +143,8 @@ jobs:
           for manifest in crates/furnace-rs-persistence/tests/consumers/storage_*/Cargo.toml; do
             cargo fetch --manifest-path "$manifest"
           done
+      - name: Install Redis for isolated socket integration tests
+        run: sudo apt-get update && sudo apt-get install -y redis-server
       - name: Test minimum supported Rust version
         run: cargo test --locked --workspace --all-features
 
@@ -210,6 +217,8 @@ jobs:
           for manifest in crates/furnace-rs-persistence/tests/consumers/storage_*/Cargo.toml; do
             cargo fetch --manifest-path "$manifest"
           done
+      - name: Install Redis for isolated socket integration tests
+        run: sudo apt-get update && sudo apt-get install -y redis-server
       - uses: taiki-e/install-action@cargo-llvm-cov
       - name: Enforce line coverage
         run: cargo llvm-cov --workspace --all-features --ignore-filename-regex '(^|/)tests/ui/' --fail-under-lines 85
@@ -249,11 +258,13 @@ jobs:
             furnace-rs-core-macros
             furnace-rs-common-macros
             furnace-rs-grpc-macros
+            furnace-rs-socket-macros
             furnace-rs-core
             furnace-rs-persistence-types
             furnace-rs-extra
             furnace-rs-common
             furnace-rs-grpc
+            furnace-rs-socket
             furnace-rs-testing
             furnace-rs
             furnace-rs-persistence

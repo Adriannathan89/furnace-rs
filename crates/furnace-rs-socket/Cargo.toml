@@ -12,7 +12,7 @@ description = "Managed WebSocket server transport for Furnace"
 default = []
 jwt = ["furnace-rs-common/passport", "dep:cookie"]
 tls = ["dep:rustls", "dep:tokio-rustls"]
-redis = ["dep:redis"]
+redis = ["dep:redis", "dep:rustls"]
 [dependencies]
 furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0-beta.3" }
 furnace-rs-common = { path = "../furnace-rs-common", version = "=2.0.0-beta.3", default-features = false, features = ["transport-metadata", "transport-runtime"] }

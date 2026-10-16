@@ -12,7 +12,7 @@ use axum::{
 use furnace_rs_common::runtime::*;
 use furnace_rs_core::{ApplicationContext, CauldronGraph, Config, Furnace, FurnaceBuilder};
 use futures_util::future::BoxFuture;
-use std::{net::SocketAddr, sync::Arc};
+use std::sync::Arc;
 /// Native composition for the separate listener.
 pub trait RuntimeSocketExt: Sized {
     /// Builder's socket route/config type.
@@ -65,29 +65,12 @@ pub fn owned_route<T: Send + Sync + 'static>(
                 if *runtime.shutdown.borrow() {
                     return http::StatusCode::SERVICE_UNAVAILABLE.into_response();
                 }
-                let origin = request
-                    .headers()
-                    .get_all(http::header::ORIGIN)
-                    .iter()
-                    .collect::<Vec<_>>();
-                if origin.len() > 1
-                    || origin.first().is_some_and(|v| {
-                        v.to_str()
-                            .ok()
-                            .is_none_or(|v| !runtime.config.origins.iter().any(|o| o == v))
-                    })
-                {
-                    return http::StatusCode::FORBIDDEN.into_response();
-                }
-                let _ = endpoint;
-                let handshake = SocketHandshake {
-                    application: app,
-                    headers: request.headers().clone(),
-                    method: request.method().clone(),
-                    uri: request.uri().clone(),
-                    peer: request.extensions().get::<SocketAddr>().copied(),
-                    extensions: Arc::new(http::Extensions::new()),
-                };
+                let (request, _) = request.into_parts();
+                let handshake =
+                    match crate::admission::admit(app, endpoint, &request, &runtime).await {
+                        Ok(h) => h,
+                        Err(status) => return status.into_response(),
+                    };
                 ws.max_message_size(runtime.config.max_message_bytes)
                     .max_frame_size(runtime.config.max_message_bytes)
                     .on_upgrade(move |socket| async move {
@@ -134,11 +117,47 @@ fn prepare<'a>(
             })?,
             None => build_socket_routes(app).map_err(ApplicationRuntimeError::Bootstrap)?,
         };
+        let tls = super::tls::prepare(&config)
+            .await
+            .map_err(ApplicationRuntimeError::Bootstrap)?;
         let hub = app
             .context()
             .resolve::<crate::SocketHub>()
             .map(|h| h.as_ref().clone())
             .unwrap_or_default();
+        #[cfg(feature = "redis")]
+        if config.redis_url.is_some() {
+            let backend = crate::rooms::redis::RedisBackend::prepare(&config, &hub)
+                .await
+                .map_err(|_| {
+                    ApplicationRuntimeError::Bootstrap(crate::config::invalid("socket.redis"))
+                })?;
+            hub.state.lock().unwrap().backend = Some(backend);
+        }
+        #[cfg(feature = "jwt")]
+        let bindings = {
+            let guards = crate::admission::guards(app.cauldron_graph())
+                .map_err(ApplicationRuntimeError::Bootstrap)?;
+            let preflight = furnace_rs_common::PassportStrategyCatalog::preflight_scoped(
+                app.cauldron_graph(),
+                &guards,
+            )
+            .map_err(ApplicationRuntimeError::Bootstrap)?;
+            guards
+                .iter()
+                .filter_map(|guard| {
+                    preflight
+                        .binding_for(guard.guard, guard.context_cauldron)
+                        .cloned()
+                        .map(|binding| {
+                            (
+                                guard.occurrence.as_ref().unwrap().operation.clone(),
+                                binding,
+                            )
+                        })
+                })
+                .collect()
+        };
         Ok(PreparedTransport {
             name: "socket",
             address: config.address.to_string(),
@@ -150,6 +169,9 @@ fn prepare<'a>(
                     listener,
                     router,
                     SocketRuntime {
+                        #[cfg(feature = "jwt")]
+                        bindings,
+                        tls,
                         hub,
                         config,
                         shutdown,
@@ -179,28 +201,12 @@ pub fn gateway_route<T: crate::dispatch::SocketGateway>(
                 if *runtime.shutdown.borrow() {
                     return http::StatusCode::SERVICE_UNAVAILABLE.into_response();
                 }
-                let origin = request
-                    .headers()
-                    .get_all(http::header::ORIGIN)
-                    .iter()
-                    .collect::<Vec<_>>();
-                if origin.len() > 1
-                    || origin.first().is_some_and(|v| {
-                        v.to_str()
-                            .ok()
-                            .is_none_or(|v| !runtime.config.origins.iter().any(|o| o == v))
-                    })
-                {
-                    return http::StatusCode::FORBIDDEN.into_response();
-                }
-                let handshake = SocketHandshake {
-                    application: app,
-                    headers: request.headers().clone(),
-                    method: request.method().clone(),
-                    uri: request.uri().clone(),
-                    peer: request.extensions().get::<SocketAddr>().copied(),
-                    extensions: Arc::new(http::Extensions::new()),
-                };
+                let (request, _) = request.into_parts();
+                let handshake =
+                    match crate::admission::admit(app, endpoint, &request, &runtime).await {
+                        Ok(h) => h,
+                        Err(status) => return status.into_response(),
+                    };
                 ws.max_message_size(runtime.config.max_message_bytes)
                     .max_frame_size(runtime.config.max_message_bytes)
                     .on_upgrade(move |socket| async move {

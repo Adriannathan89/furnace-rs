@@ -809,9 +809,11 @@ dependencies = [
  "furnace-rs-grpc",
  "furnace-rs-socket",
  "furnace-rs-testing",
+ "futures-util",
  "serde",
  "serde_json",
  "tokio",
+ "tokio-tungstenite",
  "tower",
  "trybuild",
 ]

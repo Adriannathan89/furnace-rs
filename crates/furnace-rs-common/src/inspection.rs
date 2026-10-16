@@ -49,6 +49,8 @@ pub enum InspectionKind {
     Routes,
     /// Selected protobuf services and methods.
     Grpc,
+    /// Selected WebSocket endpoints.
+    Socket,
     /// The analyzed application graph.
     Graph,
     /// Grouped readiness checks.
@@ -142,6 +144,7 @@ impl InspectionRequest {
         let kind = match unicode_field(kind.unwrap(), "inspection kind")?.as_str() {
             "routes" => InspectionKind::Routes,
             "grpc" => InspectionKind::Grpc,
+            "socket" => InspectionKind::Socket,
             "graph" => InspectionKind::Graph,
             "doctor" => InspectionKind::Doctor,
             _ => return Err(inspection_error("the private inspection kind is invalid")),
@@ -558,6 +561,9 @@ pub struct InspectionReport {
     pub routes: Vec<RouteReport>,
     /// Selected protobuf service evidence.
     pub grpc_services: Vec<GrpcServiceReport>,
+    /// Selected WebSocket endpoint metadata.
+    #[serde(default)]
+    pub socket_endpoints: Vec<SocketEndpointReport>,
     /// Doctor checks.
     pub checks: Vec<DoctorCheck>,
     /// Framework diagnostics.
@@ -685,6 +691,23 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
             }
         }
     }
+    let mut socket_endpoints = Vec::new();
+    for adapter in furnace_rs_core::__private::inventory::iter::<SocketInspectionDescriptor> {
+        match (adapter.inspect)(analysis.cauldron_graph(), &config) {
+            Ok((endpoints, checks)) => {
+                socket_endpoints.extend(endpoints);
+                transport_checks.extend(checks);
+            }
+            Err(error) => {
+                diagnostics.extend(diagnostic_reports(error.diagnostics()));
+                transport_checks.push(DoctorCheck::failed(
+                    "WebSocket",
+                    "selected socket metadata or configuration is invalid",
+                ));
+            }
+        }
+    }
+    socket_endpoints.sort_by(|a, b| a.path.cmp(&b.path));
     grpc_services.sort_by(|a, b| a.name.cmp(&b.name));
     diagnostics.sort_by(diagnostic_report_order);
     diagnostics.dedup();
@@ -708,6 +731,7 @@ pub(crate) fn inspect_standard_application<M: Cauldron>(
         graph,
         routes,
         grpc_services,
+        socket_endpoints,
         checks,
         diagnostics,
         failed,
@@ -1104,6 +1128,49 @@ pub struct InspectionTransportDescriptor {
     pub inspect: TransportInspect,
 }
 furnace_rs_core::__private::inventory::collect!(InspectionTransportDescriptor);
+
+/// One side-effect-free socket handler declaration.
+#[doc(hidden)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct SocketHandlerReport {
+    /// Rust operation category.
+    pub kind: String,
+    /// Wire event or lifecycle name.
+    pub name: String,
+}
+/// One selected WebSocket endpoint.
+#[doc(hidden)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct SocketEndpointReport {
+    /// Upgrade path.
+    pub path: String,
+    /// Raw or events.
+    pub mode: String,
+    /// DI implementation.
+    pub implementation: String,
+    /// Sequential or concurrent scheduling.
+    pub processing: String,
+    /// Source declaration.
+    pub location: SourceReport,
+    /// Effective handshake policy.
+    pub protection: Option<GrpcProtectionReport>,
+    /// Declared operations.
+    pub handlers: Vec<SocketHandlerReport>,
+}
+/// Socket inspection callback isolated from native protocol crates.
+#[doc(hidden)]
+pub type SocketInspect =
+    fn(
+        Option<&CauldronGraph>,
+        &Config,
+    ) -> furnace_rs_core::Result<(Vec<SocketEndpointReport>, Vec<DoctorCheck>)>;
+/// Link-time socket metadata adapter.
+#[doc(hidden)]
+pub struct SocketInspectionDescriptor {
+    /// Static inspection operation.
+    pub inspect: SocketInspect,
+}
+furnace_rs_core::__private::inventory::collect!(SocketInspectionDescriptor);
 
 #[cfg(all(test, feature = "http"))]
 mod tests {

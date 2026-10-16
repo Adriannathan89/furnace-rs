@@ -32,6 +32,12 @@ pub struct SocketContext {
     pub(crate) id: ConnectionId,
     pub(crate) handshake: SocketHandshake,
     pub(crate) hub: crate::SocketGatewayHub,
+    #[cfg(feature = "redis")]
+    pub(crate) tasks: furnace_rs_common::runtime::RuntimeTasks,
+    #[cfg(feature = "redis")]
+    pub(crate) shutdown: tokio::sync::watch::Receiver<bool>,
+    pub(crate) gateway: Arc<dyn crate::dispatch::SocketGateway>,
+    pub(crate) acknowledge_join: bool,
     pub(crate) request_id: Option<String>,
 }
 impl SocketContext {
@@ -57,5 +63,46 @@ impl SocketContext {
         envelope.id = self.request_id.clone();
         self.send(crate::Message::Text(envelope.to_text()?.into()))
             .await
+    }
+}
+
+#[cfg(feature = "jwt")]
+impl SocketHandshake {
+    /// Extracts the exact authenticated principal installed during admission.
+    pub fn authenticated<P: furnace_rs_common::PassportPrincipal>(
+        &self,
+    ) -> crate::SocketResult<furnace_rs_common::Authenticated<P>> {
+        self.extensions
+            .get::<furnace_rs_common::Authenticated<P>>()
+            .cloned()
+            .ok_or_else(|| crate::SocketError::new("unauthenticated"))
+    }
+}
+
+impl SocketContext {
+    /// Requests room membership after approval by the application's join hook.
+    pub async fn join(&self, room: &str, after: Option<&str>) -> crate::SocketResult<()> {
+        self.gateway
+            .call(
+                self.clone(),
+                crate::dispatch::SocketInput::Join(room.to_owned()),
+            )
+            .await?;
+        self.hub.join(self, room, after).await
+    }
+    /// Leaves a room without requiring a new authorization decision.
+    pub async fn leave(&self, room: &str) -> crate::SocketResult<()> {
+        self.hub.leave(self.id(), room).await
+    }
+}
+
+impl SocketContext {
+    pub(crate) async fn acknowledge_join(&self, room: &str) -> crate::SocketResult<()> {
+        if self.acknowledge_join {
+            self.emit("furnace.ok", serde_json::json!({"room":room}))
+                .await
+        } else {
+            Ok(())
+        }
     }
 }

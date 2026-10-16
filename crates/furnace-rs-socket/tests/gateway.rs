@@ -33,6 +33,18 @@ impl Injector for Raw {
 }
 #[socket_gateway(path = "/raw", mode = "raw")]
 impl Raw {
+    #[on_connect]
+    async fn connected(&self, c: SocketContext) -> SocketResult<()> {
+        c.hub()
+            .create_room("raw", furnace_rs_socket::RoomMode::Live)
+            .await?;
+        c.join("raw", None).await
+    }
+    #[on_join]
+    async fn authorize(&self, _: SocketContext, _: String) -> SocketResult<()> {
+        Ok(())
+    }
+
     #[on_text]
     async fn text(&self, ctx: SocketContext, data: String) -> SocketResult<()> {
         ctx.send(furnace_rs_socket::Message::Text(data.into()))

@@ -43,6 +43,16 @@ impl SocketApplicationScope {
     pub fn validate_descriptors(endpoints: &[&SocketEndpointDescriptor]) -> Result<()> {
         let mut paths = BTreeSet::new();
         for e in endpoints {
+            if e.cookie.is_empty()
+                || e.query.is_empty()
+                || !e
+                    .cookie
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(&b))
+            {
+                return Err(crate::config::invalid("socket.credentials"));
+            }
+
             if !e.path.starts_with('/')
                 || e.path.contains(['{', '}', '*', '?', '#'])
                 || !paths.insert(e.path)

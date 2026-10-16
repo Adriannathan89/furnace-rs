@@ -154,3 +154,5 @@ See the [root workspace guide](../../README.md#workspace-crates),
 The `2.0.0-beta.3` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
 
 See the [gRPC guide](../../docs/grpc.md) and [standalone crate](../furnace-rs-grpc/README.md).
+
+[WebSocket transport](../../docs/socket.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

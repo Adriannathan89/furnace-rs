@@ -219,7 +219,10 @@ impl CargoProject {
                 .iter()
                 .find(|candidate| {
                     candidate.id == dependency.pkg
-                        && matches!(candidate.name.as_str(), "furnace-rs" | "furnace-rs-grpc")
+                        && matches!(
+                            candidate.name.as_str(),
+                            "furnace-rs" | "furnace-rs-grpc" | "furnace-rs-socket"
+                        )
                 })
                 .map(|candidate| candidate.version.clone())
         })

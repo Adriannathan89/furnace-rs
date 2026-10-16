@@ -17,8 +17,12 @@ impl RuntimeSelection {
     #[allow(clippy::result_large_err)]
     pub fn parse(config: &Config, compiled_http: bool, compiled_grpc: bool) -> Result<Self> {
         let mut compiled = Vec::new();
-        if compiled_http { compiled.push("http"); }
-        if compiled_grpc { compiled.push("grpc"); }
+        if compiled_http {
+            compiled.push("http");
+        }
+        if compiled_grpc {
+            compiled.push("grpc");
+        }
         Self::parse_registered(config, &compiled)
     }
     /// Parses selection using the linked transport registry.

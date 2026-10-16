@@ -17,6 +17,9 @@ pub struct SocketServerConfig {
     /// Maximum response time for a heartbeat pong.
     pub pong_timeout: Duration,
     /// Maximum transport drain time.
+    /// Maximum native TLS handshake duration.
+    pub tls_handshake_timeout: Duration,
+    /// Maximum shared transport drain duration.
     pub shutdown_timeout: Duration,
     /// Lease renewal interval.
     pub lease_refresh: Duration,
@@ -26,6 +29,7 @@ pub struct SocketServerConfig {
     pub origins: Vec<String>,
     /// Application isolation namespace.
     pub namespace: String,
+    #[cfg_attr(not(feature = "redis"), allow(dead_code))]
     pub(crate) redis_url: Option<String>,
     pub(crate) certificate: Option<PathBuf>,
     pub(crate) private_key: Option<PathBuf>,
@@ -65,6 +69,11 @@ impl SocketServerConfig {
             }
         };
         let duration = |key, default| number(key, default).map(|v| Duration::from_millis(v as u64));
+        let queue_messages = number("socket.queue_messages", 256)?;
+        let queue_bytes = number("socket.queue_bytes", 4_194_304)?;
+        if queue_messages > tokio::sync::Semaphore::MAX_PERMITS || queue_bytes > u32::MAX as usize {
+            return Err(invalid("socket.queue_messages"));
+        }
         let origins = if let Some(v) = c.get_string_array("socket.origins") {
             v.to_vec()
         } else if c.get("socket.origins").is_some() || c.contains_table("socket.origins") {
@@ -92,10 +101,10 @@ impl SocketServerConfig {
         {
             return Err(invalid("socket.redis"));
         }
-        if let Some(url) = &redis_url {
-            if !(url.starts_with("redis://") || url.starts_with("rediss://")) {
-                return Err(invalid("socket.redis.url"));
-            }
+        if let Some(url) = &redis_url
+            && (!(url.starts_with("redis://") || url.starts_with("rediss://")) || url.contains('#'))
+        {
+            return Err(invalid("socket.redis.url"));
         }
         let certificate = c.resolve_path("socket.tls.certificate");
         let private_key = c.resolve_path("socket.tls.private_key");
@@ -115,10 +124,11 @@ impl SocketServerConfig {
             return Err(invalid("socket.lease_refresh_ms"));
         }
         Ok(Self {
+            tls_handshake_timeout: duration("socket.tls.handshake_timeout_ms", 10_000)?,
             address,
             max_message_bytes: number("socket.max_message_bytes", 1_048_576)?,
-            queue_messages: number("socket.queue_messages", 256)?,
-            queue_bytes: number("socket.queue_bytes", 4_194_304)?,
+            queue_messages,
+            queue_bytes,
             heartbeat_interval: duration("socket.heartbeat_interval_ms", 30_000)?,
             pong_timeout: duration("socket.pong_timeout_ms", 10_000)?,
             shutdown_timeout: duration("socket.shutdown_timeout_ms", 10_000)?,

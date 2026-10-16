@@ -12,6 +12,9 @@ pub struct SocketHandlerDescriptor {
 /// Static registration of one gateway or owned endpoint.
 pub struct SocketEndpointDescriptor {
     /// DI output identity.
+    /// Source of this declaration.
+    pub location: furnace_rs_core::SourceLocation,
+    /// Managed output identity.
     pub provider: fn() -> TypeId,
     /// Implementation name.
     pub implementation: &'static str,
@@ -39,6 +42,12 @@ pub struct SocketEndpointDescriptor {
     pub handlers: &'static [SocketHandlerDescriptor],
 }
 impl SocketEndpointDescriptor {
+    /// Records the authored registration location.
+    pub const fn with_location(mut self, location: furnace_rs_core::SourceLocation) -> Self {
+        self.location = location;
+        self
+    }
+
     /// Selects cookie and query credential names.
     pub const fn with_credentials(mut self, cookie: &'static str, query: &'static str) -> Self {
         self.cookie = cookie;
@@ -71,6 +80,7 @@ impl SocketEndpointDescriptor {
         handlers: &'static [SocketHandlerDescriptor],
     ) -> Self {
         Self {
+            location: furnace_rs_core::SourceLocation::new("<unknown>", 0, 0),
             provider,
             implementation,
             path,

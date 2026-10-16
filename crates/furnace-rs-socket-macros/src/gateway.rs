@@ -175,11 +175,7 @@ pub(crate) fn expand(
                 "invalid or duplicate handler for this endpoint mode",
             ));
         }
-        let cfg = method
-            .attrs
-            .iter()
-            .filter(|a| a.path().is_ident("cfg") || a.path().is_ident("cfg_attr"))
-            .collect::<Vec<_>>();
+        let cfg = conditions(&method.attrs)?;
         records.push(quote!(#(#cfg)* #socket::SocketHandlerDescriptor{name:#event,kind:#kind}));
         let input = match kind {
             "event" => quote!(#socket::__private::SocketInput::Event(name,data) if name==#event),
@@ -215,22 +211,65 @@ pub(crate) fn expand(
     } else {
         quote!()
     };
-    let attrs = implementation
-        .attrs
-        .iter()
-        .filter(|a| a.path().is_ident("cfg") || a.path().is_ident("cfg_attr"));
-    let attrs = attrs.collect::<Vec<_>>();
+    let attrs = conditions(&implementation.attrs)?;
     Ok(quote! {
         #implementation
         #(#attrs)* #trait_impl
         #(#attrs)* impl #socket::core::__private::TransportProvider for #ty {const TRANSPORT:&'static str="socket";}
         #(#attrs)* const _:()={
-            static DESCRIPTOR:#socket::SocketEndpointDescriptor=#socket::SocketEndpointDescriptor::new(::std::any::TypeId::of::<#ty>,stringify!(#ty),#path,#mode_token,#processing,&[#(#records),*]).with_route(route).with_credentials(#cookie,#query) #guard;
+            static DESCRIPTOR:#socket::SocketEndpointDescriptor=#socket::SocketEndpointDescriptor::new(::std::any::TypeId::of::<#ty>,stringify!(#ty),#path,#mode_token,#processing,&[#(#records),*]).with_location(#socket::core::SourceLocation::new(file!(),line!(),column!())).with_route(route).with_credentials(#cookie,#query) #guard;
             fn route(application:#socket::core::ApplicationContext)->#socket::core::Result<#socket::__private::MethodRouter>{#route}
             #socket::core::__private::inventory::submit!{#socket::SocketEndpointRegistration{descriptor:&DESCRIPTOR}}
         };
     })
 }
+fn conditions(attributes: &[syn::Attribute]) -> syn::Result<Vec<syn::Attribute>> {
+    attributes
+        .iter()
+        .filter_map(|attribute| condition(&attribute.meta).transpose())
+        .map(|result| result.map(|meta| syn::parse_quote!(#[#meta])))
+        .collect()
+}
+fn condition(meta: &Meta) -> syn::Result<Option<Meta>> {
+    if meta.path().is_ident("cfg") {
+        return Ok(Some(meta.clone()));
+    }
+    if !meta.path().is_ident("cfg_attr") {
+        return Ok(None);
+    }
+    let Meta::List(list) = meta else {
+        return Err(syn::Error::new_spanned(meta, "expected cfg_attr arguments"));
+    };
+    let mut arguments = Punctuated::<Meta, Token![,]>::parse_terminated
+        .parse2(list.tokens.clone())?
+        .into_iter();
+    let predicate = arguments
+        .next()
+        .ok_or_else(|| syn::Error::new_spanned(meta, "cfg_attr requires a predicate"))?;
+    let mut nested = Vec::new();
+    for argument in arguments {
+        if argument
+            .path()
+            .segments
+            .last()
+            .is_some_and(|segment| segment.ident.to_string().starts_with("on_"))
+        {
+            return Err(syn::Error::new_spanned(
+                argument,
+                "put handler attributes directly on a conditionally compiled method, not inside cfg_attr",
+            ));
+        }
+        if let Some(gate) = condition(&argument)? {
+            nested.push(gate);
+        }
+    }
+    if nested.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(syn::parse_quote!(cfg_attr(#predicate, #(#nested),*))))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

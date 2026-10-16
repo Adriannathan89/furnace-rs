@@ -33,16 +33,47 @@ static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 struct Cleanup {
     hub: crate::SocketGatewayHub,
     id: ConnectionId,
+    tasks: furnace_rs_common::runtime::RuntimeTasks,
 }
 impl Drop for Cleanup {
     fn drop(&mut self) {
-        self.hub
-            .hub
-            .state
-            .lock()
-            .expect("socket hub poisoned")
-            .connections
-            .remove(&(self.hub.path.clone(), self.id.clone()));
+        let (rooms, backend) = {
+            let mut state = self.hub.hub.state.lock().expect("socket hub poisoned");
+            state
+                .connections
+                .remove(&(self.hub.path.clone(), self.id.clone()));
+            let mut rooms = Vec::new();
+            for ((path, name), room) in &mut state.rooms {
+                if path == &self.hub.path && room.members.remove(&self.id) {
+                    rooms.push(name.clone());
+                }
+            }
+            state.readers.retain(|(_, _, id), stop| {
+                if id == &self.id {
+                    stop.send_replace(true);
+                    false
+                } else {
+                    true
+                }
+            });
+            #[cfg(feature = "redis")]
+            let backend = state.backend.clone();
+            #[cfg(not(feature = "redis"))]
+            let backend: Option<()> = None;
+            (rooms, backend)
+        };
+        #[cfg(feature = "redis")]
+        if let Some(backend) = backend {
+            let path = self.hub.path.clone();
+            let id = self.id.clone();
+            self.tasks.spawn(async move {
+                for room in rooms {
+                    let _ = backend.leave(&path, &room, &id).await;
+                }
+            });
+        }
+        #[cfg(not(feature = "redis"))]
+        let _ = (rooms, backend, &self.tasks);
     }
 }
 pub(crate) async fn run(
@@ -68,23 +99,42 @@ pub(crate) async fn run(
     let _cleanup = Cleanup {
         hub: hub.clone(),
         id: id.clone(),
+        tasks: runtime.tasks.clone(),
     };
     let context = SocketContext {
         id,
         handshake,
         hub,
+        acknowledge_join: false,
         request_id: None,
+        gateway: gateway.clone(),
+        #[cfg(feature = "redis")]
+        tasks: runtime.tasks.clone(),
+        #[cfg(feature = "redis")]
+        shutdown: runtime.shutdown.clone(),
     };
     let (mut sink, mut stream) = socket.split();
     let mut writer_stop = runtime.shutdown.clone();
     let mut writer_closed = closed.clone();
     let tasks = runtime.tasks.clone();
+    let close_timeout = runtime.config.shutdown_timeout;
     tasks.spawn(async move {
-        loop {tokio::select!{biased;
-            _=writer_stop.changed()=>{let _=sink.send(Message::Close(None)).await;break;},
-            _=writer_closed.changed()=>{let _=sink.send(Message::Close(None)).await;break;},
-            queued=outbound.recv()=>match queued{Some(queued)=>{if sink.send(queued.message).await.is_err(){break;}},None=>break}
-        }}
+        loop {
+            tokio::select!{biased;
+                _=writer_stop.changed()=>{let _=tokio::time::timeout(close_timeout,sink.send(Message::Close(None))).await;break;},
+                _=writer_closed.changed()=>{let _=tokio::time::timeout(close_timeout,sink.send(Message::Close(None))).await;break;},
+                queued=outbound.recv()=>match queued {
+                    Some(queued)=>{
+                        tokio::select!{biased;
+                            _=writer_stop.changed()=>break,
+                            _=writer_closed.changed()=>break,
+                            result=sink.send(queued.message)=>if result.is_err(){break;}
+                        }
+                    },
+                    None=>break,
+                }
+            }
+        }
     });
     let connect = gateway.call(context.clone(), SocketInput::Connect);
     tokio::pin!(connect);
@@ -104,7 +154,7 @@ pub(crate) async fn run(
                 pending_bytes -= size;
                 let gateway = gateway.clone();
                 jobs.spawn(async move {
-                    let result = gateway.call(ctx.clone(), input).await;
+                    let result = handle(gateway, ctx.clone(), input).await;
                     if let Err(error) = result {
                         let _ = send_error(&ctx, error).await;
                     }
@@ -154,4 +204,38 @@ pub(crate) async fn run(
 }
 async fn send_error(context: &SocketContext, error: SocketError) -> SocketResult<()> {
     context.emit("furnace.error",serde_json::json!({"code":error.code(),"message":if error.code()=="internal_error"{"internal server error"}else{error.code()}})).await
+}
+
+async fn handle(
+    gateway: Arc<dyn SocketGateway>,
+    context: SocketContext,
+    input: SocketInput,
+) -> SocketResult<()> {
+    if let SocketInput::Event(name, data) = &input
+        && name.starts_with("furnace.")
+    {
+        let room = data
+            .get("room")
+            .and_then(serde_json::Value::as_str)
+            .filter(|r| !r.is_empty())
+            .ok_or_else(|| SocketError::new("invalid_message"))?;
+        match name.as_str() {
+            "furnace.join" => {
+                let after = match data.get("after") {
+                    Some(serde_json::Value::String(v)) => Some(v.as_str()),
+                    None => None,
+                    _ => return Err(SocketError::new("invalid_cursor")),
+                };
+                let mut context = context.clone();
+                context.acknowledge_join = true;
+                return context.join(room, after).await;
+            }
+            "furnace.leave" => context.leave(room).await?,
+            _ => return Err(SocketError::new("unknown_event")),
+        }
+        return context
+            .emit("furnace.ok", serde_json::json!({"room":room}))
+            .await;
+    }
+    gateway.call(context, input).await
 }
