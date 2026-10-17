@@ -292,10 +292,36 @@ fn main() {
     .unwrap();
     wait_for(&log, "dep-v2", &output_path);
     let before_removal = fs::read_to_string(&log).unwrap().lines().count();
+    // Prepare the manifest and its lockfile as one edit batch. Otherwise Cargo
+    // metadata's later lockfile write legitimately queues another build, which
+    // a slow compiler can finish during the removed-dependency assertion.
+    assert!(
+        Command::new("kill")
+            .args(["-STOP", &dev.child.id().to_string()])
+            .status()
+            .unwrap()
+            .success()
+    );
     fs::write(app.join("src/main.rs"), source).unwrap();
     fs::write(app.join("Cargo.toml"), &manifest).unwrap();
+    let lockfile = Command::new(env!("CARGO"))
+        .args(["generate-lockfile", "--offline"])
+        .current_dir(&app)
+        .output()
+        .unwrap();
+    assert!(
+        lockfile.status.success(),
+        "{}",
+        String::from_utf8_lossy(&lockfile.stderr)
+    );
+    assert!(
+        Command::new("kill")
+            .args(["-CONT", &dev.child.id().to_string()])
+            .status()
+            .unwrap()
+            .success()
+    );
     wait_for_count(&log, before_removal + 1, &output_path);
-    thread::sleep(Duration::from_millis(1000));
     let starts = fs::read_to_string(&log).unwrap();
     fs::write(
         dependency.join("src/lib.rs"),
@@ -306,7 +332,8 @@ fn main() {
     assert_eq!(
         fs::read_to_string(&log).unwrap(),
         starts,
-        "removed dependency must no longer trigger restarts"
+        "removed dependency must no longer trigger restarts\n{}",
+        fs::read_to_string(&output_path).unwrap_or_default()
     );
 
     fs::write(app.join("Cargo.toml"), "this is not valid TOML").unwrap();
@@ -471,7 +498,7 @@ fn runtime_query_honors_the_cargo_configured_compiler_and_sysroot() {
 fn slow_compiler(root: &Path) -> std::path::PathBuf {
     use std::os::unix::fs::PermissionsExt;
     let compiler = root.join("slow-rustc");
-    fs::write(&compiler, "#!/bin/sh\nfor arg in \"$@\"; do\nif [ \"$arg\" = target-libdir ]; then echo QUERY >> \"$FURNACE_QUERY_LOG\"; sleep 0.25; fi\ndone\nexec rustc \"$@\"\n").unwrap();
+    fs::write(&compiler, "#!/bin/sh\nfor arg in \"$@\"; do\nif [ \"$arg\" = target-libdir ]; then echo QUERY >> \"$FURNACE_QUERY_LOG\"; sleep 1; fi\ndone\nexec rustc \"$@\"\n").unwrap();
     fs::set_permissions(&compiler, fs::Permissions::from_mode(0o700)).unwrap();
     compiler
 }
