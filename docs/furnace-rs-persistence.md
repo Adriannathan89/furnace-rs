@@ -1,15 +1,17 @@
 # Native SeaORM PostgreSQL persistence
 
-FURNACE 1.0.2 integrates SeaORM's native PostgreSQL connection through the
-separate `furnace-rs-persistence` crate. The crate has no default backend;
-select `sea-orm-postgres` explicitly. Database support is not a facade feature.
+FURNACE 1.0.2 introduced SeaORM's native PostgreSQL connection through the
+separate `furnace-rs-persistence` crate. Version 2.0.0 adds entity-bound CRUD
+helpers documented in the [storage guide](storage.md). The persistence crate
+has no default backend; select `sea-orm-postgres` explicitly. Database support
+is not a facade feature.
 
 ## Dependencies
 
 ```toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.2", default-features = false, features = ["http", "runtime-tokio"] }
-furnace-rs-persistence = { version = "=1.0.2", features = ["sea-orm-postgres"] }
+furnace = { package = "furnace-rs", version = "=2.0.0", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs-persistence = { version = "=2.0.0", features = ["sea-orm-postgres"] }
 sea-orm = { version = "2.0.0", default-features = false, features = ["macros", "sqlx-postgres", "runtime-tokio-rustls"] }
 ```
 

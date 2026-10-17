@@ -1,6 +1,6 @@
 # Declarative dependency injection
 
-The `2.0.0-beta.3` API registers modules and checks a selected root graph at compile time. The executable [example](../example/compile-time-di/) includes a missing-dependency test run by `cargo test`.
+The `2.0.0` API registers modules and checks a selected root graph at compile time. The executable [example](../example/compile-time-di/) includes a missing-dependency test run by `cargo test`.
 
 ```rust
 use furnace_rs::{burner, cauldron, Logger, LoggerCauldron};
@@ -18,7 +18,7 @@ Options are `providers = [Service, Output => NativeInjector]`, `controllers = [C
 
 Local providers/controllers, exported outputs of direct imports, exported outputs of reachable globals, and intrinsic `Config` form each module's scope. An indirect non-global export is invisible. Linked globals and another application's imports cannot satisfy the selected root. Diamonds and direct/global overlap share one owner. Private source types and constructors can stay private; opaque generated markers carry metadata across crates. Rust types, rather than type-name strings, decide dependency membership.
 
-Bare `#[cauldron]` and `#[cauldron()]` keep manual `Cauldron::register` behavior. The fluent API and builder stay available. Empty declarative modules use `#[cauldron(providers = [])]`. Declarative imports require declarative module metadata, support qualified paths, re-exports and `use Module as Alias`, and exclude module `type` aliases in 2.0.0-beta.1. Dependency/output type aliases continue working. A marked root cannot be imported by another marked root. Declarative import cycles may fail during metadata expansion; legacy runtime cycle diagnostics stay available. Compiler expansion limits still apply to large graphs.
+Bare `#[cauldron]` and `#[cauldron()]` keep manual `Cauldron::register` behavior. The fluent API and builder stay available. Empty declarative modules use `#[cauldron(providers = [])]`. Declarative imports require declarative module metadata, support qualified paths, re-exports and `use Module as Alias`, and exclude module `type` aliases. Dependency/output type aliases continue working. A marked root cannot be imported by another marked root. Declarative import cycles may fail during metadata expansion; legacy runtime cycle diagnostics stay available. Compiler expansion limits still apply to large graphs.
 
 Native values supplied with `builder.provide(value)` retain runtime precedence and lifecycle behavior, but cannot erase static requirements: all declared constructor dependencies must still be present. Arbitrary runtime auto-configuration outputs are not implicit static capabilities. Declare an injector/output binding when a checked constructor needs one.
 

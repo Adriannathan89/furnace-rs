@@ -1,6 +1,6 @@
 # Posts CRUD with entity-bound storage
 
-This standalone FURNACE 2.0.0-beta.3 example enables the optional
+This standalone FURNACE 2.0.0 example enables the optional
 `sea-orm-storage` feature on `furnace-rs-persistence`. Its controller calls the
 generated `.entity()` API directly for create, read, update, delete, and ordered
 page-number pagination. No service or repository methods wrap those operations.

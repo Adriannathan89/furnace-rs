@@ -215,7 +215,7 @@ generate database/JWT/cookie/migration code.
 ## Deliberate non-goals in the 1.0.2 release
 
 This list records the scope of the released 1.0.2 architecture. The later
-2.0.0-beta.3 checkout adds protobuf gRPC, optional verified TLS, and shared
+2.0.0 checkout adds protobuf gRPC, optional verified TLS, and shared
 HTTP/gRPC listener selection as described below; those additions do not change
 what the 1.0.2 release provided.
 
@@ -247,7 +247,7 @@ and owning cauldron context. The Passport layer wraps each protected method rout
 See [the breaking migration guide](importance/furnace-rs-migration.md).
 
 
-## gRPC and shared runtime in 2.0.0-beta.3
+## gRPC and shared runtime in 2.0.0
 
 `furnace-rs-grpc` owns native Tonic/Prost service registration, scope validation,
 client wrappers, TLS, Passport admission adapters, health, reflection, and gRPC

@@ -223,6 +223,7 @@ fn main() {
     fs::write(app.join("service.proto"), "schema-v1").unwrap();
     fs::write(app.join("data/custom.input"), "input-v1").unwrap();
     let log = root.join("starts.log");
+    let query_log = root.join("queries.log");
     let output_path = root.join("dev.log");
     let output = fs::File::create(&output_path).unwrap();
     let compiler = slow_compiler(root);
@@ -231,7 +232,7 @@ fn main() {
         .current_dir(&app)
         .args(["dev", "--bin", "watch-app"])
         .env("RUSTC", &compiler)
-        .env("FURNACE_QUERY_LOG", root.join("queries.log"))
+        .env("FURNACE_QUERY_LOG", &query_log)
         .env("START_LOG", &log)
         .env("CARGO_TARGET_DIR", root.join("artifacts"))
         .env("RUSTFLAGS", "-C prefer-dynamic")
@@ -323,12 +324,20 @@ fn main() {
     );
     wait_for_count(&log, before_removal + 1, &output_path);
     let starts = fs::read_to_string(&log).unwrap();
+    let runtime_queries = fs::read_to_string(&query_log).unwrap().lines().count();
     fs::write(
         dependency.join("src/lib.rs"),
         "pub const VALUE: &str = \"dep-v3\";",
     )
     .unwrap();
+    // The wrapper records the runtime query before its one-second delay, so this
+    // also detects an in-flight rebuild whose replacement process has not started.
     thread::sleep(Duration::from_millis(600));
+    assert_eq!(
+        fs::read_to_string(&query_log).unwrap().lines().count(),
+        runtime_queries,
+        "removed dependency must not trigger a Cargo rebuild"
+    );
     assert_eq!(
         fs::read_to_string(&log).unwrap(),
         starts,
@@ -498,7 +507,19 @@ fn runtime_query_honors_the_cargo_configured_compiler_and_sysroot() {
 fn slow_compiler(root: &Path) -> std::path::PathBuf {
     use std::os::unix::fs::PermissionsExt;
     let compiler = root.join("slow-rustc");
-    fs::write(&compiler, "#!/bin/sh\nfor arg in \"$@\"; do\nif [ \"$arg\" = target-libdir ]; then echo QUERY >> \"$FURNACE_QUERY_LOG\"; sleep 1; fi\ndone\nexec rustc \"$@\"\n").unwrap();
+    fs::write(
+        &compiler,
+        r#"#!/bin/sh
+for arg in "$@"; do
+    if [ "$arg" = target-libdir ]; then
+        echo QUERY >> "$FURNACE_QUERY_LOG"
+        sleep 1
+    fi
+done
+exec rustc "$@"
+"#,
+    )
+    .unwrap();
     fs::set_permissions(&compiler, fs::Permissions::from_mode(0o700)).unwrap();
     compiler
 }

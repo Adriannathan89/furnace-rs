@@ -7,8 +7,8 @@ page-number pagination, and named native relation loaders.
 ## Dependencies and registration
 
 ~~~toml
-furnace-rs = { version = "2.0.0-beta.3", features = ["sea-orm-storage"] }
-furnace-rs-persistence = { version = "2.0.0-beta.3", features = ["sea-orm-storage", "sea-orm-postgres"] }
+furnace-rs = { version = "2.0.0", features = ["sea-orm-storage"] }
+furnace-rs-persistence = { version = "2.0.0", features = ["sea-orm-storage", "sea-orm-postgres"] }
 sea-orm = { version = "2.0", default-features = false, features = ["macros"] }
 ~~~
 

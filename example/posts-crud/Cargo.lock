@@ -507,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "furnace-rs-common",
  "furnace-rs-core",
@@ -515,7 +515,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "axum",
  "axum-extra",
@@ -539,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -549,7 +549,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "dotenvy",
  "furnace-rs-core-macros",
@@ -561,7 +561,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -581,7 +581,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-persistence"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "furnace-rs-core",
  "sea-orm",

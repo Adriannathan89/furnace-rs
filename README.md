@@ -3,33 +3,32 @@
 [![Latest release](https://img.shields.io/github/v/release/Adriannathan89/furnace-rs?display_name=tag&sort=semver)](https://github.com/Adriannathan89/furnace-rs/releases/latest)
 [![CI](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml)
 
-The released 1.0.2 framework provides a framework-neutral core, a scoped Axum
-HTTP runtime, source-aware typed configuration, safe REST errors, request
-validation, and opt-in native SeaORM persistence. This 2.0.0-beta.3 checkout
-also includes optional protobuf gRPC transport and entity storage helpers. A root
-module selects one application; startup validates its scoped graph and routes
-before it starts lifecycle hooks, checks a database, or binds a socket.
+FURNACE 2.0.0 provides a framework-neutral core, declarative dependency injection,
+scoped HTTP, gRPC and WebSocket transports, source-aware typed configuration,
+Passport authentication, safe errors, request validation, and optional native
+SeaORM entity storage. A selected root defines one application; startup validates
+its graph and endpoint registrations before lifecycle hooks or listener binding.
 
 ## Release status
 
-**1.0.2 is the current released version**, available on
-[crates.io](https://crates.io/crates/furnace-rs/1.0.2). Install the released CLI with:
+**2.0.0 is the current released version**, with all beta changes consolidated in
+[the changelog](CHANGELOG.md#200---2026-10-17). Install the CLI with:
 
 ```sh
-cargo install furnace-rs-cli --version 1.0.2 --locked
+cargo install furnace-rs-cli --version 2.0.0 --locked
 ```
 
-This checkout and its local examples target **2.0.0-beta.3**, with [declarative DI and compile-time root checking](docs/declarative-di.md) and [optional entity storage](docs/storage.md). See the [beta.3 release notes](docs/releases/2.0.0-beta.3.md). To install the CLI
-from this checkout instead, use:
+This checkout and its local examples target **2.0.0**. See the
+[stable release notes and migration guide](docs/releases/2.0.0.md),
+[declarative DI guide](docs/declarative-di.md), [entity storage guide](docs/storage.md),
+and [WebSocket guide](docs/socket.md). To install directly from this checkout:
 
 ```sh
 cargo install --path crates/furnace-rs-cli --locked
 ```
 
-The [1.0.2 release notes](docs/releases/1.0.2.md) cover opt-in SeaORM HTTP error
-conversion, simpler CRUD examples with an optional service, debug request
-logging, the expanded route summary, and validated-extractor error redaction.
-Future changes belong under **Unreleased** in the changelog.
+Rust **1.94** or newer is required. Future changes belong under **Unreleased**
+in the changelog; the beta release records remain available as history.
 
 Protobuf gRPC serving and consumption are available through the new
 standalone transport package or opt-in facade features. See the [gRPC guide](docs/grpc.md)
@@ -38,7 +37,7 @@ named clients, TLS, and static inspection.
 
 See the [documentation index](docs/README.md), [changelog](CHANGELOG.md),
 [migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
-[release notes and verification](docs/releases/1.0.2.md),
+[release notes and verification](docs/releases/2.0.0.md),
 [security policy](docs/SECURITY.md), and [security audit](docs/SECURITY_AUDIT.md).
 Version 1.0.2 includes HTTP header/body deadlines, database maintenance
 interval validation, and inventory output type checks during construction,
@@ -244,7 +243,7 @@ transports, persistence, and CLI inspection fit together, see the
 
 ~~~toml
 [dependencies]
-furnace-rs = { version = "=1.0.2" }
+furnace-rs = { version = "=2.0.0" }
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
@@ -348,7 +347,7 @@ progress. A stalled body returns a safe 408 before response headers are sent;
 a timeout during response streaming terminates the stream. These deadlines do
 not impose a handler execution limit. HTTP/2 and upgrades remain supported;
 the HTTP listener has no built-in TLS configuration. The separate gRPC
-transport adds optional verified TLS in 2.0.0-beta.2.
+transport supports optional verified TLS in 2.0.0.
 
 ## Validated requests and REST errors
 
@@ -564,8 +563,8 @@ To use both, select their features explicitly:
 
 ```toml
 [dependencies]
-furnace-rs = { version = "=1.0.2", default-features = false, features = ["sea-orm", "runtime-tokio"] }
-furnace-rs-persistence = { version = "=1.0.2", features = ["sea-orm-postgres"] }
+furnace-rs = { version = "=2.0.0", default-features = false, features = ["sea-orm", "runtime-tokio"] }
+furnace-rs-persistence = { version = "=2.0.0", features = ["sea-orm-postgres"] }
 ```
 
 The facade's `sea-orm` feature implies `http`; it enables no database driver and
@@ -901,7 +900,7 @@ status mappings remain application-owned.
 
 ## Focused tests
 
-Add `furnace-rs-testing = "=1.0.2"` under `[dev-dependencies]`. Annotate an async,
+Add `furnace-rs-testing = "=2.0.0"` under `[dev-dependencies]`. Annotate an async,
 zero-argument test function with `#[furnace_rs::test]`; Cargo runs it without a separate
 Tokio dependency. The local `test_fixture()` builds one registered subject's
 dependency chain without module setup.
@@ -954,7 +953,7 @@ cargo +1.94.0 test --locked --workspace --all-features
 CI also provisions PostgreSQL 16, runs the ignored PostgreSQL integration suite,
 and enforces an 85% line-coverage gate. To run those locally, set `FURNACE_TEST_DATABASE_URL` to a
 PostgreSQL 16 database and use the commands in the
-[1.0.2 release verification guide](docs/releases/1.0.2.md).
+[2.0.0 release verification guide](docs/releases/2.0.0.md).
 
 ## Community
 

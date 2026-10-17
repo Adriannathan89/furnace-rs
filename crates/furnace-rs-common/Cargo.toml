@@ -54,10 +54,10 @@ hyper-util = { workspace = true, optional = true }
 base64 = { workspace = true, optional = true }
 cookie = { workspace = true, optional = true }
 jsonwebtoken = { workspace = true, optional = true }
-furnace-rs-common-macros = { path = "../furnace-rs-common-macros", version = "=2.0.0-beta.3", optional = true }
-furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0-beta.3" }
+furnace-rs-common-macros = { path = "../furnace-rs-common-macros", version = "=2.0.0", optional = true }
+furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0" }
 # Use the type-only crate so HTTP conversion does not link connector providers.
-furnace-rs-persistence-types = { path = "../furnace-rs-persistence-types", version = "=2.0.0-beta.3", optional = true }
+furnace-rs-persistence-types = { path = "../furnace-rs-persistence-types", version = "=2.0.0", optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde_path_to_error = { workspace = true, optional = true }

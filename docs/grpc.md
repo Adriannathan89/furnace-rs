@@ -1,10 +1,10 @@
 # Protobuf gRPC transport
 
-FURNACE 2.0.0-beta.2 adds gRPC serving and consumption for all four RPC shapes. The
+FURNACE 2.0.0 adds gRPC serving and consumption for all four RPC shapes. The
 standalone `furnace-rs-grpc` package provides gRPC by default, with optional `jwt`
 and `tls` features. `furnace-rs-grpc-macros` supplies its declaration attributes.
 The `furnace-rs` facade exposes `grpc`, `grpc-tls`, and shared `jwt` features.
-See the [2.0.0-beta.2 release notes](releases/2.0.0-beta.2.md) for the feature summary.
+See the [2.0.0 release notes](releases/2.0.0.md) for the feature summary.
 
 Applications own their `.proto` files, generated Tonic client/server types, and
 encoded file descriptors. Furnace performs no runtime protobuf compilation.

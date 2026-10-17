@@ -368,7 +368,7 @@ checksum = "42703706b716c37f96a77aea830392ad231f44c9e9a67872fa5548707e11b11c"
 
 [[package]]
 name = "furnace-rs"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "furnace-rs-common",
  "furnace-rs-core",
@@ -378,7 +378,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "axum",
  "axum-extra",
@@ -403,7 +403,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -413,7 +413,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "dotenvy",
  "furnace-rs-core-macros",
@@ -425,7 +425,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -447,7 +447,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-grpc"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "furnace-rs-common",
  "furnace-rs-core",
@@ -470,7 +470,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-grpc-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -480,7 +480,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-socket"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "axum",
  "cookie",
@@ -504,7 +504,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-socket-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",

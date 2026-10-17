@@ -800,7 +800,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "furnace-grpc-test-support",
  "furnace-rs-common",
@@ -820,7 +820,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-cli"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "assert_cmd",
  "cargo_metadata",
@@ -839,7 +839,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "axum",
  "axum-extra",
@@ -869,7 +869,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -879,7 +879,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "cargo_metadata",
  "dotenvy",
@@ -894,7 +894,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -904,14 +904,14 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-extra"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "furnace-rs-core",
 ]
 
 [[package]]
 name = "furnace-rs-grpc"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "furnace-grpc-test-support",
  "furnace-rs-common",
@@ -942,7 +942,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-grpc-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -952,7 +952,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-persistence"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "furnace-rs",
  "furnace-rs-core",
@@ -967,14 +967,14 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-persistence-types"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "sea-orm",
 ]
 
 [[package]]
 name = "furnace-rs-socket"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "axum",
  "cookie",
@@ -1001,7 +1001,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-socket-macros"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1011,7 +1011,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-testing"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 dependencies = [
  "axum",
  "furnace-rs-common",

@@ -1,7 +1,7 @@
 # FURNACE documentation
 
-The current stable release is **1.0.2**, available on
-[crates.io](https://crates.io/crates/furnace-rs/1.0.2). The root
+The current stable release is **2.0.0**, available on
+[crates.io](https://crates.io/crates/furnace-rs/2.0.0). The root
 [README](../README.md) covers installation and first use. The guides below
 describe the current workspace; release records preserve behavior and
 verification for their named versions.
@@ -23,6 +23,7 @@ verification for their named versions.
 
 | Release | Notes and verification |
 | --- | --- |
+| 2.0.0 | [Release notes](releases/2.0.0.md), [verification](releases/2.0.0-verification.md) |
 | 2.0.0-beta.3 | [Release notes](releases/2.0.0-beta.3.md), [verification](releases/2.0.0-beta.3-verification.md) |
 | 2.0.0-beta.2 | [Release notes](releases/2.0.0-beta.2.md) |
 | 2.0.0-beta.1 | [Release preparation](releases/2.0.0-beta.1.md), [verification](releases/2.0.0-beta.1-verification.md) |

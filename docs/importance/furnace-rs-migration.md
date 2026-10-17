@@ -1,11 +1,9 @@
 # Migrating to furnace-rs 1.0.0
 
-Version 1.0.0 introduced breaking API changes from MADS. This guide describes
-that migration; the current released version is 1.0.2 across all
-nine workspace packages, with Rust edition 2024 and MSRV 1.94.
-Version 1.0.2 is available on crates.io; the dependency examples below use exact
-registry pins for that release. Local path dependencies can be used for checkout
-development.
+Version 1.0.0 introduced breaking API changes from MADS. This guide documents
+that migration and retains its original 1.0.2 dependency examples. For the
+additional breaking changes in 2.0.0, see the [2.0.0 release notes](../releases/2.0.0.md).
+Local path dependencies can be used for checkout development.
 There are no compatibility aliases for the removed declarations.
 
 | Previous API | Current API |

@@ -14,9 +14,9 @@ jwt = ["furnace-rs-common/passport", "dep:cookie"]
 tls = ["dep:rustls", "dep:tokio-rustls"]
 redis = ["dep:redis", "dep:rustls"]
 [dependencies]
-furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0-beta.3" }
-furnace-rs-common = { path = "../furnace-rs-common", version = "=2.0.0-beta.3", default-features = false, features = ["transport-metadata", "transport-runtime"] }
-furnace-rs-socket-macros = { path = "../furnace-rs-socket-macros", version = "=2.0.0-beta.3" }
+furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0" }
+furnace-rs-common = { path = "../furnace-rs-common", version = "=2.0.0", default-features = false, features = ["transport-metadata", "transport-runtime"] }
+furnace-rs-socket-macros = { path = "../furnace-rs-socket-macros", version = "=2.0.0" }
 axum = { workspace = true, features = ["ws"] }
 futures-util.workspace = true
 http.workspace = true

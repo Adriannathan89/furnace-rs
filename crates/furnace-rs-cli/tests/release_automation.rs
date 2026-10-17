@@ -574,16 +574,31 @@ fn documentation_points_to_current_examples_and_released_version() {
         assert!(root.join(path).join("src/main.rs").is_file());
     }
     assert!(common.contains("../../example/protected-route/README.md"));
+    let changelog = fs::read_to_string(root.join("CHANGELOG.md")).unwrap();
+    let released_version = changelog
+        .lines()
+        .filter_map(|line| {
+            line.strip_prefix("## [")?
+                .split_once(']')
+                .map(|(version, _)| version)
+        })
+        .filter_map(|version| semver::Version::parse(version).ok())
+        .find(|version| version.pre.is_empty())
+        .expect("changelog must identify a stable release");
     for (name, source) in [("README", &readme), ("security policy", &security)] {
         assert!(
-            source.contains("1.0.2"),
+            source.contains(&released_version.to_string()),
             "{name} must identify the current release"
         );
         assert!(!source.contains("preparing furnace-rs"));
         assert!(!source.contains("forthcoming 1.0.x"));
     }
-    assert!(readme.contains("1.0.2 is the current released version"));
-    assert!(security.contains("current released version is furnace-rs **1.0.2**"));
+    assert!(readme.contains(&format!(
+        "{released_version} is the current released version"
+    )));
+    assert!(security.contains(&format!(
+        "current released version is furnace-rs **{released_version}**"
+    )));
 }
 
 #[test]

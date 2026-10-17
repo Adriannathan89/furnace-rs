@@ -12,7 +12,7 @@ features; its optional features are `tls`, `redis`, and `jwt`.
 
 ```toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=2.0.0-beta.3", default-features = false, features = ["socket", "runtime-tokio"] }
+furnace = { package = "furnace-rs", version = "=2.0.0", default-features = false, features = ["socket", "runtime-tokio"] }
 serde_json = "1"
 ```
 

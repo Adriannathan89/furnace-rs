@@ -8,8 +8,8 @@ publish = false
 [workspace]
 
 [dependencies]
-furnace-rs = { path = "../../crates/furnace-rs", version = "=2.0.0-beta.3", default-features = false, features = ["http", "runtime-tokio", "sea-orm-storage"] }
-furnace-rs-persistence = { path = "../../crates/furnace-rs-persistence", version = "=2.0.0-beta.3", features = ["sea-orm-postgres", "sea-orm-storage"] }
+furnace-rs = { path = "../../crates/furnace-rs", version = "=2.0.0", default-features = false, features = ["http", "runtime-tokio", "sea-orm-storage"] }
+furnace-rs-persistence = { path = "../../crates/furnace-rs-persistence", version = "=2.0.0", features = ["sea-orm-postgres", "sea-orm-storage"] }
 sea-orm = { version = "=2.0.4", default-features = false, features = ["macros", "sqlx-postgres", "runtime-tokio-rustls"] }
 sea-orm-macros = "=2.0.4"
 serde = { version = "1", features = ["derive"] }

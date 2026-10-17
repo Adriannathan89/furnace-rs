@@ -1,10 +1,9 @@
 # FURNACE CLI
 
-The released FURNACE 1.0.2 CLI provides Cargo-native execution, HTTP route and
-graph inspection, a minimal-project generator, and versioned JSON results for
-finite FURNACE-owned commands. This guide also covers additions in the
-2.0.0-beta.3 checkout; those commands are labeled where they appear. Human-readable
-output remains the default.
+The FURNACE 2.0.0 CLI provides Cargo-native execution, HTTP/gRPC/WebSocket
+endpoint and graph inspection, a minimal-project generator, and versioned JSON
+results for finite FURNACE-owned commands. Human-readable output remains the
+default.
 
 ## Start a minimal HTTP application
 
@@ -57,7 +56,7 @@ sibling staging directory, and publishes them with one atomic rename. An
 existing destination, including an empty directory, is never changed. The
 command does not download dependencies, run Cargo, initialize Git, select a
 remote template, or ask an interactive question. It offers no template,
-database, JWT, VCS, or target-directory option in 1.0.2. A successful human
+database, JWT, VCS, or target-directory option. A successful human
 result identifies the relative path and prints only `cd <name>` and `furnace dev`.
 
 ## Project and target selection
@@ -75,10 +74,10 @@ furnace graph [--package <package>] [--bin <binary>]
 furnace doctor [--package <package>] [--bin <binary>]
 ```
 
-`furnace grpc` is available in the 2.0.0-beta.3 checkout only; it is not part
-of the released 1.0.2 CLI contract. It inspects selected protobuf methods,
-streaming shapes, and effective policies without application startup. See the
-[gRPC guide](grpc.md).
+`furnace grpc` inspects selected protobuf methods, streaming shapes, and
+effective policies without application startup. `furnace socket` inspects
+selected WebSocket gateways and owned endpoints, handlers and admission policies.
+See the [gRPC guide](grpc.md) and [WebSocket guide](socket.md).
 
 Cargo's ordinary single-package, `default-run`, and ambiguity behavior remains
 authoritative. Arguments after `--` are forwarded only by `run` and `dev`;
@@ -91,11 +90,15 @@ The following finite commands accept `--format human|json`:
 ```text
 furnace new <name>
 furnace routes
+furnace grpc
+furnace socket
 furnace graph
 furnace doctor
 ```
 
-The beta.2 checkout also accepts `furnace grpc --format human|json`.
+The transport inspection commands accept `--format human|json`:
+`furnace grpc --format human|json` and
+`furnace socket --format human|json`.
 
 The option may appear once, before or after the command path. Both examples
 are equivalent:
@@ -126,8 +129,8 @@ Every document has this version-2 envelope:
 }
 ```
 
-`command` is the canonical spelling (`new`, `routes`, `graph`, or `doctor`); the
-2.0.0-beta.3 checkout adds `grpc`. It is `null` only when syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
+`command` is the canonical spelling (`new`, `routes`, `grpc`, `socket`, `graph`,
+or `doctor`). It is `null` only when syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
 completion. `data` is the command object, safe partial inspection data, or
 `null`. `diagnostics` is an ordered list of FURNACE-owned records:
 
