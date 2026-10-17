@@ -117,6 +117,18 @@ fn prepare<'a>(
             })?,
             None => build_socket_routes(app).map_err(ApplicationRuntimeError::Bootstrap)?,
         };
+        let scope = SocketApplicationScope::for_application(app)
+            .map_err(ApplicationRuntimeError::Bootstrap)?;
+        let endpoints = scope.endpoints();
+        let mut summary = format!("Endpoints  {}", endpoints.len());
+        if !endpoints.is_empty() {
+            let rows = endpoints
+                .iter()
+                .map(|endpoint| endpoint.path)
+                .collect::<Vec<_>>()
+                .join("\n");
+            summary.push_str(&format!("\n\nPATH\n────\n{rows}"));
+        }
         let tls = super::tls::prepare(&config)
             .await
             .map_err(ApplicationRuntimeError::Bootstrap)?;
@@ -161,7 +173,7 @@ fn prepare<'a>(
         Ok(PreparedTransport {
             name: "socket",
             address: config.address.to_string(),
-            summary: "WebSocket endpoints".into(),
+            summary,
             drain_timeout: Some(config.shutdown_timeout),
             transition: None,
             serve: Box::new(move |listener, shutdown, tasks| {
