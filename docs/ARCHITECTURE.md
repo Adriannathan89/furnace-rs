@@ -1,7 +1,7 @@
 # furnace-rs architecture
 
 FURNACE separates framework-neutral construction and configuration from Axum HTTP
-delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
+delivery, standalone protobuf gRPC delivery, explicit native SeaORM persistence, and the Cargo-native CLI.
 The current implementation retains the validation, REST-error, typed configuration,
 compiler-diagnostic, machine-output, and minimal-scaffolding surface while
 removing the former Diesel and CLI migration integrations.
@@ -28,7 +28,7 @@ application cauldrons, typed injectors, providers, inherent endpoints, controlle
 `furnace-rs-core` owns module/provider graphs, lifecycle, diagnostics, the existing
 source-attributed `Config`, `#[derive(Configuration)]`, `Config::parse`,
 configuration issues, and `Secret<T>`. It has no Axum, SeaORM, JWT, cookie, or
-Serde dependency. Typed configuration is a view over an already loaded Config;
+direct Serde dependency. Existing TOML parsing brings transitive Serde. Typed configuration is a view over an already loaded Config;
 it does not replace loading or discover types globally.
 
 `furnace-rs-common` owns the `http` boundary: route registration, `Input` and
@@ -47,8 +47,16 @@ exposes a global `DatabaseCauldron` providing native `DatabaseConnection`; the
 connector retains typed `PersistenceError` causes while redacting public
 formatting. It checks readiness before serving and closes on graceful shutdown.
 
+Its independent `sea-orm-storage` feature adds typed entity CRUD and query
+helpers. The storage macro binds native entity/connection types at compile
+time and generates named relation selectors over SeaORM's native Entity Loader.
+Queries forward explicit filters and ordering; pagination adds the requested
+OFFSET/LIMIT without lookahead, counts, or inferred sort keys. Applications
+own transaction boundaries and query-size policy. This feature introduces no
+database dependency into core. See the [storage guide](storage.md).
+
 ~~~text
-core                         no HTTP/database/JWT/cookie/Serde
+core                         no HTTP/database/JWT/cookie or direct Serde
 http                         Axum + validation + standard REST errors
 logger                       application logging and console backend
 jwt                          JWT service/configuration, no Axum
@@ -56,6 +64,7 @@ cookies                      HTTP cookie support
 sea-orm                      HTTP + native DbErr conversion, no database driver
 http + jwt (+ cookies)       Passport Bearer (and cookie) guards
 furnace-rs-persistence/sea-orm-postgres  native SeaORM PostgreSQL connector
+furnace-rs-persistence/sea-orm-storage   optional typed repository helpers, no driver
 ~~~
 
 ## Startup, configuration, and secret boundary
@@ -85,6 +94,11 @@ source-relative `PathBuf`, `Option`, `Secret`, `Vec<String>`, nested
 defaults, and compatible validation are derive-checked. Issues preserve
 declaration order, full dotted keys, stable codes, and source labels, without
 values.
+
+TOML key segments must be nonempty and contain no literal dots; dotted TOML
+syntax still selects nested settings. Later sources replace incompatible scalar,
+array, and table shapes and remove obsolete descendants. Compatible tables merge
+by field, retaining the winning source for each value.
 
 `Secret<T>` has no implicit reference or serialization access. `.expose()` and
 `.into_exposed()` name the deliberate boundary; `Display` and `Debug` always
@@ -151,9 +165,9 @@ needs another HTTP status.
 
 ## Root scope and normal runtime
 
-`#[cauldron]` declares a unit root type with an authored `Cauldron::register`
-chain. Membership uses `.provide::<T>()` and `.controller::<T>()`; `.import(M)`
-collects reachable cauldrons. `.provide_with::<T, I>()` selects an explicit
+`#[cauldron(...)]` declares a unit cauldron and its registration metadata.
+Bare `#[cauldron]` registers an empty cauldron. Membership uses `providers = [T]` and `controllers = [T]`; `imports = [M]`
+collects reachable cauldrons. `providers = [T => I]` selects an explicit
 `I: Injector<T>` for native outputs or trait objects such as `Arc<dyn Trait>`;
 exports name the output type. `Injector::lifecycle` attaches hooks to a
 constructed native value. Outputs have one owner in the selected graph.
@@ -198,7 +212,12 @@ pre-existing paths and failed staging remain untouched. It is offline and does
 not run Cargo, install dependencies, initialise Git, select a template, or
 generate database/JWT/cookie/migration code.
 
-## Deliberate non-goals
+## Deliberate non-goals in the 1.0.2 release
+
+This list records the scope of the released 1.0.2 architecture. The later
+2.0.0 checkout adds protobuf gRPC, optional verified TLS, and shared
+HTTP/gRPC listener selection as described below; those additions do not change
+what the 1.0.2 release provided.
 
 1.0.2 does not add automatic validation to native extractors, asynchronous or
 database-backed derive validation, full-RFC or DNS email validation, automatic
@@ -226,3 +245,24 @@ JWT/strategy requirements or receive Passport bindings.
 Each endpoint binding retains its controller, method, canonical path, handler,
 and owning cauldron context. The Passport layer wraps each protected method router before methods are merged, preserving native extractor behavior and local strategy visibility.
 See [the breaking migration guide](importance/furnace-rs-migration.md).
+
+## gRPC and shared runtime in 2.0.0
+
+`furnace-rs-grpc` owns native Tonic/Prost service registration, scope validation,
+client wrappers, TLS, Passport admission adapters, health, reflection, and gRPC
+inspection metadata. Its dedicated proc-macro companion resolves direct,
+renamed, and facade dependency paths. Common keeps shared Passport/JWT and
+transport-neutral runtime coordination, without importing Tonic or Prost.
+
+Linked adapters validate selected metadata before construction and finalize native
+routes before startup. The common coordinator starts one application lifecycle,
+waits for eager infrastructure readiness, binds all selected listeners, then opens
+admission. gRPC's bounded drain cancels and joins supervised Hyper connection and
+stream tasks before provider shutdown. HTTP continues using its existing guarded
+connection server. Raw composition uses shared builders and a standalone gRPC
+extension trait, with no second lifecycle owner.
+
+Inspection uses graph analysis and static adapter callbacks, never runtime
+preparation. The private report includes protobuf service/method/policy records;
+the public CLI retains schema version 2 and HTTP report fields. See the
+[gRPC guide](grpc.md) for the public APIs and configuration.

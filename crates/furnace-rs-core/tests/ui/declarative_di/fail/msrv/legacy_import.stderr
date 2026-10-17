@@ -1,0 +1,18 @@
+error[E0432]: unresolved imports `furnace_rs_core::Cauldron`, `furnace_rs_core::CauldronRegistration`
+ --> tests/ui/declarative_di/fail/msrv/legacy_import.rs:1:33
+  |
+1 | use furnace_rs_core::{cauldron, Cauldron, CauldronRegistration};
+  |                                 ^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^ no `CauldronRegistration` in the root
+  |                                 |
+  |                                 no `Cauldron` in the root
+  |
+help: a similar name exists in the module (notice the capitalization)
+  |
+1 - use furnace_rs_core::{cauldron, Cauldron, CauldronRegistration};
+1 + use furnace_rs_core::{cauldron, cauldron, CauldronRegistration};
+  |
+help: a similar name exists in the module
+  |
+1 - use furnace_rs_core::{cauldron, Cauldron, CauldronRegistration};
+1 + use furnace_rs_core::{cauldron, Cauldron, CauldronDefinition};
+  |

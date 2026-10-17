@@ -4,6 +4,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Error, ItemFn, Path, spanned::Spanned};
 
+/// Validates a fixture test signature and delegates with the resolved test crate path.
 pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     if !arguments.is_empty() {
         return Err(Error::new(
@@ -47,6 +48,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     Ok(expand_with_path(function, crate::path::testing_path()?))
 }
 
+/// Inserts the scoped fixture helper and registers the async function with Tokio.
 fn expand_with_path(mut function: ItemFn, testing: Path) -> TokenStream {
     let tokio_path = syn::LitStr::new(
         &quote!(#testing::__private::tokio).to_string(),
@@ -55,6 +57,7 @@ fn expand_with_path(mut function: ItemFn, testing: Path) -> TokenStream {
     function.block.stmts.insert(
         0,
         syn::parse_quote! {
+            #[doc = "Creates a builder for the function-scoped dependency fixture."]
             fn test_fixture() -> #testing::TestFixtureBuilder {
                 #testing::__private::test_fixture()
             }

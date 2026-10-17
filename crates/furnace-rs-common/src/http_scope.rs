@@ -9,28 +9,8 @@ use crate::{ControllerEndpointDescriptor, HttpMethod, RouteCatalog, RouteDescrip
 #[cfg(feature = "jwt")]
 use crate::GuardDescriptor;
 
-/// A selected Passport guard and the module context that selected it.
 #[cfg(feature = "jwt")]
-#[derive(Clone)]
-pub(crate) struct ScopedGuard {
-    guard: &'static GuardDescriptor,
-    occurrence: Option<RouteIdentity>,
-    context_cauldron: Option<TypeId>,
-}
-
-#[cfg(feature = "jwt")]
-impl ScopedGuard {
-    pub(crate) const fn occurrence(&self) -> Option<RouteIdentity> {
-        self.occurrence
-    }
-    pub(crate) const fn guard(&self) -> &'static GuardDescriptor {
-        self.guard
-    }
-
-    pub(crate) const fn context_cauldron(&self) -> Option<TypeId> {
-        self.context_cauldron
-    }
-}
+use crate::passport::scope::{GuardOccurrence, ScopedGuard};
 
 /// A static identity for one route emitted by one controller.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -44,6 +24,21 @@ pub(crate) struct RouteIdentity {
 }
 
 impl RouteIdentity {
+    #[cfg(feature = "jwt")]
+    /// Converts this route identity into the Passport guard occurrence key.
+    pub(crate) fn guard_occurrence(&self) -> GuardOccurrence {
+        GuardOccurrence {
+            provider: self.controller,
+            operation: format!(
+                "{} {} {}",
+                self.method.as_str(),
+                self.full_path,
+                self.handler
+            ),
+        }
+    }
+
+    /// Builds an identity from static controller and route descriptors.
     fn new(controller: &ControllerEndpointDescriptor, route: &RouteDescriptor) -> Self {
         Self {
             controller: controller.type_id(),
@@ -56,11 +51,13 @@ impl RouteIdentity {
     }
 
     #[cfg(feature = "jwt")]
+    /// Associates the route with the managed module that provides its Passport context.
     fn with_passport_context_cauldron(mut self, context_cauldron: Option<TypeId>) -> Self {
         self.passport_context_cauldron = context_cauldron;
         self
     }
 
+    /// Returns whether both descriptors identify this exact controller route.
     pub(crate) fn matches(
         &self,
         controller: &ControllerEndpointDescriptor,
@@ -73,7 +70,8 @@ impl RouteIdentity {
     }
 
     #[cfg(feature = "jwt")]
-    const fn passport_context_cauldron(&self) -> Option<TypeId> {
+    /// Returns the managed module associated with this route's Passport context, if any.
+    pub(crate) const fn passport_context_cauldron(&self) -> Option<TypeId> {
         self.passport_context_cauldron
     }
 }
@@ -89,10 +87,12 @@ pub(crate) struct ScopedController {
 }
 
 impl ScopedController {
+    /// Returns the static descriptor selected for this controller.
     pub(crate) const fn descriptor(&self) -> &'static ControllerEndpointDescriptor {
         self.descriptor
     }
 
+    /// Checks whether the supplied descriptor belongs to this controller's selected route set.
     pub(crate) fn selects(&self, route: &RouteDescriptor) -> bool {
         self.selected_routes
             .iter()
@@ -100,6 +100,7 @@ impl ScopedController {
     }
 
     #[cfg(feature = "jwt")]
+    /// Returns the Passport context module attached to a selected route.
     pub(crate) fn passport_context_cauldron(&self, route: &RouteDescriptor) -> Option<TypeId> {
         self.selected_routes
             .iter()
@@ -108,6 +109,7 @@ impl ScopedController {
     }
 
     #[cfg(feature = "jwt")]
+    /// Returns the route identity when the route is protected by this controller's seal.
     pub(crate) fn sealed_endpoint(&self, route: &RouteDescriptor) -> Option<RouteIdentity> {
         self.guard_active(route)
             .then(|| {
@@ -118,6 +120,7 @@ impl ScopedController {
             })
             .flatten()
     }
+    /// Reports whether Passport guarding is active for the route in this build.
     pub(crate) fn guard_active(&self, route: &RouteDescriptor) -> bool {
         #[cfg(feature = "jwt")]
         {
@@ -130,11 +133,13 @@ impl ScopedController {
         }
     }
 
+    /// Reports whether this controller contributes at least one selected route.
     fn has_routes(&self) -> bool {
         !self.selected_routes.is_empty()
     }
 
     #[allow(dead_code)]
+    /// Returns the managed module that owns this controller's Passport context.
     pub(crate) const fn context_cauldron(&self) -> Option<TypeId> {
         self.context_cauldron
     }
@@ -149,6 +154,7 @@ pub(crate) struct HttpApplicationScope {
 }
 
 impl HttpApplicationScope {
+    /// Builds the metadata scope used by focused controller tests.
     pub(crate) fn for_test_controller<T: Send + Sync + 'static>() -> Result<Self> {
         let matches = RouteCatalog::route_controllers(|id| id == TypeId::of::<T>())?
             .into_iter()
@@ -184,6 +190,7 @@ impl HttpApplicationScope {
         Self::finish(controllers, None, true)
     }
 
+    /// Selects route metadata owned by the focused controller type.
     pub(crate) fn for_focus(target: TypeId) -> Result<Self> {
         let controllers = RouteCatalog::route_controllers(|id| id == target)?
             .into_iter()
@@ -201,6 +208,7 @@ impl HttpApplicationScope {
         Self::finish(controllers, None, true)
     }
 
+    /// Resolves controller declarations and optional Passport seals for a selected scope.
     fn finish(
         mut controllers: Vec<ScopedController>,
         graph: Option<&CauldronGraph>,
@@ -244,7 +252,7 @@ impl HttpApplicationScope {
                         }) {
                             guards.push(ScopedGuard {
                                 guard: seal.guard,
-                                occurrence: Some(*occurrence),
+                                occurrence: Some(occurrence.guard_occurrence()),
                                 context_cauldron: controller.context_cauldron,
                             });
                         }
@@ -262,10 +270,12 @@ impl HttpApplicationScope {
         })
     }
 
+    /// Selects HTTP metadata from the application's analyzed managed-module graph.
     pub(crate) fn for_application(application: &Furnace) -> Result<Self> {
         Self::for_cauldron_graph(application.cauldron_graph())
     }
 
+    /// Selects all catalog metadata without a graph, or only graph-rooted controllers otherwise.
     pub(crate) fn for_cauldron_graph(cauldron_graph: Option<&CauldronGraph>) -> Result<Self> {
         if let Some(graph) = cauldron_graph {
             for output in graph.registered_controllers() {
@@ -304,10 +314,12 @@ impl HttpApplicationScope {
         Self::finish(controllers, cauldron_graph, false)
     }
 
+    /// Returns the selected controller metadata without constructing controller instances.
     pub(crate) fn controllers(&self) -> &[ScopedController] {
         &self.controllers
     }
 
+    /// Reports whether any selected controller contributes a route.
     pub(crate) fn has_routes(&self) -> bool {
         self.controllers.iter().any(ScopedController::has_routes)
     }
@@ -327,10 +339,12 @@ impl HttpApplicationScope {
     }
 
     #[cfg(feature = "jwt")]
+    /// Returns guard occurrences selected with this HTTP application scope.
     pub(crate) fn guards(&self) -> &[ScopedGuard] {
         &self.guards
     }
 
+    /// Selects every controller registered in the linked route catalog.
     fn complete_controllers() -> Result<Vec<ScopedController>> {
         Ok(RouteCatalog::route_controllers(|_| true)?
             .into_iter()
@@ -347,6 +361,7 @@ impl HttpApplicationScope {
             .collect())
     }
 
+    /// Selects only controllers registered in the analyzed module graph and records their owners.
     fn rooted_controllers(graph: &CauldronGraph) -> Result<Vec<ScopedController>> {
         Ok(
             RouteCatalog::route_controllers(|id| graph.is_controller(id))?

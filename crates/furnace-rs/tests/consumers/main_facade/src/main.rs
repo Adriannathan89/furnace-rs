@@ -4,6 +4,7 @@ use furnace_rs::prelude::*;
 
 #[storage]
 struct MainRepository {
+    #[inject]
     value: u32,
 }
 

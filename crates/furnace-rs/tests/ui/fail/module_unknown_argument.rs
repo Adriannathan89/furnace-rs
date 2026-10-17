@@ -1,6 +1,6 @@
 use furnace_rs::cauldron;
 
-#[cauldron(imports = [])]
+#[cauldron(unknown = [])]
 struct AppCauldron;
 
 fn main() {}

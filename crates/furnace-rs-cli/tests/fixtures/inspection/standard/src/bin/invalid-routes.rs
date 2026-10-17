@@ -17,14 +17,8 @@ impl InvalidRoutesController {
     async fn second(&self) {}
 }
 
-#[furnace::cauldron]
+#[furnace::cauldron(controllers = [InvalidRoutesController])]
 struct InvalidRoutesCauldron;
-
-impl furnace::core::Cauldron for InvalidRoutesCauldron {
-    fn register(self) -> furnace::core::CauldronRegistration<Self> {
-        self.controller::<InvalidRoutesController>()
-    }
-}
 
 #[furnace::main]
 async fn main() -> Result<(), HttpRuntimeError> {

@@ -1,15 +1,17 @@
-# Native SeaORM PostgreSQL persistence
+Native SeaORM PostgreSQL persistence
 
-FURNACE 1.0.2 integrates SeaORM's native PostgreSQL connection through the
-separate `furnace-rs-persistence` crate. The crate has no default backend;
-select `sea-orm-postgres` explicitly. Database support is not a facade feature.
+FURNACE 1.0.2 introduced SeaORM's native PostgreSQL connection through the
+separate `furnace-rs-persistence` crate. Version 2.0.0 adds entity-bound CRUD
+helpers documented in the [storage guide](storage.md). The persistence crate
+has no default backend; select `sea-orm-postgres` explicitly. Database support
+is not a facade feature.
 
 ## Dependencies
 
 ```toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.2", default-features = false, features = ["http", "runtime-tokio"] }
-furnace-rs-persistence = { version = "=1.0.2", features = ["sea-orm-postgres"] }
+furnace = { package = "furnace-rs", version = "=2.0.0", default-features = false, features = ["http", "runtime-tokio"] }
+furnace-rs-persistence = { version = "=2.0.0", features = ["sea-orm-postgres"] }
 sea-orm = { version = "2.0.0", default-features = false, features = ["macros", "sqlx-postgres", "runtime-tokio-rustls"] }
 ```
 
@@ -29,17 +31,13 @@ use furnace_rs_persistence::sea_orm::{DatabaseCauldron, DatabaseConnection};
 
 #[storage]
 struct PostRepository {
+    #[inject]
     database: DatabaseConnection,
 }
 
-#[cauldron]
+#[cauldron(imports = [DatabaseCauldron], providers = [PostRepository])]
 struct AppCauldron;
 
-impl Cauldron for AppCauldron {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.import(DatabaseCauldron).provide::<PostRepository>()
-    }
-}
 ```
 
 Add and register a controller to run this root with `Furnace::burn`.
@@ -54,7 +52,7 @@ apply or generate migrations, and the `furnace` CLI has no database commands.
 optional `furnace.toml`, then scalar `FURNACE_*` environment overrides.
 
 ```toml
-# furnace.toml
+furnace.toml
 [persistence.seaorm]
 url = "${DATABASE_URL}"
 max_connections = 10
@@ -96,7 +94,7 @@ async fn connect(url: String) -> PersistenceResult<DatabaseConnection> {
 allows native option customization. The connector validates PostgreSQL scheme
 and duration bounds before connecting. A manually created connection does not
 attach lifecycle hooks automatically. Application-authored injectors can use
-`.provide_with::<DatabaseConnection, Implementer>()` and override
+`providers = [DatabaseConnection => Implementer]` and override
 `Injector::lifecycle` to manage their own resources.
 
 ## Errors and tracing
@@ -109,10 +107,14 @@ Conversion to a core error uses `FURNACE140`.
 The opt-in `sea-orm` feature on `furnace-rs` lets HTTP handlers propagate native
 query `DbErr` values with `?` into redacted HTTP 500 responses. The
 [simple CRUD example](../example/posts-crud/) uses this conversion and returns
-`NotFound` for absent posts; the [service variant](../example/post-crud-with-service/)
-shows an optional layer for business logic. Applications own domain-specific
-query policies and client messages. Typed connector `PersistenceError` values
-remain separate from query errors.
+`NotFound` for absent posts. The separate `sea-orm-storage` feature converts
+entity-bound `StorageError` values the same way; handlers can use `.map_err(...)`
+to map selected failures to domain-specific responses. The
+[entity-storage example](../example/posts-crud-storage/) demonstrates that
+feature, and the [service variant](../example/post-crud-with-service/) shows an
+optional layer for business logic. Applications own domain-specific query
+policies and client messages. Typed connector `PersistenceError` values remain
+separate from query errors.
 
 The connector suppresses tracing while polling SeaORM connection establishment,
 including callbacks inside that operation, because native connection spans can

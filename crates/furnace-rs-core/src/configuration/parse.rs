@@ -36,6 +36,7 @@ pub trait Scalar: Sized {
 macro_rules! scalars {
     ($($ty:ty),+ $(,)?) => {$(
         impl Scalar for $ty {
+            /// Uses the standard parser while discarding its input-bearing error.
             fn parse_scalar(value: &str) -> Option<Self> {
                 value.parse().ok()
             }
@@ -48,12 +49,14 @@ scalars!(
 );
 
 impl Scalar for f32 {
+    /// Parses only finite single-precision values, rejecting NaN and infinities.
     fn parse_scalar(value: &str) -> Option<Self> {
         value.parse::<Self>().ok().filter(|value| value.is_finite())
     }
 }
 
 impl Scalar for f64 {
+    /// Parses only finite double-precision values, rejecting NaN and infinities.
     fn parse_scalar(value: &str) -> Option<Self> {
         value.parse::<Self>().ok().filter(|value| value.is_finite())
     }
@@ -101,6 +104,7 @@ pub fn present(config: &Config, key: &str) -> bool {
         || config.has_descendants(key)
 }
 
+/// Distinguishes a missing key from a present value with an unsupported shape.
 fn absent_code(config: &Config, key: &str) -> &'static str {
     if present(config, key) {
         "invalid_type"
@@ -109,6 +113,7 @@ fn absent_code(config: &Config, key: &str) -> &'static str {
     }
 }
 
+/// Creates one safe issue and attaches the winning source when it is known.
 fn failure(config: &Config, key: &str, code: &str) -> ConfigurationErrors {
     let message = if code == "required" {
         "required configuration key is missing"

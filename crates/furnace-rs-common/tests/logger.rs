@@ -92,31 +92,19 @@ mod consumer {
 
     #[furnace_rs_core::burner]
     pub struct LoggingService {
+        #[inject]
         _logger: Logger,
     }
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [LoggingService], exports = [LoggingService])]
     pub struct ConsumerCauldron;
-
-    impl furnace_rs_core::Cauldron for ConsumerCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<LoggingService>().export::<LoggingService>()
-        }
-    }
 }
 
 mod default_logger_application {
     use furnace_rs_common::LoggerCauldron;
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(imports = [LoggerCauldron, super::consumer::ConsumerCauldron])]
     pub struct ApplicationCauldron;
-
-    impl furnace_rs_core::Cauldron for ApplicationCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.import(LoggerCauldron)
-                .import(super::consumer::ConsumerCauldron)
-        }
-    }
 }
 
 #[tokio::test]
@@ -144,14 +132,8 @@ mod custom_logger {
         fn log(&self, _level: LogLevel, _message: &str) {}
     }
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [Logger], exports = [Logger], global)]
     pub struct CustomLoggerCauldron;
-
-    impl furnace_rs_core::Cauldron for CustomLoggerCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<Logger>().export::<Logger>().global()
-        }
-    }
 
     pub fn custom_logger() -> Logger {
         Logger::new(TestLogger)
@@ -159,15 +141,8 @@ mod custom_logger {
 }
 
 mod custom_logger_application {
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(imports = [super::custom_logger::CustomLoggerCauldron, super::consumer::ConsumerCauldron])]
     pub struct CustomLoggerApplicationCauldron;
-
-    impl furnace_rs_core::Cauldron for CustomLoggerApplicationCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.import(super::custom_logger::CustomLoggerCauldron)
-                .import(super::consumer::ConsumerCauldron)
-        }
-    }
 }
 
 #[tokio::test]
@@ -185,4 +160,38 @@ async fn application_can_manually_provide_a_custom_global_logger() {
             .resolve::<consumer::LoggingService>()
             .is_ok()
     );
+}
+
+mod declarative_logger_application {
+    use furnace_rs_common::{Logger, LoggerCauldron};
+    #[furnace_rs_core::burner]
+    pub struct Consumer {
+        #[inject]
+        pub logger: Logger,
+    }
+    #[furnace_rs_core::cauldron(root, imports=[LoggerCauldron], providers=[Consumer])]
+    pub struct Root;
+}
+
+#[tokio::test]
+async fn declared_logger_contract_selects_defaults_and_native_overrides() {
+    for custom in [false, true] {
+        let inner = RecordingLogger::default();
+        let entries = inner.entries.clone();
+        let mut builder = Furnace::builder();
+        builder
+            .root::<declarative_logger_application::Root>()
+            .unwrap();
+        if custom {
+            builder.provide(Logger::new(inner)).unwrap();
+        }
+        let application = builder.build().await.unwrap();
+        application
+            .context()
+            .resolve::<declarative_logger_application::Consumer>()
+            .unwrap()
+            .logger
+            .info("declared logger");
+        assert_eq!(entries.lock().unwrap().len(), usize::from(custom));
+    }
 }

@@ -1,0 +1,12 @@
+error[E0599]: no method named `provide` found for struct `App` in the current scope
+ --> tests/ui/declarative_di/fail/stable/fluent_registration.rs:7:9
+  |
+5 | struct App;
+  | ---------- method `provide` not found for this struct
+6 | fn main() {
+7 |     App.provide::<Service>();
+  |         ^^^^^^^ method not found in `App`
+  |
+  = help: items from traits can only be used if the trait is implemented and in scope
+  = note: the following trait defines an item `provide`, perhaps you need to implement it:
+          candidate #1: `std::error::Error`

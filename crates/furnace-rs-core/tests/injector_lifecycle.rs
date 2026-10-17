@@ -1,6 +1,6 @@
 //! Injector resources retain native outputs, ordered hooks, and error cleanup.
 use furnace_rs_core::{
-    ApplicationContext, Cauldron, CauldronRegistration, Diagnostic, Error, FURNACE020, Furnace,
+    __private::ModuleContract, ApplicationContext, Diagnostic, Error, FURNACE020, Furnace,
     Injector, LifecycleFuture, LifecycleHook, LifecycleResource, Result,
 };
 use std::sync::{Arc, Mutex};
@@ -98,24 +98,13 @@ fn error() -> Error {
     ))
 }
 
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(providers = [Events => Events, Resource => Resource])]
 struct Root;
-impl Cauldron for Root {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<Events, Events>()
-            .provide_with::<Resource, Resource>()
-    }
-}
-#[furnace_rs_core::cauldron]
+
+#[furnace_rs_core::cauldron(providers = [Events => Events, Resource => Resource, Failing => Failing])]
 struct FailureRoot;
-impl Cauldron for FailureRoot {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<Events, Events>()
-            .provide_with::<Resource, Resource>()
-            .provide_with::<Failing, Failing>()
-    }
-}
-fn builder<M: Cauldron>(events: &Events) -> furnace_rs_core::FurnaceBuilder {
+
+fn builder<M: ModuleContract>(events: &Events) -> furnace_rs_core::FurnaceBuilder {
     let mut builder = Furnace::builder();
     builder.root::<M>().unwrap();
     builder.provide(events.clone()).unwrap();

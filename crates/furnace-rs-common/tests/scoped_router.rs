@@ -31,14 +31,8 @@ mod users {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [UserController])]
     pub struct UserHttpCauldron;
-
-    impl furnace_rs_common::core::Cauldron for UserHttpCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<UserController>()
-        }
-    }
 }
 
 mod admin {
@@ -60,14 +54,8 @@ mod admin {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [AdminController])]
     pub struct AdminHttpCauldron;
-
-    impl furnace_rs_common::core::Cauldron for AdminHttpCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<AdminController>()
-        }
-    }
 }
 
 mod duplicate_one {
@@ -89,14 +77,8 @@ mod duplicate_one {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [DuplicateOneController])]
     pub struct DuplicateOneHttpCauldron;
-
-    impl furnace_rs_common::core::Cauldron for DuplicateOneHttpCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<DuplicateOneController>()
-        }
-    }
 }
 
 mod duplicate_two {
@@ -118,14 +100,8 @@ mod duplicate_two {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [DuplicateTwoController])]
     pub struct DuplicateTwoHttpCauldron;
-
-    impl furnace_rs_common::core::Cauldron for DuplicateTwoHttpCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<DuplicateTwoController>()
-        }
-    }
 }
 
 mod nested_controller_scope {
@@ -149,14 +125,8 @@ mod nested_controller_scope {
             }
         }
 
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(controllers = [ReachableController])]
         pub struct ReachableCauldron;
-
-        impl furnace_rs_common::core::Cauldron for ReachableCauldron {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.controller::<ReachableController>()
-            }
-        }
     }
 
     pub mod unimported {
@@ -178,24 +148,12 @@ mod nested_controller_scope {
             }
         }
 
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(controllers = [UnreachableController])]
         pub struct UnreachableCauldron;
-
-        impl furnace_rs_common::core::Cauldron for UnreachableCauldron {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.controller::<UnreachableController>()
-            }
-        }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(imports = [reachable::ReachableCauldron])]
     pub struct ParentApplication;
-
-    impl furnace_rs_common::core::Cauldron for ParentApplication {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.import(reachable::ReachableCauldron)
-        }
-    }
 }
 
 mod nested_route_scope {
@@ -204,12 +162,6 @@ mod nested_route_scope {
 
         #[furnace_rs_common::core::cauldron]
         pub struct UnreachableContractCauldron;
-
-        impl furnace_rs_common::core::Cauldron for UnreachableContractCauldron {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                furnace_rs_common::core::CauldronRegistration::new(self)
-            }
-        }
     }
 
     pub mod reachable {
@@ -235,60 +187,28 @@ mod nested_route_scope {
             }
         }
 
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(controllers = [ReachableController])]
         pub struct ReachableCauldron;
-
-        impl furnace_rs_common::core::Cauldron for ReachableCauldron {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.controller::<ReachableController>()
-            }
-        }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(imports = [reachable::ReachableCauldron])]
     pub struct ParentApplication;
-
-    impl furnace_rs_common::core::Cauldron for ParentApplication {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.import(reachable::ReachableCauldron)
-        }
-    }
 }
 
 mod applications {
     pub(super) mod users {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(imports = [super::super::users::UserHttpCauldron])]
         pub struct UsersApplication;
-
-        impl furnace_rs_common::core::Cauldron for UsersApplication {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.import(super::super::users::UserHttpCauldron)
-            }
-        }
     }
 
     pub(super) mod users_and_admin {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(imports = [super::super::users::UserHttpCauldron, super::super::admin::AdminHttpCauldron])]
         pub struct UsersAndAdminApplication;
-
-        impl furnace_rs_common::core::Cauldron for UsersAndAdminApplication {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.import(super::super::users::UserHttpCauldron)
-                    .import(super::super::admin::AdminHttpCauldron)
-            }
-        }
     }
 
     pub(super) mod conflicting {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(imports = [super::super::duplicate_one::DuplicateOneHttpCauldron, super::super::duplicate_two::DuplicateTwoHttpCauldron])]
         pub struct ConflictingApplication;
-
-        impl furnace_rs_common::core::Cauldron for ConflictingApplication {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.import(super::super::duplicate_one::DuplicateOneHttpCauldron)
-                    .import(super::super::duplicate_two::DuplicateTwoHttpCauldron)
-            }
-        }
     }
 }
 

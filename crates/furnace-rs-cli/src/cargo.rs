@@ -1,4 +1,7 @@
+//! Cargo subprocess construction, JSON message collection, and selected-binary tracking.
+
 use std::{
+    ffi::OsStr,
     path::{Path, PathBuf},
     process::Stdio,
 };
@@ -18,8 +21,11 @@ use crate::{
 pub(crate) struct BuiltApplication {
     target: ResolvedApplication,
     executable: PathBuf,
+    library_paths: Vec<PathBuf>,
+    build_inputs: Vec<PathBuf>,
 }
 
+/// Builds exactly the selected package binary and streams Cargo JSON messages on stdout.
 pub(crate) fn cargo_build_command(target: &ResolvedApplication) -> tokio::process::Command {
     let mut command = tokio::process::Command::new("cargo");
     command
@@ -29,7 +35,7 @@ pub(crate) fn cargo_build_command(target: &ResolvedApplication) -> tokio::proces
         .arg(target.package().package_name())
         .arg("--bin")
         .arg(target.binary_name())
-        .current_dir(target.package().workspace_root())
+        .current_dir(target.package().invocation_root())
         .stdin(Stdio::inherit())
         .stderr(Stdio::inherit())
         .stdout(Stdio::piped())
@@ -37,12 +43,14 @@ pub(crate) fn cargo_build_command(target: &ResolvedApplication) -> tokio::proces
     command
 }
 
+/// Builds the selected application and returns its reported executable.
 pub(crate) async fn build_application(
     target: &ResolvedApplication,
 ) -> Result<BuiltApplication, CliError> {
     build_application_owned(target.clone()).await
 }
 
+/// Owns the selected target while the Cargo build runs to completion.
 pub(crate) async fn build_application_owned(
     target: ResolvedApplication,
 ) -> Result<BuiltApplication, CliError> {
@@ -55,9 +63,11 @@ pub(crate) struct CargoBuild {
     child: Child,
     lines: Lines<BufReader<ChildStdout>>,
     collector: ArtifactCollector,
+    runtime_query: Option<RuntimeLibraryQuery>,
 }
 
 impl CargoBuild {
+    /// Starts Cargo and begins collecting its newline-delimited JSON output.
     pub(crate) fn start(target: ResolvedApplication) -> Result<Self, CliError> {
         let mut child = cargo_build_command(&target).spawn().map_err(|error| {
             CliError::new(
@@ -80,9 +90,11 @@ impl CargoBuild {
             child,
             lines: BufReader::new(stdout).lines(),
             collector: ArtifactCollector::default(),
+            runtime_query: None,
         })
     }
 
+    /// Consumes build messages, forwards compiler diagnostics, and waits for the selected artifact.
     pub(crate) async fn wait(&mut self) -> Result<BuiltApplication, CliError> {
         while let Some(line) = self.lines.next_line().await.map_err(|error| {
             CliError::new(
@@ -126,10 +138,27 @@ impl CargoBuild {
             ));
         }
 
-        std::mem::take(&mut self.collector).finish(self.target.clone())
+        if self.runtime_query.is_none() {
+            self.runtime_query = Some(RuntimeLibraryQuery::start(&self.target)?);
+        }
+        let library_path = self
+            .runtime_query
+            .as_mut()
+            .expect("runtime query was started")
+            .wait()
+            .await?;
+        self.runtime_query = None;
+        let mut built = std::mem::take(&mut self.collector).finish(self.target.clone())?;
+        built.library_paths.push(library_path);
+        Ok(built)
     }
 
+    /// Kills the active Cargo child and waits for it to be reaped.
     pub(crate) async fn cancel_and_wait(&mut self) -> Result<(), CliError> {
+        if let Some(mut query) = self.runtime_query.take() {
+            let _ = query.child.start_kill();
+            query.child.wait().await.map_err(runtime_library_error)?;
+        }
         let kill_result = self.child.start_kill();
         let wait_result = self.child.wait().await;
 
@@ -152,10 +181,38 @@ impl CargoBuild {
 }
 
 impl BuiltApplication {
+    /// Supplies Cargo's platform loader paths while retaining the caller's existing entries.
+    pub(crate) fn configure_runtime(&self, command: &mut tokio::process::Command) {
+        let mut paths = self.library_paths.clone();
+        if let Some(parent) = self.executable.parent() {
+            paths.push(parent.join("deps"));
+            paths.push(parent.to_path_buf());
+        }
+        if let Some(existing) = std::env::var_os(library_path_variable()) {
+            paths.extend(std::env::split_paths(&existing));
+        } else if cfg!(target_os = "macos") {
+            if let Some(home) = std::env::var_os("HOME") {
+                paths.push(PathBuf::from(home).join("lib"));
+            }
+            paths.extend([PathBuf::from("/usr/local/lib"), PathBuf::from("/usr/lib")]);
+        }
+        // All entries came from Cargo/rustc or an already valid platform search path.
+        if let Ok(value) = std::env::join_paths(paths) {
+            command.env(library_path_variable(), value);
+        }
+    }
+
+    /// Returns local build-script inputs reported through Cargo's rerun-if-changed output.
+    pub(crate) fn build_inputs(&self) -> &[PathBuf] {
+        &self.build_inputs
+    }
+
+    /// Returns the package and binary selection associated with this build.
     pub(crate) fn target(&self) -> &ResolvedApplication {
         &self.target
     }
 
+    /// Returns the executable path selected from Cargo compiler-artifact messages.
     pub(crate) fn executable(&self) -> &Path {
         &self.executable
     }
@@ -165,10 +222,95 @@ impl BuiltApplication {
         Self {
             target: ResolvedApplication::test_identity(binary_name),
             executable: PathBuf::from(format!("/tmp/furnace-dev-state/{binary_name}")),
+            library_paths: Vec::new(),
+            build_inputs: Vec::new(),
         }
     }
 }
 
+/// Keeps runtime discovery owned by the build across cancellation of `wait` in select!.
+struct RuntimeLibraryQuery {
+    child: Child,
+    lines: Lines<BufReader<ChildStdout>>,
+    path: Option<PathBuf>,
+}
+
+impl RuntimeLibraryQuery {
+    fn start(target: &ResolvedApplication) -> Result<Self, CliError> {
+        // Let Cargo resolve build.rustc, target configuration, wrappers, and
+        // rustflags such as --sysroot rather than guessing the compiler setup.
+        let mut query = tokio::process::Command::new("cargo");
+        query
+            .args(["rustc", "--quiet", "--package"])
+            .arg(target.package().package_name())
+            .arg("--bin")
+            .arg(target.binary_name())
+            .args(["--", "--print", "target-libdir"])
+            .current_dir(target.package().invocation_root())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .kill_on_drop(true);
+        let mut child = query.spawn().map_err(runtime_library_error)?;
+        let stdout = child.stdout.take().expect("runtime query stdout was piped");
+        Ok(Self {
+            child,
+            lines: BufReader::new(stdout).lines(),
+            path: None,
+        })
+    }
+
+    async fn wait(&mut self) -> Result<PathBuf, CliError> {
+        while let Some(line) = self
+            .lines
+            .next_line()
+            .await
+            .map_err(runtime_library_error)?
+        {
+            if !line.trim().is_empty() {
+                self.path = Some(PathBuf::from(line.trim()));
+            }
+        }
+        let status = self.child.wait().await.map_err(runtime_library_error)?;
+        if !status.success() {
+            return Err(CliError::new(
+                FURNACE201,
+                "Cargo build failed",
+                "could not locate Rust runtime libraries",
+            ));
+        }
+        self.path.clone().ok_or_else(|| {
+            CliError::new(
+                FURNACE201,
+                "Cargo build failed",
+                "Rust did not report its runtime library directory",
+            )
+        })
+    }
+}
+
+fn runtime_library_error(error: std::io::Error) -> CliError {
+    CliError::new(
+        FURNACE201,
+        "Cargo build failed",
+        "could not locate Rust runtime libraries",
+    )
+    .with_source(error)
+}
+
+/// Returns the loader environment variable used by Cargo on this platform.
+fn library_path_variable() -> &'static OsStr {
+    if cfg!(windows) {
+        OsStr::new("PATH")
+    } else if cfg!(target_os = "macos") {
+        OsStr::new("DYLD_FALLBACK_LIBRARY_PATH")
+    } else if cfg!(target_os = "aix") {
+        OsStr::new("LIBPATH")
+    } else {
+        OsStr::new("LD_LIBRARY_PATH")
+    }
+}
+
+/// Selects the requested executable from a stream of Cargo JSON messages.
 fn collect_artifact(
     target: &ResolvedApplication,
     messages: impl IntoIterator<Item = Result<Message, serde_json::Error>>,
@@ -190,13 +332,17 @@ fn collect_artifact(
     collector.finish(target.clone())
 }
 
-#[derive(Default)]
+/// Accumulates build success and the matching executable from Cargo messages.
+#[derive(Clone, Default)]
 struct ArtifactCollector {
     executable: Option<PathBuf>,
     successful: bool,
+    library_paths: Vec<PathBuf>,
+    build_inputs: Vec<PathBuf>,
 }
 
 impl ArtifactCollector {
+    /// Records a matching compiler artifact or the final Cargo build status.
     fn process(&mut self, target: &ResolvedApplication, message: Message) {
         match message {
             Message::CompilerArtifact(artifact) => {
@@ -204,11 +350,39 @@ impl ArtifactCollector {
                     self.executable = Some(path);
                 }
             }
+            Message::BuildScriptExecuted(script) => {
+                if let Some(root) = target.local_package_root(&script.package_id)
+                    && let Some(output) = script.out_dir.parent().map(|path| path.join("output"))
+                    && let Ok(output) = std::fs::read_to_string(output)
+                {
+                    for line in output.lines() {
+                        if let Some(path) = line
+                            .strip_prefix("cargo:rerun-if-changed=")
+                            .or_else(|| line.strip_prefix("cargo::rerun-if-changed="))
+                        {
+                            self.build_inputs.push(root.join(path));
+                        }
+                    }
+                }
+                for path in script.linked_paths {
+                    let path = path.as_str();
+                    let path = ["native=", "framework=", "dependency=", "crate=", "all="]
+                        .into_iter()
+                        .find_map(|prefix| path.strip_prefix(prefix))
+                        .unwrap_or(path);
+                    let path = PathBuf::from(path);
+                    // Cargo includes build-script library directories only inside target.
+                    if path.starts_with(target.package().target_directory()) {
+                        self.library_paths.push(path);
+                    }
+                }
+            }
             Message::BuildFinished(finished) => self.successful = finished.success,
             _ => {}
         }
     }
 
+    /// Requires a successful build and returns its selected executable.
     fn finish(self, target: ResolvedApplication) -> Result<BuiltApplication, CliError> {
         if !self.successful {
             return Err(CliError::new(
@@ -226,10 +400,16 @@ impl ArtifactCollector {
             )
         })?;
 
-        Ok(BuiltApplication { target, executable })
+        Ok(BuiltApplication {
+            target,
+            executable,
+            library_paths: self.library_paths,
+            build_inputs: self.build_inputs,
+        })
     }
 }
 
+/// Matches a Cargo artifact by package identity and binary target name.
 fn matching_executable(target: &ResolvedApplication, artifact: &Artifact) -> Option<PathBuf> {
     if artifact.package_id == *target.package().package_id()
         && artifact.target.name == target.binary_name()
@@ -337,7 +517,7 @@ mod tests {
         );
         assert_eq!(
             command.get_current_dir(),
-            Some(selected.package().workspace_root())
+            Some(selected.package().invocation_root())
         );
     }
 

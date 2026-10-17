@@ -92,6 +92,10 @@ pub(crate) enum CanonicalCommand {
     New,
     /// `furnace routes`.
     Routes,
+    /// `furnace grpc`.
+    Grpc,
+    /// `furnace socket`.
+    Socket,
     /// `furnace graph`.
     Graph,
     /// `furnace doctor`.
@@ -189,6 +193,12 @@ pub(crate) fn parse(arguments: &[OsString]) -> Result<Invocation, ParseFailure> 
         Some("dev") => parse_streaming_command(remaining, global_format)
             .map(|command| (Command::Dev(command), OutputFormat::Human)),
         Some("new") => parse_new_command(remaining, format, global_format),
+        Some("socket") => {
+            parse_finite_inspection(InspectionKind::Socket, remaining, format, global_format)
+        }
+        Some("grpc") => {
+            parse_finite_inspection(InspectionKind::Grpc, remaining, format, global_format)
+        }
         Some("routes") => {
             parse_finite_inspection(InspectionKind::Routes, remaining, format, global_format)
         }
@@ -210,6 +220,7 @@ pub(crate) fn parse(arguments: &[OsString]) -> Result<Invocation, ParseFailure> 
         })
 }
 
+/// Removes a valid global `--format` prefix before command-specific parsing.
 fn parse_leading_format(arguments: &[OsString]) -> LeadingFormatResult<'_> {
     if arguments
         .first()
@@ -229,6 +240,7 @@ fn parse_leading_format(arguments: &[OsString]) -> LeadingFormatResult<'_> {
     Ok((format, true, &arguments[2..]))
 }
 
+/// Parses help and version commands, which do not produce finite command output.
 fn parse_non_finite_command(
     command: Command,
     arguments: &[OsString],
@@ -250,6 +262,7 @@ fn parse_non_finite_command(
     }
 }
 
+/// Parses run/dev selectors and preserves every argument after `--` for the child.
 fn parse_streaming_command(
     arguments: &[OsString],
     global_format: bool,
@@ -263,6 +276,7 @@ fn parse_streaming_command(
     parse_application_command(arguments).map_err(|error| (error, Some(OutputFormat::Human)))
 }
 
+/// Selects an output format and parses a routes, gRPC, graph, or doctor command.
 fn parse_finite_inspection(
     kind: InspectionKind,
     arguments: &[OsString],
@@ -275,6 +289,7 @@ fn parse_finite_inspection(
         .map_err(|error| (error, Some(format)))
 }
 
+/// Parses a project name and optional output format for the scaffolding command.
 fn parse_new_command(
     arguments: &[OsString],
     format: OutputFormat,
@@ -298,6 +313,7 @@ fn parse_new_command(
     Ok((Command::New(NewCommand { name }), format))
 }
 
+/// Parses package/binary selectors and rejects application arguments for inspection.
 fn parse_inspection_command(
     kind: InspectionKind,
     arguments: &[OsString],
@@ -325,6 +341,7 @@ fn parse_inspection_command(
     Ok(Command::Inspect(InspectionCommand { kind, target }))
 }
 
+/// Parses package/binary selectors and retains child arguments after `--` verbatim.
 fn parse_application_command(arguments: &[OsString]) -> Result<ApplicationCommand, ParseError> {
     let mut target = TargetSelection::default();
     let mut index = 0;
@@ -355,6 +372,7 @@ fn parse_application_command(arguments: &[OsString]) -> Result<ApplicationComman
     })
 }
 
+/// Extracts one command-local format option while preserving other arguments and values.
 fn select_local_format(
     arguments: &[OsString],
     mut format: OutputFormat,
@@ -394,6 +412,7 @@ fn select_local_format(
     Ok((format, retained, format_seen))
 }
 
+/// Converts the finite `human` or `json` format spelling into its output mode.
 fn parse_format_value(value: &OsString) -> Result<OutputFormat, ParseError> {
     match value.to_str() {
         Some("human") => Ok(OutputFormat::Human),
@@ -402,12 +421,14 @@ fn parse_format_value(value: &OsString) -> Result<OutputFormat, ParseError> {
     }
 }
 
+/// Checks whether arguments contain the format option at any position.
 fn contains_format(arguments: &[OsString]) -> bool {
     arguments
         .iter()
         .any(|argument| argument == OsStr::new("--format"))
 }
 
+/// Finds a format option before `--`, skipping values belonging to target selectors.
 fn contains_format_before_separator(arguments: &[OsString]) -> bool {
     let mut index = 0;
 
@@ -428,17 +449,21 @@ fn contains_format_before_separator(arguments: &[OsString]) -> bool {
     false
 }
 
+/// Identifies a finite command from a raw argument list for structured error output.
 fn canonical_command(arguments: &[OsString]) -> Option<CanonicalCommand> {
     let (command, _) = arguments.split_first()?;
     match command.to_str()? {
         "new" => Some(CanonicalCommand::New),
         "routes" => Some(CanonicalCommand::Routes),
+        "grpc" => Some(CanonicalCommand::Grpc),
+        "socket" => Some(CanonicalCommand::Socket),
         "graph" => Some(CanonicalCommand::Graph),
         "doctor" => Some(CanonicalCommand::Doctor),
         _ => None,
     }
 }
 
+/// Parses one unique selector value and advances the argument index to that value.
 fn parse_selector(
     arguments: &[OsString],
     index: &mut usize,
@@ -462,6 +487,7 @@ fn parse_selector(
 }
 
 impl std::fmt::Display for ParseError {
+    /// Writes the user-facing form of this command-line syntax error.
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::UnknownCommand(command) => {

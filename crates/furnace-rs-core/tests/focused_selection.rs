@@ -7,15 +7,8 @@ use furnace_rs_core::{
 };
 
 mod owned {
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [Seed => SeedInjector, Repository => RepositoryInjector])]
     pub struct PrivateCauldron;
-
-    impl furnace_rs_core::Cauldron for PrivateCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide_with::<Seed, SeedInjector>()
-                .provide_with::<Repository, RepositoryInjector>()
-        }
-    }
 
     #[derive(Clone)]
     pub struct Seed(pub u32);
@@ -81,14 +74,8 @@ mod owned {
 mod consumer {
     use super::owned::Repository;
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [Service => ServiceInjector])]
     pub struct ConsumerCauldron;
-
-    impl furnace_rs_core::Cauldron for ConsumerCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide_with::<Service, ServiceInjector>()
-        }
-    }
 
     #[derive(Clone)]
     pub struct Service(pub u32);
@@ -481,6 +468,7 @@ async fn focus_does_not_evaluate_unrelated_auto_configuration() {
 struct FocusedDefault(u32);
 #[furnace_rs_core::burner]
 struct DefaultConsumer {
+    #[inject]
     value: FocusedDefault,
 }
 fn focused_default_id() -> TypeId {

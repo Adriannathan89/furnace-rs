@@ -1,9 +1,10 @@
 //! Dependency access follows explicit imports and exports, never Rust namespaces.
-use furnace_rs_core::{Cauldron, CauldronRegistration, Furnace, GraphAnalysis};
-use std::{
-    any::TypeId,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+
+#[macro_use]
+#[path = "support/cauldron_metadata.rs"]
+mod cauldron_metadata;
+use furnace_rs_core::{__private::ModuleContract, Furnace, GraphAnalysis};
+use std::any::TypeId;
 #[derive(Clone)]
 /// Shared output used to exercise public Rust visibility.
 pub struct Value;
@@ -37,71 +38,119 @@ furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_V
 
 #[furnace_rs_core::burner]
 struct Consumer {
+    #[inject]
     _value: Value,
 }
-macro_rules! cauldron {
-    ($name:ident, $body:expr) => {
-        #[furnace_rs_core::cauldron]
-        struct $name;
-        impl Cauldron for $name {
-            fn register(self) -> CauldronRegistration<Self> {
-                ($body)(self)
-            }
-        }
-    };
+
+cauldron_metadata! {
+    struct Public;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Value, ValueInjector>()
+        .export::<Value>()
 }
-cauldron!(Public, |module: Public| module
-    .provide_with::<Value, ValueInjector>()
-    .export::<Value>());
-cauldron!(Private, |module: Private| module
-    .provide_with::<Value, ValueInjector>());
-cauldron!(Global, |module: Global| module
-    .provide_with::<Value, ValueInjector>()
-    .export::<Value>()
-    .global());
-cauldron!(PrivateGlobal, |module: PrivateGlobal| module
-    .provide_with::<Value, ValueInjector>()
-    .global());
-cauldron!(Direct, |module: Direct| module
-    .provide::<Consumer>()
-    .import(Public));
-cauldron!(Hidden, |module: Hidden| module
-    .provide::<Consumer>()
-    .import(Private));
-cauldron!(Middle, |module: Middle| module.import(Public));
-cauldron!(Transitive, |module: Transitive| module
-    .provide::<Consumer>()
-    .import(Middle));
-cauldron!(GlobalConsumer, |module: GlobalConsumer| module
-    .provide::<Consumer>());
-cauldron!(GlobalRoot, |module: GlobalRoot| module
-    .import(Global)
-    .import(GlobalConsumer));
-cauldron!(PrivateGlobalRoot, |module: PrivateGlobalRoot| module
-    .import(PrivateGlobal)
-    .import(GlobalConsumer));
-cauldron!(UnreachableGlobal, |module: UnreachableGlobal| module
-    .provide::<Consumer>(
-));
-cauldron!(Repeated, |module: Repeated| module
-    .import(Public)
-    .import(Public));
-cauldron!(CycleA, |module: CycleA| module.import(CycleB));
-cauldron!(CycleB, |module: CycleB| module.import(CycleA));
-static REGISTRATIONS: AtomicUsize = AtomicUsize::new(0);
-#[furnace_rs_core::cauldron]
-struct Shared;
-impl Cauldron for Shared {
-    fn register(self) -> CauldronRegistration<Self> {
-        REGISTRATIONS.fetch_add(1, Ordering::SeqCst);
-        self.provide_with::<Value, ValueInjector>()
-            .export::<Value>()
-    }
+cauldron_metadata! {
+    struct Private;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Value, ValueInjector>()
 }
-cauldron!(Left, |module: Left| module.import(Shared));
-cauldron!(Right, |module: Right| module.import(Shared));
-cauldron!(Diamond, |module: Diamond| module.import(Left).import(Right));
-fn analyze<M: Cauldron>() -> GraphAnalysis {
+cauldron_metadata! {
+    struct Global;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Value, ValueInjector>()
+        .export::<Value>()
+        .global()
+}
+cauldron_metadata! {
+    struct PrivateGlobal;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Value, ValueInjector>()
+        .global()
+}
+cauldron_metadata! {
+    struct Direct;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide::<Consumer>()
+        .import::<Public>()
+}
+cauldron_metadata! {
+    struct Hidden;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide::<Consumer>()
+        .import::<Private>()
+}
+cauldron_metadata! {
+    struct Middle;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<Public>()
+}
+cauldron_metadata! {
+    struct Transitive;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide::<Consumer>()
+        .import::<Middle>()
+}
+cauldron_metadata! {
+    struct GlobalConsumer;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide::<Consumer>()
+}
+cauldron_metadata! {
+    struct GlobalRoot;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<Global>()
+        .import::<GlobalConsumer>()
+}
+cauldron_metadata! {
+    struct PrivateGlobalRoot;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<PrivateGlobal>()
+        .import::<GlobalConsumer>()
+}
+cauldron_metadata! {
+    struct UnreachableGlobal;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide::<Consumer>()
+}
+cauldron_metadata! {
+    struct Repeated;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<Public>()
+        .import::<Public>()
+}
+cauldron_metadata! {
+    struct CycleA;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<CycleB>()
+}
+cauldron_metadata! {
+    struct CycleB;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<CycleA>()
+}
+cauldron_metadata! {
+    struct Shared;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Value, ValueInjector>()
+        .export::<Value>()
+}
+
+cauldron_metadata! {
+    struct Left;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<Shared>()
+}
+cauldron_metadata! {
+    struct Right;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<Shared>()
+}
+cauldron_metadata! {
+    struct Diamond;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<Left>()
+        .import::<Right>()
+}
+fn analyze<M: ModuleContract>() -> GraphAnalysis {
     let mut builder = Furnace::builder();
     builder.root::<M>().unwrap();
     builder.analyze()
@@ -132,7 +181,16 @@ fn repeated_imports_and_cycles_fail_but_diamonds_register_once() {
     let diamond = analyze::<Diamond>();
     assert!(diamond.is_valid(), "{:?}", diamond.diagnostics());
     assert_eq!(diamond.cauldron_graph().unwrap().cauldrons().len(), 4);
-    assert_eq!(REGISTRATIONS.load(Ordering::SeqCst), 1);
+    assert_eq!(
+        diamond
+            .cauldron_graph()
+            .unwrap()
+            .cauldrons()
+            .iter()
+            .filter(|node| node.type_id() == TypeId::of::<Shared>())
+            .count(),
+        1
+    );
 }
 #[test]
 fn overrides_keep_ownership_and_cannot_supply_unregistered_outputs() {

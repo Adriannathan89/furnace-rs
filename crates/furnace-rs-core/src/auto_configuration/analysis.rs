@@ -1,3 +1,5 @@
+//! Side-effect-free selection and validation of official auto-configuration defaults.
+
 #[cfg(test)]
 #[allow(clippy::items_after_test_module)]
 mod tests {
@@ -449,6 +451,7 @@ pub(crate) fn analyze_parts(
 }
 
 #[allow(clippy::too_many_arguments)]
+/// Evaluates selected defaults and reports virtual outputs without applying them.
 pub(crate) fn analyze_parts_with_memo(
     descriptors: &[&'static AutoConfigurationDescriptor],
     providers: &[&'static ProviderDescriptor],
@@ -597,6 +600,7 @@ struct Decision {
     emit_diagnostic: bool,
 }
 
+/// Checks whether a selected provider declares a direct dependency on a default output.
 fn has_direct_requirement(
     descriptor: &AutoConfigurationDescriptor,
     providers: &[&ProviderDescriptor],
@@ -610,6 +614,7 @@ fn has_direct_requirement(
     })
 }
 
+/// Returns failed default outputs that cover a selected provider's missing dependency.
 fn covered_missing(decisions: &[Decision]) -> Vec<TypeId> {
     let mut outputs = decisions
         .iter()
@@ -633,6 +638,7 @@ fn covered_missing(decisions: &[Decision]) -> Vec<TypeId> {
         .collect()
 }
 
+/// Builds the stable diagnostic for duplicate official integration identifiers.
 fn duplicate_identifier_diagnostic(descriptor: &AutoConfigurationDescriptor) -> Diagnostic {
     Diagnostic::new(
         FURNACE007,
@@ -644,6 +650,7 @@ fn duplicate_identifier_diagnostic(descriptor: &AutoConfigurationDescriptor) -> 
     .with_suggestion("use a unique official auto-configuration identifier")
 }
 
+/// Builds the stable diagnostic for active defaults that select the same output type.
 fn conflicting_default_diagnostic(descriptor: &AutoConfigurationDescriptor) -> Diagnostic {
     Diagnostic::new(
         FURNACE007,
@@ -655,6 +662,7 @@ fn conflicting_default_diagnostic(descriptor: &AutoConfigurationDescriptor) -> D
     .with_suggestion("remove one conflicting official auto-configuration")
 }
 
+/// Orders source locations by path, line, and column for deterministic analysis.
 fn location_order(left: crate::SourceLocation, right: crate::SourceLocation) -> std::cmp::Ordering {
     left.file
         .cmp(right.file)

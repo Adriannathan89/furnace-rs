@@ -27,10 +27,12 @@ const PASSPORT_CONFIGURATION_KEYS: [&str; 7] = [
     "passport.max_token_bytes",
 ];
 
+/// Returns the runtime identity of the official `JwtService` provider type.
 fn jwt_service_type_id() -> TypeId {
     TypeId::of::<JwtService>()
 }
 
+/// Evaluates explicit overrides, selected guard requirements, and Passport key configuration.
 fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluation {
     let guard_requirements = match guard_requirements(context) {
         Ok(requirements) => requirements,
@@ -93,21 +95,37 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
     }
 }
 
-#[cfg(feature = "http")]
+#[cfg(any(feature = "http", feature = "passport"))]
+/// Collects JWT requirements from selected HTTP guards and Passport integrations.
 fn guard_requirements(
     context: &AutoConfigurationContext<'_>,
 ) -> Result<Vec<AutoConfigurationRequirement>> {
-    use crate::{http_preflight::SelectedHttpMetadata, passport::PassportStrategyCatalog};
-
-    let http = context
-        .memoize(|| SelectedHttpMetadata::select(context.cauldron_graph(), context.focus_type_id()))
-        .scope()?;
+    let mut guards = Vec::new();
+    #[cfg(feature = "http")]
+    guards.extend(
+        context
+            .memoize(|| {
+                crate::http_preflight::SelectedHttpMetadata::select(
+                    context.cauldron_graph(),
+                    context.focus_type_id(),
+                )
+            })
+            .scope()?
+            .guards()
+            .iter()
+            .cloned(),
+    );
+    for integration in furnace_rs_core::__private::inventory::iter::<
+        crate::passport::__private::PassportScopeDescriptor,
+    > {
+        guards.extend((integration.select)(context)?);
+    }
     let preflight = if context.focus_type_id().is_some() {
-        PassportStrategyCatalog::preflight_for_test(http.guards(), |type_id| {
-            context.has_provider_type_id(type_id)
+        crate::PassportStrategyCatalog::preflight_for_test(&guards, |id| {
+            context.has_provider_type_id(id)
         })?
     } else {
-        PassportStrategyCatalog::preflight_scoped(context.cauldron_graph(), http.guards())?
+        crate::PassportStrategyCatalog::preflight_scoped(context.cauldron_graph(), &guards)?
     };
     Ok(preflight
         .bindings()
@@ -118,14 +136,15 @@ fn guard_requirements(
         })
         .collect())
 }
-
-#[cfg(not(feature = "http"))]
+#[cfg(not(any(feature = "http", feature = "passport")))]
+/// Returns no guard requirements when Passport integration features are disabled.
 fn guard_requirements(
-    _context: &AutoConfigurationContext<'_>,
+    _: &AutoConfigurationContext<'_>,
 ) -> Result<Vec<AutoConfigurationRequirement>> {
     Ok(Vec::new())
 }
 
+/// Orders requirements by provider name and source location for stable diagnostics.
 fn requirement_order(
     left: &AutoConfigurationRequirement,
     right: &AutoConfigurationRequirement,
@@ -144,6 +163,7 @@ fn requirement_order(
         })
 }
 
+/// Checks whether neither legacy signing material nor named keys were configured.
 fn signing_configuration_is_missing(config: &furnace_rs_core::Config) -> bool {
     config.get("passport.secret").is_none()
         && config.get_string_array("passport.secret").is_none()
@@ -157,6 +177,7 @@ fn signing_configuration_is_missing(config: &furnace_rs_core::Config) -> bool {
             .any(|(key, _)| key.starts_with("passport.keys."))
 }
 
+/// Builds a deterministic diagnostic naming the providers that require JWT support.
 fn configuration_error(missing: bool, requirements: &[AutoConfigurationRequirement]) -> Error {
     let (subject, message) = if missing {
         ("passport.secret", "passport.secret is missing")
@@ -190,12 +211,14 @@ fn configuration_error(missing: bool, requirements: &[AutoConfigurationRequireme
     )
 }
 
+/// Constructs and contributes the default JWT service after configuration validation.
 fn apply(context: &AutoConfigurationApplyContext<'_>) -> Result<AutoConfigurationContribution> {
     let config = PassportConfig::from_config(context.config()).map_err(provisioning_error)?;
     let service = JwtService::from_passport_config(config).map_err(provisioning_error)?;
     Ok(AutoConfigurationContribution::new(service))
 }
 
+/// Redacts key-provisioning failures into a stable auto-configuration diagnostic.
 fn provisioning_error(_: super::JwtError) -> Error {
     Error::new(
         Diagnostic::new(
@@ -209,6 +232,7 @@ fn provisioning_error(_: super::JwtError) -> Error {
     )
 }
 
+/// Collects source locations for configured Passport key and validation settings.
 fn configuration_evidence(
     context: &AutoConfigurationContext<'_>,
 ) -> Vec<AutoConfigurationConfigEvidence> {

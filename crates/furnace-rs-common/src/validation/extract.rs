@@ -35,6 +35,7 @@ where
 {
     type Rejection = Response;
 
+    /// Deserializes a JSON body, validates the value, and returns a body-sourced error response.
     async fn from_request(request: Request, state: &S) -> Result<Self, Self::Rejection> {
         let Json(input) = Json::<T>::from_request(request, state)
             .await
@@ -67,6 +68,7 @@ where
 {
     type Rejection = Response;
 
+    /// Deserializes query parameters, validates the value, and reports query-sourced failures.
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let AxumQuery(input) = AxumQuery::<T>::from_request_parts(parts, state)
             .await
@@ -99,6 +101,7 @@ where
 {
     type Rejection = Response;
 
+    /// Deserializes path parameters, validates the value, and reports path-sourced failures.
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let AxumPath(input) = AxumPath::<T>::from_request_parts(parts, state)
             .await
@@ -110,6 +113,7 @@ where
     }
 }
 
+/// Returns the input unchanged when its `Input` validator succeeds.
 fn validate<T>(input: T) -> Result<T, ValidationErrors>
 where
     T: Input,
@@ -120,6 +124,7 @@ where
     }
 }
 
+/// Converts ordered validation issues to the stable 422 response envelope.
 fn validation_response(errors: ValidationErrors, source: ValidationSource) -> Response {
     let issues = errors
         .into_issues()

@@ -1,13 +1,6 @@
-//! Redacted Passport errors and Axum rejections.
+//! Transport-independent redacted Passport errors.
 
 use std::fmt;
-
-use axum::{
-    http::{HeaderValue, header::WWW_AUTHENTICATE},
-    response::{IntoResponse, Response},
-};
-
-use crate::{Forbidden, InternalError, Unauthorized};
 
 /// The result type used by Passport strategy APIs.
 pub type PassportResult<T> = std::result::Result<T, PassportError>;
@@ -41,7 +34,9 @@ impl PassportError {
         }
     }
 
-    pub(crate) const fn forbidden() -> Self {
+    /// Creates a transport-neutral policy rejection.
+    #[doc(hidden)]
+    pub const fn forbidden() -> Self {
         Self {
             kind: PassportErrorKind::Forbidden,
             source: None,
@@ -67,6 +62,7 @@ impl PassportError {
 }
 
 impl fmt::Debug for PassportError {
+    /// Formats the stable error category and whether a private cause is retained.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PassportError")
@@ -77,6 +73,7 @@ impl fmt::Debug for PassportError {
 }
 
 impl fmt::Display for PassportError {
+    /// Formats a stable message that does not reveal credentials or strategy details.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self.kind {
             PassportErrorKind::Rejected => "authentication was rejected",
@@ -87,6 +84,7 @@ impl fmt::Display for PassportError {
 }
 
 impl std::error::Error for PassportError {
+    /// Returns an operational source error when this is an internal failure.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.source
             .as_deref()
@@ -95,6 +93,7 @@ impl std::error::Error for PassportError {
 }
 
 impl From<crate::JwtError> for PassportError {
+    /// Maps configuration/key failures to internal errors and token failures to rejection.
     fn from(error: crate::JwtError) -> Self {
         match error.kind() {
             crate::JwtErrorKind::InvalidConfiguration
@@ -102,66 +101,6 @@ impl From<crate::JwtError> for PassportError {
             | crate::JwtErrorKind::UnavailableSigningKey
             | crate::JwtErrorKind::Serialization => Self::internal(error),
             _ => Self::reject(),
-        }
-    }
-}
-
-/// An Axum rejection produced by Passport extractors and guards.
-#[non_exhaustive]
-pub struct PassportRejection(PassportError);
-
-impl PassportRejection {
-    pub(crate) const fn new(error: PassportError) -> Self {
-        Self(error)
-    }
-
-    /// Returns the stable category of the rejected Passport operation.
-    #[must_use]
-    pub const fn kind(&self) -> PassportErrorKind {
-        self.0.kind()
-    }
-}
-
-impl fmt::Debug for PassportRejection {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("PassportRejection")
-            .field("kind", &self.kind())
-            .finish()
-    }
-}
-
-impl fmt::Display for PassportRejection {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(formatter)
-    }
-}
-
-impl std::error::Error for PassportRejection {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(&self.0)
-    }
-}
-
-impl From<PassportError> for PassportRejection {
-    fn from(error: PassportError) -> Self {
-        Self::new(error)
-    }
-}
-
-impl IntoResponse for PassportRejection {
-    fn into_response(self) -> Response {
-        let Self(error) = self;
-        match error.kind() {
-            PassportErrorKind::Rejected => {
-                let mut response = Unauthorized::new("authentication was rejected").into_response();
-                response
-                    .headers_mut()
-                    .insert(WWW_AUTHENTICATE, HeaderValue::from_static("Bearer"));
-                response
-            }
-            PassportErrorKind::Forbidden => Forbidden::new("access was denied").into_response(),
-            PassportErrorKind::Internal => InternalError::new(error).into_response(),
         }
     }
 }

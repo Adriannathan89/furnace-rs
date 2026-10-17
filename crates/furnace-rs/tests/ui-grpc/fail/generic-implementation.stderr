@@ -1,0 +1,18 @@
+error: grpc_service requires a non-generic generated Tonic trait implementation
+  --> tests/ui-grpc/fail/generic-implementation.rs:5:1
+   |
+ 5 | / #[tonic::async_trait]
+ 6 | | impl<T> pb::hidden_server::Hidden for Service<T> {
+ 7 | |     #[grpc_method(name = "Secret", public)]
+ 8 | |     async fn secret(&self, _: tonic::Request<pb::Item>) -> Result<tonic::Response<pb::Item>, tonic::Status> {
+...  |
+11 | | }
+   | |_^
+
+warning: unused imports: `FILE_DESCRIPTOR_SET` and `pb`
+ --> tests/ui-grpc/fail/generic-implementation.rs:2:33
+  |
+2 | use furnace_grpc_test_support::{pb, FILE_DESCRIPTOR_SET};
+  |                                 ^^  ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default

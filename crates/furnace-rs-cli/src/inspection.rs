@@ -1,3 +1,6 @@
+//! Private child-process handshake and conversion of inspection reports to CLI output.
+
+use crate::output::model::{GrpcData, GrpcServiceData, SocketData, SocketEndpointData};
 use std::{
     fs,
     path::Path,
@@ -49,6 +52,7 @@ enum InspectionStreams {
 }
 
 impl InspectionTimeouts {
+    /// Uses the fixed handshake, report, and polling budgets for production inspection.
     const fn production() -> Self {
         Self {
             handshake: HANDSHAKE_TIMEOUT,
@@ -110,6 +114,8 @@ pub(crate) fn inspection_outcome(report: &InspectionReport, package_root: &Path)
     let diagnostics = inspection_diagnostics(report, package_root);
     let body = match report.kind {
         InspectionKind::Routes => render::render_routes(report),
+        InspectionKind::Grpc => render::render_grpc(report),
+        InspectionKind::Socket => render::render_socket(report),
         InspectionKind::Graph => render::render_graph(report),
         InspectionKind::Doctor => render::render_doctor(report),
     };
@@ -143,8 +149,36 @@ pub(crate) fn inspection_failure_outcome(kind: InspectionKind, error: &CliError)
     )
 }
 
+/// Converts report data into the stable output model for its inspection kind.
 fn inspection_data(report: &InspectionReport, package_root: &Path) -> CommandData {
     match report.kind {
+        InspectionKind::Socket => CommandData::Socket(SocketData {
+            endpoints: report
+                .socket_endpoints
+                .iter()
+                .map(|e| SocketEndpointData {
+                    path: e.path.clone(),
+                    mode: e.mode.clone(),
+                    implementation: e.implementation.clone(),
+                    processing: e.processing.clone(),
+                    location: source_location(&e.location, package_root),
+                    protection: e.protection.clone(),
+                    handlers: e.handlers.clone(),
+                })
+                .collect(),
+        }),
+        InspectionKind::Grpc => CommandData::Grpc(GrpcData {
+            services: report
+                .grpc_services
+                .iter()
+                .map(|service| GrpcServiceData {
+                    name: service.name.clone(),
+                    implementation: service.implementation.clone(),
+                    location: source_location(&service.location, package_root),
+                    methods: service.methods.clone(),
+                })
+                .collect(),
+        }),
         InspectionKind::Routes => CommandData::Routes(RoutesData::new(
             render::ordered_routes(report)
                 .into_iter()
@@ -209,6 +243,7 @@ fn inspection_data(report: &InspectionReport, package_root: &Path) -> CommandDat
     }
 }
 
+/// Converts and orders inspection diagnostics for the CLI output envelope.
 fn inspection_diagnostics(report: &InspectionReport, package_root: &Path) -> Vec<CliDiagnostic> {
     render::ordered_diagnostics(report)
         .into_iter()
@@ -229,6 +264,7 @@ fn inspection_diagnostics(report: &InspectionReport, package_root: &Path) -> Vec
         .collect()
 }
 
+/// Normalizes a report source path relative to the selected package root.
 fn source_location(source: &SourceReport, package_root: &Path) -> SourceLocation {
     SourceLocation::new(
         normalize_path(package_root, Path::new(&source.file)),
@@ -237,6 +273,7 @@ fn source_location(source: &SourceReport, package_root: &Path) -> SourceLocation
     )
 }
 
+/// Maps the private inspection status to its stable CLI representation.
 const fn doctor_status(status: InspectionDoctorStatus) -> DoctorStatus {
     match status {
         InspectionDoctorStatus::Pass => DoctorStatus::Pass,
@@ -246,9 +283,12 @@ const fn doctor_status(status: InspectionDoctorStatus) -> DoctorStatus {
     }
 }
 
+/// Returns the public command spelling corresponding to an inspection kind.
 const fn inspection_command_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
+        InspectionKind::Grpc => "grpc",
+        InspectionKind::Socket => "socket",
         InspectionKind::Graph => "graph",
         InspectionKind::Doctor => "doctor",
     }
@@ -264,6 +304,7 @@ async fn inspect_application_with_timeouts(
         .await
 }
 
+/// Launches an application and performs the private inspection protocol.
 async fn inspect_application_with_timeouts_and_streams(
     built: &BuiltApplication,
     kind: InspectionKind,
@@ -300,6 +341,7 @@ async fn inspect_application_with_timeouts_and_streams(
     result
 }
 
+/// Requires a direct Furnace dependency with the CLI's matching major/minor version.
 fn ensure_supported_furnace_version(built: &BuiltApplication) -> Result<(), CliError> {
     let version = built.target().furnace_version();
     let current = semver::Version::parse(furnace::FRAMEWORK_VERSION)
@@ -319,6 +361,7 @@ fn ensure_supported_furnace_version(built: &BuiltApplication) -> Result<(), CliE
     .with_suggestion(format!("use FURNACE {supported} in the selected application")))
 }
 
+/// Creates a per-inspection correlation token used by both protocol messages.
 fn inspection_token() -> Result<String, CliError> {
     let nanoseconds = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -329,6 +372,7 @@ fn inspection_token() -> Result<String, CliError> {
     Ok(format!("{}-{nanoseconds}", std::process::id()))
 }
 
+/// Builds the child command and supplies its private protocol environment.
 fn inspection_command(
     built: &BuiltApplication,
     kind: InspectionKind,
@@ -349,6 +393,7 @@ fn inspection_command(
         .env(INSPECTION_TOKEN_ENV, token)
         .env(INSPECTION_ACK_ENV, acknowledgement)
         .env(INSPECTION_RESPONSE_ENV, response);
+    built.configure_runtime(&mut command);
     match streams {
         InspectionStreams::Inherit => {
             command
@@ -366,14 +411,18 @@ fn inspection_command(
     command
 }
 
+/// Returns the private protocol spelling corresponding to an inspection kind.
 const fn inspection_kind_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
+        InspectionKind::Grpc => "grpc",
+        InspectionKind::Socket => "socket",
         InspectionKind::Graph => "graph",
         InspectionKind::Doctor => "doctor",
     }
 }
 
+/// Validates the acknowledgement and report, then waits for a successful child exit.
 async fn supervise(
     child: &mut Child,
     kind: InspectionKind,
@@ -385,7 +434,9 @@ async fn supervise(
     let handshake_deadline = Instant::now() + timeouts.handshake;
     loop {
         if acknowledgement.exists() {
-            let acknowledgement = read_json::<InspectionAcknowledgement>(acknowledgement)?;
+            let value = read_json::<serde_json::Value>(acknowledgement)?;
+            ensure_private_protocol_version(&value)?;
+            let acknowledgement: InspectionAcknowledgement = decode_json(value)?;
             if acknowledgement.protocol_version != INSPECTION_PROTOCOL_VERSION
                 || acknowledgement.token != token
             {
@@ -399,9 +450,9 @@ async fn supervise(
             continue;
         }
         if Instant::now() >= handshake_deadline {
-            return Err(inspection_error(
-                "the application did not acknowledge the inspection request in time; private inspection requires the standard Furnace::burn::<AppCauldron>() entry point",
-            ));
+            return Err(inspection_error(format!(
+                "the application did not acknowledge the inspection request in time; private inspection requires protocol version {INSPECTION_PROTOCOL_VERSION} and the standard Furnace::burn::<AppCauldron>() entry point",
+            )));
         }
         tokio::time::sleep(timeouts.poll).await;
     }
@@ -409,7 +460,9 @@ async fn supervise(
     let report_deadline = Instant::now() + timeouts.report;
     let envelope = loop {
         if response.exists() {
-            let envelope = read_json::<InspectionEnvelope>(response)?;
+            let value = read_json::<serde_json::Value>(response)?;
+            ensure_private_protocol_version(&value)?;
+            let envelope: InspectionEnvelope = decode_json(value)?;
             if envelope.protocol_version() != INSPECTION_PROTOCOL_VERSION
                 || envelope.token() != token
                 || envelope.report().kind != kind
@@ -435,6 +488,7 @@ async fn supervise(
     Ok(envelope.into_report())
 }
 
+/// Detects child exit while allowing a final protocol file published at exit to be read.
 fn output_published_on_exit(child: &mut Child, output: &Path) -> Result<bool, CliError> {
     match child.try_wait().map_err(|error| {
         inspection_error("could not observe the inspection application").with_source(error)
@@ -443,12 +497,13 @@ fn output_published_on_exit(child: &mut Child, output: &Path) -> Result<bool, Cl
         // Once exit is observed, its final file must get normal protocol validation.
         Some(_) if output.exists() => Ok(true),
         Some(status) => Err(inspection_error(format!(
-            "the application exited before completing private inspection ({status}); private inspection requires the standard Furnace::burn::<AppCauldron>() entry point"
+            "the application exited before completing private inspection ({status}); private inspection requires protocol version {INSPECTION_PROTOCOL_VERSION} and the standard Furnace::burn::<AppCauldron>() entry point"
         ))),
         None => Ok(false),
     }
 }
 
+/// Waits for a successful child exit before the shared deadline expires.
 async fn wait_for_successful_exit(
     child: &mut Child,
     deadline: Instant,
@@ -474,6 +529,28 @@ async fn wait_for_successful_exit(
     }
 }
 
+/// Rejects an explicit private-protocol version that differs from the CLI version.
+fn ensure_private_protocol_version(value: &serde_json::Value) -> Result<(), CliError> {
+    if let Some(version) = value
+        .get("protocol_version")
+        .and_then(serde_json::Value::as_u64)
+        && version != u64::from(INSPECTION_PROTOCOL_VERSION)
+    {
+        return Err(inspection_error(format!(
+            "unsupported private inspection protocol: application returned version {version}; CLI requires version {INSPECTION_PROTOCOL_VERSION}"
+        )));
+    }
+    Ok(())
+}
+/// Deserializes a parsed protocol value into its expected message type.
+fn decode_json<T: for<'de> Deserialize<'de>>(value: serde_json::Value) -> Result<T, CliError> {
+    serde_json::from_value(value).map_err(|error| {
+        inspection_error("the application returned malformed private inspection output")
+            .with_source(error)
+    })
+}
+
+/// Reads and deserializes one private protocol file from the child process.
 fn read_json<T>(path: &Path) -> Result<T, CliError>
 where
     T: for<'de> Deserialize<'de>,
@@ -487,10 +564,12 @@ where
     })
 }
 
+/// Constructs a consistent diagnostic for a failed private inspection exchange.
 fn inspection_error(message: impl Into<String>) -> CliError {
     CliError::new(FURNACE203, "Application inspection failed", message)
 }
 
+/// Kills a still-running inspection child and always waits to reap it.
 async fn terminate_child(child: &mut Child) {
     if matches!(child.try_wait(), Ok(None)) {
         let _ = child.kill().await;
@@ -596,7 +675,7 @@ mod tests {
 
     #[tokio::test]
     async fn rejects_a_wrong_protocol_version() {
-        assert_protocol_failure("wrong_version", "invalid inspection report").await;
+        assert_protocol_failure("wrong_version", "unsupported private inspection protocol").await;
     }
 
     #[tokio::test]

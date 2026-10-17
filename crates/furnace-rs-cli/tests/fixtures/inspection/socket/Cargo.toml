@@ -1,0 +1,10 @@
+[package]
+name = "inspection-socket-fixture"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+[dependencies]
+furnace = { package = "furnace-rs-socket", path = "../../../../../furnace-rs-socket", features = ["tls", "redis"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+serde_json = "1"
+[workspace]

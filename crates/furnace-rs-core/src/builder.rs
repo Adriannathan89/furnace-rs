@@ -7,9 +7,10 @@ use crate::auto_configuration::{
     self, AutoConfigurationApplyContext, AutoConfigurationDescriptor, AutoConfigurationInputs,
 };
 use crate::{
-    ApplicationContext, ApplicationGraph, AutoConfigurationReport, Catalog, Cauldron,
-    CauldronGraph, Config, ConstructionContext, ConstructionPlan, ConstructionStep, Diagnostic,
-    Error, FURNACE006, FURNACE008, GraphAnalysis, LifecycleHook, LifecycleManager, LifecycleState,
+    __private::ModuleContract,
+    ApplicationContext, ApplicationGraph, AutoConfigurationReport, Catalog, CauldronGraph, Config,
+    ConstructionContext, ConstructionPlan, ConstructionStep, Diagnostic, Error, FURNACE006,
+    FURNACE008, GraphAnalysis, LifecycleHook, LifecycleManager, LifecycleState,
     ProviderContribution, ProviderDescriptor, ProviderRegistry, Result,
     graph::{
         SatisfiedProvider, analyze_catalog, build_cauldron_graph, select_focused_providers,
@@ -51,7 +52,7 @@ impl FurnaceBuilder {
 
     /// Selects the root module for scoped analysis and construction.
     #[allow(clippy::result_large_err)]
-    pub fn root<M: Cauldron>(&mut self) -> Result<&mut Self> {
+    pub fn root<M: ModuleContract>(&mut self) -> Result<&mut Self> {
         if let Some((_, name)) = self.focus {
             return Err(root_already_selected_error(
                 name,
@@ -220,6 +221,7 @@ impl FurnaceBuilder {
         })
     }
 
+    /// Runs graph analysis and integration preflight without invoking constructors.
     fn analyze_builder(&self) -> BuilderAnalysis {
         let memo = crate::preflight::AnalysisMemo::default();
         let mut analysis = self.analyze_builder_parts(&memo);
@@ -239,6 +241,7 @@ impl FurnaceBuilder {
         analysis
     }
 
+    /// Selects rooted, focused, or complete-catalog inputs for graph analysis.
     fn analyze_builder_parts(&self, memo: &crate::preflight::AnalysisMemo) -> BuilderAnalysis {
         let providers = Catalog::providers();
         if let Some((target, name)) = self.focus {
@@ -299,6 +302,7 @@ impl FurnaceBuilder {
         }
     }
 
+    /// Plans a test fixture's reachable provider chain and its applicable defaults.
     fn analyze_focused(
         &self,
         target: TypeId,
@@ -369,6 +373,7 @@ impl FurnaceBuilder {
         }
     }
 
+    /// Invokes one constructor with the configuration and values built so far.
     async fn invoke_provider(
         &self,
         descriptor: &'static ProviderDescriptor,
@@ -383,6 +388,7 @@ impl FurnaceBuilder {
         }
     }
 
+    /// Inserts a constructed value and registers any lifecycle hooks it produced.
     fn apply_provider_contribution(
         &mut self,
         descriptor: &'static ProviderDescriptor,
@@ -397,6 +403,7 @@ impl FurnaceBuilder {
         Ok(())
     }
 
+    /// Preserves rootless compatibility by analyzing every catalog provider.
     fn analyze_complete_catalog(
         &self,
         providers: &[&'static crate::ProviderDescriptor],
@@ -433,7 +440,8 @@ struct CauldronRoot {
 }
 
 impl CauldronRoot {
-    fn of<M: Cauldron>() -> Self {
+    /// Captures the selected root's stable runtime identity and display name.
+    fn of<M: ModuleContract>() -> Self {
         Self {
             type_id: TypeId::of::<M>(),
             type_name: std::any::type_name::<M>(),
@@ -499,18 +507,26 @@ impl Furnace {
     }
 
     /// Starts registered lifecycle hooks.
+    ///
+    /// If this future is cancelled, call [`Self::shutdown`] to clean up resources
+    /// whose hooks completed startup. The application cannot restart afterward.
     #[allow(clippy::result_large_err)]
     pub async fn start(&mut self) -> Result<()> {
         self.lifecycle.start(&self.context).await
     }
 
-    /// Stops registered lifecycle hooks in reverse registration order.
+    /// Stops successfully started lifecycle hooks in reverse startup order.
+    ///
+    /// Also cleans up interrupted startup and resumes interrupted shutdown or
+    /// rollback. A hook whose stop future was cancelled is retried. Completed
+    /// stops are not repeated, and earlier hook failures are retained.
     #[allow(clippy::result_large_err)]
     pub async fn shutdown(&mut self) -> Result<()> {
         self.lifecycle.shutdown(&self.context).await
     }
 }
 
+/// Reports a conflict between an existing root/focus and a second selection.
 fn root_already_selected_error(existing: &'static str, attempted: &'static str) -> Error {
     Error::new(
         Diagnostic::new(
@@ -522,6 +538,7 @@ fn root_already_selected_error(existing: &'static str, attempted: &'static str) 
     )
 }
 
+/// Chooses the primary preflight error and attaches remaining diagnostics.
 fn build_analysis_error(public: GraphAnalysis, failure: Option<Error>) -> Error {
     let GraphAnalysis { diagnostics, .. } = public;
     if let Some(failure) = failure {
@@ -545,6 +562,7 @@ fn build_analysis_error(public: GraphAnalysis, failure: Option<Error>) -> Error 
     Error::from_diagnostics(primary, diagnostics)
 }
 
+/// Wraps a provider failure with its graph location and a stable consumer path.
 fn provider_construction_error(
     step: &ConstructionStep,
     graph: &ApplicationGraph,
@@ -563,6 +581,7 @@ fn provider_construction_error(
     Error::with_source(diagnostic, source)
 }
 
+/// Finds a deterministic root-to-provider path for a constructor failure.
 fn consumer_path(graph: &ApplicationGraph, failing_step: &ConstructionStep) -> Option<String> {
     if !graph
         .dependencies
@@ -629,6 +648,7 @@ fn consumer_path(graph: &ApplicationGraph, failing_step: &ConstructionStep) -> O
     None
 }
 
+/// Orders providers consistently for breadth-first construction-path reporting.
 fn provider_order(graph: &ApplicationGraph, left: usize, right: usize) -> std::cmp::Ordering {
     let left = &graph.providers[left];
     let right = &graph.providers[right];

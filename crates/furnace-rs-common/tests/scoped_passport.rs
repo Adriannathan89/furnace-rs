@@ -16,7 +16,7 @@ use furnace_rs_common::{
     ClaimsPrincipal, FURNACE130, JwtClaims, JwtService, JwtSignOptions, JwtTokenKind,
     PassportContext, PassportPrincipal, PassportResult, PassportStrategy, PassportStrategyCatalog,
     PassportStrategyPreflight, build_router,
-    core::{Cauldron, Config, ConfigBuilder, Furnace, MapSource, Result},
+    core::{__private::ModuleContract, Config, ConfigBuilder, Furnace, MapSource, Result},
 };
 use tower::ServiceExt;
 
@@ -110,16 +110,8 @@ mod first {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(providers = [FirstJwtStrategy], controllers = [FirstController], exports = [FirstJwtStrategy])]
     pub struct FirstCauldron;
-
-    impl furnace_rs_common::core::Cauldron for FirstCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.provide::<FirstJwtStrategy>()
-                .controller::<FirstController>()
-                .export::<FirstJwtStrategy>()
-        }
-    }
 }
 
 mod second {
@@ -165,16 +157,8 @@ mod second {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(providers = [SecondJwtStrategy], controllers = [SecondController], exports = [SecondJwtStrategy])]
     pub struct SecondCauldron;
-
-    impl furnace_rs_common::core::Cauldron for SecondCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.provide::<SecondJwtStrategy>()
-                .controller::<SecondController>()
-                .export::<SecondJwtStrategy>()
-        }
-    }
 }
 
 mod candidate_one {
@@ -199,15 +183,8 @@ mod candidate_one {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(providers = [CandidateOneJwtStrategy], exports = [CandidateOneJwtStrategy])]
     pub struct CandidateOneCauldron;
-
-    impl furnace_rs_common::core::Cauldron for CandidateOneCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.provide::<CandidateOneJwtStrategy>()
-                .export::<CandidateOneJwtStrategy>()
-        }
-    }
 }
 
 mod candidate_two {
@@ -232,15 +209,8 @@ mod candidate_two {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(providers = [CandidateTwoJwtStrategy], exports = [CandidateTwoJwtStrategy])]
     pub struct CandidateTwoCauldron;
-
-    impl furnace_rs_common::core::Cauldron for CandidateTwoCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.provide::<CandidateTwoJwtStrategy>()
-                .export::<CandidateTwoJwtStrategy>()
-        }
-    }
 }
 
 mod two_candidates {
@@ -266,16 +236,8 @@ mod two_candidates {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [CandidateController], imports = [super::candidate_one::CandidateOneCauldron, super::candidate_two::CandidateTwoCauldron])]
     pub struct CandidateGuardCauldron;
-
-    impl furnace_rs_common::core::Cauldron for CandidateGuardCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<CandidateController>()
-                .import(super::candidate_one::CandidateOneCauldron)
-                .import(super::candidate_two::CandidateTwoCauldron)
-        }
-    }
 }
 
 mod private_strategy {
@@ -300,14 +262,8 @@ mod private_strategy {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(providers = [PrivateJwtStrategy])]
     pub struct PrivateStrategyCauldron;
-
-    impl furnace_rs_common::core::Cauldron for PrivateStrategyCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.provide::<PrivateJwtStrategy>()
-        }
-    }
 }
 
 mod private_import {
@@ -333,15 +289,8 @@ mod private_import {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [PrivateController], imports = [super::private_strategy::PrivateStrategyCauldron])]
     pub struct PrivateGuardCauldron;
-
-    impl furnace_rs_common::core::Cauldron for PrivateGuardCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<PrivateController>()
-                .import(super::private_strategy::PrivateStrategyCauldron)
-        }
-    }
 }
 
 mod transitive_strategy {
@@ -366,26 +315,13 @@ mod transitive_strategy {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(providers = [TransitiveJwtStrategy], exports = [TransitiveJwtStrategy])]
     pub struct TransitiveStrategyCauldron;
-
-    impl furnace_rs_common::core::Cauldron for TransitiveStrategyCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.provide::<TransitiveJwtStrategy>()
-                .export::<TransitiveJwtStrategy>()
-        }
-    }
 }
 
 mod transitive_import {
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(imports = [super::transitive_strategy::TransitiveStrategyCauldron])]
     pub struct MiddleCauldron;
-
-    impl furnace_rs_common::core::Cauldron for MiddleCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.import(super::transitive_strategy::TransitiveStrategyCauldron)
-        }
-    }
 }
 
 mod transitive_guard {
@@ -411,15 +347,8 @@ mod transitive_guard {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [TransitiveController], imports = [super::transitive_import::MiddleCauldron])]
     pub struct TransitiveGuardCauldron;
-
-    impl furnace_rs_common::core::Cauldron for TransitiveGuardCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<TransitiveController>()
-                .import(super::transitive_import::MiddleCauldron)
-        }
-    }
 }
 
 mod no_custom {
@@ -445,14 +374,8 @@ mod no_custom {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [NoCustomController])]
     pub struct NoCustomCauldron;
-
-    impl furnace_rs_common::core::Cauldron for NoCustomCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<NoCustomController>()
-        }
-    }
 }
 
 mod unimported_nested_strategy {
@@ -500,124 +423,48 @@ mod unimported_nested_strategy {
             }
         }
 
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(providers = [ChildJwtStrategy], exports = [ChildJwtStrategy])]
         pub struct ChildStrategyCauldron;
-
-        impl furnace_rs_common::core::Cauldron for ChildStrategyCauldron {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.provide::<ChildJwtStrategy>()
-                    .export::<ChildJwtStrategy>()
-            }
-        }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [ParentController])]
     pub struct ParentGuardCauldron;
-
-    impl furnace_rs_common::core::Cauldron for ParentGuardCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<ParentController>()
-        }
-    }
 }
 
 mod roots {
     pub(super) mod first {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(providers = [furnace_rs_common::JwtService], exports = [furnace_rs_common::JwtService], imports = [super::super::first::FirstCauldron], global)]
         pub struct FirstRoot;
-
-        impl furnace_rs_common::core::Cauldron for FirstRoot {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.provide::<furnace_rs_common::JwtService>()
-                    .export::<furnace_rs_common::JwtService>()
-                    .global()
-                    .import(super::super::first::FirstCauldron)
-            }
-        }
     }
 
     pub(super) mod second {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(providers = [furnace_rs_common::JwtService], exports = [furnace_rs_common::JwtService], imports = [super::super::second::SecondCauldron], global)]
         pub struct SecondRoot;
-
-        impl furnace_rs_common::core::Cauldron for SecondRoot {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.provide::<furnace_rs_common::JwtService>()
-                    .export::<furnace_rs_common::JwtService>()
-                    .global()
-                    .import(super::super::second::SecondCauldron)
-            }
-        }
     }
 
     pub(super) mod candidate {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(providers = [furnace_rs_common::JwtService], exports = [furnace_rs_common::JwtService], imports = [super::super::two_candidates::CandidateGuardCauldron], global)]
         pub struct CandidateRoot;
-
-        impl furnace_rs_common::core::Cauldron for CandidateRoot {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.provide::<furnace_rs_common::JwtService>()
-                    .export::<furnace_rs_common::JwtService>()
-                    .global()
-                    .import(super::super::two_candidates::CandidateGuardCauldron)
-            }
-        }
     }
 
     pub(super) mod private {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(providers = [furnace_rs_common::JwtService], exports = [furnace_rs_common::JwtService], imports = [super::super::private_import::PrivateGuardCauldron], global)]
         pub struct PrivateRoot;
-
-        impl furnace_rs_common::core::Cauldron for PrivateRoot {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.provide::<furnace_rs_common::JwtService>()
-                    .export::<furnace_rs_common::JwtService>()
-                    .global()
-                    .import(super::super::private_import::PrivateGuardCauldron)
-            }
-        }
     }
 
     pub(super) mod transitive {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(providers = [furnace_rs_common::JwtService], exports = [furnace_rs_common::JwtService], imports = [super::super::transitive_guard::TransitiveGuardCauldron], global)]
         pub struct TransitiveRoot;
-
-        impl furnace_rs_common::core::Cauldron for TransitiveRoot {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.provide::<furnace_rs_common::JwtService>()
-                    .export::<furnace_rs_common::JwtService>()
-                    .global()
-                    .import(super::super::transitive_guard::TransitiveGuardCauldron)
-            }
-        }
     }
 
     pub(super) mod no_custom {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(providers = [furnace_rs_common::JwtService], exports = [furnace_rs_common::JwtService], imports = [super::super::no_custom::NoCustomCauldron], global)]
         pub struct NoCustomRoot;
-
-        impl furnace_rs_common::core::Cauldron for NoCustomRoot {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.provide::<furnace_rs_common::JwtService>()
-                    .export::<furnace_rs_common::JwtService>()
-                    .global()
-                    .import(super::super::no_custom::NoCustomCauldron)
-            }
-        }
     }
 
     pub(super) mod nested {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(providers = [furnace_rs_common::JwtService], exports = [furnace_rs_common::JwtService], imports = [super::super::unimported_nested_strategy::ParentGuardCauldron], global)]
         pub struct NestedRoot;
-
-        impl furnace_rs_common::core::Cauldron for NestedRoot {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.provide::<furnace_rs_common::JwtService>()
-                    .export::<furnace_rs_common::JwtService>()
-                    .global()
-                    .import(super::super::unimported_nested_strategy::ParentGuardCauldron)
-            }
-        }
     }
 }
 
@@ -631,7 +478,7 @@ fn config() -> Config {
         .unwrap()
 }
 
-async fn application_for<M: Cauldron>() -> Furnace {
+async fn application_for<M: ModuleContract>() -> Furnace {
     let config = config();
     let jwt = JwtService::from_config(&config).unwrap();
     let mut builder = Furnace::builder_with_config(config);
@@ -648,7 +495,7 @@ fn authenticated_request(path: &str, token: &str) -> Request<Body> {
         .unwrap()
 }
 
-fn preflight_for<M: Cauldron>() -> Result<PassportStrategyPreflight<'static>> {
+fn preflight_for<M: ModuleContract>() -> Result<PassportStrategyPreflight<'static>> {
     let graph = furnace_rs_common::core::__private::build_cauldron_graph::<M>()?;
     furnace_rs_common::__private::preflight_scoped(Some(&graph))
 }

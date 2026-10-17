@@ -4,6 +4,7 @@ use syn::{Error, Item};
 mod endpoints;
 mod managed;
 
+/// Dispatches `#[controller]` input to the managed-struct or endpoint-impl expander.
 pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     match syn::parse2::<Item>(item.clone())? {
         Item::Struct(value) if arguments.is_empty() => {

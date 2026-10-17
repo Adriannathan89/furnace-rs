@@ -22,6 +22,11 @@ jobs:
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
+      - name: Fetch independent storage consumer dependencies
+        run: |
+          for manifest in crates/furnace-rs-persistence/tests/consumers/storage_*/Cargo.toml; do
+            cargo fetch --manifest-path "$manifest"
+          done
       - name: Require a prerelease workspace version
         shell: bash
         run: |
@@ -35,6 +40,8 @@ jobs:
         run: cargo fmt --all --check
       - name: Lint
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Install Redis for isolated socket integration tests
+        run: sudo apt-get update && sudo apt-get install -y redis-server
       - name: Test
         run: cargo test --locked --workspace --all-features
       - name: Test documentation
@@ -52,6 +59,12 @@ jobs:
           cargo check -p furnace-rs-common --no-default-features --features jwt
           cargo check -p furnace-rs-common --no-default-features --features cookies
           cargo check -p furnace-rs-common --no-default-features --features sea-orm
+          cargo check -p furnace-rs-socket --no-default-features
+          cargo check -p furnace-rs-socket --no-default-features --features jwt,tls,redis
+          cargo check -p furnace-rs --no-default-features --features socket,jwt,socket-tls,socket-redis,runtime-tokio
+          cargo check -p furnace-rs-grpc --no-default-features
+          cargo check -p furnace-rs-grpc --no-default-features --features jwt,tls
+          cargo check -p furnace-rs --no-default-features --features grpc,jwt,grpc-tls,runtime-tokio
           cargo check -p furnace-rs --no-default-features
           cargo check -p furnace-rs --no-default-features --features http,runtime-tokio
           cargo check -p furnace-rs --no-default-features --features sea-orm
@@ -70,7 +83,9 @@ jobs:
       - name: Fetch locked dependencies for offline regression runners
         run: cargo fetch --locked
       - name: Check known dependency vulnerabilities
-        run: cargo audit --no-yanked --file Cargo.lock
+        run: |
+          cargo audit --no-yanked --file Cargo.lock
+          python3 benchmark/tool/audit_lockfiles.py
       - name: Verify security report integrity
         run: python3 -m unittest discover -s benchmark/tool -p 'test_*security.py'
       - name: Run core and database security contracts
@@ -113,6 +128,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.94.0
       - uses: Swatinem/rust-cache@v2
+      - name: Fetch independent storage consumer dependencies
+        run: |
+          for manifest in crates/furnace-rs-persistence/tests/consumers/storage_*/Cargo.toml; do
+            cargo fetch --manifest-path "$manifest"
+          done
+      - name: Install Redis for isolated socket integration tests
+        run: sudo apt-get update && sudo apt-get install -y redis-server
       - name: Test minimum supported Rust version
         run: cargo test --locked --workspace --all-features
 
@@ -153,6 +175,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --locked -p furnace-rs-persistence --features sea-orm-postgres --test postgres -- --ignored --test-threads=1
+      - run: cargo test --locked -p furnace-rs-persistence --features sea-orm-storage,sea-orm-postgres --test storage_postgres -- --ignored --test-threads=1
 
   coverage:
     name: Verify coverage
@@ -179,6 +202,13 @@ jobs:
         with:
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
+      - name: Fetch independent storage consumer dependencies
+        run: |
+          for manifest in crates/furnace-rs-persistence/tests/consumers/storage_*/Cargo.toml; do
+            cargo fetch --manifest-path "$manifest"
+          done
+      - name: Install Redis for isolated socket integration tests
+        run: sudo apt-get update && sudo apt-get install -y redis-server
       - uses: taiki-e/install-action@cargo-llvm-cov
       - name: Enforce line coverage
         run: cargo llvm-cov --workspace --all-features --ignore-filename-regex '(^|/)tests/ui/' --fail-under-lines 85
@@ -217,9 +247,14 @@ jobs:
           packages=(
             furnace-rs-core-macros
             furnace-rs-common-macros
+            furnace-rs-grpc-macros
+            furnace-rs-socket-macros
             furnace-rs-core
+            furnace-rs-persistence-types
             furnace-rs-extra
             furnace-rs-common
+            furnace-rs-grpc
+            furnace-rs-socket
             furnace-rs-testing
             furnace-rs
             furnace-rs-persistence
@@ -253,6 +288,31 @@ jobs:
             esac
           }
 
+          publish_with_retry() {
+            local package="$1"
+            local attempt
+            local status
+
+            for attempt in {1..6}; do
+              echo "Publishing ${package} ${version} (attempt ${attempt}/6)"
+              if cargo publish --locked --package "$package"; then
+                return 0
+              fi
+
+              if publication_status "$package"; then
+                echo "${package} ${version} reached crates.io despite the publish error."
+                return 0
+              else
+                status=$?
+              fi
+              if [[ "$status" -ne 1 || "$attempt" -eq 6 ]]; then
+                return 1
+              fi
+
+              sleep $((attempt * 5))
+            done
+          }
+
           for package in "${packages[@]}"; do
             echo "Checking ${package} ${version} on crates.io."
             if publication_status "$package"; then
@@ -266,8 +326,7 @@ jobs:
               exit "$status"
             fi
 
-            echo "Publishing ${package} ${version}"
-            cargo publish --locked --package "$package"
+            publish_with_retry "$package"
           done
       - name: Create GitHub prerelease and tag
         shell: bash

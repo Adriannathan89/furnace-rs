@@ -2,11 +2,7 @@
 
 use std::{any::type_name, fmt, ops::Deref, sync::Arc};
 
-use axum::{extract::FromRequestParts, http::request::Parts};
-
 use crate::VerifiedJwt;
-
-use super::{PassportError, PassportRejection};
 
 /// An authenticated application identity that can answer guard policies.
 pub trait PassportPrincipal: Send + Sync + 'static {
@@ -41,6 +37,7 @@ impl<C> ClaimsPrincipal<C> {
 }
 
 impl<C> Clone for ClaimsPrincipal<C> {
+    /// Clones the shared reference to the verified token.
     fn clone(&self) -> Self {
         Self {
             verified: Arc::clone(&self.verified),
@@ -51,12 +48,14 @@ impl<C> Clone for ClaimsPrincipal<C> {
 impl<C> Deref for ClaimsPrincipal<C> {
     type Target = C;
 
+    /// Borrows the application-owned custom claims stored in the verified token.
     fn deref(&self) -> &Self::Target {
         &self.verified.claims.custom
     }
 }
 
 impl<C> fmt::Debug for ClaimsPrincipal<C> {
+    /// Formats the custom-claims type without printing claims data.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("ClaimsPrincipal")
@@ -69,26 +68,32 @@ impl<C> PassportPrincipal for ClaimsPrincipal<C>
 where
     C: PassportPrincipal,
 {
+    /// Delegates role checks to the custom claims value.
     fn has_role(&self, role: &str) -> bool {
         self.verified.claims.custom.has_role(role)
     }
 
+    /// Delegates permission checks to the custom claims value.
     fn has_permission(&self, permission: &str) -> bool {
         self.verified.claims.custom.has_permission(permission)
     }
 }
 
-/// An Axum extractor for the principal installed by a successful guard.
+/// The typed principal installed by a successful guard.
+///
+/// Use HTTP extraction or `grpc_authenticated` with the corresponding transport.
 pub struct Authenticated<P>(Arc<P>);
 
 impl<P> Authenticated<P> {
     #[allow(dead_code)]
+    /// Wraps the principal shared by a successful guard for request extraction.
     pub(crate) const fn new(principal: Arc<P>) -> Self {
         Self(principal)
     }
 }
 
 impl<P> Clone for Authenticated<P> {
+    /// Clones the shared reference to the authenticated principal.
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }
@@ -97,12 +102,14 @@ impl<P> Clone for Authenticated<P> {
 impl<P> Deref for Authenticated<P> {
     type Target = P;
 
+    /// Borrows the authenticated application principal.
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<P> fmt::Debug for Authenticated<P> {
+    /// Formats the principal type name without invoking its value formatter.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("Authenticated")
@@ -111,25 +118,12 @@ impl<P> fmt::Debug for Authenticated<P> {
     }
 }
 
-impl<P, S> FromRequestParts<S> for Authenticated<P>
-where
-    P: PassportPrincipal,
-    S: Send + Sync,
-{
-    type Rejection = PassportRejection;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts.extensions.get::<Self>().cloned().ok_or_else(|| {
-            PassportError::internal(MissingGuardExtension("authenticated principal")).into()
-        })
-    }
-}
-
-/// An Axum extractor for the complete token installed by a successful guard.
+/// The complete verified token installed by a successful guard.
 pub struct VerifiedToken<C>(Arc<VerifiedJwt<C>>);
 
 impl<C> VerifiedToken<C> {
     #[allow(dead_code)]
+    /// Wraps a verified token for extraction from a successfully guarded request.
     pub(crate) const fn new(verified: Arc<VerifiedJwt<C>>) -> Self {
         Self(verified)
     }
@@ -142,6 +136,7 @@ impl<C> VerifiedToken<C> {
 }
 
 impl<C> Clone for VerifiedToken<C> {
+    /// Clones the shared reference to the verified token.
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }
@@ -150,12 +145,14 @@ impl<C> Clone for VerifiedToken<C> {
 impl<C> Deref for VerifiedToken<C> {
     type Target = VerifiedJwt<C>;
 
+    /// Borrows the complete verified JWT.
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<C> fmt::Debug for VerifiedToken<C> {
+    /// Formats the claims type without printing custom claim values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("VerifiedToken")
@@ -163,30 +160,3 @@ impl<C> fmt::Debug for VerifiedToken<C> {
             .finish()
     }
 }
-
-impl<C, S> FromRequestParts<S> for VerifiedToken<C>
-where
-    C: Send + Sync + 'static,
-    S: Send + Sync,
-{
-    type Rejection = PassportRejection;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts
-            .extensions
-            .get::<Self>()
-            .cloned()
-            .ok_or_else(|| PassportError::internal(MissingGuardExtension("verified token")).into())
-    }
-}
-
-#[derive(Debug)]
-struct MissingGuardExtension(&'static str);
-
-impl fmt::Display for MissingGuardExtension {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "missing guard-installed {}", self.0)
-    }
-}
-
-impl std::error::Error for MissingGuardExtension {}

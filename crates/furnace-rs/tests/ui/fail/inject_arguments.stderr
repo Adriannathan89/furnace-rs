@@ -1,0 +1,5 @@
+error: #[inject] takes no arguments
+ --> tests/ui/fail/inject_arguments.rs:2:18
+  |
+2 | struct Service { #[inject(token = "value")] value: String }
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^

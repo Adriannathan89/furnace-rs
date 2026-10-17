@@ -67,11 +67,14 @@ pub(crate) const fn command_name(command: CanonicalCommand) -> &'static str {
     match command {
         CanonicalCommand::New => "new",
         CanonicalCommand::Routes => "routes",
+        CanonicalCommand::Grpc => "grpc",
+        CanonicalCommand::Socket => "socket",
         CanonicalCommand::Graph => "graph",
         CanonicalCommand::Doctor => "doctor",
     }
 }
 
+/// Wraps renderer or stream failures in the stable CLI output diagnostic.
 fn output_error(error: impl std::error::Error + Send + Sync + 'static) -> CliError {
     CliError::new(
         FURNACE204,
@@ -81,6 +84,7 @@ fn output_error(error: impl std::error::Error + Send + Sync + 'static) -> CliErr
     .with_source(error)
 }
 
+/// Builds the fallback machine-readable outcome for serialization failure.
 fn renderer_failure_outcome(command: Option<&str>) -> Outcome {
     let error = renderer_failure_error();
     Outcome::new(
@@ -93,6 +97,7 @@ fn renderer_failure_outcome(command: Option<&str>) -> Outcome {
     )
 }
 
+/// Creates the stable error returned after fallback output is written.
 fn renderer_failure_error() -> CliError {
     CliError::new(
         FURNACE204,

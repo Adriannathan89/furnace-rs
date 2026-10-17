@@ -1,0 +1,5 @@
+error: storage relations must contain at least one loader
+ --> tests/ui/storage/fail/empty_relations.rs:7:31
+  |
+7 | #[storage(entity=post::Entity,relations())]
+  |                               ^^^^^^^^^

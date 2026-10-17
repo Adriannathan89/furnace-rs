@@ -1,0 +1,1658 @@
+{
+  "baseline": {
+    "source": "isolated git archive",
+    "source_commit": "8c08bba",
+    "version": "1.0.2"
+  },
+  "benchmark_contracts_passed": {
+    "baseline_1.0.2": true,
+    "current_beta_and_initial_axum_fiber": true,
+    "paired_furnace_runs": true,
+    "refreshed_axum_fiber": true
+  },
+  "comparison": "FURNACE 1.0.2 versus declarative-DI beta, with refreshed Axum and Fiber references",
+  "current": {
+    "source_commit": "613ee02db7a0dcfa32a331c6cb75e67a162ad25e",
+    "version": "1.1.0-beta.1"
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 5 6600H (6 cores/12 threads; boost disabled)",
+    "go": "go version go1.22.2 linux/amd64",
+    "logical_cpus": 12,
+    "machine": "x86_64",
+    "memory_gib": 14,
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)"
+  },
+  "initial_five_run_cohorts": {
+    "baseline_1.0.2": {
+      "auth": [
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.725,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.943,
+          "p95_ms": 20.736,
+          "p99_ms": 29.637,
+          "passed": true,
+          "responses_per_second": 6955.9,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.734,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.984,
+          "p95_ms": 20.384,
+          "p99_ms": 28.586,
+          "passed": true,
+          "responses_per_second": 6918.7,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.729,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.918,
+          "p95_ms": 20.878,
+          "p99_ms": 29.823,
+          "passed": true,
+          "responses_per_second": 6940.6,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.688,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.477,
+          "p95_ms": 20.598,
+          "p99_ms": 29.628,
+          "passed": true,
+          "responses_per_second": 7110.7,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "auth",
+          "concurrency": 64,
+          "duration_seconds": 1.693,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 6000,
+          "p50_ms": 6.797,
+          "p95_ms": 20.58,
+          "p99_ms": 28.23,
+          "passed": true,
+          "responses_per_second": 7087.8,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ],
+      "hello": [
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.321,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 3.978,
+          "p95_ms": 16.595,
+          "p99_ms": 25.141,
+          "passed": true,
+          "responses_per_second": 9086.4,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.318,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.404,
+          "p95_ms": 17.076,
+          "p99_ms": 25.851,
+          "passed": true,
+          "responses_per_second": 9106.0,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.319,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.097,
+          "p95_ms": 16.758,
+          "p99_ms": 25.569,
+          "passed": true,
+          "responses_per_second": 9098.8,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.328,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.198,
+          "p95_ms": 16.73,
+          "p99_ms": 24.688,
+          "passed": true,
+          "responses_per_second": 9035.2,
+          "status_counts": {
+            "200": 12000
+          }
+        },
+        {
+          "case": "hello",
+          "concurrency": 64,
+          "duration_seconds": 1.323,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 12000,
+          "operations": 12000,
+          "p50_ms": 4.312,
+          "p95_ms": 17.205,
+          "p99_ms": 26.89,
+          "passed": true,
+          "responses_per_second": 9068.9,
+          "status_counts": {
+            "200": 12000
+          }
+        }
+      ]
+    },
+    "current_comparison": {
+      "auth": [
+        {
+          "body_limit": {
+            "status": 413,
+            "transport_errors": []
+          },
+          "contract_errors": [],
+          "framework": "furnace-rs",
+          "runs": [
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.769,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 7.06,
+              "p95_ms": 21.588,
+              "p99_ms": 30.286,
+              "passed": true,
+              "responses_per_second": 6784.2,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.747,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 7.046,
+              "p95_ms": 21.155,
+              "p99_ms": 29.151,
+              "passed": true,
+              "responses_per_second": 6870.1,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.721,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.796,
+              "p95_ms": 20.464,
+              "p99_ms": 29.117,
+              "passed": true,
+              "responses_per_second": 6972.9,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.697,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.862,
+              "p95_ms": 20.294,
+              "p99_ms": 29.053,
+              "passed": true,
+              "responses_per_second": 7070.7,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.698,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.621,
+              "p95_ms": 20.308,
+              "p99_ms": 29.45,
+              "passed": true,
+              "responses_per_second": 7066.4,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "scenario": "auth",
+          "summary": {
+            "median_p50_ms": 6.862,
+            "median_p95_ms": 20.464,
+            "median_p99_ms": 29.151,
+            "median_responses_per_second": 6972.9,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        {
+          "body_limit": {
+            "status": 413,
+            "transport_errors": []
+          },
+          "contract_errors": [],
+          "framework": "axum",
+          "runs": [
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.748,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.798,
+              "p95_ms": 21.398,
+              "p99_ms": 31.182,
+              "passed": true,
+              "responses_per_second": 6865.9,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.728,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.942,
+              "p95_ms": 20.384,
+              "p99_ms": 28.693,
+              "passed": true,
+              "responses_per_second": 6944.2,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.724,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.887,
+              "p95_ms": 20.987,
+              "p99_ms": 29.665,
+              "passed": true,
+              "responses_per_second": 6958.9,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.723,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.908,
+              "p95_ms": 21.121,
+              "p99_ms": 30.41,
+              "passed": true,
+              "responses_per_second": 6963.3,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.708,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.745,
+              "p95_ms": 20.671,
+              "p99_ms": 29.829,
+              "passed": true,
+              "responses_per_second": 7025.1,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "scenario": "auth",
+          "summary": {
+            "median_p50_ms": 6.887,
+            "median_p95_ms": 20.987,
+            "median_p99_ms": 29.829,
+            "median_responses_per_second": 6958.9,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        {
+          "body_limit": {
+            "status": null,
+            "transport_errors": [
+              "oversized body: transport failure: ConnectionResetError: [Errno 104] Connection reset by peer"
+            ]
+          },
+          "contract_errors": [],
+          "framework": "fiber",
+          "runs": [
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.688,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.76,
+              "p95_ms": 20.213,
+              "p99_ms": 28.371,
+              "passed": true,
+              "responses_per_second": 7108.8,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.727,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.731,
+              "p95_ms": 21.023,
+              "p99_ms": 28.566,
+              "passed": true,
+              "responses_per_second": 6949.3,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.692,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.904,
+              "p95_ms": 20.846,
+              "p99_ms": 28.486,
+              "passed": true,
+              "responses_per_second": 7090.9,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.705,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.888,
+              "p95_ms": 19.964,
+              "p99_ms": 28.904,
+              "passed": true,
+              "responses_per_second": 7039.4,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.741,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.89,
+              "p95_ms": 21.062,
+              "p99_ms": 29.601,
+              "passed": true,
+              "responses_per_second": 6893.0,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "scenario": "auth",
+          "summary": {
+            "median_p50_ms": 6.888,
+            "median_p95_ms": 20.846,
+            "median_p99_ms": 28.566,
+            "median_responses_per_second": 7039.4,
+            "passed": true,
+            "runs": 5
+          }
+        }
+      ],
+      "hello": [
+        {
+          "contract_errors": [],
+          "framework": "furnace-rs",
+          "runs": [
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.412,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.952,
+              "p95_ms": 18.037,
+              "p99_ms": 26.546,
+              "passed": true,
+              "responses_per_second": 8500.8,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.365,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.585,
+              "p95_ms": 17.682,
+              "p99_ms": 26.075,
+              "passed": true,
+              "responses_per_second": 8791.0,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.38,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.111,
+              "p95_ms": 17.619,
+              "p99_ms": 26.433,
+              "passed": true,
+              "responses_per_second": 8698.4,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.376,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.239,
+              "p95_ms": 17.482,
+              "p99_ms": 27.006,
+              "passed": true,
+              "responses_per_second": 8718.5,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.369,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.631,
+              "p95_ms": 17.589,
+              "p99_ms": 26.122,
+              "passed": true,
+              "responses_per_second": 8767.5,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "scenario": "hello",
+          "summary": {
+            "median_p50_ms": 4.585,
+            "median_p95_ms": 17.619,
+            "median_p99_ms": 26.433,
+            "median_responses_per_second": 8718.5,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        {
+          "contract_errors": [],
+          "framework": "axum",
+          "runs": [
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.355,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.892,
+              "p95_ms": 17.447,
+              "p99_ms": 26.887,
+              "passed": true,
+              "responses_per_second": 8857.1,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.357,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.926,
+              "p95_ms": 17.297,
+              "p99_ms": 27.084,
+              "passed": true,
+              "responses_per_second": 8846.3,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.357,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.865,
+              "p95_ms": 17.543,
+              "p99_ms": 27.073,
+              "passed": true,
+              "responses_per_second": 8839.8,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.363,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.908,
+              "p95_ms": 17.409,
+              "p99_ms": 27.587,
+              "passed": true,
+              "responses_per_second": 8802.0,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.364,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.99,
+              "p95_ms": 17.7,
+              "p99_ms": 27.897,
+              "passed": true,
+              "responses_per_second": 8799.4,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "scenario": "hello",
+          "summary": {
+            "median_p50_ms": 3.908,
+            "median_p95_ms": 17.447,
+            "median_p99_ms": 27.084,
+            "median_responses_per_second": 8839.8,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        {
+          "contract_errors": [],
+          "framework": "fiber",
+          "runs": [
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.384,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.229,
+              "p95_ms": 18.037,
+              "p99_ms": 27.221,
+              "passed": true,
+              "responses_per_second": 8667.7,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.393,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.35,
+              "p95_ms": 18.116,
+              "p99_ms": 26.99,
+              "passed": true,
+              "responses_per_second": 8614.3,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.382,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.197,
+              "p95_ms": 17.972,
+              "p99_ms": 27.471,
+              "passed": true,
+              "responses_per_second": 8682.7,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.383,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.969,
+              "p95_ms": 17.668,
+              "p99_ms": 26.785,
+              "passed": true,
+              "responses_per_second": 8678.9,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.389,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.451,
+              "p95_ms": 17.913,
+              "p99_ms": 26.678,
+              "passed": true,
+              "responses_per_second": 8638.9,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "scenario": "hello",
+          "summary": {
+            "median_p50_ms": 4.229,
+            "median_p95_ms": 17.972,
+            "median_p99_ms": 26.99,
+            "median_responses_per_second": 8667.7,
+            "passed": true,
+            "runs": 5
+          }
+        }
+      ]
+    }
+  },
+  "interpretation": "Small measured differences are within overlapping per-run ranges. Treat them as no material runtime change detected for these workloads; this measurement does not isolate DI lookup internals or cover database CRUD.",
+  "measured_at_utc": "2026-10-11T15:10:40.580080+00:00",
+  "method": {
+    "auth_http_responses_per_run": 12000,
+    "auth_operations_per_run": 6000,
+    "concurrency": 64,
+    "external_dependencies": "the 136 third-party package names and versions in the old/current protected-route Cargo lockfiles match",
+    "framework_reference": "five fresh measured runs for Axum and Fiber",
+    "furnace_version_comparison": "five matched pairs, alternating which version ran first",
+    "hello_requests_per_run": 12000,
+    "http_protocol": "loopback HTTP/1.1",
+    "postgres_crud": "not run: no local PostgreSQL server or disposable benchmark database URLs were available",
+    "profile": "stress",
+    "third_party_lock_sha256": {
+      "baseline": "3ca8c14baec98407c0830344650264e58221255df95edebbd0bd7531222bfd99",
+      "current": "ff25a4cc68ebef999265e0b603dfcf8d218a8bf857a1f371ce5c4ed679ba9123"
+    },
+    "warmup_and_contract_checks": "required before every measured run"
+  },
+  "pair_order": [
+    "1.0.2 then beta",
+    "beta then 1.0.2",
+    "1.0.2 then beta",
+    "beta then 1.0.2",
+    "1.0.2 then beta"
+  ],
+  "results": [
+    {
+      "frameworks": {
+        "axum": {
+          "contract_errors": [],
+          "runs": [
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.351,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.098,
+              "p95_ms": 17.25,
+              "p99_ms": 25.958,
+              "passed": true,
+              "responses_per_second": 8885.4,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.372,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.041,
+              "p95_ms": 17.69,
+              "p99_ms": 26.861,
+              "passed": true,
+              "responses_per_second": 8745.5,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.356,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.048,
+              "p95_ms": 17.508,
+              "p99_ms": 27.583,
+              "passed": true,
+              "responses_per_second": 8852.4,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.346,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.916,
+              "p95_ms": 17.598,
+              "p99_ms": 27.715,
+              "passed": true,
+              "responses_per_second": 8917.9,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.344,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.858,
+              "p95_ms": 17.449,
+              "p99_ms": 26.321,
+              "passed": true,
+              "responses_per_second": 8927.4,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "summary": {
+            "median_p50_ms": 4.041,
+            "median_p95_ms": 17.508,
+            "median_p99_ms": 26.861,
+            "median_responses_per_second": 8885.4,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        "fiber": {
+          "contract_errors": [],
+          "runs": [
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.401,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.628,
+              "p95_ms": 17.945,
+              "p99_ms": 27.716,
+              "passed": true,
+              "responses_per_second": 8564.6,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.339,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.95,
+              "p95_ms": 17.128,
+              "p99_ms": 26.254,
+              "passed": true,
+              "responses_per_second": 8963.1,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.328,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.14,
+              "p95_ms": 16.636,
+              "p99_ms": 25.327,
+              "passed": true,
+              "responses_per_second": 9035.6,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.364,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.441,
+              "p95_ms": 17.545,
+              "p99_ms": 25.409,
+              "passed": true,
+              "responses_per_second": 8797.6,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.342,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.083,
+              "p95_ms": 17.192,
+              "p99_ms": 26.745,
+              "passed": true,
+              "responses_per_second": 8942.7,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "summary": {
+            "median_p50_ms": 4.14,
+            "median_p95_ms": 17.192,
+            "median_p99_ms": 26.254,
+            "median_responses_per_second": 8942.7,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        "furnace-rs 1.0.2": {
+          "runs": [
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.394,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.357,
+              "p95_ms": 18.014,
+              "p99_ms": 26.955,
+              "passed": true,
+              "responses_per_second": 8611.2,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.356,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.961,
+              "p95_ms": 17.058,
+              "p99_ms": 25.92,
+              "passed": true,
+              "responses_per_second": 8848.5,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.328,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.196,
+              "p95_ms": 16.658,
+              "p99_ms": 25.876,
+              "passed": true,
+              "responses_per_second": 9036.6,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.376,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.277,
+              "p95_ms": 17.564,
+              "p99_ms": 27.516,
+              "passed": true,
+              "responses_per_second": 8721.7,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.36,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 3.914,
+              "p95_ms": 16.882,
+              "p99_ms": 26.148,
+              "passed": true,
+              "responses_per_second": 8821.6,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "summary": {
+            "error_count": 0,
+            "median_p50_ms": 4.196,
+            "median_p95_ms": 17.058,
+            "median_p99_ms": 26.148,
+            "median_responses_per_second": 8821.6,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        "furnace-rs 1.1.0-beta.1": {
+          "runs": [
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.352,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.172,
+              "p95_ms": 17.231,
+              "p99_ms": 27.284,
+              "passed": true,
+              "responses_per_second": 8872.7,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.321,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.293,
+              "p95_ms": 16.726,
+              "p99_ms": 25.962,
+              "passed": true,
+              "responses_per_second": 9086.7,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.317,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.167,
+              "p95_ms": 16.841,
+              "p99_ms": 26.188,
+              "passed": true,
+              "responses_per_second": 9113.9,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.327,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.246,
+              "p95_ms": 16.733,
+              "p99_ms": 25.81,
+              "passed": true,
+              "responses_per_second": 9042.4,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "hello",
+              "concurrency": 64,
+              "duration_seconds": 1.36,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 12000,
+              "p50_ms": 4.018,
+              "p95_ms": 17.511,
+              "p99_ms": 26.336,
+              "passed": true,
+              "responses_per_second": 8823.2,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "summary": {
+            "error_count": 0,
+            "median_p50_ms": 4.172,
+            "median_p95_ms": 16.841,
+            "median_p99_ms": 26.188,
+            "median_responses_per_second": 9042.4,
+            "passed": true,
+            "runs": 5
+          }
+        }
+      },
+      "scenario": "hello"
+    },
+    {
+      "frameworks": {
+        "axum": {
+          "contract_errors": [],
+          "runs": [
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.668,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.588,
+              "p95_ms": 19.786,
+              "p99_ms": 28.797,
+              "passed": true,
+              "responses_per_second": 7192.7,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.692,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.596,
+              "p95_ms": 20.294,
+              "p99_ms": 28.82,
+              "passed": true,
+              "responses_per_second": 7090.3,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.735,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.817,
+              "p95_ms": 20.889,
+              "p99_ms": 29.155,
+              "passed": true,
+              "responses_per_second": 6915.6,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.718,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.867,
+              "p95_ms": 20.214,
+              "p99_ms": 28.83,
+              "passed": true,
+              "responses_per_second": 6986.3,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.714,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.805,
+              "p95_ms": 20.921,
+              "p99_ms": 29.771,
+              "passed": true,
+              "responses_per_second": 6999.9,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "summary": {
+            "median_p50_ms": 6.805,
+            "median_p95_ms": 20.294,
+            "median_p99_ms": 28.83,
+            "median_responses_per_second": 6999.9,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        "fiber": {
+          "contract_errors": [],
+          "runs": [
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.741,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 7.009,
+              "p95_ms": 20.377,
+              "p99_ms": 30.173,
+              "passed": true,
+              "responses_per_second": 6892.2,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.706,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.865,
+              "p95_ms": 20.737,
+              "p99_ms": 28.545,
+              "passed": true,
+              "responses_per_second": 7035.5,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.702,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.926,
+              "p95_ms": 20.96,
+              "p99_ms": 29.358,
+              "passed": true,
+              "responses_per_second": 7050.1,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.716,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.711,
+              "p95_ms": 20.498,
+              "p99_ms": 29.231,
+              "passed": true,
+              "responses_per_second": 6993.9,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.733,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.731,
+              "p95_ms": 20.132,
+              "p99_ms": 27.998,
+              "passed": true,
+              "responses_per_second": 6924.2,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "summary": {
+            "median_p50_ms": 6.865,
+            "median_p95_ms": 20.498,
+            "median_p99_ms": 29.231,
+            "median_responses_per_second": 6993.9,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        "furnace-rs 1.0.2": {
+          "runs": [
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.741,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.909,
+              "p95_ms": 20.496,
+              "p99_ms": 29.894,
+              "passed": true,
+              "responses_per_second": 6891.9,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.697,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.591,
+              "p95_ms": 20.456,
+              "p99_ms": 28.382,
+              "passed": true,
+              "responses_per_second": 7072.5,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.684,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.803,
+              "p95_ms": 20.515,
+              "p99_ms": 29.23,
+              "passed": true,
+              "responses_per_second": 7124.3,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.748,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.941,
+              "p95_ms": 20.98,
+              "p99_ms": 30.296,
+              "passed": true,
+              "responses_per_second": 6863.1,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.762,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.878,
+              "p95_ms": 21.263,
+              "p99_ms": 29.878,
+              "passed": true,
+              "responses_per_second": 6810.8,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "summary": {
+            "error_count": 0,
+            "median_p50_ms": 6.878,
+            "median_p95_ms": 20.515,
+            "median_p99_ms": 29.878,
+            "median_responses_per_second": 6891.9,
+            "passed": true,
+            "runs": 5
+          }
+        },
+        "furnace-rs 1.1.0-beta.1": {
+          "runs": [
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.707,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.906,
+              "p95_ms": 21.028,
+              "p99_ms": 28.828,
+              "passed": true,
+              "responses_per_second": 7029.6,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.73,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.915,
+              "p95_ms": 20.156,
+              "p99_ms": 28.708,
+              "passed": true,
+              "responses_per_second": 6936.6,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.727,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.842,
+              "p95_ms": 20.978,
+              "p99_ms": 29.974,
+              "passed": true,
+              "responses_per_second": 6948.6,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.692,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.767,
+              "p95_ms": 20.483,
+              "p99_ms": 29.499,
+              "passed": true,
+              "responses_per_second": 7091.8,
+              "status_counts": {
+                "200": 12000
+              }
+            },
+            {
+              "case": "auth",
+              "concurrency": 64,
+              "duration_seconds": 1.747,
+              "error_count": 0,
+              "error_examples": [],
+              "http_responses": 12000,
+              "operations": 6000,
+              "p50_ms": 6.805,
+              "p95_ms": 21.159,
+              "p99_ms": 29.526,
+              "passed": true,
+              "responses_per_second": 6868.8,
+              "status_counts": {
+                "200": 12000
+              }
+            }
+          ],
+          "summary": {
+            "error_count": 0,
+            "median_p50_ms": 6.842,
+            "median_p95_ms": 20.978,
+            "median_p99_ms": 29.499,
+            "median_responses_per_second": 6948.6,
+            "passed": true,
+            "runs": 5
+          }
+        }
+      },
+      "scenario": "auth"
+    }
+  ],
+  "source_lockfiles": {
+    "baseline_protected-route": {
+      "path": "benchmark/results/2026-10-11-di-runtime-locks/1.0.2-protected-route.lock",
+      "sha256": "3ca8c14baec98407c0830344650264e58221255df95edebbd0bd7531222bfd99"
+    },
+    "beta_protected-route": {
+      "path": "benchmark/targets/furnace-rs/locks/protected-route.lock",
+      "sha256": "ff25a4cc68ebef999265e0b603dfcf8d218a8bf857a1f371ce5c4ed679ba9123"
+    }
+  }
+}

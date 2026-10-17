@@ -5,15 +5,21 @@ members = [
     "crates/furnace-rs-core",
     "crates/furnace-rs-core-macros",
     "crates/furnace-rs-persistence",
+    "crates/furnace-rs-persistence-types",
     "crates/furnace-rs-common",
     "crates/furnace-rs-common-macros",
+    "crates/furnace-rs-grpc",
+    "crates/furnace-rs-socket",
+    "crates/furnace-rs-socket-macros",
+    "crates/furnace-rs-grpc-macros",
     "crates/furnace-rs-cli",
     "crates/furnace-rs-extra",
     "crates/furnace-rs-testing",
+    "tests/grpc-support",
 ]
 
 [workspace.package]
-version = "1.0.2"
+version = "2.0.0"
 edition = "2024"
 rust-version = "1.94"
 authors = ["furnace-rs contributors"]
@@ -29,6 +35,7 @@ cargo_metadata = "=0.19.2"
 cookie = { version = "=0.18.1", default-features = false, features = ["percent-encode"] }
 dotenvy = "=0.15.7"
 http-body = "1"
+http = "1"
 hyper = { version = "1", features = ["http1", "server"] }
 hyper-util = { version = "0.1", features = ["server-auto", "service", "tokio"] }
 futures-util = "0.3"
@@ -52,6 +59,14 @@ toml_edit = "=0.22.27"
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors"] }
 tracing = "0.1"
+tonic = { version = "0.14.6", default-features = false }
+tonic-prost = "0.14.6"
+tonic-prost-build = "0.14.6"
+tonic-health = "0.14.6"
+tonic-reflection = "0.14.6"
+prost = "0.14.4"
+prost-types = "0.14.4"
+protoc-bin-vendored = "3.3.0"
 trybuild = "1"
 
 [workspace.lints.rust]

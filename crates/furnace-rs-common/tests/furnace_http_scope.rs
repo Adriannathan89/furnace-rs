@@ -1,10 +1,14 @@
 //! Cauldron membership determines routes independently of declaration namespaces.
 #![cfg(feature = "http")]
+
+#[macro_use]
+#[path = "support/cauldron_metadata.rs"]
+mod cauldron_metadata;
 use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use furnace_rs_common::core::{Cauldron, CauldronRegistration, Furnace};
+use furnace_rs_common::core::Furnace;
 use furnace_rs_common::{build_router, controller};
 use tower::ServiceExt;
 mod contract {}
@@ -42,13 +46,12 @@ impl Stray {
     }
 }
 
-#[furnace_rs_core::cauldron]
-struct Root;
-impl Cauldron for Root {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<Selected>()
-    }
+cauldron_metadata! {
+    struct Root;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .controller::<Selected>()
 }
+
 #[tokio::test]
 async fn only_registered_controllers_install_routes() {
     let mut builder = Furnace::builder();
@@ -107,20 +110,19 @@ const __FURNACE_INJECTOR_DESCRIPTOR_ORDINARY: furnace_rs_core::ProviderDescripto
         ));
 furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_ORDINARY }
 
-#[furnace_rs_core::cauldron]
-struct WrongController;
-impl Cauldron for WrongController {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<Ordinary>()
-    }
+cauldron_metadata! {
+    struct WrongController;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .controller::<Ordinary>()
 }
-#[furnace_rs_core::cauldron]
-struct ExportedController;
-impl Cauldron for ExportedController {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Selected>().export::<Selected>()
-    }
+
+cauldron_metadata! {
+    struct ExportedController;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide::<Selected>()
+        .export::<Selected>()
 }
+
 #[test]
 fn controller_roles_and_exports_are_validated_before_construction() {
     for analysis in [

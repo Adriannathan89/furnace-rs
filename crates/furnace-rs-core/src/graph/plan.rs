@@ -8,6 +8,7 @@ use super::model::{
     ApplicationGraph, ConstructionPlan, ConstructionStep, ProviderNode, ProviderState,
 };
 
+/// Produces a stable topological order for all providers still awaiting construction.
 pub(crate) fn create(
     graph: &ApplicationGraph,
     descriptors: &[&'static ProviderDescriptor],
@@ -89,6 +90,7 @@ struct ReadyNode {
 }
 
 impl ReadyNode {
+    /// Captures the tie-break fields used for deterministic ready-provider selection.
     fn new(index: usize, provider: &ProviderNode) -> Self {
         let (file, line, column) = match provider.location {
             Some(location) => (location.file, location.line, location.column),

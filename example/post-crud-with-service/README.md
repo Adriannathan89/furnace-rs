@@ -1,6 +1,6 @@
 # Posts CRUD with a service and PostgreSQL
 
-This independent FURNACE 1.0.2 project connects to PostgreSQL through the opt-in
+This independent FURNACE 2.0.0 project connects to PostgreSQL through the opt-in
 `furnace-rs-persistence` SeaORM connector. `DatabaseCauldron` supplies the native
 `DatabaseConnection` to `PostRepository`; `PostService` coordinates calls to the
 repository and `PostController` exposes the HTTP routes. The connector checks
@@ -55,3 +55,9 @@ native `Result<_, DbErr>` signatures.
 
 Both CRUD projects use port 3001 and the same database name by default. Run them
 one at a time, or adjust the port in `furnace.toml` and `DATABASE_URL` in `.env`.
+
+`AppCauldron` uses `#[cauldron(root, imports = [DatabaseCauldron, PostCauldron])]`.
+`PostCauldron` declares its providers and controller in the attribute, with
+`#[inject]` marking managed dependencies. Removing the database import fails
+compilation because `PostRepository` requires `DatabaseConnection`. Database
+configuration, readiness and SQL operations remain runtime checks.

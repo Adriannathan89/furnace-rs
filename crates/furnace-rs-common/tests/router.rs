@@ -35,14 +35,8 @@ mod cors_routes {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [CorsController])]
     pub struct CorsApplication;
-
-    impl furnace_rs_common::core::Cauldron for CorsApplication {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<CorsController>()
-        }
-    }
 }
 
 fn cors_config() -> Config {

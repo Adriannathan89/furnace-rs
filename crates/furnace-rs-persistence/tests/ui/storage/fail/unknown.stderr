@@ -1,0 +1,5 @@
+error: unknown storage option; expected entity, connection, or relations
+ --> tests/ui/storage/fail/unknown.rs:7:44
+  |
+7 | #[storage(entity = entities::post::Entity, pagination(size = 20))]
+  |                                            ^^^^^^^^^^

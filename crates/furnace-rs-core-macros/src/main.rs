@@ -31,6 +31,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     })
 }
 
+/// Rejects entry-point forms the synchronous runtime wrapper cannot preserve.
 fn validate_signature(item: &ItemFn) -> syn::Result<()> {
     if item.sig.ident != "main" {
         return Err(Error::new(

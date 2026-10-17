@@ -1,0 +1,41 @@
+[package]
+name = "furnace-rs-socket"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+readme = "README.md"
+description = "Managed WebSocket server transport for Furnace"
+[features]
+default = []
+jwt = ["furnace-rs-common/passport", "dep:cookie"]
+tls = ["dep:rustls", "dep:tokio-rustls"]
+redis = ["dep:redis", "dep:rustls"]
+[dependencies]
+furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0" }
+furnace-rs-common = { path = "../furnace-rs-common", version = "=2.0.0", default-features = false, features = ["transport-metadata", "transport-runtime"] }
+furnace-rs-socket-macros = { path = "../furnace-rs-socket-macros", version = "=2.0.0" }
+axum = { workspace = true, features = ["ws"] }
+futures-util.workspace = true
+http.workspace = true
+hyper.workspace = true
+hyper-util.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tracing.workspace = true
+serde_urlencoded.workspace = true
+cookie = { workspace = true, optional = true }
+redis = { version = "0.32", default-features = false, features = ["tokio-rustls-comp", "tls-rustls-webpki-roots", "script", "streams"], optional = true }
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"], optional = true }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"], optional = true }
+[dev-dependencies]
+tokio-tungstenite = { version = "0.29", features = ["rustls-tls-webpki-roots"] }
+tokio = { workspace = true, features = ["test-util"] }
+tempfile = "3"
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"] }
+[lints]
+workspace = true

@@ -9,6 +9,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::{Error, Generics, Path, Type, parse_quote_spanned, spanned::Spanned};
 
+/// Emits type-checked validation statements for one field's parsed validators.
 pub(super) fn expand(
     ty: &Type,
     validators: &[Validator],
@@ -174,6 +175,7 @@ pub(super) fn expand(
     Ok(body)
 }
 
+/// Emits one runtime validation issue with the requested stable issue kind.
 fn failure(kind: &str, common: &Path) -> TokenStream {
     let kind = syn::Ident::new(kind, proc_macro2::Span::call_site());
     quote! {
@@ -182,6 +184,7 @@ fn failure(kind: &str, common: &Path) -> TokenStream {
     }
 }
 
+/// Emits code-point or collection length calculation for a supported input type.
 fn length(ty: &Type, runtime: &TokenStream) -> TokenStream {
     if let Type::Tuple(tuple) = ty {
         let len = tuple.elems.len();
@@ -191,6 +194,7 @@ fn length(ty: &Type, runtime: &TokenStream) -> TokenStream {
     }
 }
 
+/// Recognizes nested sequence/map types and requires string map keys.
 fn collection(ty: &Type) -> syn::Result<bool> {
     let name = type_name(ty);
     if matches!(name.as_str(), "HashMap" | "BTreeMap") {
@@ -208,6 +212,7 @@ fn collection(ty: &Type) -> syn::Result<bool> {
     Ok(name == "Vec" || matches!(ty, Type::Array(_) | Type::Tuple(_)))
 }
 
+/// Emits recursive validation with deterministic index/key path prefixes.
 fn nested(
     ty: &Type,
     value: TokenStream,
@@ -284,6 +289,7 @@ fn nested(
     }))
 }
 
+/// Checks whether a nested type references a generic parameter needing an `Input` bound.
 fn needs_bound(ty: &Type, generics: &Generics) -> bool {
     use syn::visit_mut::VisitMut;
     struct Find<'a> {
@@ -291,6 +297,7 @@ fn needs_bound(ty: &Type, generics: &Generics) -> bool {
         found: bool,
     }
     impl VisitMut for Find<'_> {
+        /// Detects type parameters referenced in a nested input type.
         fn visit_type_path_mut(&mut self, path: &mut syn::TypePath) {
             if let Some(first) = path.path.segments.first() {
                 self.found |= self

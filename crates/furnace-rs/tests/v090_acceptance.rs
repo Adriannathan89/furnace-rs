@@ -44,16 +44,8 @@ mod application {
         pub(super) username: String,
     }
 
-    #[cauldron]
+    #[cauldron(providers = [AcceptanceConfig => AcceptanceConfigInjector, AcceptanceService], controllers = [AcceptanceController])]
     pub(super) struct AcceptanceCauldron;
-
-    impl furnace_rs::core::Cauldron for AcceptanceCauldron {
-        fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-            self.provide_with::<AcceptanceConfig, AcceptanceConfigInjector>()
-                .provide::<AcceptanceService>()
-                .controller::<AcceptanceController>()
-        }
-    }
 
     fn acceptance_config(config: Config) -> furnace_rs::core::Result<AcceptanceConfig> {
         Ok(config.parse()?)
@@ -85,6 +77,7 @@ mod application {
 
     #[controller]
     pub(super) struct AcceptanceController {
+        #[inject]
         service: AcceptanceService,
     }
 

@@ -1,3 +1,5 @@
+//! Connector-independent provision of native database values.
+
 use std::future::Future;
 
 use crate::PersistenceResult;

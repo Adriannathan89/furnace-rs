@@ -89,16 +89,8 @@ impl LifecycleHook for RecordingHook {
 mod automatic {
     use super::*;
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [EventLog => super::EventLogInjector, ManagedResource], exports = [ManagedResource])]
     pub struct AutomaticRoot;
-
-    impl furnace_rs_core::Cauldron for AutomaticRoot {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide_with::<EventLog, super::EventLogInjector>()
-                .provide::<ManagedResource>()
-                .export::<ManagedResource>()
-        }
-    }
 
     #[derive(Clone)]
     pub struct ManagedResource(EventLog);
@@ -124,18 +116,8 @@ mod automatic {
 mod failure {
     use super::*;
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [EventLog => super::EventLogInjector, DroppedResource, usize => LaterFailureInjector], exports = [DroppedResource, usize])]
     pub struct FailureRoot;
-
-    impl furnace_rs_core::Cauldron for FailureRoot {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide_with::<EventLog, super::EventLogInjector>()
-                .provide::<DroppedResource>()
-                .provide_with::<usize, LaterFailureInjector>()
-                .export::<DroppedResource>()
-                .export::<usize>()
-        }
-    }
 
     #[derive(Clone)]
     pub struct DroppedResource(Arc<DropToken>, EventLog);
@@ -198,14 +180,8 @@ mod failure {
 }
 
 mod empty {
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [super::OrdinaryValue])]
     pub struct EmptyRoot;
-
-    impl furnace_rs_core::Cauldron for EmptyRoot {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<super::OrdinaryValue>()
-        }
-    }
 }
 
 struct OrdinaryValue;

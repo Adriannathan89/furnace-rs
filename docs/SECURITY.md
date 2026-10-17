@@ -1,17 +1,19 @@
 # Security policy
 
-The current released version is furnace-rs **1.0.2**, available on
-[crates.io](https://crates.io/crates/furnace-rs/1.0.2).
-Use 1.0.2 for the latest released security and availability fixes.
+The current released version is furnace-rs **2.0.0**, available on
+[crates.io](https://crates.io/crates/furnace-rs/2.0.0).
+Use 2.0.0 for the current stable security and availability fixes.
+See the [2.0.0 release notes](releases/2.0.0.md) for inherited hardening,
+transport admission rules, and application responsibilities.
 
 Version 1.0.1 adds ten-second initial-request/header and idle-body deadlines,
 rejects zero database maintenance durations, and validates inventory output
 types during construction. See the [release notes](releases/1.0.1.md),
-[HTTP runtime report](../benchmark/HTTP_RUNTIME_SECURITY.md), and
-[database/inventory report](../benchmark/DATABASE_INVENTORY_SECURITY.md).
+[HTTP runtime summary](../benchmark/SECURITY.md#http-runtime-request-deadlines), and
+[database/inventory summary](../benchmark/SECURITY.md#database-jwt-and-inventory-regressions).
 The [1.0.0 audit](SECURITY_AUDIT.md) retains evidence for earlier fixes.
 
-The released **1.0.2** includes the
+The **1.0.2** release included the
 [validated-extractor error-redaction fix](security/2026-10-09-extractor-error-redaction.md)
 and retains the earlier protections described above.
 See the [1.0.2 release notes](releases/1.0.2.md) for changes and verification.
@@ -32,10 +34,11 @@ Distinguish a confirmed exploit from a source-level hypothesis.
 
 ## Scope and maintenance
 
-The security review covers the nine `furnace-rs` workspace crates, their normal
-dependency graph, CLI control transports, and documented authentication/database
-integration. The current development branch and released 1.0.x line are the
-focus of this policy. This does not promise backports to every historical MADS
+The workspace contains fourteen publishable `furnace-rs` crates, including
+HTTP, gRPC and WebSocket integrations, CLI controls, and authentication/database
+components. Historical review scope and evidence remain tied to their original
+commits; this policy does not expand those historical audit claims. The current
+development branch and stable 2.0.x line are the focus of this policy. This does not promise backports to every historical MADS
 or furnace-rs 0.x release.
 
 Applications own their authorization policy, credential validation, password

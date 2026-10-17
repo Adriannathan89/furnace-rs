@@ -1,12 +1,15 @@
-# FURNACE 1.0 examples
+# FURNACE examples
 
-These are four independent Rust projects. Run each command from its example
+These are independent Rust projects. The checkout targets the 2.0.0 release. Run each command from its example
 directory so `Furnace::burn` loads that project's `furnace.toml` and optional `.env`.
-Each project uses local workspace crates to demonstrate the new explicit cauldron
-registration API.
+Each project uses local workspace crates, declarative `#[cauldron(...)]`
+registration and a marked `root` for compile-time dependency checking.
 
 | Project | What it demonstrates | Port |
 | --- | --- | --- |
+| [compile-time-di](compile-time-di/) | Declared root checking and a missing-dependency Cargo test | None |
+| [missing-dependency](missing-dependency/) | Intentionally fails compilation because a required provider is not registered | None |
+| [grpc-transport](grpc-transport/) | All four protobuf RPC shapes, managed clients, Passport/JWT, health/reflection, and optional mixed/TLS mode | 50051 |
 | [hello-world](hello-world/) | The smallest FURNACE HTTP application | 3000 |
 | [posts-crud](posts-crud/) | PostgreSQL and SeaORM CRUD with a controller calling its repository directly | 3001 |
 | [post-crud-with-service](post-crud-with-service/) | The same CRUD routes with an optional `PostService` layer | 3001 |
@@ -24,4 +27,6 @@ defines Trait–Provider–Repository–Service: traits express application cont
 providers bind them to implementations, repositories handle data access, and
 services implement use cases. Controllers are the HTTP boundary. The JWT
 example follows that pattern with an in-memory repository. The reference uses
-FURNACE 0.8 APIs, so these projects use the current 1.0 crate boundaries.
+FURNACE 0.8 APIs, so these projects use the current 2.0 crate boundaries.
+
+[WebSocket server example](socket-transport/README.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

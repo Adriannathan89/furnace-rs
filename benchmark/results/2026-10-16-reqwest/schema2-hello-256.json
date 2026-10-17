@@ -1,0 +1,702 @@
+{
+  "cpu_model": "AMD Ryzen 5 6600H with Radeon Graphics",
+  "execution_order": [
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 13868734835325185325,
+      "run": 1,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 4335912304653484639,
+      "run": 2,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 13130444580112342223,
+      "run": 1,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs",
+      "request_order_seed": 11724566470085255155,
+      "run": 0,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 3661475706189112286,
+      "run": 2,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs",
+      "request_order_seed": 14762174223135018841,
+      "run": 1,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "axum",
+      "request_order_seed": 9701089614715252989,
+      "run": 0,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "furnace-rs",
+      "request_order_seed": 5401300120930083298,
+      "run": 2,
+      "scenario": "hello"
+    },
+    {
+      "dependency_count": null,
+      "framework": "fiber",
+      "request_order_seed": 3975463552515060061,
+      "run": 0,
+      "scenario": "hello"
+    }
+  ],
+  "git_dirty": true,
+  "git_head": "49f72ba62fa5ef7e5f71cc60835d0deb7e92d60b",
+  "go": "go version go1.22.2 linux/amd64",
+  "load_generator": {
+    "binary_sha256": "cd73b56ceba490a63dc58d9cbe03e94e49f8b373b798e13da8f86166a162ca3a",
+    "client_cpu_affinity": "0,2,4,6",
+    "connection_policy": "one client per worker; full response bodies consumed; persistent connections except connection-churn",
+    "cpu_measurement": "Linux /proc/PID/task/*/schedstat summed across live runtime threads; 100% means one fully used core; null when unavailable",
+    "http_client": "reqwest 0.13.4",
+    "http_version": "HTTP/1.1",
+    "language": "Rust",
+    "latency": "send through complete response body; contract parsing included in trial wall time",
+    "load_model": "closed loop; next operation follows previous response; not an open-loop arrival-rate or coordinated-omission-corrected test",
+    "percentiles": "nearest rank per run; medians of per-run percentiles",
+    "redirect_policy": "disabled",
+    "requested_server_cpu_affinity": "8",
+    "retry_policy": "disabled",
+    "runtime": "Tokio multi-thread",
+    "runtime_worker_threads": 4,
+    "server_environment": {
+      "GOMAXPROCS": "1",
+      "TOKIO_WORKER_THREADS": null
+    },
+    "source_sha256": "ecb37cd043ec20718f11b4876b9cadec8d25b2d3115c54b612f58021bcf4082c"
+  },
+  "logical_cpus": 4,
+  "measured_runs": 3,
+  "passed": true,
+  "platform": "Linux 7.0.0-34-generic #34~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  4 15:38:29 UTC 2 x86_64 GNU/Linux",
+  "profile": "extended",
+  "random_seed": 20261273,
+  "request_randomization": {
+    "operation_order": "independent operations shuffled per worker; dependent HTTP steps retain order",
+    "seed_derivation": "first 8 SHA-256 bytes of master seed, scenario, framework, run, dependency count",
+    "target_order": "SplitMix64 Fisher-Yates randomized fresh process/workload trials"
+  },
+  "results": [
+    {
+      "contract_errors": [],
+      "dependency_count": null,
+      "errors": [],
+      "framework": "axum",
+      "passed": true,
+      "runs": [
+        {
+          "artifact": {
+            "bytes": 9367912,
+            "path": "benchmark/targets/axum/target/release/furnace-rs-bench-axum",
+            "sha256": "5b6ab9a6a966ef71addbfcfe0a351bf763d95fe9e6ed15645c43b31eb9e43a24"
+          },
+          "attempted_requests": 131072,
+          "case": "hello",
+          "client_cpu_percent_one_core": 221.82025263994694,
+          "client_cpu_seconds": 4.9303879550000005,
+          "completed_operations": 131072,
+          "concurrency": 256,
+          "duration_seconds": 2.222695131,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 131072,
+          "operations": 131072,
+          "p50_ms": 4.0232790000000005,
+          "p95_ms": 6.583056,
+          "p99_ms": 7.4084650000000005,
+          "passed": true,
+          "request_order_seed": 13868734835325185325,
+          "request_order_sha256": "e86923bab4dc61c0fe60cb374c54b2874ace58b0c79a706ab74f6fdf97f43d62",
+          "responses_per_second": 58969.85068799343,
+          "run_index": 1,
+          "server_cpu_affinity": "8",
+          "server_cpu_percent_one_core": 99.99652480455269,
+          "server_cpu_seconds": 2.222617888,
+          "startup_seconds": 0.004014733,
+          "status_counts": {
+            "200": 131072
+          },
+          "warmup": {
+            "attempted_requests": 2560,
+            "case": "hello",
+            "client_cpu_percent_one_core": 162.3513364159745,
+            "client_cpu_seconds": 0.14246202000000002,
+            "completed_operations": 2560,
+            "concurrency": 256,
+            "duration_seconds": 0.087749213,
+            "error_count": 0,
+            "error_examples": [],
+            "http_responses": 2560,
+            "operations": 2560,
+            "p50_ms": 3.9441390000000003,
+            "p95_ms": 19.942035,
+            "p99_ms": 37.582133,
+            "passed": true,
+            "request_order_seed": 13868734835325185325,
+            "request_order_sha256": "4fa84a3501fe8aa5c4a574da9c9b109df61abd263883182959c19228a219fba7",
+            "responses_per_second": 29174.050825960112,
+            "server_cpu_percent_one_core": 65.00715852574085,
+            "server_cpu_seconds": 0.05704327,
+            "status_counts": {
+              "200": 2560
+            }
+          }
+        },
+        {
+          "artifact": {
+            "bytes": 9367912,
+            "path": "benchmark/targets/axum/target/release/furnace-rs-bench-axum",
+            "sha256": "5b6ab9a6a966ef71addbfcfe0a351bf763d95fe9e6ed15645c43b31eb9e43a24"
+          },
+          "attempted_requests": 131072,
+          "case": "hello",
+          "client_cpu_percent_one_core": 218.1614007474698,
+          "client_cpu_seconds": 4.810871037000001,
+          "completed_operations": 131072,
+          "concurrency": 256,
+          "duration_seconds": 2.20518892,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 131072,
+          "operations": 131072,
+          "p50_ms": 4.108200999999999,
+          "p95_ms": 5.96986,
+          "p99_ms": 6.876364000000001,
+          "passed": true,
+          "request_order_seed": 4335912304653484639,
+          "request_order_sha256": "cbc62d70a0ede5ab0b623b3b9a9b8cd181a100f91a90c5755d5633febd2c60de",
+          "responses_per_second": 59437.99137173245,
+          "run_index": 2,
+          "server_cpu_affinity": "8",
+          "server_cpu_percent_one_core": 99.98954724477758,
+          "server_cpu_seconds": 2.2049584170000003,
+          "startup_seconds": 0.004088553,
+          "status_counts": {
+            "200": 131072
+          },
+          "warmup": {
+            "attempted_requests": 2560,
+            "case": "hello",
+            "client_cpu_percent_one_core": 11.935588451473436,
+            "client_cpu_seconds": 0.1223001840000002,
+            "completed_operations": 2560,
+            "concurrency": 256,
+            "duration_seconds": 1.024668239,
+            "error_count": 0,
+            "error_examples": [],
+            "http_responses": 2560,
+            "operations": 2560,
+            "p50_ms": 1.1709260000000001,
+            "p95_ms": 21.070471,
+            "p99_ms": 1010.5688719999999,
+            "passed": true,
+            "request_order_seed": 4335912304653484639,
+            "request_order_sha256": "1f9e88f9e7ce08936b6bc228274f70594600e2403e9cd343bf96522b612396f8",
+            "responses_per_second": 2498.369621076935,
+            "server_cpu_percent_one_core": 5.203007956217135,
+            "server_cpu_seconds": 0.053313570000000005,
+            "status_counts": {
+              "200": 2560
+            }
+          }
+        },
+        {
+          "artifact": {
+            "bytes": 9367912,
+            "path": "benchmark/targets/axum/target/release/furnace-rs-bench-axum",
+            "sha256": "5b6ab9a6a966ef71addbfcfe0a351bf763d95fe9e6ed15645c43b31eb9e43a24"
+          },
+          "attempted_requests": 131072,
+          "case": "hello",
+          "client_cpu_percent_one_core": 263.1116283815418,
+          "client_cpu_seconds": 5.019575403000001,
+          "completed_operations": 131072,
+          "concurrency": 256,
+          "duration_seconds": 1.907774063,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 131072,
+          "operations": 131072,
+          "p50_ms": 3.6142320000000003,
+          "p95_ms": 4.703012,
+          "p99_ms": 5.712672,
+          "passed": true,
+          "request_order_seed": 9701089614715252989,
+          "request_order_sha256": "8cc734384c60be4acd3994f9a5ee10dc208b29a9ee8d7749ba8fb234e03e7fad",
+          "responses_per_second": 68704.15241618683,
+          "run_index": 0,
+          "server_cpu_affinity": "8",
+          "server_cpu_percent_one_core": 99.98815126988127,
+          "server_cpu_seconds": 1.907548016,
+          "startup_seconds": 0.003970008,
+          "status_counts": {
+            "200": 131072
+          },
+          "warmup": {
+            "attempted_requests": 2560,
+            "case": "hello",
+            "client_cpu_percent_one_core": 11.022525035008643,
+            "client_cpu_seconds": 0.11750311500000166,
+            "completed_operations": 2560,
+            "concurrency": 256,
+            "duration_seconds": 1.0660272,
+            "error_count": 0,
+            "error_examples": [],
+            "http_responses": 2560,
+            "operations": 2560,
+            "p50_ms": 1.6560080000000001,
+            "p95_ms": 17.82486,
+            "p99_ms": 1051.210419,
+            "passed": true,
+            "request_order_seed": 9701089614715252989,
+            "request_order_sha256": "a4ef6223200605ef667e5c7c07f5ed0f32d26069473dc4ab4b7ba303ca1c097c",
+            "responses_per_second": 2401.439663078015,
+            "server_cpu_percent_one_core": 5.0183091951124705,
+            "server_cpu_seconds": 0.053496541,
+            "status_counts": {
+              "200": 2560
+            }
+          }
+        }
+      ],
+      "scenario": "hello",
+      "summary": {
+        "median_client_cpu_percent_one_core": 221.82025263994694,
+        "median_p50_ms": 4.0232790000000005,
+        "median_p95_ms": 5.96986,
+        "median_p99_ms": 6.876364000000001,
+        "median_responses_per_second": 59437.99137173245,
+        "median_server_cpu_percent_one_core": 99.98954724477758,
+        "median_startup_seconds": 0.004014733,
+        "passed": true,
+        "runs": 3
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": null,
+      "errors": [],
+      "framework": "fiber",
+      "passed": true,
+      "runs": [
+        {
+          "artifact": {
+            "bytes": 10111792,
+            "path": "benchmark/targets/fiber/bin/furnace-rs-bench-fiber",
+            "sha256": "80fdad028b37453c5986045897f82bba409b692ac55b7ba8bfde89a368857614"
+          },
+          "attempted_requests": 131072,
+          "case": "hello",
+          "client_cpu_percent_one_core": 230.0746682459006,
+          "client_cpu_seconds": 4.696025499000001,
+          "completed_operations": 131072,
+          "concurrency": 256,
+          "duration_seconds": 2.041087589,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 131072,
+          "operations": 131072,
+          "p50_ms": 3.9259639999999996,
+          "p95_ms": 5.997032,
+          "p99_ms": 6.882836,
+          "passed": true,
+          "request_order_seed": 13130444580112342223,
+          "request_order_sha256": "5c81154e81bba2b080fb00051fc6ed3c5987697670841643f8d7f21b0652143d",
+          "responses_per_second": 64216.74439959568,
+          "run_index": 1,
+          "server_cpu_affinity": "8",
+          "server_cpu_percent_one_core": 99.98296349446862,
+          "server_cpu_seconds": 2.040739859,
+          "startup_seconds": 0.007286523,
+          "status_counts": {
+            "200": 131072
+          },
+          "warmup": {
+            "attempted_requests": 2560,
+            "case": "hello",
+            "client_cpu_percent_one_core": 171.94994436456693,
+            "client_cpu_seconds": 0.1279994870000003,
+            "completed_operations": 2560,
+            "concurrency": 256,
+            "duration_seconds": 0.07443997,
+            "error_count": 0,
+            "error_examples": [],
+            "http_responses": 2560,
+            "operations": 2560,
+            "p50_ms": 3.974667,
+            "p95_ms": 23.576626,
+            "p99_ms": 28.199724999999997,
+            "passed": true,
+            "request_order_seed": 13130444580112342223,
+            "request_order_sha256": "6f6b6c46cefa313c8a9270a8b22611e7a1e992b1e6dd49f00c48775388521f49",
+            "responses_per_second": 34390.12670209298,
+            "server_cpu_percent_one_core": 79.21865094787115,
+            "server_cpu_seconds": 0.058970339999999996,
+            "status_counts": {
+              "200": 2560
+            }
+          }
+        },
+        {
+          "artifact": {
+            "bytes": 10111792,
+            "path": "benchmark/targets/fiber/bin/furnace-rs-bench-fiber",
+            "sha256": "80fdad028b37453c5986045897f82bba409b692ac55b7ba8bfde89a368857614"
+          },
+          "attempted_requests": 131072,
+          "case": "hello",
+          "client_cpu_percent_one_core": 229.71980090023743,
+          "client_cpu_seconds": 4.743636241000001,
+          "completed_operations": 131072,
+          "concurrency": 256,
+          "duration_seconds": 2.064966199,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 131072,
+          "operations": 131072,
+          "p50_ms": 3.9557510000000002,
+          "p95_ms": 6.117792000000001,
+          "p99_ms": 7.237991,
+          "passed": true,
+          "request_order_seed": 3661475706189112286,
+          "request_order_sha256": "6c810a0ad679d6315c203df9d88f0ef0263522dbfbe6175c5d71839e9a98c029",
+          "responses_per_second": 63474.162464971174,
+          "run_index": 2,
+          "server_cpu_affinity": "8",
+          "server_cpu_percent_one_core": 99.79365792999111,
+          "server_cpu_seconds": 2.060705305,
+          "startup_seconds": 0.007280132,
+          "status_counts": {
+            "200": 131072
+          },
+          "warmup": {
+            "attempted_requests": 2560,
+            "case": "hello",
+            "client_cpu_percent_one_core": 192.29876182624946,
+            "client_cpu_seconds": 0.12830600099999856,
+            "completed_operations": 2560,
+            "concurrency": 256,
+            "duration_seconds": 0.066722219,
+            "error_count": 0,
+            "error_examples": [],
+            "http_responses": 2560,
+            "operations": 2560,
+            "p50_ms": 3.054087,
+            "p95_ms": 23.986064000000002,
+            "p99_ms": 33.84564,
+            "passed": true,
+            "request_order_seed": 3661475706189112286,
+            "request_order_sha256": "adbd6f1f1d119f0c7b0f84cc3d53615ae0f0c3b2f35652d8faf9ba54b7687afb",
+            "responses_per_second": 38368.02849737357,
+            "server_cpu_percent_one_core": 85.45517948076636,
+            "server_cpu_seconds": 0.057017592,
+            "status_counts": {
+              "200": 2560
+            }
+          }
+        },
+        {
+          "artifact": {
+            "bytes": 10111792,
+            "path": "benchmark/targets/fiber/bin/furnace-rs-bench-fiber",
+            "sha256": "80fdad028b37453c5986045897f82bba409b692ac55b7ba8bfde89a368857614"
+          },
+          "attempted_requests": 131072,
+          "case": "hello",
+          "client_cpu_percent_one_core": 229.05763943424944,
+          "client_cpu_seconds": 4.776516889999996,
+          "completed_operations": 131072,
+          "concurrency": 256,
+          "duration_seconds": 2.085290367,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 131072,
+          "operations": 131072,
+          "p50_ms": 3.9771720000000004,
+          "p95_ms": 6.168829,
+          "p99_ms": 7.659854,
+          "passed": true,
+          "request_order_seed": 3975463552515060061,
+          "request_order_sha256": "b977b448d08383b4d1b52f72cc071e07c5f702d105ee259090bc906c6281869e",
+          "responses_per_second": 62855.515027658505,
+          "run_index": 0,
+          "server_cpu_affinity": "8",
+          "server_cpu_percent_one_core": 99.48677243374041,
+          "server_cpu_seconds": 2.074588082,
+          "startup_seconds": 0.004077603,
+          "status_counts": {
+            "200": 131072
+          },
+          "warmup": {
+            "attempted_requests": 2560,
+            "case": "hello",
+            "client_cpu_percent_one_core": 214.10426290918315,
+            "client_cpu_seconds": 0.12520002200000135,
+            "completed_operations": 2560,
+            "concurrency": 256,
+            "duration_seconds": 0.058476193,
+            "error_count": 0,
+            "error_examples": [],
+            "http_responses": 2560,
+            "operations": 2560,
+            "p50_ms": 1.8317620000000001,
+            "p95_ms": 19.049961,
+            "p99_ms": 34.006689,
+            "passed": true,
+            "request_order_seed": 3975463552515060061,
+            "request_order_sha256": "51c57450b1b165ddd898684e962019c44abeae8d1597a97cd21d2a14d2cff6b4",
+            "responses_per_second": 43778.49973920156,
+            "server_cpu_percent_one_core": 96.72339647692182,
+            "server_cpu_seconds": 0.056560160000000005,
+            "status_counts": {
+              "200": 2560
+            }
+          }
+        }
+      ],
+      "scenario": "hello",
+      "summary": {
+        "median_client_cpu_percent_one_core": 229.71980090023743,
+        "median_p50_ms": 3.9557510000000002,
+        "median_p95_ms": 6.117792000000001,
+        "median_p99_ms": 7.237991,
+        "median_responses_per_second": 63474.162464971174,
+        "median_server_cpu_percent_one_core": 99.79365792999111,
+        "median_startup_seconds": 0.007280132,
+        "passed": true,
+        "runs": 3
+      }
+    },
+    {
+      "contract_errors": [],
+      "dependency_count": null,
+      "errors": [],
+      "framework": "furnace-rs",
+      "passed": true,
+      "runs": [
+        {
+          "artifact": {
+            "bytes": 5360424,
+            "path": "benchmark/targets/furnace-rs/target/release/furnace-rs-example-hello-world",
+            "sha256": "7a9620e4b238ea2ea50e3c5dbb402e994d63122b5448b834dee62204428a9f74"
+          },
+          "attempted_requests": 131072,
+          "case": "hello",
+          "client_cpu_percent_one_core": 221.6813972686548,
+          "client_cpu_seconds": 4.739362610999999,
+          "completed_operations": 131072,
+          "concurrency": 256,
+          "duration_seconds": 2.137916248,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 131072,
+          "operations": 131072,
+          "p50_ms": 4.064508,
+          "p95_ms": 5.215345,
+          "p99_ms": 6.550645,
+          "passed": true,
+          "request_order_seed": 11724566470085255155,
+          "request_order_sha256": "8f33c51c249eb5ef2bd3eeaf4089ee200b0cbc45d327309872ccc5786fe8f002",
+          "responses_per_second": 61308.2949917316,
+          "run_index": 0,
+          "server_cpu_affinity": "8",
+          "server_cpu_percent_one_core": 99.52066948321354,
+          "server_cpu_seconds": 2.127668563,
+          "startup_seconds": 0.004114402,
+          "status_counts": {
+            "200": 131072
+          },
+          "warmup": {
+            "attempted_requests": 2560,
+            "case": "hello",
+            "client_cpu_percent_one_core": 11.999767096142886,
+            "client_cpu_seconds": 0.12467597900000094,
+            "completed_operations": 2560,
+            "concurrency": 256,
+            "duration_seconds": 1.038986657,
+            "error_count": 0,
+            "error_examples": [],
+            "http_responses": 2560,
+            "operations": 2560,
+            "p50_ms": 2.743096,
+            "p95_ms": 20.337868,
+            "p99_ms": 1025.109032,
+            "passed": true,
+            "request_order_seed": 11724566470085255155,
+            "request_order_sha256": "a196db4976ffc37fae5eee98f6951dc2df0fb51c44fe7b9a19b64a30a6b2874e",
+            "responses_per_second": 2463.9392457568397,
+            "server_cpu_percent_one_core": 5.29087044858941,
+            "server_cpu_seconds": 0.054971438000000004,
+            "status_counts": {
+              "200": 2560
+            }
+          }
+        },
+        {
+          "artifact": {
+            "bytes": 5360424,
+            "path": "benchmark/targets/furnace-rs/target/release/furnace-rs-example-hello-world",
+            "sha256": "7a9620e4b238ea2ea50e3c5dbb402e994d63122b5448b834dee62204428a9f74"
+          },
+          "attempted_requests": 131072,
+          "case": "hello",
+          "client_cpu_percent_one_core": 214.50619838061917,
+          "client_cpu_seconds": 4.767763136999999,
+          "completed_operations": 131072,
+          "concurrency": 256,
+          "duration_seconds": 2.222669169,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 131072,
+          "operations": 131072,
+          "p50_ms": 4.127818,
+          "p95_ms": 5.747758,
+          "p99_ms": 7.023384,
+          "passed": true,
+          "request_order_seed": 14762174223135018841,
+          "request_order_sha256": "06e9535f96df94573e032ddc02f88e60526555dafa6429a55610b4dfc2714154",
+          "responses_per_second": 58970.53948832634,
+          "run_index": 1,
+          "server_cpu_affinity": "8",
+          "server_cpu_percent_one_core": 99.64977662404422,
+          "server_cpu_seconds": 2.214884862,
+          "startup_seconds": 0.00409198,
+          "status_counts": {
+            "200": 131072
+          },
+          "warmup": {
+            "attempted_requests": 2560,
+            "case": "hello",
+            "client_cpu_percent_one_core": 11.848323865956196,
+            "client_cpu_seconds": 0.12129365800000258,
+            "completed_operations": 2560,
+            "concurrency": 256,
+            "duration_seconds": 1.023719974,
+            "error_count": 0,
+            "error_examples": [],
+            "http_responses": 2560,
+            "operations": 2560,
+            "p50_ms": 2.686137,
+            "p95_ms": 33.283452,
+            "p99_ms": 1009.67421,
+            "passed": true,
+            "request_order_seed": 14762174223135018841,
+            "request_order_sha256": "b3bb50f5fd5da14836f60515ce7738ac68fd9162bbefabfee12336c774926d07",
+            "responses_per_second": 2500.683844232583,
+            "server_cpu_percent_one_core": 5.4964549319226235,
+            "server_cpu_seconds": 0.056268307000000004,
+            "status_counts": {
+              "200": 2560
+            }
+          }
+        },
+        {
+          "artifact": {
+            "bytes": 5360424,
+            "path": "benchmark/targets/furnace-rs/target/release/furnace-rs-example-hello-world",
+            "sha256": "7a9620e4b238ea2ea50e3c5dbb402e994d63122b5448b834dee62204428a9f74"
+          },
+          "attempted_requests": 131072,
+          "case": "hello",
+          "client_cpu_percent_one_core": 232.66791593907067,
+          "client_cpu_seconds": 4.858266044000004,
+          "completed_operations": 131072,
+          "concurrency": 256,
+          "duration_seconds": 2.08806875,
+          "error_count": 0,
+          "error_examples": [],
+          "http_responses": 131072,
+          "operations": 131072,
+          "p50_ms": 4.0136210000000005,
+          "p95_ms": 5.085489,
+          "p99_ms": 6.084409,
+          "passed": true,
+          "request_order_seed": 5401300120930083298,
+          "request_order_sha256": "3cc696622b7587e52f0514f494d433b1095651a2b15cbf6ee83e004c23b4e975",
+          "responses_per_second": 62771.87951785591,
+          "run_index": 2,
+          "server_cpu_affinity": "8",
+          "server_cpu_percent_one_core": 99.61858300882092,
+          "server_cpu_seconds": 2.0801045009999997,
+          "startup_seconds": 0.004063396,
+          "status_counts": {
+            "200": 131072
+          },
+          "warmup": {
+            "attempted_requests": 2560,
+            "case": "hello",
+            "client_cpu_percent_one_core": 12.086916489792207,
+            "client_cpu_seconds": 0.12826954100000165,
+            "completed_operations": 2560,
+            "concurrency": 256,
+            "duration_seconds": 1.061226336,
+            "error_count": 0,
+            "error_examples": [],
+            "http_responses": 2560,
+            "operations": 2560,
+            "p50_ms": 2.634559,
+            "p95_ms": 34.490277,
+            "p99_ms": 1046.552856,
+            "passed": true,
+            "request_order_seed": 5401300120930083298,
+            "request_order_sha256": "5decdcefe32b24b46a7b296f80cd57018d1e924ae99262a8ac1bf2a551d79755",
+            "responses_per_second": 2412.303495641857,
+            "server_cpu_percent_one_core": 5.20357525314939,
+            "server_cpu_seconds": 0.055221711,
+            "status_counts": {
+              "200": 2560
+            }
+          }
+        }
+      ],
+      "scenario": "hello",
+      "summary": {
+        "median_client_cpu_percent_one_core": 221.6813972686548,
+        "median_p50_ms": 4.064508,
+        "median_p95_ms": 5.215345,
+        "median_p99_ms": 6.550645,
+        "median_responses_per_second": 61308.2949917316,
+        "median_server_cpu_percent_one_core": 99.61858300882092,
+        "median_startup_seconds": 0.00409198,
+        "passed": true,
+        "runs": 3
+      }
+    }
+  ],
+  "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "timestamp_unix_seconds": 1792159160,
+  "timestamp_utc": "2026-10-16T13:59:20Z",
+  "versions": {
+    "axum": "0.8.9",
+    "fiber": "2.52.15",
+    "furnace-rs": "2.0.0-beta.3",
+    "furnace-rs-1.0.2": "1.0.2",
+    "furnace-rs-beta": "2.0.0-beta.3",
+    "postgres": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)"
+  }
+}

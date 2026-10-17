@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `Branch<Leaf<Enabled<true, ConfigSlot>>, Leaf<Enabled<true, __FurnaceAppSlot0>>>: Lookup<Missing, _>` is not satisfied
+ --> tests/ui/declarative_di/fail/msrv/missing.rs:7:8
+  |
+7 | struct App;
+  |        ^^^ the trait `Lookup<Missing, _>` is not implemented for `Branch<Leaf<Enabled<true, ConfigSlot>>, Leaf<Enabled<true, __FurnaceAppSlot0>>>`
+  |
+help: the following other types implement trait `Lookup<T, Proof>`
+ --> src/di_contract.rs
+  |
+  | impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Left<P>>`
+  | impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Right<P>>`
+  = note: required for `(Missing,)` to implement `CheckDependencies<Branch<Leaf<Enabled<true, ConfigSlot>>, Leaf<Enabled<true, __FurnaceAppSlot0>>>, (_,)>`
+note: required for `__FurnaceAppMetadata` to implement `CheckModule<Branch<Leaf<Enabled<true, ConfigSlot>>, Leaf<Enabled<true, __FurnaceAppSlot0>>>, ((_,),)>`
+ --> tests/ui/declarative_di/fail/msrv/missing.rs:6:1
+  |
+6 | #[cauldron(root, providers = [Consumer])]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound introduced here
+7 | struct App;
+  |        ^^^
+note: required by a bound in `assert_module_scope`
+ --> src/di_contract.rs
+  |
+  | pub fn assert_module_scope<M, S, P>(_: S)
+  |        ------------------- required by a bound in this function
+  | where
+  |     M: CheckModule<S, P>,
+  |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module_scope`
+  = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

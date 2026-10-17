@@ -1,9 +1,12 @@
+//! Redacted public evidence for framework-owned provider selection.
+
 use std::path::Path;
 
 use crate::SourceLocation;
 
 const REDACTED: &str = "<redacted>";
 
+/// Maps recognized configuration sources to safe report labels.
 fn safe_source_label(value: &str) -> &'static str {
     match value {
         "defaults" => "defaults",
@@ -21,6 +24,7 @@ fn safe_source_label(value: &str) -> &'static str {
     }
 }
 
+/// Replaces arbitrary integration text with an allow-listed explanation.
 fn safe_explanation(reason_code: AutoConfigurationReasonCode, explanation: &str) -> &'static str {
     if explanation == "Database is required and configured" {
         return "Database is required and configured";

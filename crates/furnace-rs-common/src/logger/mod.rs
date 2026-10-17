@@ -1,3 +1,5 @@
+//! Default console logging provider and logger abstractions.
+
 mod console_logger_service;
 mod logger_service;
 
@@ -12,19 +14,16 @@ pub use logger_service::{LogLevel, Logger, LoggerService};
 /// ```
 /// use furnace_rs_common::LoggerCauldron;
 ///
-/// use furnace_rs_common::core::{Cauldron, CauldronRegistration};
-/// #[furnace_rs_common::core::cauldron]
+/// #[furnace_rs_common::core::cauldron(imports = [LoggerCauldron])]
 /// struct AppCauldron;
-/// impl Cauldron for AppCauldron {
-///     fn register(self) -> CauldronRegistration<Self> { self.import(LoggerCauldron) }
-/// }
+///
 /// ```
 ///
 /// To override the logger, supply a value constructed with [`Logger::new`] to
 /// the application builder. Keep [`Logger`] explicitly registered in one
 /// reachable cauldron and export it to its consumers. A supplied value takes
 /// precedence over the linked default factory without changing ownership.
-#[crate::core::cauldron]
+#[crate::core::cauldron(providers = [Logger], exports = [Logger], global)]
 pub struct LoggerCauldron;
 
 /// Provides the default console-backed [`Logger`].
@@ -34,9 +33,11 @@ pub fn logger() -> Logger {
 
 impl crate::core::Injector for Logger {
     type Dependencies = ();
+    /// Constructs the default console logger for the global logger provider.
     async fn inject((): ()) -> crate::core::Result<Self> {
         Ok(logger())
     }
+    /// Returns the static metadata registered for the default logger provider.
     fn descriptor() -> &'static crate::core::ProviderDescriptor {
         &LOGGER_DESCRIPTOR
     }
@@ -53,9 +54,3 @@ const LOGGER_DESCRIPTOR: crate::core::ProviderDescriptor =
             column!(),
         ));
 crate::core::__private::inventory::submit! { LOGGER_DESCRIPTOR }
-
-impl crate::core::Cauldron for LoggerCauldron {
-    fn register(self) -> crate::core::CauldronRegistration<Self> {
-        self.provide::<Logger>().export::<Logger>().global()
-    }
-}

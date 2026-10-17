@@ -9,6 +9,8 @@ Application authors normally reach this API through the
 framework-neutral integration or when a contribution changes graph,
 configuration, provider, or lifecycle behavior.
 
+Version 2.0.0 supports [declarative DI and root compile-time checks](../../docs/declarative-di.md) exclusively through the cauldron attribute. Bare `#[cauldron]` registers an empty cauldron.
+
 ## What this crate owns
 
 - Source-aware scalar and string-array `Config` values, configuration builders,
@@ -17,8 +19,8 @@ configuration, provider, or lifecycle behavior.
   redacted `Secret<T>` wrapper.
 - Static provider and module descriptors collected through `inventory`.
 - Typed `Injector<T>` constructors with declared dependency tuples; cauldrons
-  select manual constructors using `.provide::<T>()` or
-  `.provide_with::<Output, Implementer>()`. Manual injectors require a root;
+  select manual constructors using `providers = [T]` or
+  `providers = [Output => Implementer]`. Manual injectors require a root;
   generated managed providers retain catalog discovery.
 - Root-module selection, explicit cauldron ownership, exports, direct imports, and the
   retained `CauldronGraph`.
@@ -94,7 +96,7 @@ reflection.
 | `Config`, `ConfigBuilder`, `ConfigSource` | Build and inspect source-attributed configuration values. |
 | `Configuration` and `Config::parse` | Parse a typed application view from the existing configuration document. |
 | `Secret<T>` | Make secret exposure explicit; ordinary formatting is redacted. |
-| `Cauldron`, `CauldronRegistration`, `FurnaceBuilder`, `Furnace` | Select, analyze, construct, inspect, start, and shut down an application. |
+| `#[cauldron]`, `FurnaceBuilder`, `Furnace` | Select, analyze, construct, inspect, start, and shut down an application. |
 | `ProviderDescriptor` and `CauldronDescriptor` | Represent compile-time-generated provider/module metadata. |
 | `ApplicationGraph`, `ConstructionPlan`, `CauldronGraph` | Inspect selected ownership, dependency edges, and construction order. |
 | `AutoConfigurationReport` | Explain active, skipped, overridden, or failed official defaults. |
@@ -127,7 +129,7 @@ reaches it through the facade and common integration crates.
   application state.
 - `src/graph/` — provider graph, module graph, scopes, diagnostics, and plans.
 - `src/auto_configuration/` — generic official-default evaluation and reports.
-- `src/config/` and `src/configuration/` — loaded values, typed parsing, and
+- `src/config.rs` and `src/configuration/` — loaded values, typed parsing, and
   secrets.
 - `src/descriptor.rs` and `src/catalog.rs` — static metadata and catalog
   normalization.

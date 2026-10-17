@@ -6,6 +6,242 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-17
+
+Consolidates all changes from 2.0.0-beta.1, beta.2, beta.3, and Unreleased.
+
+### Breaking
+
+- Make cauldron registration declarative only through `#[cauldron(providers = [...], controllers = [...], imports = [...], exports = [...], ...)]`. Remove the `Cauldron` trait, manual `impl Cauldron`, `CauldronRegistration`, fluent registration helpers, and `GrpcCauldronExt`; use `grpc_services = [...]` for gRPC services. Bare `#[cauldron]` and `#[cauldron()]` register empty cauldrons.
+- Require parameterless `#[inject]` on every dependency field of burner, storage and managed controller structs. Unmarked fields now fail compilation; unit structs and manual `Injector` implementations are unchanged.
+
+### Declarative DI
+
+- Add registration in the existing cauldron attribute and root-scoped compile-time dependency/visibility checks, including reachable globals and native injector outputs.
+- Register cauldrons exclusively through the declarative attribute, including empty cauldrons.
+- Adopt declarative contracts for DatabaseCauldron and LoggerCauldron while retaining native overrides and lifecycle behavior.
+- Add a standalone compile-time DI example with a missing-logger compile-fail Cargo test. See [2.0 release notes](docs/releases/2.0.0-beta.1.md).
+- Make checker callback names independent of the checkout directory so compile-fail diagnostics remain reproducible.
+
+### gRPC transport
+
+- Add standalone `furnace-rs-grpc` and `furnace-rs-grpc-macros` packages, optional JWT/TLS, and facade `grpc` / `grpc-tls` features.
+- Add proto-first managed service registration, all four native RPC shapes, named injectable client wrappers, async token providers, explicit Bearer precedence, and establishment deadlines.
+- Share Passport verification and policies with HTTP; support service guards, public/replacement method policies, typed principals, and admission-only stream authentication.
+- Select HTTP/gRPC listeners through `[furnace] transports` with one DI graph and lifecycle, eager readiness before binding, public health, guarded scoped reflection, and bounded drain before provider cleanup.
+- Add verified TLS with source-relative identities, additive or isolated custom CA trust, and mandatory hostname verification; require patched Rustls 0.23.46 or later.
+- Mark explicit and provider Bearer credentials sensitive for request debug redaction and HTTP/2 never-indexed encoding.
+- Add side-effect-free `furnace grpc` inspection and existing doctor checks, retaining public JSON schema 2 and advancing the private handshake to 3.
+- Include an application-owned protobuf example and feature, consumer, runtime, security, and MSRV regressions. See the [2.0.0-beta.2 release notes](docs/releases/2.0.0-beta.2.md).
+
+### WebSocket transport
+
+- Add standalone `furnace-rs-socket` and `furnace-rs-socket-macros` packages
+  using Axum's standard WebSocket support. Expose optional facade `socket`,
+  `socket-tls`, and `socket-redis` features, with optional JWT forwarding.
+- Add DI-managed `#[socket_gateway]` registrations for raw text/binary and named
+  JSON events, plus `#[socket_endpoint]` handlers that take ownership of the
+  socket. Select registrations through cauldron `socket_gateways` and
+  `socket_endpoints` lists; validate paths, handlers, and reserved event names.
+- Serve server-only endpoints on a separate explicit listener selected through
+  `[furnace] transports`. Share provider startup, readiness, rollback, bounded
+  drain, and shutdown with HTTP and gRPC. Support native Rustls TLS and ordinary
+  WebSocket connections behind a terminating proxy.
+- Authenticate guarded handshakes through Passport using Bearer headers,
+  configured cookies, or query parameters. Reject repeated or ambiguous
+  credentials without fallback, expose typed principals, and enforce exact
+  allowlist matching for supplied browser origins.
+- Add `SocketContext` and injectable `SocketHub` controls for direct sends,
+  gateway broadcasts, and dynamic rooms. Require application approval for joins,
+  provide built-in JSON join/leave commands and correlated responses, and allow
+  room deletion only when empty.
+- Support local in-memory live delivery and optional cross-instance Redis
+  Pub/Sub delivery, with namespace and gateway isolation, leased memberships,
+  room-generation fencing, and reconnect handling. During Redis outages,
+  distributed sends fail explicitly while local direct sends remain available.
+- Add replayable named JSON room events through Redis Streams, client-held
+  resume cursors, explicit age and count retention, ordered catch-up and live
+  continuation, and expired-history errors. Fix delivery mode for each room's
+  lifetime; require Redis 6.2+ for age trimming. Replay does not provide client
+  acknowledgement tracking or exactly-once delivery.
+- Add sequential processing by default and configurable bounded concurrency,
+  managed ping/pong heartbeats, a 1 MiB incoming-message limit, and outbound
+  queues bounded by both message count and bytes. Disconnect slow consumers and
+  keep control frames responsive while application handlers run.
+- Add a runnable [WebSocket example](example/socket-transport/README.md), the
+  [transport guide](docs/socket.md), standalone and renamed consumer coverage,
+  real WebSocket/Redis/TLS regressions, Rust 1.94 checks, and package/version/
+  publication-order integration for both new crates.
+
+### Added
+
+- Add optional `furnace-rs-persistence/sea-orm-storage` entity-bound storage
+  helpers through `#[storage(entity = ...)]`, optional connection selection,
+  native CRUD, typed filters, explicit ASC/DESC ordering, page-number pagination,
+  and declared SeaORM 2 relation loaders. Pagination fetches the requested
+  parent page without lookahead or counts; applications own limits and
+  transactions. Unmapped storage failures convert to redacted HTTP 500 responses
+  with `?` when `furnace-rs/sea-orm-storage` is enabled; handlers can override
+  individual mappings with `.map_err(...)`. See the [storage guide](docs/storage.md).
+
+### Security
+
+- Apply gRPC method admission overrides only when their conditional method is
+  compiled, preventing inactive public methods from weakening guarded RPC
+  policies. Reject unsupported conditional `grpc_method` attributes and
+  validate active duplicate overrides before route construction. See the
+  [F01 before/after reproduction](benchmark/SECURITY.md#f01-conditional-grpc-admission-policy).
+- Update all committed Rustls lockfile entries to 0.23.46 and audit every
+  committed lockfile in beta and stable publication workflows.
+- Validate response cookie names with the same rules used for request cookies
+  before emitting `Set-Cookie` headers.
+- Reject cookie Path/Domain delimiters and ASCII controls before emitting a
+  response batch, preventing supplied attributes from injecting additional
+  Set-Cookie attributes. See the [patch and reproduction](docs/security/2026-10-10-cookie-attribute-injection.md).
+- Create Unix scaffold staging directories with mode `0700` at creation,
+  preventing other users from modifying generated files through permissive
+  umasks. Published project directories retain `0700`. See the
+  [patch and reproduction](docs/security/2026-10-10-scaffold-directory-privacy.md).
+- Reject native SeaORM `max_connections(0)` with a typed configuration error
+  before pool construction can panic. See the
+  [patch and reproduction](docs/security/2026-10-10-native-pool-capacity.md).
+
+### Fixed
+
+- Check missing WebSocket `Injector` implementations through structured compiler
+  diagnostics, avoiding CI failures from reordered Rust compiler suggestions.
+- List the selected WebSocket endpoint count and paths in the startup summary,
+  including managed gateways and owned endpoints.
+- Keep transport-generated JSON errors out of raw WebSocket connections,
+  including errors from background Redis room retirement.
+- Serialize room transitions and stop previous replay readers before catch-up,
+  preventing delivery after leave and interleaved readers during rejoin.
+- Retire stale local memberships when Redis rooms are deleted or recreated,
+  including generation changes during membership restoration.
+- Receive control frames and cancel connection work while a WebSocket connect
+  hook is blocked; cancel blocked writes within the configured shutdown drain.
+- Include `furnace-rs-persistence-types` in version preparation, package
+  verification, and dependency-ordered publication. Update independent example
+  pins during release preparation and retry beta publication while new crates
+  propagate through the registry index.
+- Prepare standalone consumer dependencies in every workspace test job and
+  retain compiler-specific UI snapshots for Rust 1.94, 1.96, and 1.99.
+- Keep storage error conversion independent of PostgreSQL provider registration.
+- Run generated storage's PostgreSQL acceptance test in CI and both publication
+  gates, including CRUD, relation loading, ordering, and pagination.
+- Replace remaining yanked `yoke-derive` 0.8.3 lock entries with compatible,
+  non-yanked 0.8.2.
+- Preserve lifecycle startup progress and failure records across cancellation;
+  retry pending shutdown hooks while skipping completed hooks.
+- Reject conditionally compiled controller dependency fields with a clear
+  diagnostic, and retain correct JSON paths for validated newtypes and tagged
+  Serde enums.
+- Reject empty and dotted literal TOML keys, and remove incompatible stale
+  configuration nodes when merging sources of different shapes.
+- Keep middleware security, CORS, and correlation headers on HTTP body-timeout
+  responses while updating status and removing stale body framing metadata.
+- Scope generated gRPC helpers to avoid collisions between qualified service
+  types that share a final type name.
+- Supply the accepted socket peer address to native HTTP `ConnectInfo`
+  extractors and Passport request metadata for HTTP/1 and HTTP/2. See the
+  [patch and reproduction](docs/security/2026-10-10-http-peer-address.md).
+- Record the [implementation scan and its limits](docs/security/2026-10-10-implementation-scan.md).
+
+### CLI
+
+- Add side-effect-free `furnace socket` text/JSON inspection and WebSocket doctor
+  checks. Report selected endpoint and handler metadata without constructing
+  providers, opening listeners, reading TLS identities, or contacting Redis;
+  preserve deserialization of older reports without socket metadata.
+- Honor the invocation directory's Cargo configuration and provide Cargo's
+  native library paths when directly launching built applications.
+- Rebuild development applications when protobuf or declared build-script
+  inputs change, and reload Cargo metadata when manifests or lockfiles change.
+
+## [2.0.0-beta.3] - 2026-10-16
+
+### Added
+
+- Add optional `furnace-rs-persistence/sea-orm-storage` entity-bound storage
+  helpers through `#[storage(entity = ...)]`, optional connection selection,
+  native CRUD, typed filters, explicit ASC/DESC ordering, page-number pagination,
+  and declared SeaORM 2 relation loaders. Pagination fetches the requested
+  parent page without lookahead or counts; applications own limits and
+  transactions. Unmapped storage failures convert to redacted HTTP 500 responses
+  with `?` when `furnace-rs/sea-orm-storage` is enabled; handlers can override
+  individual mappings with `.map_err(...)`. See the [storage guide](docs/storage.md).
+
+### Security
+
+- Apply gRPC method admission overrides only when their conditional method is
+  compiled, preventing inactive public methods from weakening guarded RPC
+  policies. Reject unsupported conditional `grpc_method` attributes and
+  validate active duplicate overrides before route construction. See the
+  [F01 before/after reproduction](benchmark/SECURITY.md#f01-conditional-grpc-admission-policy).
+- Update all committed Rustls lockfile entries to 0.23.46 and audit every
+  committed lockfile in beta and stable publication workflows.
+- Validate response cookie names with the same rules used for request cookies
+  before emitting `Set-Cookie` headers.
+
+### Fixed
+
+- Include `furnace-rs-persistence-types` in version preparation, package
+  verification, and dependency-ordered publication. Update independent example
+  pins during release preparation and retry beta publication while new crates
+  propagate through the registry index.
+- Prepare standalone consumer dependencies in every workspace test job and
+  retain compiler-specific UI snapshots for Rust 1.94, 1.96, and 1.99.
+- Keep storage error conversion independent of PostgreSQL provider registration.
+- Run generated storage's PostgreSQL acceptance test in CI and both publication
+  gates, including CRUD, relation loading, ordering, and pagination.
+- Replace remaining yanked `yoke-derive` 0.8.3 lock entries with compatible,
+  non-yanked 0.8.2.
+- Preserve lifecycle startup progress and failure records across cancellation;
+  retry pending shutdown hooks while skipping completed hooks.
+- Reject conditionally compiled controller dependency fields with a clear
+  diagnostic, and retain correct JSON paths for validated newtypes and tagged
+  Serde enums.
+- Reject empty and dotted literal TOML keys, and remove incompatible stale
+  configuration nodes when merging sources of different shapes.
+- Keep middleware security, CORS, and correlation headers on HTTP body-timeout
+  responses while updating status and removing stale body framing metadata.
+- Scope generated gRPC helpers to avoid collisions between qualified service
+  types that share a final type name.
+
+### CLI
+
+- Honor the invocation directory's Cargo configuration and provide Cargo's
+  native library paths when directly launching built applications.
+- Rebuild development applications when protobuf or declared build-script
+  inputs change, and reload Cargo metadata when manifests or lockfiles change.
+
+## [2.0.0-beta.2] - 2026-10-15
+
+### gRPC transport
+
+- Add standalone `furnace-rs-grpc` and `furnace-rs-grpc-macros` packages, optional JWT/TLS, and facade `grpc` / `grpc-tls` features.
+- Add proto-first managed service registration, all four native RPC shapes, named injectable client wrappers, async token providers, explicit Bearer precedence, and establishment deadlines.
+- Share Passport verification and policies with HTTP; support service guards, public/replacement method policies, typed principals, and admission-only stream authentication.
+- Select HTTP/gRPC listeners through `[furnace] transports` with one DI graph and lifecycle, eager readiness before binding, public health, guarded scoped reflection, and bounded drain before provider cleanup.
+- Add verified TLS with source-relative identities, additive or isolated custom CA trust, and mandatory hostname verification; require patched Rustls 0.23.46 or later.
+- Mark explicit and provider Bearer credentials sensitive for request debug redaction and HTTP/2 never-indexed encoding.
+- Add side-effect-free `furnace grpc` inspection and existing doctor checks, retaining public JSON schema 2 and advancing the private handshake to 3.
+- Include an application-owned protobuf example and feature, consumer, runtime, security, and MSRV regressions. See the [2.0.0-beta.2 release notes](docs/releases/2.0.0-beta.2.md).
+
+## [2.0.0-beta.1] - 2026-10-12
+
+### Breaking
+
+- Require parameterless `#[inject]` on every dependency field of burner, storage and managed controller structs. Unmarked fields now fail compilation; unit structs and manual `Injector` implementations are unchanged.
+
+### Declarative DI
+
+- Add registration in the existing cauldron attribute and root-scoped compile-time dependency/visibility checks, including reachable globals and native injector outputs.
+- Initially retain legacy fluent registration alongside declarative registration in beta.1; the final 2.0.0 release removes fluent cauldron registration.
+- Adopt declarative contracts for DatabaseCauldron and LoggerCauldron while retaining native overrides and lifecycle behavior.
+- Add a standalone compile-time DI example with a missing-logger compile-fail Cargo test. See [2.0 release notes](docs/releases/2.0.0-beta.1.md).
+- Make checker callback names independent of the checkout directory so compile-fail diagnostics remain reproducible.
+
 ### Security
 
 - Reject cookie Path/Domain delimiters and ASCII controls before emitting a
@@ -71,7 +307,7 @@ configuration, and inventory provider construction.
   options can still disable these policies with `None`.
 - Reject inventory constructor outputs whose concrete type differs from their
   declared type identifier before application construction succeeds.
-- Record [before/after database and inventory regression measurements](benchmark/DATABASE_INVENTORY_SECURITY.md),
+- Record [before/after database and inventory regression measurements](benchmark/SECURITY.md#database-jwt-and-inventory-regressions),
   including retained JWT algorithm binding and native PostgreSQL recovery controls.
 - Bound incomplete initial HTTP requests, including idle sockets and partial
   protocol prefaces, and HTTP/1 request headers to ten seconds. Preserve HTTP/2,
@@ -81,7 +317,7 @@ configuration, and inventory provider construction.
   headers are sent and close the affected HTTP/1 connection. A timeout during
   response streaming terminates that stream. Body-size limits remain enforced.
 - Record isolated before/after regression measurements in the
-  [HTTP runtime security report](benchmark/HTTP_RUNTIME_SECURITY.md).
+  [HTTP runtime security report](benchmark/SECURITY.md#http-runtime-request-deadlines).
 
 ## [1.0.0] - 2026-10-03
 
@@ -95,10 +331,11 @@ the `v1.0.0` tag, and the GitHub release still require the release workflow.
   the `FURNACE` family. No aliases preserve the retired declarations.
 - Replace module/service/repository attributes with `#[cauldron]`, `#[burner]`,
   and `#[storage]`. Replace provider/element factories with typed `Injector`
-  construction and explicit `.provide_with::<Output, Implementer>()` bindings,
+  construction and explicit injector/output bindings,
   including application-authored shared trait-object outputs.
 - Declare members, controllers, imports, exports, and global status in
-  `Cauldron::register`. Rust `pub` controls Rust visibility; cauldron exports
+  manual cauldron registration, superseded by declarative attributes in 2.0.0.
+  Rust `pub` controls Rust visibility; cauldron exports
   control dependency access, and explicit guards control HTTP authorization.
 - Start conventional applications with `Furnace::burn` and `FurnaceBurnExt`.
 - Declare endpoints in inherent `#[controller(route = "/users")]`

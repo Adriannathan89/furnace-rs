@@ -39,18 +39,21 @@ impl ScaffoldError {
 }
 
 impl fmt::Display for ScaffoldError {
+    /// Formats the stable scaffolding diagnostic for human display.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.diagnostic.fmt(formatter)
     }
 }
 
 impl Error for ScaffoldError {
+    /// Returns the retained source error for deliberate inspection.
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         self.diagnostic.source()
     }
 }
 
 impl From<ScaffoldError> for CliError {
+    /// Converts a scaffolding failure to its CLI diagnostic.
     fn from(error: ScaffoldError) -> Self {
         error.diagnostic
     }
@@ -77,6 +80,7 @@ pub fn publish_project(
     )
 }
 
+/// Stages every rendered file privately, syncs it, and publishes without replacing a destination.
 fn publish_project_with_operations<F, H, S, P>(
     invocation_directory: &Path,
     name: &ProjectName,
@@ -139,6 +143,7 @@ where
     result
 }
 
+/// Rejects existing files, directories, or symlinks at the requested destination.
 fn destination_must_be_absent(destination: &Path) -> Result<(), ScaffoldError> {
     match fs::symlink_metadata(destination) {
         Ok(_) => Err(scaffolding_error(
@@ -153,6 +158,7 @@ fn destination_must_be_absent(destination: &Path) -> Result<(), ScaffoldError> {
     }
 }
 
+/// Creates a private sibling staging directory with bounded collision retries.
 fn create_staging_directory(
     invocation_directory: &Path,
     name: &ProjectName,
@@ -195,6 +201,7 @@ fn create_staging_directory(
     ))
 }
 
+/// Creates a new file exclusively, writes all contents, and syncs the file.
 fn write_new_file(path: &Path, contents: &[u8]) -> io::Result<()> {
     let mut file = OpenOptions::new().write(true).create_new(true).open(path)?;
     file.write_all(contents)?;
@@ -203,11 +210,13 @@ fn write_new_file(path: &Path, contents: &[u8]) -> io::Result<()> {
 }
 
 #[cfg(windows)]
+/// Syncs the staging directory where supported by the platform.
 fn sync_directory(_path: &Path) -> io::Result<()> {
     Ok(())
 }
 
 #[cfg(not(windows))]
+/// Syncs the staging directory where supported by the platform.
 fn sync_directory(path: &Path) -> io::Result<()> {
     match File::open(path).and_then(|file| file.sync_all()) {
         Ok(()) => Ok(()),
@@ -224,6 +233,7 @@ fn sync_directory(path: &Path) -> io::Result<()> {
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
+/// Renames the staging directory into the absent destination without replacement.
 fn publish_without_replacement(staging_directory: &Path, destination: &Path) -> io::Result<()> {
     use rustix::fs::{CWD, RenameFlags, renameat_with};
 
@@ -238,11 +248,13 @@ fn publish_without_replacement(staging_directory: &Path, destination: &Path) -> 
 }
 
 #[cfg(windows)]
+/// Renames the staging directory into the absent destination without replacement.
 fn publish_without_replacement(staging_directory: &Path, destination: &Path) -> io::Result<()> {
     fs::rename(staging_directory, destination)
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
+/// Renames the staging directory into the absent destination without replacement.
 fn publish_without_replacement(_staging_directory: &Path, _destination: &Path) -> io::Result<()> {
     Err(io::Error::new(
         io::ErrorKind::Unsupported,
@@ -250,6 +262,7 @@ fn publish_without_replacement(_staging_directory: &Path, _destination: &Path) -
     ))
 }
 
+/// Wraps an operational scaffold failure in the stable public diagnostic.
 fn scaffolding_error(
     message: &'static str,
     source: impl Error + Send + Sync + 'static,
@@ -265,6 +278,7 @@ struct StagingGuard {
 }
 
 impl StagingGuard {
+    /// Arms cleanup for the private staging directory owned by this publication.
     fn new(staging_directory: PathBuf) -> Self {
         Self {
             staging_directory,
@@ -272,12 +286,14 @@ impl StagingGuard {
         }
     }
 
+    /// Keeps the published directory when the staging path has been moved successfully.
     fn disarm(&mut self) {
         self.armed = false;
     }
 }
 
 impl Drop for StagingGuard {
+    /// Removes the owned staging directory if publication did not disarm the guard.
     fn drop(&mut self) {
         if self.armed {
             let _ = fs::remove_dir_all(&self.staging_directory);

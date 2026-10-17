@@ -1,0 +1,11 @@
+error: conditional attributes are not supported on `#[controller]` fields; conditionally compile the complete controller instead
+ --> tests/ui/fail/controller_conditional_fields.rs:3:5
+  |
+3 |     #[cfg(any())]
+  |     ^
+
+error: conditional attributes are not supported on `#[controller]` fields; conditionally compile the complete controller instead
+  --> tests/ui/fail/controller_conditional_fields.rs:10:5
+   |
+10 |     #[cfg_attr(all(), cfg(any()))]
+   |     ^

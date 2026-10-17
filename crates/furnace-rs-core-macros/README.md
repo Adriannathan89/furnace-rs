@@ -11,7 +11,7 @@ crate is an implementation dependency, not a normal application dependency.
 
 | Macro | Generated contract |
 | --- | --- |
-| `#[cauldron]` | Declares a unit cauldron and a callback to its authored `Cauldron::register` chain. |
+| `#[cauldron]` | Declares a unit cauldron with providers, controllers, imports, and exports; bare attributes register an empty cauldron. |
 | `#[burner]` | Generates `Injector` construction, a managed service handle, and dependency metadata. |
 | `#[storage]` | Generates `Injector` construction and a managed repository handle. |
 | `#[derive(Configuration)]` | Generates a typed, prefix-aware view over the core `Config` document. |
@@ -44,8 +44,7 @@ macros through `furnace-rs-core` re-exports.
 
 - `src/lib.rs` — macro exports and shared expansion helpers.
 - `src/cauldron.rs` — cauldron declarations and registration callbacks.
-- `src/managed.rs` and `src/provider.rs` — managed type/function expansion and
-  dependency extraction.
+- `src/managed.rs` — managed type/function expansion and dependency extraction.
 - `src/configuration/` — `Configuration` derive parsing and validation.
 - `src/main.rs` — async entry-point expansion.
 - `src/path.rs` — crate-path and generated-path resolution.

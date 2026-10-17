@@ -19,6 +19,7 @@ impl DiagnosticCode {
 }
 
 impl fmt::Display for DiagnosticCode {
+    /// Writes the stable diagnostic identifier without additional decoration.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(self.0)
     }
@@ -155,6 +156,7 @@ impl Diagnostic {
 }
 
 impl fmt::Display for Diagnostic {
+    /// Renders the code, title, source, subject, message, and help in stable order.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "error[{}]: {}", self.code, self.title)?;
         if let Some(location) = self.location {
@@ -186,6 +188,7 @@ pub struct Error {
 }
 
 impl fmt::Debug for Error {
+    /// Shows diagnostics and cause presence without formatting the retained cause.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("Error")
@@ -217,6 +220,7 @@ impl Error {
         }
     }
 
+    /// Appends secondary diagnostics while preserving the existing primary error.
     pub(crate) fn with_related_diagnostics(
         mut self,
         related: impl IntoIterator<Item = Diagnostic>,
@@ -246,13 +250,14 @@ impl Error {
         &self.diagnostics[0]
     }
 
-    /// return every diagnostic in deterministic report order.
+    /// Returns every diagnostic in deterministic report order.
     pub fn diagnostics(&self) -> &[Diagnostic] {
         &self.diagnostics
     }
 }
 
 impl fmt::Display for Error {
+    /// Formats the primary diagnostic followed by related diagnostics.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (index, diagnostic) in self.diagnostics.iter().enumerate() {
             if index > 0 {
@@ -265,6 +270,7 @@ impl fmt::Display for Error {
 }
 
 impl std::error::Error for Error {
+    /// Exposes the retained cause through the standard error chain.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.source
             .as_deref()

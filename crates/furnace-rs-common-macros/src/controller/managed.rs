@@ -12,8 +12,9 @@ use syn::{
     Attribute, Error, ExprPath, Fields, Ident, ItemStruct, Path, Type, TypePath, spanned::Spanned,
 };
 
+/// Rewrites a managed controller struct into an Arc-backed injector and static metadata.
 pub(super) fn expand_controller_with_common(
-    item: ItemStruct,
+    mut item: ItemStruct,
     common: &Path,
 ) -> syn::Result<TokenStream> {
     if !item.generics.params.is_empty() || item.generics.where_clause.is_some() {
@@ -44,14 +45,22 @@ pub(super) fn expand_controller_with_common(
             "`#[controller]` structs support documentation and lint attributes only",
         ));
     }
-    if let Fields::Named(fields) = &item.fields {
+    if let Fields::Named(fields) = &mut item.fields {
         if fields.named.len() > 16 {
             return Err(Error::new(
                 fields.span(),
                 "managed injectors support at most sixteen dependencies",
             ));
         }
-        for field in &fields.named {
+        for field in &mut fields.named {
+            if let Some(attribute) = field.attrs.iter().find(is_cfg) {
+                return Err(Error::new(
+                    attribute.span(),
+                    "conditional attributes are not supported on `#[controller]` fields; conditionally compile the complete controller instead",
+                ));
+            }
+            let span = field.span();
+            consume_inject(&mut field.attrs, span)?;
             if let Some(attribute) = field
                 .attrs
                 .iter()
@@ -173,6 +182,7 @@ pub(super) fn expand_controller_with_common(
 
         #(#cfg_attrs)*
         impl ::core::clone::Clone for #ident {
+            #[doc = "Clones the shared controller allocation."]
             fn clone(&self) -> Self {
                 Self(::std::sync::Arc::clone(&self.0))
             }
@@ -182,6 +192,7 @@ pub(super) fn expand_controller_with_common(
         impl ::core::ops::Deref for #ident {
             type Target = #inner_ident;
 
+            #[doc = "Borrows the controller's private dependency-backed representation."]
             fn deref(&self) -> &Self::Target {
                 self.0.as_ref()
             }
@@ -192,9 +203,11 @@ pub(super) fn expand_controller_with_common(
         const _: () = {
             impl #core::Injector for #ident {
                 type Dependencies = #dependency_types;
+                #[doc = "Builds the managed controller from its resolved dependencies."]
                 async fn inject(#dependency_pattern: Self::Dependencies) -> #core::Result<Self> {
                     Ok(#ident(::std::sync::Arc::new(#inner_value)))
                 }
+                #[doc = "Returns the static provider descriptor emitted for this controller."]
                 fn descriptor() -> &'static #core::ProviderDescriptor {
                     &__FURNACE_DESCRIPTOR
                 }
@@ -202,12 +215,14 @@ pub(super) fn expand_controller_with_common(
 
             #[doc(hidden)]
             #[allow(non_snake_case)]
+            #[doc = "Constructs the controller through its registered dependency injector."]
             fn #constructor_ident<'a>(
                 context: &'a #core::ConstructionContext<'a>,
             ) -> #core::ProviderFuture<'a> {
                 (#core::injector_descriptor::<#ident, #ident>().constructor())(context)
             }
 
+            #[doc = "Constructs the controller resource with its lifecycle provider future."]
             fn __furnace_construct_resource<'a>(
                 context: &'a #core::ConstructionContext<'a>,
             ) -> #core::LifecycleProviderFuture<'a> {
@@ -237,6 +252,7 @@ pub(super) fn expand_controller_with_common(
     })
 }
 
+/// Converts Rust struct visibility to the matching core provider-visibility token.
 fn provider_visibility(visibility: &syn::Visibility, core: &TokenStream) -> TokenStream {
     if matches!(visibility, syn::Visibility::Public(_)) {
         quote!(#core::ProviderVisibility::Public)
@@ -245,6 +261,7 @@ fn provider_visibility(visibility: &syn::Visibility, core: &TokenStream) -> Toke
     }
 }
 
+/// Derives a stable disambiguating suffix from the authored item and controller name.
 fn generated_suffix(item: &ItemStruct, ident: &Ident) -> String {
     use std::hash::{Hash, Hasher};
 
@@ -254,18 +271,22 @@ fn generated_suffix(item: &ItemStruct, ident: &Ident) -> String {
     format!("{ident}_{:016x}", hasher.finish())
 }
 
+/// Identifies representation attributes, which are unsupported by the controller wrapper.
 fn is_repr(attribute: &&Attribute) -> bool {
     attribute.path().is_ident("repr")
 }
 
+/// Identifies documentation attributes preserved on generated controller types.
 fn is_doc(attribute: &&Attribute) -> bool {
     attribute.path().is_ident("doc")
 }
 
+/// Identifies conditional-compilation attributes copied to generated items.
 fn is_cfg(attribute: &&Attribute) -> bool {
     attribute.path().is_ident("cfg") || attribute.path().is_ident("cfg_attr")
 }
 
+/// Checks whether an authored attribute is supported on managed structs or fields.
 fn is_supported_attribute(attribute: &&Attribute) -> bool {
     is_doc(attribute)
         || is_cfg(attribute)
@@ -275,6 +296,7 @@ fn is_supported_attribute(attribute: &&Attribute) -> bool {
         || attribute.path().is_ident("forbid")
 }
 
+/// Rewrites `Self` references in a dependency type to the public controller handle.
 fn normalize_self_type(ty: &mut Type, handle: &Ident) {
     SelfTypeNormalizer { handle }.visit_type_mut(ty);
 }
@@ -284,6 +306,7 @@ struct SelfTypeNormalizer<'a> {
 }
 
 impl VisitMut for SelfTypeNormalizer<'_> {
+    /// Replaces `Self` in expression paths while continuing through nested expressions.
     fn visit_expr_path_mut(&mut self, expression_path: &mut ExprPath) {
         if expression_path.qself.is_none()
             && let Some(segment) = expression_path.path.segments.first_mut()
@@ -294,6 +317,7 @@ impl VisitMut for SelfTypeNormalizer<'_> {
         visit_mut::visit_expr_path_mut(self, expression_path);
     }
 
+    /// Replaces `Self` in type paths while continuing through nested type syntax.
     fn visit_type_path_mut(&mut self, type_path: &mut TypePath) {
         if type_path.qself.is_none()
             && let Some(segment) = type_path.path.segments.first_mut()
@@ -307,3 +331,27 @@ impl VisitMut for SelfTypeNormalizer<'_> {
 #[cfg(test)]
 #[path = "../../tests/support/controller.rs"]
 mod tests;
+
+/// Removes required `#[inject]` field markers before emitting the inner struct.
+///
+/// Each dependency field must carry exactly one marker, which is consumed by the macro.
+fn consume_inject(attributes: &mut Vec<Attribute>, span: proc_macro2::Span) -> syn::Result<()> {
+    let mut seen = false;
+    for attribute in attributes.iter().filter(|a| a.path().is_ident("inject")) {
+        if seen {
+            return Err(Error::new_spanned(attribute, "duplicate #[inject] marker"));
+        }
+        if !matches!(attribute.meta, syn::Meta::Path(_)) {
+            return Err(Error::new_spanned(
+                attribute,
+                "#[inject] takes no arguments",
+            ));
+        }
+        seen = true;
+    }
+    if !seen {
+        return Err(Error::new(span, "dependency fields require #[inject]"));
+    }
+    attributes.retain(|a| !a.path().is_ident("inject"));
+    Ok(())
+}

@@ -11,6 +11,7 @@ pub(super) struct Validator {
     arguments: Vec<(String, Expr)>,
 }
 
+/// Parses validator names and bounds, rejecting duplicates and contradictions.
 pub(super) fn parse(meta: ParseNestedMeta<'_>) -> syn::Result<Vec<Validator>> {
     let mut validators = Vec::new();
     let mut names = BTreeSet::new();
@@ -106,6 +107,7 @@ pub(super) fn parse(meta: ParseNestedMeta<'_>) -> syn::Result<Vec<Validator>> {
     Ok(validators)
 }
 
+/// Checks that a numeric literal fits the requested field type at macro time.
 pub(super) fn check_number(expression: &Expr, name: &str) -> syn::Result<()> {
     let (negative, literal) = literal(expression)?;
     let overflow = || {
@@ -149,6 +151,7 @@ pub(super) fn check_number(expression: &Expr, name: &str) -> syn::Result<()> {
     Ok(())
 }
 
+/// Converts a signed integer/float literal to a finite `f64` for bound comparison.
 pub(super) fn numeric(expression: &Expr) -> syn::Result<f64> {
     let (negative, literal) = literal(expression)?;
     let value = match literal {
@@ -170,6 +173,7 @@ pub(super) fn numeric(expression: &Expr) -> syn::Result<f64> {
     Ok(if negative { -value } else { value })
 }
 
+/// Splits a literal from its optional unary minus without evaluating arbitrary expressions.
 fn literal(expression: &Expr) -> syn::Result<(bool, &Lit)> {
     match expression {
         Expr::Lit(value) => Ok((false, &value.lit)),
@@ -184,6 +188,7 @@ fn literal(expression: &Expr) -> syn::Result<(bool, &Lit)> {
     }
 }
 
+/// Compares integer bounds exactly and finite float bounds through numeric conversion.
 fn compare(left: &Expr, right: &Expr) -> syn::Result<std::cmp::Ordering> {
     let (left_negative, left_literal) = literal(left)?;
     let (right_negative, right_literal) = literal(right)?;
@@ -204,6 +209,7 @@ fn compare(left: &Expr, right: &Expr) -> syn::Result<std::cmp::Ordering> {
         .expect("finite bounds"))
 }
 
+/// Emits type-checked runtime predicates and safe issue accumulation for each validator.
 pub(super) fn expand(
     ty: &Type,
     validators: &[Validator],

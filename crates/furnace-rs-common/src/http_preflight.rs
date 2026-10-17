@@ -8,6 +8,7 @@ use std::any::TypeId;
 #[derive(Clone)]
 pub(crate) struct SelectedHttpMetadata(std::result::Result<HttpApplicationScope, Vec<Diagnostic>>);
 impl SelectedHttpMetadata {
+    /// Memoizes metadata selection for the graph or focused controller under analysis.
     pub(crate) fn select(graph: Option<&CauldronGraph>, focus: Option<TypeId>) -> Self {
         let scope = match focus {
             Some(target) => HttpApplicationScope::for_focus(target),
@@ -15,6 +16,7 @@ impl SelectedHttpMetadata {
         };
         Self(scope.map_err(|error| error.diagnostics().to_vec()))
     }
+    /// Returns the selected scope or restores stored diagnostics as a core error.
     pub(crate) fn scope(self) -> Result<HttpApplicationScope> {
         self.0.map_err(|diagnostics| {
             let mut diagnostics = diagnostics.into_iter();

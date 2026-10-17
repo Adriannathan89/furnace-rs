@@ -7,13 +7,13 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
 
-use axum::http::Extensions;
 use furnace_rs_core::{
     ApplicationContext, Catalog, CauldronGraph, Diagnostic, Error, ProviderDescriptor, Result,
     SourceLocation,
 };
+use http::Extensions;
 
-use crate::http_scope::ScopedGuard;
+use super::scope::{GuardOccurrence, ScopedGuard};
 use crate::{JwtClaims, JwtTokenKind, VerifiedJwt};
 
 use super::{
@@ -175,11 +175,14 @@ impl ErasedAuthentication {
         Arc::downcast::<VerifiedJwt<C>>(Arc::clone(&self.exact_verified)).ok()
     }
 
-    pub(crate) fn install_extensions(&self, extensions: &mut Extensions) -> bool {
+    /// Installs the exact typed authentication allocations for transport adapters.
+    #[doc(hidden)]
+    pub fn install_extensions(&self, extensions: &mut Extensions) -> bool {
         (self.install_extensions)(self, extensions)
     }
 }
 
+/// Installs principal and token wrappers only when both runtime types match exactly.
 fn install_typed_extensions<P, C>(
     authentication: &ErasedAuthentication,
     extensions: &mut Extensions,
@@ -200,6 +203,7 @@ where
 }
 
 impl fmt::Debug for ErasedAuthentication {
+    /// Formats principal and claims type names without exposing their values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("ErasedAuthentication")
@@ -332,6 +336,7 @@ impl PassportStrategyDescriptor {
 }
 
 impl fmt::Debug for PassportStrategyDescriptor {
+    /// Formats static strategy metadata, including its source location.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PassportStrategyDescriptor")
@@ -391,7 +396,8 @@ impl PassportStrategyCatalog {
     }
 
     /// Validates only guards and strategy names used by a focused controller.
-    pub(crate) fn preflight_for_test(
+    #[doc(hidden)]
+    pub fn preflight_for_test(
         scoped_guards: &[ScopedGuard],
         provider_available: impl Fn(TypeId) -> bool,
     ) -> Result<PassportStrategyPreflight<'static>> {
@@ -429,7 +435,8 @@ impl PassportStrategyCatalog {
     /// behavior. Rooted guards see custom strategies only from their own
     /// cauldron, a direct import's explicit exports, or reachable global exports.
     #[allow(clippy::result_large_err)]
-    pub(crate) fn preflight_scoped(
+    #[doc(hidden)]
+    pub fn preflight_scoped(
         cauldron_graph: Option<&CauldronGraph>,
         guards: &[ScopedGuard],
     ) -> Result<PassportStrategyPreflight<'static>> {
@@ -489,8 +496,9 @@ impl PassportStrategyCatalog {
 ///
 /// This record contains no application-owned values. Its adapter obtains a
 /// managed strategy only after ordinary application construction has succeeded.
+#[derive(Clone)]
 pub struct PassportStrategyBinding<'a> {
-    occurrence: Option<crate::http_scope::RouteIdentity>,
+    occurrence: Option<GuardOccurrence>,
     provider_type_id: Option<TypeId>,
     guard: &'a GuardDescriptor,
     context_cauldron: Option<TypeId>,
@@ -550,6 +558,7 @@ impl<'a> PassportStrategyBinding<'a> {
 }
 
 impl fmt::Debug for PassportStrategyBinding<'_> {
+    /// Formats the selected strategy and guard metadata without constructing a provider.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PassportStrategyBinding")
@@ -570,13 +579,17 @@ pub struct PassportStrategyPreflight<'a> {
 }
 
 impl<'a> PassportStrategyPreflight<'a> {
-    pub(crate) fn binding_for_endpoint(
+    /// Finds one preflight-selected transport operation.
+    #[doc(hidden)]
+    pub fn binding_for_occurrence(
         &self,
-        occurrence: crate::http_scope::RouteIdentity,
+        occurrence: &GuardOccurrence,
+        context_cauldron: Option<TypeId>,
     ) -> Option<&PassportStrategyBinding<'a>> {
-        self.bindings
-            .iter()
-            .find(|binding| binding.occurrence == Some(occurrence))
+        self.bindings.iter().find(|binding| {
+            binding.occurrence.as_ref() == Some(occurrence)
+                && binding.context_cauldron == context_cauldron
+        })
     }
     /// Returns every selected guard binding in deterministic route order.
     #[must_use]
@@ -599,6 +612,7 @@ impl<'a> PassportStrategyPreflight<'a> {
 }
 
 impl fmt::Debug for PassportStrategyPreflight<'_> {
+    /// Formats selected guard bindings without invoking their strategy adapters.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PassportStrategyPreflight")
@@ -607,6 +621,7 @@ impl fmt::Debug for PassportStrategyPreflight<'_> {
     }
 }
 
+/// Builds and caches the linked strategy descriptors in deterministic order.
 fn strategy_cache() -> &'static Vec<&'static PassportStrategyDescriptor> {
     static CACHE: OnceLock<Vec<&'static PassportStrategyDescriptor>> = OnceLock::new();
     CACHE.get_or_init(|| {
@@ -619,6 +634,7 @@ fn strategy_cache() -> &'static Vec<&'static PassportStrategyDescriptor> {
     })
 }
 
+/// Orders strategy metadata by name, provider, namespace, and source location.
 fn strategy_order(
     left: &&'static PassportStrategyDescriptor,
     right: &&'static PassportStrategyDescriptor,
@@ -630,6 +646,7 @@ fn strategy_order(
         .then_with(|| location_order(left.location(), right.location()))
 }
 
+/// Orders guard metadata by policy, declaration, namespace, and source location.
 fn guard_order(left: &&GuardDescriptor, right: &&GuardDescriptor) -> Ordering {
     left.policy_name()
         .cmp(right.policy_name())
@@ -638,11 +655,13 @@ fn guard_order(left: &&GuardDescriptor, right: &&GuardDescriptor) -> Ordering {
         .then_with(|| location_order(left.location(), right.location()))
 }
 
+/// Validates unique strategy names and their corresponding managed providers.
 fn validate_strategy_catalog(strategies: &[&'static PassportStrategyDescriptor]) -> Result<()> {
     validate_unique_strategy_names(strategies)?;
     validate_strategy_metadata(strategies)
 }
 
+/// Rejects duplicate strategy names and reports every duplicate group.
 fn validate_unique_strategy_names(
     strategies: &[&'static PassportStrategyDescriptor],
 ) -> Result<()> {
@@ -658,6 +677,7 @@ fn validate_unique_strategy_names(
     Ok(())
 }
 
+/// Confirms each strategy descriptor matches exactly one registered provider.
 fn validate_strategy_metadata(strategies: &[&'static PassportStrategyDescriptor]) -> Result<()> {
     let providers = Catalog::providers();
     for strategy in strategies {
@@ -694,6 +714,7 @@ fn validate_strategy_metadata(strategies: &[&'static PassportStrategyDescriptor]
     Ok(())
 }
 
+/// Enforces the token profile assigned to reserved JWT strategy names.
 fn validate_reserved_strategy_token_kind(strategy: &PassportStrategyDescriptor) -> Result<()> {
     let (expected, suggestion) = match strategy.name() {
         "jwt" => (
@@ -726,6 +747,7 @@ fn validate_reserved_strategy_token_kind(strategy: &PassportStrategyDescriptor) 
     ))
 }
 
+/// Creates the primary diagnostic for one duplicate strategy-name group.
 fn duplicate_strategy_error(group: &[&'static PassportStrategyDescriptor]) -> Diagnostic {
     let strategy = group
         .first()
@@ -740,6 +762,7 @@ fn duplicate_strategy_error(group: &[&'static PassportStrategyDescriptor]) -> Di
     .with_suggestion("use a unique Passport strategy name")
 }
 
+/// Resolves one guard against the complete linked strategy catalog.
 fn resolve_guard<'a>(
     guard: &'a GuardDescriptor,
     strategies: &[&'static PassportStrategyDescriptor],
@@ -755,6 +778,7 @@ fn resolve_guard<'a>(
     resolve_builtin_or_missing(guard)
 }
 
+/// Resolves one guard using strategies visible from its managed-module context.
 fn resolve_scoped_guard(
     scoped_guard: &ScopedGuard,
     cauldron_graph: Option<&CauldronGraph>,
@@ -787,6 +811,7 @@ fn resolve_scoped_guard(
     }
 }
 
+/// Checks whether a managed strategy provider is accessible from the guard's module.
 fn scoped_strategy_visible(
     cauldron_graph: Option<&CauldronGraph>,
     guard_context: Option<TypeId>,
@@ -799,6 +824,7 @@ fn scoped_strategy_visible(
     graph.can_access(guard_context, strategy.provider_type_id())
 }
 
+/// Compares strategy metadata with a registered provider's exact runtime identity.
 fn provider_matches_strategy(
     provider: &ProviderDescriptor,
     strategy: &PassportStrategyDescriptor,
@@ -807,6 +833,7 @@ fn provider_matches_strategy(
         && provider.runtime_type_name() == Some(strategy.provider_type_name())
 }
 
+/// Binds a custom strategy after checking that its principal type matches the guard.
 fn resolve_custom_strategy<'a>(
     guard: &'a GuardDescriptor,
     strategy: &'static PassportStrategyDescriptor,
@@ -843,6 +870,7 @@ fn resolve_custom_strategy<'a>(
     })
 }
 
+/// Uses the built-in JWT adapter when available, otherwise diagnoses a missing strategy.
 fn resolve_builtin_or_missing(guard: &GuardDescriptor) -> Result<PassportStrategyBinding<'_>> {
     if guard.strategy() == "jwt"
         && let Some(adapter) = guard.builtin_adapter()
@@ -872,6 +900,7 @@ fn resolve_builtin_or_missing(guard: &GuardDescriptor) -> Result<PassportStrateg
     ))
 }
 
+/// Reports all context-visible candidates when a guard can resolve multiple strategies.
 fn ambiguous_scoped_strategy_error(
     guard: &'static GuardDescriptor,
     guard_context: Option<TypeId>,
@@ -907,6 +936,7 @@ fn ambiguous_scoped_strategy_error(
     Error::from_diagnostics(primary, related)
 }
 
+/// Creates a source-located, categorized Passport strategy diagnostic.
 fn strategy_error(
     reason: &'static str,
     title: &'static str,
@@ -923,6 +953,7 @@ fn strategy_error(
     )
 }
 
+/// Orders source locations by file, line, and column for stable catalog output.
 fn location_order(left: SourceLocation, right: SourceLocation) -> Ordering {
     left.file
         .cmp(right.file)

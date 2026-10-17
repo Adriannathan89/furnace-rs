@@ -3,15 +3,8 @@
 #![deny(missing_docs)]
 
 /// Application module used by the compile fixture.
-#[furnace_rs::cauldron]
+#[furnace_rs::cauldron(providers = [UserRepository, UserService], exports = [UserRepository, UserService])]
 pub struct AppCauldron;
-
-impl furnace_rs::core::Cauldron for AppCauldron {
-    fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-        self.provide::<UserRepository>().provide::<UserService>().export::<UserRepository>().export::<UserService>()
-    }
-}
-
 
 /// Dependency-free repository used by the service.
 #[furnace_rs::storage]
@@ -21,6 +14,7 @@ pub struct UserRepository;
 #[furnace_rs::burner]
 pub struct UserService {
     /// Repository used by service methods.
+    #[inject]
     pub repository: UserRepository,
 }
 

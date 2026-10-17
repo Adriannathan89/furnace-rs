@@ -280,14 +280,8 @@ mod passport {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(providers = [Strategy], controllers = [GuardedController])]
     struct GuardedApplication;
-
-    impl furnace_rs_common::core::Cauldron for GuardedApplication {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.provide::<Strategy>().controller::<GuardedController>()
-        }
-    }
 
     #[tokio::test]
     async fn preflight_bypasses_passport_guard_and_strategy_before_actual_requests_run_them() {

@@ -1,8 +1,9 @@
 //! Standard integration contracts for furnace-rs.
 //!
-//! Enable the `http`, `jwt`, `cookies`, `logger`, or `sea-orm` feature to select only
-//! the integration contracts an application needs. The framework-neutral core
-//! boundary is always available through [`core`].
+//! Enable the `http`, `jwt`, `cookies`, `logger`, `sea-orm`, or
+//! `sea-orm-storage` feature to select only the integration contracts an
+//! application needs. The framework-neutral core boundary is always available
+//! through [`core`].
 #![cfg_attr(
     feature = "http",
     doc = "\nThe `http` feature provides managed controllers and inherent endpoints and the Axum runtime. [`build_router`] validates every controller selected for the application before it resolves a controller or invokes a typed registrar; [`serve`] performs that same validation before lifecycle startup or socket binding. Use [`serve_router`] to run a complete raw router after merging generated and native routes; it applies final application-wide router configuration before lifecycle startup. Use [`controller`] on a struct and exactly one inherent implementation to declare endpoints, and [`Sealable`] for their protection. The resulting descriptors can be inspected through [`RouteCatalog`] before the HTTP runtime installs handlers. [`axum`] is deliberately re-exported for native extractors, response types, routers, middleware, and Tower composition."
@@ -18,7 +19,7 @@ mod extract;
 mod http_preflight;
 #[cfg(feature = "http")]
 mod http_scope;
-#[cfg(feature = "http")]
+#[cfg(feature = "transport-runtime")]
 mod inspection;
 #[cfg(feature = "http")]
 mod response;
@@ -61,11 +62,11 @@ pub mod cookie;
 pub mod jwt;
 
 /// Typed Passport principals, request context, and normalized failures.
-#[cfg(all(feature = "http", feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub mod passport;
 
 /// Static policy metadata implemented by the guard declaration macro.
-#[cfg(all(feature = "http", feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 #[doc(hidden)]
 pub use passport::GuardPolicy;
 /// Erased static policy declarations used by startup analysis.
@@ -89,16 +90,19 @@ pub use jwt::{
 };
 
 /// Typed Passport principals, guarded extractors, context, errors, and diagnostics.
-#[cfg(all(feature = "http", feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub use passport::{
     Authenticated, BuiltinGuardAdapter, ClaimsPrincipal, ErasedAuthentication, FURNACE130,
     FURNACE131, GuardCatalog, GuardDescriptor, GuardPredicate, GuardPredicateAdapter,
-    PassportContext, PassportError, PassportErrorKind, PassportGuard, PassportGuardBuilder,
-    PassportPrincipal, PassportRejection, PassportResult, PassportStrategy,
-    PassportStrategyAdapter, PassportStrategyBinding, PassportStrategyCatalog,
+    PassportContext, PassportError, PassportErrorKind, PassportPrincipal, PassportResult,
+    PassportStrategy, PassportStrategyAdapter, PassportStrategyBinding, PassportStrategyCatalog,
     PassportStrategyDescriptor, PassportStrategyFuture, PassportStrategyPreflight, PolicyClause,
     PolicyMode, TokenSource, VerifiedToken,
 };
+
+/// HTTP-specific Passport middleware and rejection adapters.
+#[cfg(all(feature = "http", feature = "jwt"))]
+pub use passport::{PassportGuard, PassportGuardBuilder, PassportRejection};
 
 /// Safe parsed-cookie metadata available to cookie-authenticated Passport strategies.
 #[cfg(all(feature = "http", feature = "jwt", feature = "cookies"))]
@@ -149,15 +153,15 @@ pub use furnace_rs_common_macros::controller;
 pub use furnace_rs_common_macros::seal;
 
 /// Declares a static unit-struct Passport policy attached by a controller seal.
-#[cfg(all(feature = "http", feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub use furnace_rs_common_macros::guard;
 
 /// Derives role and permission membership for a named Passport principal.
-#[cfg(all(feature = "http", feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub use furnace_rs_common_macros::PassportPrincipal;
 
 /// Registers a managed, typed Passport JWT strategy.
-#[cfg(all(feature = "http", feature = "jwt"))]
+#[cfg(all(any(feature = "http", feature = "passport"), feature = "jwt"))]
 pub use furnace_rs_common_macros::passport_strategy;
 
 /// Marks a DELETE route inside a route-contract trait.
@@ -189,16 +193,21 @@ pub use route::{
 
 /// Implementation details used by generated HTTP route adapters.
 #[doc(hidden)]
-#[cfg(feature = "http")]
+#[cfg(feature = "transport-runtime")]
 pub mod __private {
+    #[cfg(feature = "http")]
     pub use crate::http_preflight::preflight_http;
+    #[cfg(feature = "http")]
     pub use crate::router::build_test_router_for;
+    #[cfg(feature = "http")]
     pub use crate::validation::support as input_validation;
     /// Environment variable used by the development supervisor for graceful shutdown.
     #[doc(hidden)]
     pub const DEV_SHUTDOWN_ENV: &str = "FURNACE_INTERNAL_DEV_SHUTDOWN_PATH";
 
+    #[cfg(feature = "http")]
     pub use axum::Router;
+    #[cfg(feature = "http")]
     pub use axum::routing::{delete, get, patch, post, put};
 
     /// Loads conventional sources with an injected environment source for tests.
@@ -212,17 +221,20 @@ pub mod __private {
     }
 
     /// Enables the private automatic HTTP server mode for integration tests.
+    #[cfg(feature = "http")]
     pub fn enable_automatic_server_for_test(builder: &mut furnace_rs_core::FurnaceBuilder) -> bool {
         crate::server_config::enable_automatic_server(builder)
     }
 
     /// Enables the private automatic CORS mode for integration tests.
+    #[cfg(feature = "http")]
     pub fn enable_automatic_cors_for_test(builder: &mut furnace_rs_core::FurnaceBuilder) -> bool {
         crate::cors::enable_automatic_cors(builder)
     }
 
     /// Returns the automatic server binding as an owned address tuple for integration tests.
     #[allow(clippy::result_large_err)]
+    #[cfg(feature = "http")]
     pub fn server_binding_address_for_test(
         application: &furnace_rs_core::Furnace,
     ) -> furnace_rs_core::Result<(String, u16)> {
@@ -233,25 +245,45 @@ pub mod __private {
         Ok((host.to_owned(), port))
     }
 
-    #[cfg(feature = "jwt")]
+    #[cfg(all(feature = "http", feature = "jwt"))]
     pub use crate::passport::{PassportGuardLayer, PassportGuardState};
-    #[cfg(feature = "jwt")]
+    #[cfg(all(feature = "http", feature = "jwt"))]
     #[allow(clippy::result_large_err)]
+    /// Resolves strategy bindings for Passport guards selected by an analyzed module graph.
     pub fn preflight_scoped(
         cauldron_graph: Option<&furnace_rs_core::CauldronGraph>,
     ) -> furnace_rs_core::Result<crate::passport::PassportStrategyPreflight<'static>> {
         let scope = crate::http_scope::HttpApplicationScope::for_cauldron_graph(cauldron_graph)?;
         crate::passport::PassportStrategyCatalog::preflight_scoped(cauldron_graph, scope.guards())
     }
+    #[cfg(feature = "http")]
     pub use crate::route::{RouterBuildContext, ValidatedRouteIter, validate_descriptors};
+    #[cfg(feature = "http")]
     pub use crate::seal::{OptionalSeal, SealProbe};
 
     #[doc(hidden)]
     pub use crate::inspection::{
         AutoConfigurationReport, CauldronImportReport, CauldronReport, ConfigurationEvidenceReport,
         DependencyReport, DiagnosticReport, DoctorCheck, DoctorStatus, FURNACE032, GraphReport,
+        GrpcMethodReport, GrpcPolicyReport, GrpcProtectionReport, GrpcServiceReport,
         INSPECTION_ACK_ENV, INSPECTION_KIND_ENV, INSPECTION_PROTOCOL_VERSION,
         INSPECTION_RESPONSE_ENV, INSPECTION_TOKEN_ENV, INSPECTION_VERSION_ENV, InspectionEnvelope,
-        InspectionKind, InspectionReport, ProviderReport, RouteReport, SourceReport,
+        InspectionKind, InspectionReport, InspectionTransportDescriptor, ProviderReport,
+        RouteReport, SocketEndpointReport, SocketHandlerReport, SocketInspectionDescriptor,
+        SourceReport,
     };
 }
+
+#[cfg(any(feature = "transport-metadata", all(feature = "http", feature = "jwt")))]
+mod bearer;
+
+/// Neutral metadata integration details shared by transport packages.
+#[doc(hidden)]
+#[cfg(any(feature = "transport-metadata", all(feature = "http", feature = "jwt")))]
+pub mod __transport {
+    pub use crate::bearer::parse as parse_bearer;
+}
+
+/// Transport-neutral runtime infrastructure.
+#[cfg(feature = "transport-runtime")]
+pub mod runtime;

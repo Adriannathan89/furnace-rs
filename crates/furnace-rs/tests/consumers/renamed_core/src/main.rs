@@ -8,15 +8,8 @@ struct Settings {
     port: u16,
 }
 
-#[runtime::cauldron]
+#[runtime::cauldron(providers = [Repository])]
 struct AppCauldron;
-
-impl runtime::Cauldron for AppCauldron {
-    fn register(self) -> runtime::CauldronRegistration<Self> {
-        self.provide::<Repository>()
-    }
-}
-
 
 #[runtime::storage]
 struct Repository;
@@ -39,3 +32,11 @@ fn main() {
     let _ = framework_result;
     let _ = status_name;
 }
+
+#[runtime::burner]
+struct DeclarativeService;
+#[runtime::cauldron(providers=[DeclarativeService], exports=[DeclarativeService])]
+struct DeclarativeModule;
+use DeclarativeModule as DeclarativeAlias;
+#[runtime::cauldron(root, imports=[DeclarativeAlias])]
+struct DeclarativeApp;

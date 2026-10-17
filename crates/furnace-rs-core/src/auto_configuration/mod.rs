@@ -1,3 +1,9 @@
+//! Discovery and evaluation of framework-owned default providers.
+//!
+//! Evaluators inspect a stable catalog and configuration before constructors
+//! run; selected appliers contribute provider values and infrastructure hooks
+//! only after graph preflight succeeds.
+
 #[allow(dead_code)]
 mod analysis;
 #[allow(dead_code)]
@@ -21,6 +27,7 @@ pub use report::{
 inventory::collect!(AutoConfigurationDescriptor);
 
 #[allow(dead_code)]
+/// Collects the compiled-in integration descriptors in stable report order.
 pub(crate) fn descriptors() -> Vec<&'static AutoConfigurationDescriptor> {
     let mut descriptors: Vec<_> = inventory::iter::<AutoConfigurationDescriptor>
         .into_iter()
@@ -30,6 +37,7 @@ pub(crate) fn descriptors() -> Vec<&'static AutoConfigurationDescriptor> {
 }
 
 #[allow(dead_code)]
+/// Orders descriptors by identifier, output type, and source location.
 fn descriptor_order(
     left: &&'static AutoConfigurationDescriptor,
     right: &&'static AutoConfigurationDescriptor,
@@ -41,6 +49,7 @@ fn descriptor_order(
 }
 
 #[allow(dead_code)]
+/// Breaks descriptor-order ties with a stable source location comparison.
 fn location_order(left: crate::SourceLocation, right: crate::SourceLocation) -> Ordering {
     left.file
         .cmp(right.file)

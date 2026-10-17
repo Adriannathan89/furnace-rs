@@ -18,10 +18,12 @@ pub fn normalize_path(package_root: &Path, path: &Path) -> String {
     path
 }
 
+/// Converts platform path separators to the schema’s forward-slash form.
 fn normalize_separators(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }
 
+/// Returns the path suffix when it is beneath the normalized package root.
 fn relative_to<'path>(package_root: &str, path: &'path str) -> Option<&'path str> {
     let package_root = package_root.trim_end_matches('/');
     if package_root.is_empty() || path == package_root {

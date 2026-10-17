@@ -131,6 +131,7 @@ impl ProviderRegistry {
 }
 
 impl Default for ProviderRegistry {
+    /// Creates an empty type-indexed provider registry.
     fn default() -> Self {
         Self::new()
     }

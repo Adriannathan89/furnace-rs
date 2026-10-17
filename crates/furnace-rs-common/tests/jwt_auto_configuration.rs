@@ -11,6 +11,7 @@ use furnace_rs_core::{
 
 #[furnace_rs_core::burner]
 struct TokenIssuer {
+    #[inject]
     jwt: JwtService,
 }
 

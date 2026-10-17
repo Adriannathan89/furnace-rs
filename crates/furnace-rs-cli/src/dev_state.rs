@@ -1,3 +1,5 @@
+//! Pure state transitions for development builds, application restarts, and shutdown.
+
 use crate::{cargo::BuiltApplication, watch::ChangeImpact};
 
 #[allow(clippy::large_enum_variant)]
@@ -29,6 +31,7 @@ pub(crate) struct DevState {
 }
 
 impl DevState {
+    /// Creates an idle development state before the initial build.
     pub(crate) fn new() -> Self {
         Self {
             last_successful: None,
@@ -39,6 +42,7 @@ impl DevState {
         }
     }
 
+    /// Applies one event and returns the side effects for the development driver.
     pub(crate) fn transition(&mut self, event: DevEvent) -> Vec<DevAction> {
         if self.shutting_down {
             return Vec::new();
@@ -57,6 +61,7 @@ impl DevState {
         }
     }
 
+    /// Starts one build unless a build is already active.
     fn start_build(&mut self) -> Vec<DevAction> {
         if self.build_running {
             return Vec::new();
@@ -66,6 +71,7 @@ impl DevState {
         vec![DevAction::Build]
     }
 
+    /// Coalesces changes during a build or schedules a restart or rebuild.
     fn handle_change(&mut self, impact: ChangeImpact) -> Vec<DevAction> {
         if impact == ChangeImpact::None {
             return Vec::new();
@@ -82,6 +88,7 @@ impl DevState {
         }
     }
 
+    /// Restarts the last successful binary when one is available.
     fn restart_last_successful(&mut self) -> Vec<DevAction> {
         let Some(built) = self.last_successful.clone() else {
             return Vec::new();
@@ -95,6 +102,7 @@ impl DevState {
         }
     }
 
+    /// Records the new binary, replaces a running application, and handles queued rebuilds.
     fn handle_build_succeeded(&mut self, built: BuiltApplication) -> Vec<DevAction> {
         self.build_running = false;
         let pending = std::mem::replace(&mut self.pending, ChangeImpact::None);
@@ -113,6 +121,7 @@ impl DevState {
         actions
     }
 
+    /// Keeps the current application and starts a queued follow-up rebuild when needed.
     fn handle_build_failed(&mut self) -> Vec<DevAction> {
         self.build_running = false;
         let pending = std::mem::replace(&mut self.pending, ChangeImpact::None);
@@ -124,6 +133,7 @@ impl DevState {
         }
     }
 
+    /// Marks the state terminal and emits stop and exit actions as applicable.
     fn shutdown(&mut self) -> Vec<DevAction> {
         self.shutting_down = true;
         self.build_running = false;

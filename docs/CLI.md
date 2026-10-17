@@ -1,8 +1,9 @@
 # FURNACE CLI
 
-FURNACE 1.0.2 provides Cargo-native execution, inspection, a minimal-project
-generator, and a versioned JSON result
-for finite FURNACE-owned commands. Human-readable output remains the default.
+The FURNACE 2.0.0 CLI provides Cargo-native execution, HTTP/gRPC/WebSocket
+endpoint and graph inspection, a minimal-project generator, and versioned JSON
+results for finite FURNACE-owned commands. Human-readable output remains the
+default.
 
 ## Start a minimal HTTP application
 
@@ -55,7 +56,7 @@ sibling staging directory, and publishes them with one atomic rename. An
 existing destination, including an empty directory, is never changed. The
 command does not download dependencies, run Cargo, initialize Git, select a
 remote template, or ask an interactive question. It offers no template,
-database, JWT, VCS, or target-directory option in 1.0.2. A successful human
+database, JWT, VCS, or target-directory option. A successful human
 result identifies the relative path and prints only `cd <name>` and `furnace dev`.
 
 ## Project and target selection
@@ -73,6 +74,11 @@ furnace graph [--package <package>] [--bin <binary>]
 furnace doctor [--package <package>] [--bin <binary>]
 ```
 
+`furnace grpc` inspects selected protobuf methods, streaming shapes, and
+effective policies without application startup. `furnace socket` inspects
+selected WebSocket gateways and owned endpoints, handlers and admission policies.
+See the [gRPC guide](grpc.md) and [WebSocket guide](socket.md).
+
 Cargo's ordinary single-package, `default-run`, and ambiguity behavior remains
 authoritative. Arguments after `--` are forwarded only by `run` and `dev`;
 inspection commands reject them.
@@ -84,9 +90,15 @@ The following finite commands accept `--format human|json`:
 ```text
 furnace new <name>
 furnace routes
+furnace grpc
+furnace socket
 furnace graph
 furnace doctor
 ```
+
+The transport inspection commands accept `--format human|json`:
+`furnace grpc --format human|json` and
+`furnace socket --format human|json`.
 
 The option may appear once, before or after the command path. Both examples
 are equivalent:
@@ -117,8 +129,8 @@ Every document has this version-2 envelope:
 }
 ```
 
-`command` is the canonical spelling (`new`, `routes`, `graph`, or `doctor`)
-and is `null` only when syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
+`command` is the canonical spelling (`new`, `routes`, `grpc`, `socket`, `graph`,
+or `doctor`). It is `null` only when syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
 completion. `data` is the command object, safe partial inspection data, or
 `null`. `diagnostics` is an ordered list of FURNACE-owned records:
 
@@ -139,7 +151,7 @@ intentional. Schema version 2 may add fields, and consumers must ignore unknown
 object fields. Removing, renaming, changing the type of, or changing the
 meaning of an existing field requires a new `schema_version`.
 
-The finite schema owners are `new`, `routes`, `graph`, and `doctor`. A non-null source location has
+The finite schema owners are `new`, `routes`, `grpc`, `graph`, and `doctor`. A non-null source location has
 one-based line and column numbers:
 
 ```json
@@ -204,6 +216,14 @@ construction plan exists.
 }
 ```
 
+`grpc` returns `{ "services": [...] }`. Services contain `name`,
+`implementation`, `location`, and `methods`. Each method contains `name`, `path`,
+`client_streaming`, `server_streaming`, and `protection`. Public RPCs have null
+protection; protected RPCs report strategy/principal identities, role and
+permission clauses, and predicate identities. Configuration values and
+credentials are omitted. Use `furnace grpc --format json` for this schema.
+`routes` continues to report HTTP routes only.
+
 `doctor` returns `{ "checks": [...] }`, where each check contains `group`,
 `status`, and `summary`. Status is `pass`, `skipped`, `overridden`, or `failed`;
 the existing group and summary ordering remains authoritative.
@@ -232,6 +252,20 @@ and watches the selected application's reachable workspace inputs. Changes are
 debounced; a failed rebuild keeps the last good process when one is running.
 Neither command wraps Cargo, rustc, or arbitrary application streams in JSON.
 
+Builds retain the invocation directory so member `.cargo/config.toml` settings
+remain effective. Direct application and inspection launches include Cargo's
+platform library search paths, including toolchain and build-script libraries,
+while preserving existing search paths.
+
+Development watches Rust and protobuf sources, manifests, lockfiles, migrations,
+and paths declared by local build scripts with `cargo:rerun-if-changed` or
+`cargo::rerun-if-changed`. Declared inputs become available after a successful
+build, including inputs outside package directories. Ordinary runtime log and
+cache files do not trigger rebuilds. Manifest and lockfile changes reload the
+selected target and reachable dependencies, replacing watcher registrations.
+Invalid manifests remain editable while the last good process runs; a selected
+binary removed from valid metadata produces a target-selection diagnostic.
+
 ```bash
 furnace run -- --seed-data
 furnace run -p api --bin server -- --port 4000
@@ -241,12 +275,15 @@ furnace dev -p api --bin server -- --log=debug
 
 ## Inspection commands
 
-`furnace routes`, `furnace graph`, and `furnace doctor` compile the selected standard
+`furnace routes`, `furnace grpc`, `furnace graph`, and `furnace doctor` compile the selected standard
 `Furnace::burn::<AppCauldron>()` application and obtain private inspection metadata
 without normal provider construction, lifecycle startup, database connection,
 migration, listener binding, or traffic serving. Human output remains the
 existing table/section/check rendering; JSON exposes only the public schema
-described above, never the private inspection protocol or its tokens.
+described above, never the private inspection protocol or its tokens. The private
+protocol is version 3 and rejects incompatible application reports explicitly.
+gRPC inspection is static: eager clients do not connect, and TLS material is
+not read. See the [gRPC guide](grpc.md) for configuration and service declarations.
 
 ## Persistence
 

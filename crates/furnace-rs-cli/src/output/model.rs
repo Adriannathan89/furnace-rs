@@ -25,6 +25,7 @@ impl Envelope {
         Self::success_with_diagnostics(command, data, Vec::new())
     }
 
+    /// Creates a successful schema envelope with ordered nonfatal diagnostics.
     pub(crate) fn success_with_diagnostics(
         command: impl Into<String>,
         data: CommandData,
@@ -54,6 +55,7 @@ impl Envelope {
         }
     }
 
+    /// Returns the optional canonical command name carried by the envelope.
     pub(crate) fn command(&self) -> Option<&str> {
         self.command.as_deref()
     }
@@ -67,6 +69,10 @@ pub enum CommandData {
     New(NewData),
     /// `furnace routes` inspection data.
     Routes(RoutesData),
+    /// `furnace grpc` inspection data.
+    Grpc(GrpcData),
+    /// WebSocket endpoint inspection data.
+    Socket(SocketData),
     /// `furnace graph` inspection data.
     Graph(GraphData),
     /// `furnace doctor` inspection data.
@@ -387,6 +393,7 @@ impl CliDiagnostic {
         self
     }
 
+    /// Converts a CLI error while normalizing any source path for public output.
     pub(crate) fn from_error(error: &CliError, package_root: Option<&Path>) -> Self {
         let mut diagnostic = Self::error(error.code(), error.title(), error.message());
         if let Some(subject) = error.subject() {
@@ -409,6 +416,7 @@ impl CliDiagnostic {
         diagnostic
     }
 
+    /// Creates a diagnostic record with the supplied severity and no optional details.
     fn new(
         severity: Severity,
         code: impl Into<String>,
@@ -464,4 +472,52 @@ mod tests {
                 .contains("src/schema.rs")
         );
     }
+}
+
+/// Selected protobuf service inspection data.
+#[derive(Clone, Debug, Serialize)]
+pub struct GrpcData {
+    /// Services ordered by fully qualified protobuf name.
+    pub services: Vec<GrpcServiceData>,
+}
+/// One protobuf service and managed implementation.
+#[derive(Clone, Debug, Serialize)]
+pub struct GrpcServiceData {
+    /// Fully qualified protobuf service name.
+    pub name: String,
+    /// Managed Rust implementation type identity.
+    pub implementation: String,
+    /// Normalized registration location.
+    pub location: SourceLocation,
+    /// Methods ordered by protobuf name.
+    pub methods: Vec<GrpcMethodData>,
+}
+/// Static protobuf method shape and effective protection.
+pub type GrpcMethodData = furnace_rs_common::__private::GrpcMethodReport;
+/// Authored Passport admission policy without runtime configuration values.
+pub type GrpcProtectionData = furnace_rs_common::__private::GrpcProtectionReport;
+
+/// WebSocket endpoint inspection output.
+#[derive(Clone, Debug, Serialize)]
+pub struct SocketData {
+    /// Selected endpoint metadata.
+    pub endpoints: Vec<SocketEndpointData>,
+}
+/// One inspected gateway or owned-socket handler.
+#[derive(Clone, Debug, Serialize)]
+pub struct SocketEndpointData {
+    /// Upgrade path.
+    pub path: String,
+    /// Raw or named-event mode.
+    pub mode: String,
+    /// Provider implementation.
+    pub implementation: String,
+    /// Per-connection processing policy.
+    pub processing: String,
+    /// Normalized declaration location.
+    pub location: SourceLocation,
+    /// Handshake admission policy.
+    pub protection: Option<furnace_rs_common::__private::GrpcProtectionReport>,
+    /// Handler declarations.
+    pub handlers: Vec<furnace_rs_common::__private::SocketHandlerReport>,
 }

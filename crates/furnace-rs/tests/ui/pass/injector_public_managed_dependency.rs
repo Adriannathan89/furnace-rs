@@ -5,16 +5,19 @@ pub struct PublicDependency;
 
 #[furnace_rs::burner]
 pub struct PublicService {
+    #[inject]
     dependency: PublicDependency,
 }
 
 #[furnace_rs::storage]
 pub struct PublicRepository {
+    #[inject]
     dependency: PublicDependency,
 }
 
 #[furnace_rs::controller]
 pub struct PublicController {
+    #[inject]
     dependency: PublicDependency,
 }
 

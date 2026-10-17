@@ -101,12 +101,12 @@ fn name_and_templates_render_the_exact_minimal_project_manifest() {
         ),
         (
             "src/app/mod.rs".to_owned(),
-            "// src/app/mod.rs\nmod controller;\nmod service;\n\nuse furnace::prelude::*;\n\n#[cauldron]\npub struct AppCauldron;\n\nimpl Cauldron for AppCauldron {\n    fn register(self) -> CauldronRegistration<Self> {\n        self.provide::<service::AppService>()\n            .controller::<controller::AppController>()\n    }\n}\n"
+            "// src/app/mod.rs\nmod controller;\nmod service;\n\nuse furnace::prelude::*;\n\n#[cauldron(providers = [service::AppService], controllers = [controller::AppController])]\npub struct AppCauldron;\n"
                 .to_owned(),
         ),
         (
             "src/app/controller.rs".to_owned(),
-            "// src/app/controller.rs\nuse furnace::prelude::*;\n\nuse super::service::AppService;\n\n#[controller]\npub struct AppController {\n    service: AppService,\n}\n\n#[controller(route = \"/\")]\nimpl AppController {\n    #[get]\n    async fn hello(&self) -> &'static str {\n        self.service.hello()\n    }\n}\n"
+            "// src/app/controller.rs\nuse furnace::prelude::*;\n\nuse super::service::AppService;\n\n#[controller]\npub struct AppController {\n    #[inject]\n    service: AppService,\n}\n\n#[controller(route = \"/\")]\nimpl AppController {\n    #[get]\n    async fn hello(&self) -> &'static str {\n        self.service.hello()\n    }\n}\n"
                 .to_owned(),
         ),
         (

@@ -11,6 +11,7 @@ pub(super) struct Validator {
     pub callback: Option<Path>,
 }
 
+/// Parses validator attributes and checks supported names, arguments, and contradictions.
 pub(super) fn parse(attributes: &[Attribute], whole: bool) -> syn::Result<Vec<Validator>> {
     let mut validators = Vec::new();
     let mut names = BTreeSet::new();
@@ -122,6 +123,7 @@ pub(super) fn parse(attributes: &[Attribute], whole: bool) -> syn::Result<Vec<Va
     Ok(validators)
 }
 
+/// Extracts a numeric literal and records whether it has a unary minus.
 fn literal(expression: &Expr) -> syn::Result<(bool, &Lit)> {
     match expression {
         Expr::Lit(value) => Ok((false, &value.lit)),
@@ -136,6 +138,7 @@ fn literal(expression: &Expr) -> syn::Result<(bool, &Lit)> {
     }
 }
 
+/// Converts a finite signed integer or float literal to `f64` for ordering checks.
 pub(super) fn numeric(expression: &Expr) -> syn::Result<f64> {
     let (negative, literal) = literal(expression)?;
     let value = match literal {
@@ -157,6 +160,7 @@ pub(super) fn numeric(expression: &Expr) -> syn::Result<f64> {
     Ok(if negative { -value } else { value })
 }
 
+/// Checks literal suffixes and representable bounds for the target numeric field type.
 pub(super) fn check_number(expression: &Expr, name: &str) -> syn::Result<()> {
     let (negative, literal) = literal(expression)?;
     let overflow = || {
@@ -204,6 +208,7 @@ pub(super) fn check_number(expression: &Expr, name: &str) -> syn::Result<()> {
     Ok(())
 }
 
+/// Compares finite bounds while preserving exact ordering for integer literal pairs.
 fn compare(left: &Expr, right: &Expr) -> syn::Result<Ordering> {
     let (ln, ll) = literal(left)?;
     let (rn, rl) = literal(right)?;

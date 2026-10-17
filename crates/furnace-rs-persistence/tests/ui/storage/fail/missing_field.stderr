@@ -1,0 +1,5 @@
+error: storage connection must name an existing injected field
+ --> tests/ui/storage/fail/missing_field.rs:7:57
+  |
+7 | #[storage(entity = entities::post::Entity, connection = missing)]
+  |                                                         ^^^^^^^

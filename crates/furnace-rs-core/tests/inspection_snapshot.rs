@@ -9,12 +9,6 @@ mod imported {
 
     #[cauldron]
     pub struct RepositoryCauldron;
-
-    impl furnace_rs_core::Cauldron for RepositoryCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            furnace_rs_core::CauldronRegistration::new(self)
-        }
-    }
 }
 
 use imported::RepositoryCauldron;
@@ -70,16 +64,8 @@ const __FURNACE_INJECTOR_DESCRIPTOR_USER_SERVICE: furnace_rs_core::ProviderDescr
         ));
 furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_USER_SERVICE }
 
-#[cauldron]
+#[cauldron(providers = [UserRepository => UserRepositoryInjector, UserService => UserServiceInjector], imports = [RepositoryCauldron])]
 struct AppCauldron;
-
-impl furnace_rs_core::Cauldron for AppCauldron {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        self.provide_with::<UserRepository, UserRepositoryInjector>()
-            .provide_with::<UserService, UserServiceInjector>()
-            .import(RepositoryCauldron)
-    }
-}
 
 #[test]
 fn snapshot_owns_rooted_graph_metadata_after_analysis_is_dropped() {

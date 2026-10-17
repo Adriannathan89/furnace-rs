@@ -11,7 +11,12 @@ description = "HTTP, JWT, cookies, and Passport integrations for furnace-rs"
 
 [features]
 default = ["http"]
+transport-metadata = ["dep:http"]
+transport-runtime = ["dep:tokio", "dep:futures-util", "dep:serde", "dep:serde_json", "dep:rustix"]
+passport = ["jwt", "transport-metadata", "dep:furnace-rs-common-macros", "furnace-rs-common-macros/passport"]
 http = [
+    "transport-runtime",
+    "dep:http",
     "dep:chrono",
     "dep:axum",
     "dep:axum-extra",
@@ -37,8 +42,11 @@ jwt = [
 cookies = ["http", "dep:cookie", "axum-extra/cookie", "furnace-rs-common-macros?/cookies"]
 logger = ["dep:chrono"]
 sea-orm = ["http", "dep:sea-orm"]
+sea-orm-storage = ["sea-orm", "dep:furnace-rs-persistence-types"]
 
 [dependencies]
+futures-util = { workspace = true, optional = true }
+http = { workspace = true, optional = true }
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
 hyper = { workspace = true, optional = true }
@@ -46,8 +54,10 @@ hyper-util = { workspace = true, optional = true }
 base64 = { workspace = true, optional = true }
 cookie = { workspace = true, optional = true }
 jsonwebtoken = { workspace = true, optional = true }
-furnace-rs-common-macros = { path = "../furnace-rs-common-macros", version = "=1.0.2", optional = true }
-furnace-rs-core = { path = "../furnace-rs-core", version = "=1.0.2" }
+furnace-rs-common-macros = { path = "../furnace-rs-common-macros", version = "=2.0.0", optional = true }
+furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0" }
+# Use the type-only crate so HTTP conversion does not link connector providers.
+furnace-rs-persistence-types = { path = "../furnace-rs-persistence-types", version = "=2.0.0", optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde_path_to_error = { workspace = true, optional = true }
@@ -65,7 +75,7 @@ rustix = { workspace = true, optional = true }
 http-body.workspace = true
 hyper = { workspace = true, features = ["client", "http2"] }
 tempfile = "3"
-tokio.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
 
 [lints]
 workspace = true

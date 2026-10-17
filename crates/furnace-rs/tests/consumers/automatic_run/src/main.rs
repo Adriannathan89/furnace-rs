@@ -20,24 +20,13 @@ mod delivery {
         }
     }
 
-    #[cauldron]
+    #[cauldron(controllers = [HealthController])]
     pub struct HealthHttpCauldron;
 
-    impl furnace_rs::core::Cauldron for HealthHttpCauldron {
-        fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-            self.controller::<HealthController>()
-        }
-    }
 }
 
-#[cauldron]
+#[cauldron(imports = [delivery::HealthHttpCauldron])]
 struct AppCauldron;
-
-impl furnace_rs::core::Cauldron for AppCauldron {
-    fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-        self.import(delivery::HealthHttpCauldron)
-    }
-}
 
 #[furnace_rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {

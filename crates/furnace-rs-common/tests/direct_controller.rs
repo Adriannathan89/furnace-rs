@@ -5,7 +5,7 @@ use axum::{
     body::{Body, to_bytes},
     http::{Method, Request, StatusCode},
 };
-use furnace_rs_common::core::{Cauldron, CauldronRegistration, Furnace, cauldron};
+use furnace_rs_common::core::{Furnace, cauldron};
 use furnace_rs_common::{
     Json, Path, RouteCatalog, SealRegistration, Sealable, build_router, controller,
 };
@@ -79,6 +79,7 @@ furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_S
 
 #[controller]
 struct UserController {
+    #[inject]
     service: Service,
 }
 impl Sealable for UserController {
@@ -130,15 +131,8 @@ impl UserController {
         let _ = &self.service;
     }
 }
-#[cauldron]
+#[cauldron(providers = [Repository => RepositoryInjector, Service => ServiceInjector], controllers = [UserController])]
 struct App;
-impl Cauldron for App {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<Repository, RepositoryInjector>()
-            .provide_with::<Service, ServiceInjector>()
-            .controller::<UserController>()
-    }
-}
 
 #[tokio::test]
 async fn inherent_handlers_use_registered_dependencies_and_native_extractors() {
@@ -298,13 +292,8 @@ mod divergent_captures {
             format!("name:{name}")
         }
     }
-    #[cauldron]
+    #[cauldron(controllers = [Controller])]
     pub struct Root;
-    impl Cauldron for Root {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<Controller>()
-        }
-    }
 }
 
 #[tokio::test]

@@ -1,0 +1,5 @@
+error: invalid or duplicate handler for this endpoint mode
+ --> tests/ui-socket/fail/reserved.rs:4:41
+  |
+4 | impl Gateway{#[on_event("furnace.join")]async fn join(&self,_:SocketContext,_:serde_json::Value)->SocketResult<()>{Ok(())}}
+  |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

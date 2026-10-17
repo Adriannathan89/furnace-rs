@@ -9,42 +9,49 @@ pub trait Length {
 }
 
 impl Length for str {
+    /// Counts Unicode scalar values rather than UTF-8 bytes.
     fn length(&self) -> usize {
         self.chars().count()
     }
 }
 
 impl Length for String {
+    /// Counts Unicode scalar values rather than UTF-8 bytes.
     fn length(&self) -> usize {
         self.chars().count()
     }
 }
 
 impl<T: Length + ?Sized> Length for &T {
+    /// Delegates length calculation to the referenced value.
     fn length(&self) -> usize {
         (**self).length()
     }
 }
 
 impl<T> Length for Vec<T> {
+    /// Returns the number of vector entries.
     fn length(&self) -> usize {
         self.len()
     }
 }
 
 impl<T, const N: usize> Length for [T; N] {
+    /// Returns the array's compile-time element count.
     fn length(&self) -> usize {
         N
     }
 }
 
 impl<T, S> Length for HashMap<String, T, S> {
+    /// Returns the number of map entries.
     fn length(&self) -> usize {
         self.len()
     }
 }
 
 impl<T> Length for BTreeMap<String, T> {
+    /// Returns the number of map entries.
     fn length(&self) -> usize {
         self.len()
     }

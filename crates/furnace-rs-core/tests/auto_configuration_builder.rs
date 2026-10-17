@@ -43,18 +43,12 @@ mod scope_fixture {
     pub mod app {
         use super::ScopedOutput;
 
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(providers = [ReachableConsumer], exports = [ReachableConsumer])]
         pub struct AppCauldron;
-
-        impl furnace_rs_core::Cauldron for AppCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide::<ReachableConsumer>()
-                    .export::<ReachableConsumer>()
-            }
-        }
 
         #[furnace_rs_core::burner]
         pub struct ReachableConsumer {
+            #[inject]
             _output: ScopedOutput,
         }
     }
@@ -62,18 +56,12 @@ mod scope_fixture {
     pub mod unreachable {
         use super::ScopedOutput;
 
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(providers = [UnreachableConsumer], exports = [UnreachableConsumer])]
         pub struct UnreachableCauldron;
-
-        impl furnace_rs_core::Cauldron for UnreachableCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide::<UnreachableConsumer>()
-                    .export::<UnreachableConsumer>()
-            }
-        }
 
         #[furnace_rs_core::burner]
         pub struct UnreachableConsumer {
+            #[inject]
             _output: ScopedOutput,
         }
     }

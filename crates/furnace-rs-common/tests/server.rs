@@ -27,14 +27,8 @@ mod standard_run {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [RoutedController])]
     pub struct RoutedApp;
-
-    impl furnace_rs_common::core::Cauldron for RoutedApp {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<RoutedController>()
-        }
-    }
 }
 
 fn core_error(message: &str) -> Error {

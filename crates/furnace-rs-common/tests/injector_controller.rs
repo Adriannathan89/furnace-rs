@@ -4,9 +4,7 @@ use axum::{
     body::{Body, to_bytes},
     http::{Request, StatusCode},
 };
-use furnace_rs_common::core::{
-    Cauldron, CauldronRegistration, Furnace, Injector, Result, cauldron,
-};
+use furnace_rs_common::core::{Furnace, Injector, Result, cauldron};
 use furnace_rs_common::{build_router, controller};
 use std::sync::Arc;
 use tower::ServiceExt;
@@ -28,6 +26,7 @@ impl Injector<Arc<dyn Greeting>> for Implementation {
 }
 #[controller]
 struct Controller {
+    #[inject]
     greeting: Arc<dyn Greeting>,
 }
 #[controller(route = "/injector")]
@@ -37,14 +36,9 @@ impl Controller {
         self.greeting.greet()
     }
 }
-#[cauldron]
+#[cauldron(providers = [Arc<dyn Greeting> => Implementation], controllers = [Controller])]
 struct App;
-impl Cauldron for App {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<Arc<dyn Greeting>, Implementation>()
-            .controller::<Controller>()
-    }
-}
+
 #[tokio::test]
 async fn controller_injector_retains_route_metadata_and_trait_binding() {
     assert!(Controller::descriptor().is_controller());

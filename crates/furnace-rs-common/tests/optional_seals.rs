@@ -4,7 +4,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use furnace_rs_common::core::{Cauldron, CauldronRegistration, Furnace, cauldron};
+use furnace_rs_common::core::{Furnace, cauldron};
 use furnace_rs_common::{build_router, controller};
 use tower::ServiceExt;
 
@@ -22,13 +22,9 @@ impl PublicController {
         "public"
     }
 }
-#[cauldron]
+#[cauldron(controllers = [PublicController])]
 struct Root;
-impl Cauldron for Root {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<PublicController>()
-    }
-}
+
 #[tokio::test]
 async fn controller_without_sealable_is_public_without_jwt_configuration() {
     let mut builder = Furnace::builder();

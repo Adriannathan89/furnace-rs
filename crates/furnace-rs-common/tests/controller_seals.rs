@@ -9,7 +9,7 @@ use axum::{
     },
 };
 use furnace_rs_common::core::{
-    Cauldron, CauldronRegistration, Config, ConfigBuilder, Furnace, MapSource, cauldron,
+    __private::ModuleContract, Config, ConfigBuilder, Furnace, MapSource, cauldron,
 };
 use furnace_rs_common::{
     Authenticated, ClaimsPrincipal, Json, JwtService, JwtSignOptions, PassportPrincipal, Path,
@@ -120,16 +120,10 @@ impl CookieController {
         principal.subject.clone()
     }
 }
-#[cauldron]
+#[cfg_attr(feature = "cookies", cauldron(controllers = [Users, Public, CookieController]))]
+#[cfg_attr(not(feature = "cookies"), cauldron(controllers = [Users, Public]))]
 struct App;
-impl Cauldron for App {
-    fn register(self) -> CauldronRegistration<Self> {
-        let registration = self.controller::<Users>().controller::<Public>();
-        #[cfg(feature = "cookies")]
-        let registration = registration.controller::<CookieController>();
-        registration
-    }
-}
+
 fn config() -> Config {
     ConfigBuilder::new()
         .source(MapSource::new(
@@ -375,15 +369,8 @@ mod scoped {
                 principal.label
             }
         }
-        #[cauldron]
+        #[cauldron(providers = [Strategy], exports = [Strategy], controllers = [Controller])]
         pub struct Module;
-        impl Cauldron for Module {
-            fn register(self) -> CauldronRegistration<Self> {
-                self.provide::<Strategy>()
-                    .export::<Strategy>()
-                    .controller::<Controller>()
-            }
-        }
     }
     mod second {
         use super::*;
@@ -420,21 +407,12 @@ mod scoped {
                 principal.label
             }
         }
-        #[cauldron]
+        #[cauldron(providers = [Strategy], controllers = [Controller])]
         pub struct Module;
-        impl Cauldron for Module {
-            fn register(self) -> CauldronRegistration<Self> {
-                self.provide::<Strategy>().controller::<Controller>()
-            }
-        }
     }
-    #[cauldron]
+    #[cauldron(imports = [first::Module, second::Module])]
     struct Both;
-    impl Cauldron for Both {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.import(first::Module).import(second::Module)
-        }
-    }
+
     #[controller]
     struct DirectController;
     impl Sealable for DirectController {
@@ -449,29 +427,15 @@ mod scoped {
             principal.label
         }
     }
-    #[cauldron]
+    #[cauldron(controllers = [DirectController], imports = [first::Module])]
     struct DirectRoot;
-    impl Cauldron for DirectRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<DirectController>().import(first::Module)
-        }
-    }
-    #[cauldron]
+
+    #[cauldron(providers = [first::Strategy], exports = [first::Strategy], global)]
     struct GlobalStrategy;
-    impl Cauldron for GlobalStrategy {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.provide::<first::Strategy>()
-                .export::<first::Strategy>()
-                .global()
-        }
-    }
-    #[cauldron]
+
+    #[cauldron(imports = [GlobalStrategy])]
     struct Bridge;
-    impl Cauldron for Bridge {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.import(GlobalStrategy)
-        }
-    }
+
     #[controller]
     struct GlobalController;
     impl Sealable for GlobalController {
@@ -486,14 +450,10 @@ mod scoped {
             principal.label
         }
     }
-    #[cauldron]
+    #[cauldron(controllers = [GlobalController], imports = [Bridge])]
     struct GlobalRoot;
-    impl Cauldron for GlobalRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<GlobalController>().import(Bridge)
-        }
-    }
-    async fn app<M: Cauldron>() -> Furnace {
+
+    async fn app<M: ModuleContract>() -> Furnace {
         let mut builder = Furnace::builder_with_config(config());
         builder.root::<M>().unwrap();
         builder.build().await.unwrap()
@@ -609,13 +569,9 @@ impl AllSkipped {
     #[post]
     fn disabled_protected(&self) {}
 }
-#[cauldron]
+#[cauldron(controllers = [AllSkipped])]
 struct AllSkippedRoot;
-impl Cauldron for AllSkippedRoot {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<AllSkipped>()
-    }
-}
+
 #[tokio::test]
 async fn entirely_skipped_controller_needs_no_jwt_output_or_configuration() {
     let mut builder = Furnace::builder();

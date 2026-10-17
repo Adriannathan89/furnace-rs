@@ -1,3 +1,5 @@
+//! Database readiness ping and graceful close lifecycle hook.
+
 use furnace_rs_core::{ApplicationContext, LifecycleFuture, LifecycleHook};
 
 use crate::{PersistenceError, PersistenceErrorKind};
@@ -7,10 +9,12 @@ use super::DatabaseConnection;
 pub(super) struct SeaOrmLifecycle;
 
 impl LifecycleHook for SeaOrmLifecycle {
+    /// Returns the stable identity of the PostgreSQL readiness and shutdown hook.
     fn name(&self) -> &str {
         "furnace.persistence.seaorm.postgres"
     }
 
+    /// Pings the established database connection before application readiness.
     fn start<'a>(&'a self, context: &'a ApplicationContext) -> LifecycleFuture<'a> {
         Box::pin(async move {
             context
@@ -27,6 +31,7 @@ impl LifecycleHook for SeaOrmLifecycle {
         })
     }
 
+    /// Gracefully closes the database connection during application shutdown.
     fn stop<'a>(&'a self, context: &'a ApplicationContext) -> LifecycleFuture<'a> {
         Box::pin(async move {
             context

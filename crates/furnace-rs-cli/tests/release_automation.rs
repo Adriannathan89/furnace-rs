@@ -14,10 +14,15 @@ use tempfile::{TempDir, tempdir};
 const PACKAGES: &[&str] = &[
     "furnace-rs-core-macros",
     "furnace-rs-common-macros",
+    "furnace-rs-grpc-macros",
+    "furnace-rs-socket-macros",
     "furnace-rs-core",
+    "furnace-rs-persistence-types",
     "furnace-rs-persistence",
     "furnace-rs-extra",
     "furnace-rs-common",
+    "furnace-rs-grpc",
+    "furnace-rs-socket",
     "furnace-rs-testing",
     "furnace-rs",
     "furnace-rs-cli",
@@ -26,14 +31,31 @@ const PACKAGES: &[&str] = &[
 const PUBLISH_ORDER: &[&str] = &[
     "furnace-rs-core-macros",
     "furnace-rs-common-macros",
+    "furnace-rs-grpc-macros",
+    "furnace-rs-socket-macros",
     "furnace-rs-core",
+    "furnace-rs-persistence-types",
     "furnace-rs-extra",
     "furnace-rs-common",
+    "furnace-rs-grpc",
+    "furnace-rs-socket",
     "furnace-rs-testing",
     "furnace-rs",
     "furnace-rs-persistence",
     "furnace-rs-cli",
 ];
+
+#[test]
+fn postgres_workflows_exercise_generated_storage_against_the_database() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for name in ["ci.yml", "beta-publish.yml", "stable-publish.yml"] {
+        let workflow = fs::read_to_string(root.join(".github/workflows").join(name)).unwrap();
+        assert!(
+            workflow.contains("--features sea-orm-storage,sea-orm-postgres --test storage_postgres -- --ignored --test-threads=1"),
+            "{name} must exercise the ignored generated storage PostgreSQL acceptance test"
+        );
+    }
+}
 
 #[cfg(unix)]
 #[test]
@@ -113,6 +135,24 @@ fn beta_release_advances_cli_with_workspace() {
     let cli_manifest = fs::read_to_string(fixture.root().join("crates/furnace-rs-cli/Cargo.toml"))
         .expect("furnace-rs-cli manifest should exist");
     assert!(cli_manifest.contains("version.workspace = true"));
+}
+
+#[cfg(unix)]
+#[test]
+fn beta_release_updates_independent_example_dependency_pins() {
+    let fixture = ReleaseFixture::new("0.7.0-beta.1");
+    let example = fixture.root().join("example/application");
+    fs::create_dir_all(example.join("src")).unwrap();
+    write(&example.join("src/lib.rs"), "");
+    let manifest = example.join("Cargo.toml");
+    write(
+        &manifest,
+        "[package]\nname = \"example-application\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[workspace]\n\n[dependencies]\nfurnace = { package = \"furnace-rs\", path = \"../../crates/furnace-rs\", version = \"=0.7.0-beta.1\" }\n",
+    );
+    assert_success(&fixture.run("release-beta.sh", "0.7.0"));
+    let updated = fs::read_to_string(manifest).unwrap();
+    assert!(updated.contains("version = \"=0.7.0-beta.2\""));
+    assert!(updated.contains("version = \"0.1.0\""));
 }
 
 #[cfg(unix)]
@@ -205,6 +245,9 @@ fn beta_and_stable_workflows_require_the_complete_v090_gate_set() {
         ("stable", &stable, "environment: stable"),
     ] {
         let verify = workflow_job(workflow, "verify");
+        let publish = workflow_job(workflow, "publish");
+        assert!(publish.contains("for attempt in {1..6}"));
+        assert!(publish.contains("publish_with_retry \"$package\""));
         for required in [
             "runs-on: ubuntu-latest",
             "cargo fmt --all --check",
@@ -353,6 +396,23 @@ fn persistence_release_gates_and_framework_publish_order() {
     }
 }
 
+#[test]
+fn independent_storage_consumers_are_fetched_for_workspace_test_jobs() {
+    let root = workspace_root();
+    for workflow_name in ["ci.yml", "beta-publish.yml", "stable-publish.yml"] {
+        let workflow = fs::read_to_string(root.join(".github/workflows").join(workflow_name))
+            .expect("workflow should exist");
+        for job_name in ["verify", "msrv", "coverage"] {
+            let job = workflow_job(&workflow, job_name);
+            assert!(
+                job.contains("Fetch independent storage consumer dependencies")
+                    && job.contains("cargo fetch --manifest-path \"$manifest\""),
+                "{workflow_name} {job_name} must fetch dependencies for offline storage consumers"
+            );
+        }
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn package_content_policy_checks_every_workspace_archive() {
@@ -369,22 +429,39 @@ fn package_content_policy_checks_every_workspace_archive() {
         .output()
         .expect("package-content policy should start");
     assert_success(&output);
-    assert!(
-        String::from_utf8_lossy(&output.stdout).contains("verified package contents for 9 crates")
-    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains(&format!(
+        "verified package contents for {} crates",
+        PACKAGES.len()
+    )));
 }
 
 #[test]
-fn all_packages_use_v102_pins_and_workspace_version() {
-    const VERSION: &str = "1.0.2";
-
+fn all_packages_use_exact_pins_and_workspace_version() {
     let root = workspace_root();
+    let metadata = cargo_metadata::MetadataCommand::new()
+        .manifest_path(root.join("Cargo.toml"))
+        .no_deps()
+        .other_options(vec!["--locked".into(), "--offline".into()])
+        .exec()
+        .expect("workspace metadata should resolve");
+    let distributable: std::collections::BTreeSet<_> = metadata
+        .packages
+        .iter()
+        .filter(|package| metadata.workspace_members.contains(&package.id))
+        .filter(|package| {
+            package
+                .publish
+                .as_ref()
+                .is_none_or(|registries| !registries.is_empty())
+        })
+        .map(|package| package.name.as_str())
+        .collect();
+    assert_eq!(distributable, PACKAGES.iter().copied().collect());
+    assert_eq!(distributable, PUBLISH_ORDER.iter().copied().collect());
     let workspace_manifest =
         fs::read_to_string(root.join("Cargo.toml")).expect("workspace manifest should exist");
-    assert!(
-        workspace_manifest.contains(&format!("version = \"{VERSION}\"")),
-        "the workspace must remain at the approved stable version"
-    );
+    let version = env!("CARGO_PKG_VERSION");
+    assert!(workspace_manifest.contains(&format!("version = \"{version}\"")));
 
     let lockfile =
         fs::read_to_string(root.join("Cargo.lock")).expect("workspace lockfile should exist");
@@ -393,23 +470,23 @@ fn all_packages_use_v102_pins_and_workspace_version() {
             .unwrap_or_else(|error| panic!("{package} manifest should exist: {error}"));
         assert!(
             manifest.contains("version.workspace = true"),
-            "{package} must inherit the workspace stable version"
+            "{package} must inherit the workspace version"
         );
 
         for dependency in manifest
             .lines()
-            .filter(|line| line.contains("path = \"../"))
+            .filter(|line| line.contains("path = \"../furnace-rs"))
         {
             assert!(
-                dependency.contains(&format!("version = \"={VERSION}\"")),
-                "{package} internal dependency must use an exact stable pin: {dependency}"
+                dependency.contains(&format!("version = \"={version}\"")),
+                "{package} internal dependency must use an exact version pin: {dependency}"
             );
         }
 
-        let record = format!("name = \"{package}\"\nversion = \"{VERSION}\"");
+        let record = format!("name = \"{package}\"\nversion = \"{version}\"");
         assert!(
             lockfile.contains(&record),
-            "lockfile must contain {package} at {VERSION}"
+            "lockfile must contain {package} at {version}"
         );
     }
 
@@ -418,15 +495,15 @@ fn all_packages_use_v102_pins_and_workspace_version() {
     assert!(cli_manifest.contains("version.workspace = true"));
     for dependency in cli_manifest
         .lines()
-        .filter(|line| line.contains("path = \"../"))
+        .filter(|line| line.contains("path = \"../furnace-rs"))
     {
         assert!(
-            dependency.contains(&format!("version = \"={VERSION}\"")),
+            dependency.contains(&format!("version = \"={version}\"")),
             "furnace-rs-cli must pin the updated framework dependency: {dependency}"
         );
     }
     assert!(lockfile.contains(&format!(
-        "name = \"furnace-rs-cli\"\nversion = \"{VERSION}\""
+        "name = \"furnace-rs-cli\"\nversion = \"{version}\""
     )));
 }
 
@@ -439,6 +516,7 @@ fn stable_and_beta_publication_require_security_verification() {
         for required in [
             "cargo fetch --locked",
             "cargo audit --no-yanked --file Cargo.lock",
+            "python3 benchmark/tool/audit_lockfiles.py",
             "benchmark/tool/infrastructure_security.py --profile smoke",
             "benchmark/tool/cli_security.py --profile smoke",
             "test_*security.py",
@@ -496,16 +574,31 @@ fn documentation_points_to_current_examples_and_released_version() {
         assert!(root.join(path).join("src/main.rs").is_file());
     }
     assert!(common.contains("../../example/protected-route/README.md"));
+    let changelog = fs::read_to_string(root.join("CHANGELOG.md")).unwrap();
+    let released_version = changelog
+        .lines()
+        .filter_map(|line| {
+            line.strip_prefix("## [")?
+                .split_once(']')
+                .map(|(version, _)| version)
+        })
+        .filter_map(|version| semver::Version::parse(version).ok())
+        .find(|version| version.pre.is_empty())
+        .expect("changelog must identify a stable release");
     for (name, source) in [("README", &readme), ("security policy", &security)] {
         assert!(
-            source.contains("1.0.2"),
+            source.contains(&released_version.to_string()),
             "{name} must identify the current release"
         );
         assert!(!source.contains("preparing furnace-rs"));
         assert!(!source.contains("forthcoming 1.0.x"));
     }
-    assert!(readme.contains("1.0.2 is the current released version"));
-    assert!(security.contains("current released version is furnace-rs **1.0.2**"));
+    assert!(readme.contains(&format!(
+        "{released_version} is the current released version"
+    )));
+    assert!(security.contains(&format!(
+        "current released version is furnace-rs **{released_version}**"
+    )));
 }
 
 #[test]
@@ -682,6 +775,17 @@ fn fixture_manifest(package: &str, version: &str) -> String {
         "furnace-rs-common" => vec![
             ("furnace-rs-common-macros", "../furnace-rs-common-macros"),
             ("furnace-rs-core", "../furnace-rs-core"),
+            (
+                "furnace-rs-persistence-types",
+                "../furnace-rs-persistence-types",
+            ),
+        ],
+        "furnace-rs-persistence" => vec![
+            ("furnace-rs-core", "../furnace-rs-core"),
+            (
+                "furnace-rs-persistence-types",
+                "../furnace-rs-persistence-types",
+            ),
         ],
         "furnace-rs-testing" => vec![
             ("furnace-rs-core", "../furnace-rs-core"),
@@ -807,10 +911,12 @@ fn furnace_migration_guide_documents_the_complete_breaking_surface() {
         "impl Sealable",
         "SealRegistration::new()",
         "Self::seal::<UserGuard>()",
-        ".provide::<UserService>()",
-        ".controller::<UserController>()",
-        ".export::<",
-        ".global()",
+        "providers = [UserStorage, UserService]",
+        "controllers = [UserController, HealthController]",
+        "providers = [Arc<dyn UserRepository> => MemoryRepository, UserService]",
+        "exports = [UserService]",
+        "`global`",
+        "register empty cauldrons",
         "FURNACE_SERVER__PORT",
         "schema 2",
         "E0446",
@@ -820,6 +926,17 @@ fn furnace_migration_guide_documents_the_complete_breaking_surface() {
         assert!(
             guide.contains(required),
             "migration guide missing {required}"
+        );
+    }
+    for retired in [
+        ".provide::<",
+        ".provide_with::<",
+        "impl Cauldron",
+        "CauldronRegistration",
+    ] {
+        assert!(
+            !guide.contains(retired),
+            "migration guide still documents {retired}"
         );
     }
     let facade = fs::read_to_string(root.join("crates/furnace-rs/src/lib.rs")).unwrap();

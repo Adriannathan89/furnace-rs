@@ -19,7 +19,7 @@ use std::{
 /// constructor type to an output such as `Arc<dyn Trait>`.
 ///
 /// ```
-/// use furnace_rs_core::{Cauldron, CauldronRegistration, Config, Injector, Result};
+/// use furnace_rs_core::{Config, Injector, Result};
 /// struct Greeting(String);
 /// impl Injector for Greeting {
 ///     type Dependencies = (Config,);
@@ -27,13 +27,9 @@ use std::{
 ///         Ok(Self(config.get("app.name").unwrap_or("demo").to_owned()))
 ///     }
 /// }
-/// #[furnace_rs_core::cauldron]
+/// #[furnace_rs_core::cauldron(providers = [Greeting])]
 /// struct App;
-/// impl Cauldron for App {
-///     fn register(self) -> CauldronRegistration<Self> {
-///         self.provide::<Greeting>()
-///     }
-/// }
+///
 /// ```
 pub trait Injector<T = Self>: Sized + Send + Sync + 'static
 where
@@ -83,6 +79,7 @@ impl sealed::Dependencies for () {
     const DESCRIPTORS: &'static [DependencyDescriptor] = &[];
 }
 impl InjectionDependencies for () {
+    /// Resolves the empty dependency tuple without consulting the application context.
     fn resolve(_: &ConstructionContext<'_>) -> Result<Self> {
         Ok(())
     }
@@ -98,6 +95,7 @@ macro_rules! dependency_tuple {
         }
         impl<$($ty: Clone + Send + Sync + 'static),+> InjectionDependencies for ($($ty,)+) {
             #[allow(clippy::result_large_err)]
+            /// Resolves each tuple item in declaration order and clones its shared value.
             fn resolve(context: &ConstructionContext<'_>) -> Result<Self> {
                 Ok(($(context.resolve::<$ty>()?.as_ref().clone(),)+))
             }
@@ -121,6 +119,7 @@ dependency_tuple!(A, B, C, D, E, F, G, H, J, K, L, M, N, O);
 dependency_tuple!(A, B, C, D, E, F, G, H, J, K, L, M, N, O, P);
 dependency_tuple!(A, B, C, D, E, F, G, H, J, K, L, M, N, O, P, Q);
 
+/// Constructs an injector output and erases the value for ordinary provider storage.
 fn construct<'a, T, I>(context: &'a ConstructionContext<'a>) -> ProviderFuture<'a>
 where
     T: Send + Sync + 'static,
@@ -132,6 +131,7 @@ where
     })
 }
 
+/// Constructs an output together with the lifecycle hooks registered by its injector.
 fn construct_resource<'a, T, I>(context: &'a ConstructionContext<'a>) -> LifecycleProviderFuture<'a>
 where
     T: Send + Sync + 'static,

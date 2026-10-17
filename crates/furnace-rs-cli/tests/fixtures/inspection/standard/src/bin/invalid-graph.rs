@@ -5,18 +5,12 @@ struct MissingProvider;
 
 #[furnace::burner]
 struct NeedsMissing {
+    #[inject]
     _missing: MissingProvider,
 }
 
-#[furnace::cauldron]
+#[furnace::cauldron(providers = [NeedsMissing])]
 struct InvalidGraphCauldron;
-
-impl furnace::core::Cauldron for InvalidGraphCauldron {
-    fn register(self) -> furnace::core::CauldronRegistration<Self> {
-        self.provide::<NeedsMissing>()
-    }
-}
-
 
 #[furnace::main]
 async fn main() -> Result<(), HttpRuntimeError> {

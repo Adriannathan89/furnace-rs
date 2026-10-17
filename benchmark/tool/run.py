@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Repeatable HTTP load and correctness checks for the FURNACE 0.9 examples."""
+"""Repeatable HTTP load and correctness checks for the FURNACE 0.9 examples.
+
+Legacy HTTP performance client. Use benchmark/runner (Rust + reqwest) for
+new performance measurements. Retained for historical and correctness tools.
+"""
 
 from __future__ import annotations
 
@@ -9,12 +13,14 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import hashlib
 import http.client
 import json
 import math
 import os
 from pathlib import Path
 import platform
+import random
 import signal
 import socket
 import subprocess
@@ -79,6 +85,15 @@ def work_chunks(requests: int, concurrency: int) -> list[int]:
     workers = min(requests, concurrency)
     base, extra = divmod(requests, workers)
     return [base + (index < extra) for index in range(workers)]
+
+
+def operation_order(operations: int, seed: int) -> list[int]:
+    """Return a repeatable randomized ordering of independent operations."""
+    if operations < 0:
+        raise ValueError("operations must not be negative")
+    order = list(range(operations))
+    random.Random(seed).shuffle(order)
+    return order
 
 
 @dataclass
@@ -284,14 +299,19 @@ def run_workers(
     concurrency: int,
     port: int,
     operation: Callable[[Client, Measurements, int, int], None],
+    seed: int | None = None,
 ) -> dict[str, object]:
     chunks = work_chunks(operations, concurrency)
+    orders = [
+        list(range(count)) if seed is None else operation_order(count, seed ^ (worker_id * 0x9E3779B1))
+        for worker_id, count in enumerate(chunks)
+    ]
 
     def worker(worker_id: int, count: int) -> Measurements:
         stats = Measurements()
         client = Client(port)
         try:
-            for index in range(count):
+            for index in orders[worker_id]:
                 operation(client, stats, worker_id, index)
         finally:
             client.close()
@@ -304,7 +324,7 @@ def run_workers(
         for future in futures:
             combined.merge(future.result())
     duration = time.perf_counter() - start
-    return {
+    result = {
         "case": name,
         "operations": operations,
         "concurrency": len(chunks),
@@ -317,6 +337,15 @@ def run_workers(
         "error_examples": combined.error_examples,
         "passed": combined.error_count == 0,
     }
+    if seed is not None:
+        order_bytes = ";".join(
+            f"{worker_id}:{index}"
+            for worker_id, order in enumerate(orders)
+            for index in order
+        ).encode()
+        result["request_order_seed"] = seed
+        result["request_order_sha256"] = hashlib.sha256(order_bytes).hexdigest()
+    return result
 
 
 def hello_case(profile: str) -> dict[str, object]:

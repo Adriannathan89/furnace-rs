@@ -5,6 +5,7 @@ use furnace_rs::prelude::*;
 
 #[burner]
 pub struct PostService {
+    #[inject]
     repository: PostRepository,
 }
 

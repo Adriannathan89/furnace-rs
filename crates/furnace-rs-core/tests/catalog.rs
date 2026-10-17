@@ -6,8 +6,8 @@ use std::process::Command;
 use std::sync::Arc;
 
 use furnace_rs_core::{
-    Catalog, Cauldron, CauldronDescriptor, ConstructionContext, ErasedProvider, FURNACE001,
-    FURNACE002, FURNACE003, Furnace, ProviderDescriptor, ProviderFuture, ProviderKind,
+    __private::ModuleContract, Catalog, CauldronDescriptor, ConstructionContext, ErasedProvider,
+    FURNACE001, FURNACE002, FURNACE003, Furnace, ProviderDescriptor, ProviderFuture, ProviderKind,
     ProviderVisibility, SourceLocation,
 };
 
@@ -16,45 +16,30 @@ struct Duplicate;
 struct DuplicateCauldron;
 struct Missing;
 struct MissingCauldron;
+// These fixtures intentionally have duplicate or missing catalog descriptors.
+impl furnace_rs_core::__private::ModuleMetadata for DuplicateCauldron {
+    const KEY: &'static str = "duplicate";
+}
+impl ModuleContract for DuplicateCauldron {
+    type Metadata = Self;
+}
+impl furnace_rs_core::__private::ModuleMetadata for MissingCauldron {
+    const KEY: &'static str = "missing";
+}
+impl ModuleContract for MissingCauldron {
+    type Metadata = Self;
+}
+
 struct Zeta;
 
 #[furnace_rs_core::cauldron]
 struct ImportedCauldron;
 
-impl furnace_rs_core::Cauldron for ImportedCauldron {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        furnace_rs_core::CauldronRegistration::new(self)
-    }
-}
-
 #[furnace_rs_core::cauldron]
 struct SecondImportedCauldron;
 
-impl furnace_rs_core::Cauldron for SecondImportedCauldron {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        furnace_rs_core::CauldronRegistration::new(self)
-    }
-}
-
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(imports = [SecondImportedCauldron, ImportedCauldron])]
 struct AnnotatedCauldron;
-
-impl furnace_rs_core::Cauldron for AnnotatedCauldron {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        self.import(SecondImportedCauldron).import(ImportedCauldron)
-    }
-}
-
-impl Cauldron for DuplicateCauldron {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        furnace_rs_core::CauldronRegistration::new(self)
-    }
-}
-impl Cauldron for MissingCauldron {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        furnace_rs_core::CauldronRegistration::new(self)
-    }
-}
 
 fn alpha_type_id() -> TypeId {
     TypeId::of::<Alpha>()
@@ -163,7 +148,7 @@ fn modules_are_sorted_by_stable_name() {
 
 #[test]
 fn cauldron_for_selects_the_annotated_cauldron_descriptor() {
-    fn assert_module<T: Cauldron>() {}
+    fn assert_module<T: ModuleContract>() {}
 
     assert_module::<AnnotatedCauldron>();
 
@@ -204,7 +189,7 @@ fn module_macro_requires_imports_to_implement_module() {
     .expect("temporary consumer manifest should be written");
     fs::write(
         source_dir.join("main.rs"),
-        "struct NotACauldron;\n#[furnace_rs_core::cauldron]\nstruct AppCauldron;\nimpl furnace_rs_core::Cauldron for AppCauldron { fn register(self) -> furnace_rs_core::CauldronRegistration<Self> { self.import(NotACauldron) } }\nfn main() {}\n",
+        "struct NotACauldron;\n#[furnace_rs_core::cauldron(imports = [NotACauldron])]\nstruct AppCauldron;\nfn main() {}\n",
     )
     .expect("temporary consumer source should be written");
 
@@ -218,7 +203,8 @@ fn module_macro_requires_imports_to_implement_module() {
 
     assert!(!output.status.success(), "consumer unexpectedly compiled");
     assert!(
-        stderr.contains("NotACauldron: Cauldron") && stderr.contains("trait bound"),
+        stderr.contains("NotACauldron")
+            && (stderr.contains("ModuleContract") || stderr.contains("cannot find macro")),
         "consumer failed for an unexpected reason:\n{stderr}"
     );
 }

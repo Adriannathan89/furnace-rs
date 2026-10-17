@@ -21,8 +21,10 @@ If the current workspace version is `1.0.0-beta.1`, the result is
 1.0.0 prerelease or a required step for the stable preparation.
 
 The script updates `[workspace.package].version`, every exact internal FURNACE
-dependency pin, and all nine workspace package records in `Cargo.lock`. It
+dependency pin, and all fourteen distributable workspace package records in `Cargo.lock`. It
 then runs locked Cargo metadata and workspace checks.
+Independent examples' exact local FURNACE dependency pins are updated as well;
+the examples retain their own application versions.
 
 All packages, including `furnace-rs-testing` and `furnace-rs-cli`, inherit the workspace
 version. The script rejects a CLI manifest that pins its own version.
@@ -36,3 +38,7 @@ The workflow publishes `furnace-rs-testing` after `furnace-rs-common` and before
 
 Version updates apply to local workspace package records. Registry and Git
 dependency records retain their published versions and checksums.
+
+The gRPC macro companion publishes with the macro packages, and `furnace-rs-grpc`
+publishes after common and before the facade. The unpublished protobuf test fixture
+is excluded from publication and release version updates.

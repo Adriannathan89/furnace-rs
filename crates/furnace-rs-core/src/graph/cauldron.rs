@@ -163,6 +163,18 @@ impl CauldronGraph {
             .map(|(_, member)| member.type_id)
     }
 
+    /// Iterates explicitly selected service outputs belonging to one transport.
+    #[doc(hidden)]
+    pub fn registered_transport_providers<'a>(
+        &'a self,
+        transport: &'a str,
+    ) -> impl Iterator<Item = TypeId> + 'a {
+        self.members()
+            .filter(move |(_, member)| member.transport == Some(transport))
+            .map(|(_, member)| member.type_id)
+    }
+
+    /// Iterates members paired with their owning cauldron in traversal order.
     pub(crate) fn members(
         &self,
     ) -> impl Iterator<Item = (&CauldronNode, &crate::cauldron::CauldronMember)> {
@@ -182,6 +194,7 @@ impl CauldronGraph {
     }
 
     #[allow(dead_code)]
+    /// Checks whether the selected root can reach a module by authored imports.
     pub(crate) fn is_reachable(&self, module: TypeId) -> bool {
         self.cauldrons
             .iter()
@@ -189,11 +202,13 @@ impl CauldronGraph {
     }
 
     #[allow(dead_code)]
+    /// Replaces ownership records after provider selection has been validated.
     pub(crate) fn set_provider_ownership(&mut self, ownership: Vec<ProviderOwnership>) {
         self.provider_ownership = ownership;
     }
 }
 
+/// Resolves the root's direct-import closure without constructing application providers.
 pub(crate) fn build_cauldron_graph(
     root_type_id: TypeId,
     cauldrons: &[&'static CauldronDescriptor],
@@ -218,6 +233,7 @@ pub(crate) fn build_cauldron_graph(
     })
 }
 
+/// Visits one module, validates its local declaration, and recursively follows imports.
 fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
     if let Some(cycle_start) = state.stack.iter().position(|id| *id == module) {
         return Err(state.module_cycle_error(&state.stack[cycle_start..], module));
@@ -319,6 +335,7 @@ struct BuildState<'a> {
 }
 
 impl BuildState<'_> {
+    /// Resolves one module type to exactly one static declaration.
     fn require_descriptor(&self, type_id: TypeId) -> Result<&'static CauldronDescriptor> {
         let mut matches = self
             .descriptors
@@ -364,10 +381,12 @@ impl BuildState<'_> {
         }
     }
 
+    /// Ensures the root module has a node before its registration is traversed.
     fn push_node(&mut self, descriptor: &CauldronDescriptor) -> Result<usize> {
         self.ensure_node(descriptor)
     }
 
+    /// Returns an existing node or appends one after validating namespace metadata.
     fn ensure_node(&mut self, descriptor: &CauldronDescriptor) -> Result<usize> {
         if let Some(index) = self.node_index(descriptor.type_id()) {
             return Ok(index);
@@ -394,16 +413,19 @@ impl BuildState<'_> {
         Ok(index)
     }
 
+    /// Records a directed edge from an importing module to its direct import.
     fn push_edge(&mut self, importer: usize, imported: usize) {
         self.imports.push(CauldronImportEdge { importer, imported });
     }
 
+    /// Finds a reachable node by its concrete module type.
     fn node_index(&self, type_id: TypeId) -> Option<usize> {
         self.cauldrons
             .iter()
             .position(|module| module.type_id() == type_id)
     }
 
+    /// Builds an ordered diagnostic chain for a cycle in module imports.
     fn module_cycle_error(&self, cycle: &[TypeId], repeated: TypeId) -> Error {
         let mut chain = cycle
             .iter()
@@ -443,6 +465,7 @@ impl BuildState<'_> {
         Error::from_diagnostics(primary, related)
     }
 
+    /// Finds the declaration metadata for one module currently on the DFS stack.
     fn descriptor_for_stack(&self, type_id: TypeId) -> Option<&'static CauldronDescriptor> {
         self.descriptors
             .iter()
@@ -451,6 +474,7 @@ impl BuildState<'_> {
     }
 }
 
+/// Orders declarations by file and authored line and column.
 fn location_order(left: SourceLocation, right: SourceLocation) -> std::cmp::Ordering {
     left.file
         .cmp(right.file)
@@ -458,6 +482,7 @@ fn location_order(left: SourceLocation, right: SourceLocation) -> std::cmp::Orde
         .then_with(|| left.column.cmp(&right.column))
 }
 
+/// Creates a uniform rooted-registration diagnostic with the offending declaration location.
 fn registration_error(
     title: &'static str,
     subject: &'static str,

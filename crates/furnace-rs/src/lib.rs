@@ -1,10 +1,10 @@
 //! Public furnace-rs facade and feature composition boundary.
 //!
 //! The default facade composes the HTTP and logger integrations with the
-//! Tokio runtime. A root [`Cauldron`] selects explicitly registered providers,
+//! Tokio runtime. A root `#[cauldron]` declaration selects explicitly registered providers,
 //! controllers, routes, guards, strategies, and official auto-configurations
 //! that belong to one application. Direct imports and explicit
-//! `.export::<T>()` declarations govern DI access across cauldron boundaries.
+//! `exports = [T]` declarations govern DI access across cauldron boundaries.
 //! Rust `pub` controls Rust name visibility only.
 //!
 //! The standard startup path loads optional `.env`, optional `furnace.toml`, and
@@ -21,17 +21,13 @@
 //!
 //!     #[cauldron]
 //!     pub struct UserHttpCauldron;
-//!     impl Cauldron for UserHttpCauldron {
-//!         fn register(self) -> CauldronRegistration<Self> { CauldronRegistration::new(self) }
-//!     }
+//!
 //! }
 //! use user::UserHttpCauldron;
 //!
-//! #[cauldron]
+//! #[cauldron(imports = [UserHttpCauldron])]
 //! struct AppCauldron;
-//! impl Cauldron for AppCauldron {
-//!     fn register(self) -> CauldronRegistration<Self> { self.import(UserHttpCauldron) }
-//! }
+//!
 //!
 //! #[furnace_rs::main]
 //! async fn main() -> Result<(), HttpRuntimeError> {
@@ -49,24 +45,22 @@
 //! ```no_run
 //! use furnace_rs::prelude::*;
 //!
-//! # #[cauldron]
-//! # struct AppCauldron;
-//! # impl Cauldron for AppCauldron {
-//! #     fn register(self) -> CauldronRegistration<Self> { CauldronRegistration::new(self) }
-//! # }
-//! # async fn low_level(
-//! #     config: Config,
-//! #     native_router: furnace_rs::axum::Router,
-//! # )
-//! # -> Result<(), Box<dyn std::error::Error>> {
+//! #[cauldron]
+//! struct AppCauldron;
+//!
+//! async fn low_level(
+//!     config: Config,
+//!     native_router: furnace_rs::axum::Router,
+//! )
+//! -> Result<(), Box<dyn std::error::Error>> {
 //! let mut builder = Furnace::builder_with_config(config);
 //! builder.root::<AppCauldron>()?;
 //! // builder.lifecycle_hook(MyHook);
 //! let application = builder.build().await?;
 //! let router = build_router(&application)?.merge(native_router);
 //! serve_router(application, router, "127.0.0.1:0").await?;
-//! # Ok(())
-//! # }
+//! Ok(())
+//! }
 //! ```
 //!
 //! The explicit address overrides `[server]` binding and may use port zero.
@@ -191,14 +185,19 @@ pub use furnace_rs_core::test;
 
 /// Re-exports explicit cauldron registration and dependency declarations.
 pub use furnace_rs_core::{
-    Cauldron, CauldronRegistration, Furnace, FurnaceBuilder, InjectionDependencies, Injector,
-    burner, cauldron, storage,
+    Furnace, FurnaceBuilder, InjectionDependencies, Injector, burner, cauldron, storage,
 };
 
 /// Static guard policy metadata used by generated controller registration.
+#[cfg(all(
+    any(feature = "http", feature = "grpc", feature = "socket"),
+    feature = "jwt"
+))]
+#[doc(hidden)]
+pub use furnace_rs_common::GuardPolicy;
 #[cfg(all(feature = "http", feature = "jwt"))]
 #[doc(hidden)]
-pub use furnace_rs_common::{GuardPolicy, SealEntry};
+pub use furnace_rs_common::SealEntry;
 /// Re-exports static controller protection declarations.
 #[cfg(feature = "http")]
 pub use furnace_rs_common::{SealDefinition, SealRegistration, Sealable};
@@ -291,11 +290,30 @@ pub use furnace_rs_common::{
 };
 
 /// Re-exports guarded Passport authentication and policy contracts.
-#[cfg(all(feature = "http", feature = "jwt"))]
+#[cfg(all(
+    any(feature = "http", feature = "grpc", feature = "socket"),
+    feature = "jwt"
+))]
 pub use furnace_rs_common::{
     Authenticated, ClaimsPrincipal, FURNACE130, FURNACE131, PassportContext, PassportError,
-    PassportErrorKind, PassportGuard, PassportGuardBuilder, PassportPrincipal, PassportRejection,
-    PassportResult, PassportStrategy, TokenSource, VerifiedToken, guard, passport_strategy,
+    PassportErrorKind, PassportPrincipal, PassportResult, PassportStrategy, TokenSource,
+    VerifiedToken, guard, passport_strategy,
+};
+
+/// HTTP-specific Passport middleware and rejections.
+#[cfg(all(feature = "http", feature = "jwt"))]
+pub use furnace_rs_common::{PassportGuard, PassportGuardBuilder, PassportRejection};
+/// gRPC configuration and native Tonic types.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc::{
+    GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes, grpc_client, grpc_reflection,
+    grpc_service, set_grpc_bearer_token,
+};
+/// gRPC configuration and native Tonic types.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc::{
+    GrpcClientConfig, GrpcClientError, GrpcClientResult, GrpcConnectionMode, GrpcServerConfig,
+    tonic,
 };
 
 /// Re-exports the managed-controller declaration attribute.
@@ -328,13 +346,44 @@ pub use furnace_rs_extra as extra;
 
 /// Collects application-facing furnace-rs imports.
 pub mod prelude {
+    #[cfg(feature = "socket")]
+    pub use furnace_rs_socket::{
+        RoomMode, RuntimeSocketExt, SocketContext, SocketError, SocketGatewayHub, SocketHandshake,
+        SocketHub, SocketResult, SocketServerConfig, socket_endpoint, socket_gateway,
+    };
+
+    #[cfg(all(any(feature = "grpc", feature = "socket"), not(feature = "http")))]
+    pub use crate::FurnaceBurnExt;
+    #[cfg(feature = "grpc")]
+    pub use crate::RuntimeGrpcExt;
+    #[cfg(any(feature = "http", feature = "grpc", feature = "socket"))]
+    pub use crate::{
+        ApplicationRuntimeError, RuntimeBindings, RuntimeRoutes, RuntimeSelection, serve_transports,
+    };
+
+    /// HTTP-specific Passport middleware and rejections.
+    #[cfg(all(feature = "http", feature = "jwt"))]
+    pub use furnace_rs_common::{PassportGuard, PassportGuardBuilder, PassportRejection};
+    /// Managed protobuf service registration.
+    #[cfg(feature = "grpc")]
+    pub use furnace_rs_grpc::{
+        GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes, grpc_client,
+        grpc_reflection, grpc_service, set_grpc_bearer_token,
+    };
+    /// gRPC configuration and native protobuf transport contracts.
+    #[cfg(feature = "grpc")]
+    pub use furnace_rs_grpc::{
+        GrpcClientConfig, GrpcClientError, GrpcClientResult, GrpcConnectionMode, GrpcServerConfig,
+        tonic,
+    };
+    #[cfg(all(feature = "grpc", feature = "jwt"))]
+    pub use furnace_rs_grpc::{grpc_authenticated, grpc_verified_token};
+
     /// Static controller protection declarations.
     #[cfg(feature = "http")]
     pub use furnace_rs_common::{SealRegistration, Sealable};
     /// Re-exports explicit cauldron registration and dependency declarations.
-    pub use furnace_rs_core::{
-        Cauldron, CauldronRegistration, InjectionDependencies, Injector, burner, cauldron, storage,
-    };
+    pub use furnace_rs_core::{InjectionDependencies, Injector, burner, cauldron, storage};
 
     /// Re-exports the asynchronous furnace-rs entry-point attribute.
     pub use furnace_rs_core::main;
@@ -374,12 +423,14 @@ pub mod prelude {
     };
 
     /// Re-exports application-facing Passport guards, strategies, and extractors.
-    #[cfg(all(feature = "http", feature = "jwt"))]
+    #[cfg(all(
+        any(feature = "http", feature = "grpc", feature = "socket"),
+        feature = "jwt"
+    ))]
     pub use furnace_rs_common::{
         Authenticated, ClaimsPrincipal, FURNACE130, FURNACE131, PassportContext, PassportError,
-        PassportErrorKind, PassportGuard, PassportGuardBuilder, PassportPrincipal,
-        PassportRejection, PassportResult, PassportStrategy, TokenSource, VerifiedToken, guard,
-        passport_strategy,
+        PassportErrorKind, PassportPrincipal, PassportResult, PassportStrategy, TokenSource,
+        VerifiedToken, guard, passport_strategy,
     };
 
     /// Re-exports the standard logger façade, backend contract, and global module.
@@ -415,3 +466,48 @@ pub mod prelude {
         ProviderVisibility, Secret, SourceLocation,
     };
 }
+
+#[cfg(all(feature = "grpc", feature = "jwt"))]
+pub use furnace_rs_grpc::{grpc_authenticated, grpc_verified_token, passport_status};
+
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc::{
+    GrpcHealth, client_endpoint, configure_grpc_server, install_grpc_infrastructure,
+    reflection_descriptors,
+};
+
+/// Standalone gRPC transport package.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc as grpc;
+
+/// Shared transport selection and manual composition.
+#[cfg(feature = "http")]
+pub use furnace_rs_common::runtime::{
+    ApplicationRuntimeError, RuntimeBindings, RuntimeRoutes, RuntimeSelection, serve_transports,
+};
+/// Native gRPC composition extension for shared runtime builders.
+#[cfg(feature = "grpc")]
+pub use furnace_rs_grpc::RuntimeGrpcExt;
+/// Standalone gRPC automatic startup and shared runtime composition.
+#[cfg(all(feature = "grpc", not(feature = "http")))]
+pub use furnace_rs_grpc::{
+    ApplicationRuntimeError, FurnaceBurnExt, RuntimeBindings, RuntimeRoutes, RuntimeSelection,
+    serve_transports,
+};
+
+/// Standard WebSocket server transport.
+#[cfg(feature = "socket")]
+pub use furnace_rs_socket as socket;
+
+/// Socket-only automatic startup and native transport composition.
+#[cfg(all(feature = "socket", not(any(feature = "http", feature = "grpc"))))]
+pub use furnace_rs_socket::runtime::{
+    ApplicationRuntimeError, FurnaceBurnExt, RuntimeBindings, RuntimeRoutes, RuntimeSelection,
+    serve_transports,
+};
+/// WebSocket gateway registration and application controls.
+#[cfg(feature = "socket")]
+pub use furnace_rs_socket::{
+    RoomMode, RuntimeSocketExt, SocketContext, SocketError, SocketGatewayHub, SocketHandshake,
+    SocketHub, SocketResult, SocketServerConfig, socket_endpoint, socket_gateway,
+};

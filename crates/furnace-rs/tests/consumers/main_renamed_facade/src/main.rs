@@ -4,6 +4,7 @@ use framework::prelude::*;
 
 #[storage]
 struct MainRepository {
+    #[inject]
     value: u32,
 }
 

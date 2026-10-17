@@ -1,5 +1,9 @@
 # Benchmark findings — 2026-09-24
 
+This is a historical Python-client report. The current Rust/reqwest fixed-64
+and capacity-ramp measurements are in [PERFORMANCE.md](PERFORMANCE.md). The
+results below retain their original methods and dates.
+
 Hotfix follow-up (2026-09-25): the `mads-common` response for oversized JSON
 now includes `Connection: close`. With the protected-route example built against
 the local hotfix source, `oversized-reuse` returned eight 413 responses across
@@ -105,9 +109,9 @@ connections returned 413 for all 64 attempts in the extended run.
 
 The immediate cause is reuse of a connection that the server closed after the
 body-limit rejection. MADS's
-[`fixed_error_response`](../crates/mads-common/src/validation/rejection.rs)
-constructs the 413 JSON response without a close header; this local source file
-matches the published 0.9.0 source. The exact ownership
+[`fixed_error_response`](https://github.com/Adriannathan89/furnace-rs/blob/81af438b67e150568e0312a39e117745c4aa1be9/crates/mads-common/src/validation/rejection.rs)
+constructs the 413 JSON response without a close header; this source is pinned
+to the recorded benchmark commit and matches the published 0.9.0 source. The exact ownership
 of the connection closure between MADS and its underlying Hyper/Axum transport
 has not been isolated. [RFC 9112](https://www.rfc-editor.org/rfc/rfc9112.html#section-9.3)
 allows a server to close when it does not consume the entire request body, while

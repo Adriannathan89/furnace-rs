@@ -1,0 +1,38 @@
+error[E0308]: mismatched types
+ --> tests/ui/storage/fail/unrelated_name.rs:6:35
+  |
+6 | struct Repo { #[inject] database: DatabaseConnection }
+  |                                   ^^^^^^^^^^^^^^^^^^ expected `sea_orm::DatabaseConnection`, found `DatabaseConnection`
+  |
+  = note: `DatabaseConnection` and `sea_orm::DatabaseConnection` have similar names, but are actually distinct types
+note: `DatabaseConnection` is defined in the current crate
+ --> tests/ui/storage/fail/unrelated_name.rs:4:18
+  |
+4 | #[derive(Clone)] struct DatabaseConnection;
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: `sea_orm::DatabaseConnection` is defined in crate `sea_orm`
+ --> $CARGO/sea-orm-$VERSION/src/database/db_connection.rs
+  |
+  | pub struct DatabaseConnection {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+ --> tests/ui/storage/fail/unrelated_name.rs:6:25
+  |
+6 | struct Repo { #[inject] database: DatabaseConnection }
+  |                         ^^^^^^^^^^------------------
+  |                         |         |
+  |                         |         expected due to this
+  |                         expected `sea_orm::DatabaseConnection`, found `DatabaseConnection`
+  |
+  = note: `DatabaseConnection` and `sea_orm::DatabaseConnection` have similar names, but are actually distinct types
+note: `DatabaseConnection` is defined in the current crate
+ --> tests/ui/storage/fail/unrelated_name.rs:4:18
+  |
+4 | #[derive(Clone)] struct DatabaseConnection;
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+note: `sea_orm::DatabaseConnection` is defined in crate `sea_orm`
+ --> $CARGO/sea-orm-$VERSION/src/database/db_connection.rs
+  |
+  | pub struct DatabaseConnection {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

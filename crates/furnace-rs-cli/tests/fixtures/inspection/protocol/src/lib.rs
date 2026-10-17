@@ -70,7 +70,7 @@ pub fn run(mode: &str) {
         INSPECTION_PROTOCOL_VERSION
     };
     let report = format!(
-        r#"{{"kind":"{}","graph":{{"root_cauldron":null,"cauldrons":[],"imports":[],"providers":[],"dependencies":[],"construction_order":null,"auto_configurations":[]}},"routes":[],"checks":[],"diagnostics":[],"failed":false}}"#,
+        r#"{{"kind":"{}","graph":{{"root_cauldron":null,"cauldrons":[],"imports":[],"providers":[],"dependencies":[],"construction_order":null,"auto_configurations":[]}},"routes":[],"grpc_services":[],"checks":[],"diagnostics":[],"failed":false}}"#,
         inspection_kind_name(kind)
     );
     publish_output(
@@ -106,6 +106,8 @@ fn publish_with_writer(
 const fn inspection_kind_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
+        InspectionKind::Grpc => "grpc",
+        InspectionKind::Socket => "socket",
         InspectionKind::Graph => "graph",
         InspectionKind::Doctor => "doctor",
     }
@@ -114,6 +116,8 @@ const fn inspection_kind_name(kind: InspectionKind) -> &'static str {
 fn inspection_kind(value: &str) -> InspectionKind {
     match value {
         "routes" => InspectionKind::Routes,
+        "grpc" => InspectionKind::Grpc,
+        "socket" => InspectionKind::Socket,
         "graph" => InspectionKind::Graph,
         "doctor" => InspectionKind::Doctor,
         _ => panic!("unexpected inspection kind"),

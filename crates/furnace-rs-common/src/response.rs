@@ -19,7 +19,16 @@ const INTERNAL_SERVER_ERROR_MESSAGE: &str = "internal server error";
 
 #[cfg(feature = "sea-orm")]
 impl From<sea_orm::DbErr> for HttpError {
+    /// Converts a database failure to a redacted internal-server-error response.
     fn from(source: sea_orm::DbErr) -> Self {
+        Self::internal(source)
+    }
+}
+
+#[cfg(feature = "sea-orm-storage")]
+impl From<furnace_rs_persistence_types::StorageError> for HttpError {
+    /// Converts an unmapped storage failure to a redacted internal-server-error response.
+    fn from(source: furnace_rs_persistence_types::StorageError) -> Self {
         Self::internal(source)
     }
 }
@@ -43,6 +52,7 @@ struct ResponseDescription<'a> {
 }
 
 impl IntoResponse for ResponseDescription<'_> {
+    /// Serializes the stable error envelope with its selected status code.
     fn into_response(self) -> Response {
         (self.status, Json(ErrorEnvelope { error: self.body })).into_response()
     }
@@ -153,6 +163,7 @@ impl HttpError {
         Self::Internal(Box::new(source))
     }
 
+    /// Selects the status, stable code, safe message, and optional validation issues.
     fn description(&self) -> ResponseDescription<'_> {
         let (status, code, message): (StatusCode, &'static str, &str) = match self {
             Self::BadRequest(message) => (StatusCode::BAD_REQUEST, "bad_request", message),
@@ -186,12 +197,14 @@ impl HttpError {
 }
 
 impl fmt::Display for HttpError {
+    /// Formats the same safe message exposed in the response body.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(self.description().body.message)
     }
 }
 
 impl Error for HttpError {
+    /// Exposes only the retained internal error source.
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Internal(source) => Some(source.as_ref()),
@@ -201,12 +214,14 @@ impl Error for HttpError {
 }
 
 impl IntoResponse for HttpError {
+    /// Builds the stable JSON error response associated with this error variant.
     fn into_response(self) -> Response {
         self.description().into_response()
     }
 }
 
 impl fmt::Debug for HttpError {
+    /// Formats the stable error code and whether a private source is retained.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("HttpError")
@@ -219,6 +234,7 @@ impl fmt::Debug for HttpError {
 macro_rules! named_error_impls {
     ($name:ident) => {
         impl fmt::Debug for $name {
+            #[doc = "Formats the stable error code without printing a retained source."]
             fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter
                     .debug_struct(stringify!($name))
@@ -228,21 +244,25 @@ macro_rules! named_error_impls {
             }
         }
         impl fmt::Display for $name {
+            #[doc = "Formats the safe client-facing message."]
             fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 fmt::Display::fmt(&self.0, formatter)
             }
         }
         impl Error for $name {
+            #[doc = "Returns the wrapped error's retained internal source, if any."]
             fn source(&self) -> Option<&(dyn Error + 'static)> {
                 self.0.source()
             }
         }
         impl IntoResponse for $name {
+            #[doc = "Converts the wrapped HTTP error to its response representation."]
             fn into_response(self) -> Response {
                 self.0.into_response()
             }
         }
         impl From<$name> for HttpError {
+            #[doc = "Unwraps this named response type into the common HTTP error enum."]
             fn from(error: $name) -> Self {
                 error.0
             }
@@ -364,6 +384,7 @@ impl<T> IntoResponse for Created<T>
 where
     T: IntoResponse,
 {
+    /// Preserves the inner response and replaces only its status with 201 Created.
     fn into_response(self) -> Response {
         let mut response = self.0.into_response();
         *response.status_mut() = StatusCode::CREATED;
@@ -387,6 +408,7 @@ where
 pub struct NoContent;
 
 impl IntoResponse for NoContent {
+    /// Returns an empty response with status 204 No Content.
     fn into_response(self) -> Response {
         StatusCode::NO_CONTENT.into_response()
     }

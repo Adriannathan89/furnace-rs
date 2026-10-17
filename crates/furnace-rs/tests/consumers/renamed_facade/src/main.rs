@@ -8,19 +8,12 @@ struct Settings {
     host: String,
 }
 
-#[cauldron]
+#[cauldron(providers = [RenamedRepository], controllers = [Controller, ExtractorController])]
 struct AppCauldron;
-
-impl framework::Cauldron for AppCauldron {
-    fn register(self) -> framework::CauldronRegistration<Self> {
-        self.provide::<RenamedRepository>()
-            .controller::<Controller>()
-            .controller::<ExtractorController>()
-    }
-}
 
 #[storage]
 struct RenamedRepository {
+    #[inject]
     value: u32,
 }
 
@@ -122,3 +115,11 @@ fn main() {
     let _ = passport_principal;
     let _ = consume_repository;
 }
+
+#[framework::burner]
+struct DeclarativeService;
+#[framework::cauldron(providers=[DeclarativeService], exports=[DeclarativeService])]
+struct DeclarativeModule;
+use DeclarativeModule as DeclarativeAlias;
+#[framework::cauldron(root, imports=[DeclarativeAlias])]
+struct DeclarativeApp;

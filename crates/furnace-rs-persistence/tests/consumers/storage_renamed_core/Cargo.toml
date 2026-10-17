@@ -1,0 +1,13 @@
+[package]
+name = "furnace-storage-renamed_core"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+kernel = { package = "furnace-rs-core", path = "../../../../furnace-rs-core", default-features = false }
+storage_lib = { package = "furnace-rs-persistence", path = "../../..", default-features = false, features = ["sea-orm-storage"] }
+sea-orm = { version = "=2.0.3", default-features = false, features = ["macros"] }
+sea-orm-macros = "=2.0.3"

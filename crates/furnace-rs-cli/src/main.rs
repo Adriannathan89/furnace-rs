@@ -5,6 +5,7 @@
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
+/// Runs the CLI and returns its selected process exit code.
 fn main() -> std::process::ExitCode {
     furnace_rs_cli::run()
 }

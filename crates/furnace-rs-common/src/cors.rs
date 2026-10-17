@@ -39,6 +39,7 @@ enum CorsValues<T> {
 }
 
 impl<T> CorsValues<T> {
+    /// Returns the number of explicit list entries, or zero for the wildcard form.
     fn count(&self) -> usize {
         match self {
             Self::Any => 0,
@@ -46,6 +47,7 @@ impl<T> CorsValues<T> {
         }
     }
 
+    /// Reports whether the wildcard `Any` form is configured.
     fn is_any(&self) -> bool {
         matches!(self, Self::Any)
     }
@@ -62,6 +64,7 @@ pub(crate) struct CorsPlan {
 }
 
 impl CorsPlan {
+    /// Parses all configured CORS options and rejects wildcard credentials combinations.
     fn from_config(config: &Config) -> Result<Self> {
         let origins = parse_origins(config)?;
         let methods = parse_methods(config)?;
@@ -90,6 +93,7 @@ impl CorsPlan {
     }
 
     #[allow(dead_code)]
+    /// Builds the Tower HTTP layer represented by the validated configuration.
     pub(crate) fn layer(&self) -> CorsLayer {
         let mut layer = CorsLayer::new()
             .allow_methods(self.methods.clone())
@@ -115,6 +119,7 @@ impl CorsPlan {
 }
 
 impl fmt::Debug for CorsPlan {
+    /// Formats CORS option counts while redacting configured origin and header values.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("CorsPlan")
@@ -129,14 +134,17 @@ impl fmt::Debug for CorsPlan {
     }
 }
 
+/// Enables automatic CORS parsing for the conventional HTTP listener.
 pub(crate) fn enable_automatic_cors(builder: &mut FurnaceBuilder) -> bool {
     builder.__auto_configuration_input(CORS_AUTO_CONFIGURATION_ID, HttpRuntimeMode::Automatic)
 }
 
+/// Returns the runtime identity used to register the validated CORS plan.
 fn cors_plan_type_id() -> TypeId {
     TypeId::of::<CorsPlan>()
 }
 
+/// Evaluates CORS presence, selected HTTP routes, and the validity of configured options.
 fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluation {
     if !cors_is_present(context.config()) {
         return AutoConfigurationEvaluation::skipped(
@@ -185,6 +193,7 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
     }
 }
 
+/// Produces the skipped outcome used when automatic CORS has no managed HTTP routes.
 fn no_managed_routes(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluation {
     AutoConfigurationEvaluation::skipped(
         AutoConfigurationReasonCode::new("no_managed_routes"),
@@ -194,12 +203,14 @@ fn no_managed_routes(context: &AutoConfigurationContext<'_>) -> AutoConfiguratio
     )
 }
 
+/// Contributes the CORS plan after the condition evaluator has accepted configuration.
 fn apply(context: &AutoConfigurationApplyContext<'_>) -> Result<AutoConfigurationContribution> {
     Ok(AutoConfigurationContribution::new(CorsPlan::from_config(
         context.config(),
     )?))
 }
 
+/// Detects CORS settings supplied as a table, scalar key, or string array.
 fn cors_is_present(config: &Config) -> bool {
     config.contains_table("server.cors")
         || config
@@ -210,10 +221,12 @@ fn cors_is_present(config: &Config) -> bool {
             .any(|(key, _)| key.starts_with("server.cors."))
 }
 
+/// Parses required CORS origins as a wildcard or canonical HTTP origin list.
 fn parse_origins(config: &Config) -> Result<CorsValues<HeaderValue>> {
     parse_wildcard_or_list(config, "server.cors.origins", true, parse_origin)
 }
 
+/// Validates one canonical HTTP(S) origin and converts it to a header value.
 fn parse_origin(
     raw: &str,
     key: &'static str,
@@ -245,10 +258,12 @@ fn parse_origin(
     })
 }
 
+/// Validates an origin authority's host and optional numeric port.
 fn is_valid_origin_authority(authority: &Authority) -> bool {
     is_valid_origin_host(authority.host()) && has_valid_optional_port(authority)
 }
 
+/// Accepts a valid IP literal or DNS host, including bracketed IPv6 literals.
 fn is_valid_origin_host(host: &str) -> bool {
     match host.strip_prefix('[') {
         Some(bracketed) => bracketed
@@ -258,6 +273,7 @@ fn is_valid_origin_host(host: &str) -> bool {
     }
 }
 
+/// Checks that an optional authority port is numeric and fits in `u16`.
 fn has_valid_optional_port(authority: &Authority) -> bool {
     let port = &authority.as_str()[authority.host().len()..];
     port.is_empty()
@@ -268,6 +284,7 @@ fn has_valid_optional_port(authority: &Authority) -> bool {
         })
 }
 
+/// Parses a nonempty method array, uppercases names, and removes duplicates.
 fn parse_methods(config: &Config) -> Result<Vec<Method>> {
     let key = "server.cors.methods";
     let Some(raw_methods) = config.get_string_array(key) else {
@@ -308,6 +325,7 @@ fn parse_methods(config: &Config) -> Result<Vec<Method>> {
     Ok(methods)
 }
 
+/// Parses allowed or exposed headers as a wildcard or validated header-name list.
 fn parse_headers(config: &Config, key: &'static str) -> Result<CorsValues<HeaderName>> {
     parse_wildcard_or_list(config, key, false, |raw, key, source, position| {
         HeaderName::from_bytes(raw.as_bytes()).map_err(|_| {
@@ -321,6 +339,7 @@ fn parse_headers(config: &Config, key: &'static str) -> Result<CorsValues<Header
     })
 }
 
+/// Parses either the scalar wildcard or a validated, de-duplicated string array.
 fn parse_wildcard_or_list<T>(
     config: &Config,
     key: &'static str,
@@ -379,6 +398,7 @@ where
     Ok(CorsValues::List(values))
 }
 
+/// Parses the credentials flag, accepting only the exact scalar strings `true` or `false`.
 fn parse_credentials(config: &Config) -> Result<bool> {
     let key = "server.cors.credentials";
     if config.get_string_array(key).is_some() {
@@ -400,6 +420,7 @@ fn parse_credentials(config: &Config) -> Result<bool> {
     }
 }
 
+/// Parses an optional unsigned max-age value as a duration in seconds.
 fn parse_max_age(config: &Config) -> Result<Option<Duration>> {
     let key = "server.cors.max_age_seconds";
     if config.get_string_array(key).is_some() {
@@ -422,12 +443,14 @@ fn parse_max_age(config: &Config) -> Result<Option<Duration>> {
     Ok(Some(Duration::from_secs(seconds)))
 }
 
+/// Returns the source label for either a scalar or array-valued setting.
 fn source_for_key<'a>(config: &'a Config, key: &str) -> Option<&'a str> {
     config
         .source_of(key)
         .or_else(|| config.source_of_string_array(key))
 }
 
+/// Builds a source-aware CORS diagnostic using a sanitized source label.
 fn invalid_cors_configuration(key: &'static str, source: Option<&str>, rule: &str) -> Error {
     Error::new(
         Diagnostic::new(
@@ -440,6 +463,7 @@ fn invalid_cors_configuration(key: &'static str, source: Option<&str>, rule: &st
     )
 }
 
+/// Adds the one-based array position to a CORS element validation error.
 fn invalid_cors_array_element(
     key: &'static str,
     source: Option<&str>,
@@ -453,6 +477,7 @@ fn invalid_cors_array_element(
     )
 }
 
+/// Redacts arbitrary configuration paths while preserving recognized source names.
 fn safe_source_label(source: Option<&str>) -> &'static str {
     match source {
         Some("defaults") => "defaults",
@@ -470,6 +495,7 @@ fn safe_source_label(source: Option<&str>) -> &'static str {
     }
 }
 
+/// Collects source evidence for every supported CORS configuration key.
 fn cors_evidence(context: &AutoConfigurationContext<'_>) -> Vec<AutoConfigurationConfigEvidence> {
     CORS_KEYS
         .into_iter()

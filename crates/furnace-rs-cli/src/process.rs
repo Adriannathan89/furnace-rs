@@ -1,3 +1,5 @@
+//! Application process launch, graceful development shutdown, and forced reap.
+
 use std::{
     ffi::OsString,
     path::{Path, PathBuf},
@@ -28,6 +30,7 @@ pub(crate) struct ApplicationProcess {
 }
 
 #[allow(dead_code)]
+/// Starts a development child with an isolated shutdown-control directory.
 pub(crate) async fn spawn_dev_application(
     built: &BuiltApplication,
     arguments: &[OsString],
@@ -36,14 +39,17 @@ pub(crate) async fn spawn_dev_application(
         built.executable(),
         built.target().package().package_root(),
         arguments,
+        Some(built),
     )
     .await
 }
 
+/// Copies the selected executable to an owned path and starts it with dev control metadata.
 async fn spawn_dev_application_from_parts(
     executable: &Path,
     package_root: &Path,
     arguments: &[OsString],
+    built: Option<&BuiltApplication>,
 ) -> Result<ApplicationProcess, CliError> {
     let control_directory = crate::private_temp_dir::create().map_err(|error| {
         process_error(
@@ -75,6 +81,9 @@ async fn spawn_dev_application_from_parts(
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .kill_on_drop(true);
+    if let Some(built) = built {
+        built.configure_runtime(&mut command);
+    }
     let child = spawn_dev_child(&mut command)
         .await
         .map_err(|error| process_error("could not start the selected application", error))?;
@@ -86,6 +95,7 @@ async fn spawn_dev_application_from_parts(
     })
 }
 
+/// Retries briefly when another process still holds the executable for writing.
 async fn spawn_dev_child(command: &mut Command) -> std::io::Result<tokio::process::Child> {
     // A concurrent fork can briefly inherit a writable descriptor for the
     // shadow executable even after the copy closes its own descriptor.
@@ -105,12 +115,14 @@ async fn spawn_dev_child(command: &mut Command) -> std::io::Result<tokio::proces
 
 #[allow(dead_code)]
 impl ApplicationProcess {
+    /// Checks child exit without blocking the development loop.
     pub(crate) fn try_wait(&mut self) -> Result<Option<ExitStatus>, CliError> {
         self.child
             .try_wait()
             .map_err(|error| process_error("could not inspect the selected application", error))
     }
 
+    /// Requests cooperative shutdown, then kills and reaps the child after the deadline.
     pub(crate) async fn stop(&mut self, timeout: Duration) -> Result<StopOutcome, CliError> {
         debug_assert_eq!(
             self.shutdown_path.parent(),
@@ -145,10 +157,12 @@ impl ApplicationProcess {
     }
 }
 
+/// Creates a stable application-process diagnostic with its operational cause.
 fn process_error(message: &'static str, source: std::io::Error) -> CliError {
     CliError::new(FURNACE202, "Application process failed", message).with_source(source)
 }
 
+/// Builds the direct-run command with forwarded arguments and package working directory.
 pub(crate) fn application_command(built: &BuiltApplication, arguments: &[OsString]) -> Command {
     let mut command = Command::new(built.executable());
     command
@@ -158,9 +172,11 @@ pub(crate) fn application_command(built: &BuiltApplication, arguments: &[OsStrin
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .kill_on_drop(true);
+    built.configure_runtime(&mut command);
     command
 }
 
+/// Starts the selected binary and waits for its exit status.
 pub(crate) async fn run_application(
     built: &BuiltApplication,
     arguments: &[OsString],
@@ -256,9 +272,10 @@ mod tests {
         let executable = std::env::current_exe().unwrap();
         let root = tempfile::tempdir().unwrap();
         let arguments = fixture_arguments(GRACEFUL_FIXTURE);
-        let mut process = spawn_dev_application_from_parts(&executable, root.path(), &arguments)
-            .await
-            .unwrap();
+        let mut process =
+            spawn_dev_application_from_parts(&executable, root.path(), &arguments, None)
+                .await
+                .unwrap();
         let ready = process.control_directory.path().join("ready");
         let completion = process.control_directory.path().join("completion");
 
@@ -276,9 +293,10 @@ mod tests {
         let executable = std::env::current_exe().unwrap();
         let root = tempfile::tempdir().unwrap();
         let arguments = fixture_arguments(FORCED_FIXTURE);
-        let mut process = spawn_dev_application_from_parts(&executable, root.path(), &arguments)
-            .await
-            .unwrap();
+        let mut process =
+            spawn_dev_application_from_parts(&executable, root.path(), &arguments, None)
+                .await
+                .unwrap();
         let ready = process.control_directory.path().join("ready");
 
         wait_for_file(&ready, Duration::from_secs(2)).await.unwrap();

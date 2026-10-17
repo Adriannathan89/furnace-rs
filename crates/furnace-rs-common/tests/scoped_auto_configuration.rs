@@ -5,7 +5,10 @@
 
 use furnace_rs_common::{
     ClaimsPrincipal, FURNACE121,
-    core::{AutoConfigurationReport, AutoConfigurationStatus, Cauldron, Config, Furnace, Result},
+    core::{
+        __private::ModuleContract, AutoConfigurationReport, AutoConfigurationStatus, Config,
+        Furnace, Result,
+    },
 };
 
 #[derive(serde::Deserialize)]
@@ -40,14 +43,8 @@ mod public_http {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [PublicController])]
     pub struct PublicHttpCauldron;
-
-    impl furnace_rs_common::core::Cauldron for PublicHttpCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<PublicController>()
-        }
-    }
 }
 
 mod guarded_http {
@@ -73,42 +70,23 @@ mod guarded_http {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [GuardedController])]
     pub struct GuardedHttpCauldron;
-
-    impl furnace_rs_common::core::Cauldron for GuardedHttpCauldron {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<GuardedController>()
-        }
-    }
 }
 
 mod roots {
     pub(super) mod public {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(imports = [super::super::public_http::PublicHttpCauldron])]
         pub struct PublicRoot;
-
-        impl furnace_rs_common::core::Cauldron for PublicRoot {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.import(super::super::public_http::PublicHttpCauldron)
-            }
-        }
     }
 
     pub(super) mod guarded {
-        #[furnace_rs_common::core::cauldron]
+        #[furnace_rs_common::core::cauldron(imports = [super::super::public_http::PublicHttpCauldron, super::super::guarded_http::GuardedHttpCauldron])]
         pub struct GuardedRoot;
-
-        impl furnace_rs_common::core::Cauldron for GuardedRoot {
-            fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-                self.import(super::super::public_http::PublicHttpCauldron)
-                    .import(super::super::guarded_http::GuardedHttpCauldron)
-            }
-        }
     }
 }
 
-async fn build_root<M: Cauldron>(config: Config) -> Result<Furnace> {
+async fn build_root<M: ModuleContract>(config: Config) -> Result<Furnace> {
     let mut builder = Furnace::builder_with_config(config);
     builder.root::<M>()?;
     builder.build().await

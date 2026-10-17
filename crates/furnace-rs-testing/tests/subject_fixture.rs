@@ -18,6 +18,7 @@ use std::{
 
 #[furnace_rs_core::storage]
 struct Repository {
+    #[inject]
     db: DatabaseConnection,
 }
 impl Repository {
@@ -36,6 +37,7 @@ impl Repository {
 }
 #[furnace_rs_core::burner]
 struct Service {
+    #[inject]
     repo: Repository,
 }
 #[furnace_rs_core::burner]

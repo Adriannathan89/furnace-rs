@@ -18,8 +18,10 @@
 //! # }
 //! ```
 //!
-//! TOML and programmatic sources may contain string arrays. A later scalar or
-//! string array replaces the earlier value and its shape completely. Process
+//! TOML and programmatic sources may contain string arrays. Later sources replace
+//! incompatible scalar, array, or table shapes, removing obsolete descendants.
+//! Compatible tables merge by field. TOML key segments must be nonempty and may
+//! not contain literal dots, because dotted paths identify nested settings. Process
 //! environment variables override dotenv variables during `${NAME}`
 //! interpolation; [`EnvSource`] itself remains scalar-only.
 
@@ -39,6 +41,7 @@ pub struct ConfigDocument {
 }
 
 impl fmt::Debug for ConfigDocument {
+    /// Formats only the entry count so configuration values never enter logs.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("ConfigDocument")
@@ -128,6 +131,7 @@ pub struct MapSource {
 }
 
 impl fmt::Debug for MapSource {
+    /// Shows the source name and entry count while redacting every value.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("MapSource")
@@ -171,14 +175,17 @@ impl MapSource {
 }
 
 impl ConfigSource for MapSource {
+    /// Returns the caller-assigned label used in value provenance.
     fn name(&self) -> &str {
         &self.name
     }
 
+    /// Clones the scalar entries for the compatibility source interface.
     fn load(&self) -> Result<BTreeMap<String, String>> {
         Ok(self.scalars.clone())
     }
 
+    /// Loads both scalar and string-array entries while leaving table metadata empty.
     fn load_document(&self) -> Result<ConfigDocument> {
         Ok(ConfigDocument {
             scalars: self.scalars.clone(),
@@ -196,6 +203,7 @@ pub struct EnvSource {
 }
 
 impl fmt::Debug for EnvSource {
+    /// Shows the prefix and number of variables without exposing their contents.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("EnvSource")
@@ -230,10 +238,12 @@ impl EnvSource {
 }
 
 impl ConfigSource for EnvSource {
+    /// Identifies process variables as the configuration source.
     fn name(&self) -> &str {
         "environment"
     }
 
+    /// Selects matching UTF-8 variables, normalizes their keys, and ignores non-UTF-8 pairs.
     fn load(&self) -> Result<BTreeMap<String, String>> {
         let values = self
             .variables
@@ -281,24 +291,29 @@ impl TomlSource {
 }
 
 impl ConfigSource for TomlSource {
+    /// Returns the configured path label used for provenance and diagnostics.
     fn name(&self) -> &str {
         &self.name
     }
 
+    /// Uses the TOML file's parent directory for relative path configuration.
     fn relative_path_base(&self) -> Option<&Path> {
         self.path.parent()
     }
 
+    /// Loads scalar TOML values and rejects arrays through the scalar-only interface.
     fn load(&self) -> Result<BTreeMap<String, String>> {
         Ok(self.parse(TomlArrayMode::Reject)?.scalars)
     }
 
+    /// Loads scalar and string-array values while retaining table and source metadata.
     fn load_document(&self) -> Result<ConfigDocument> {
         self.parse(TomlArrayMode::StringOnly)
     }
 }
 
 impl TomlSource {
+    /// Reads and parses the file, returning an empty document only for a missing optional file.
     fn parse(&self, array_mode: TomlArrayMode) -> Result<ConfigDocument> {
         let input = match std::fs::read_to_string(&self.path) {
             Ok(input) => input,
@@ -327,6 +342,7 @@ enum TomlArrayMode {
     StringOnly,
 }
 
+/// Parses TOML, rejects inline tables, and flattens supported values into dotted keys.
 fn parse_toml_document(
     input: &str,
     source_name: &str,
@@ -361,6 +377,7 @@ fn parse_toml_document(
     Ok(output)
 }
 
+/// Finds the first inline table so unsupported nested values get a stable key diagnostic.
 fn inline_table_key(prefix: &str, table: &toml_edit::Table) -> Option<String> {
     for (segment, item) in table {
         let key = if prefix.is_empty() {
@@ -383,6 +400,7 @@ fn inline_table_key(prefix: &str, table: &toml_edit::Table) -> Option<String> {
     None
 }
 
+/// Recursively converts supported TOML values into scalar or string-array entries.
 fn flatten_toml(
     prefix: &str,
     value: toml::Value,
@@ -398,6 +416,13 @@ fn flatten_toml(
                 return Ok(());
             }
             for (segment, value) in table {
+                if segment.is_empty() || segment.contains('.') {
+                    return Err(Error::new(Diagnostic::new(
+                        FURNACE020,
+                        "unsupported configuration key",
+                        "TOML configuration key segments must be nonempty and contain no literal dots",
+                    )));
+                }
                 let key = if prefix.is_empty() {
                     segment
                 } else {
@@ -429,14 +454,26 @@ fn flatten_toml(
     }
 }
 
+/// Adds a flattened scalar and rejects values that have no configuration key.
 fn insert_scalar(key: &str, value: String, output: &mut ConfigDocument) -> Result<()> {
     if key.is_empty() {
         return Err(unsupported_value(key, "root scalar"));
+    }
+    if output.scalars.contains_key(key)
+        || output.string_arrays.contains_key(key)
+        || output.tables.contains(key)
+    {
+        return Err(Error::new(Diagnostic::new(
+            FURNACE020,
+            "ambiguous configuration key",
+            "distinct TOML keys resolve to the same configuration path",
+        )));
     }
     output.insert_scalar(key, value);
     Ok(())
 }
 
+/// Creates a value-free diagnostic for a TOML shape that the configuration model cannot store.
 fn unsupported_value(key: &str, kind: &str) -> Error {
     Error::new(
         Diagnostic::new(
@@ -467,6 +504,7 @@ impl DotenvSource {
         Self::new(path.into(), true)
     }
 
+    /// Stores the path and requiredness policy shared by the public constructors.
     fn new(path: PathBuf, required: bool) -> Self {
         let name = path.to_string_lossy().into_owned();
         Self {
@@ -497,6 +535,7 @@ struct ConfigOrigin {
 }
 
 impl fmt::Debug for ConfigStringArrayValue {
+    /// Shows the array length and source label without formatting secret elements.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("ConfigStringArrayValue")
@@ -507,6 +546,7 @@ impl fmt::Debug for ConfigStringArrayValue {
 }
 
 impl fmt::Debug for ConfigValue {
+    /// Redacts the scalar while retaining its source label for diagnostics.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("ConfigValue")
@@ -537,6 +577,7 @@ pub struct Config {
 }
 
 impl fmt::Debug for Config {
+    /// Formats the entry count without exposing scalar or array contents.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("Config")
@@ -547,11 +588,31 @@ impl fmt::Debug for Config {
 }
 
 impl Config {
+    /// Removes incompatible leaves, ancestor leaves, and replaced descendants.
+    fn remove_incompatible_shapes(&mut self, key: &str, is_table: bool) {
+        let descendants = format!("{key}.");
+        let keep_leaf = |candidate: &String| {
+            candidate != key
+                && !key
+                    .strip_prefix(candidate.as_str())
+                    .is_some_and(|suffix| suffix.starts_with('.'))
+                && (is_table || !candidate.starts_with(&descendants))
+        };
+        self.values.retain(|candidate, _| keep_leaf(candidate));
+        self.string_arrays
+            .retain(|candidate, _| keep_leaf(candidate));
+        if !is_table {
+            self.tables
+                .retain(|candidate, _| candidate != key && !candidate.starts_with(&descendants));
+        }
+    }
+
     /// Parses a typed view without loading any additional configuration sources.
     pub fn parse<T: crate::Configuration>(&self) -> crate::ConfigurationResult<T> {
         T::from_config(self)
     }
 
+    /// Returns a cloned view below a dotted prefix with that prefix removed.
     pub(crate) fn project(&self, prefix: &str) -> Self {
         if prefix.is_empty() {
             return self.clone();
@@ -585,6 +646,7 @@ impl Config {
         }
     }
 
+    /// Checks whether any scalar, array, or table is nested below the dotted key.
     pub(crate) fn has_descendants(&self, key: &str) -> bool {
         let prefix = format!("{key}.");
         self.values
@@ -653,6 +715,20 @@ impl Config {
         Some(base.join(configured))
     }
 
+    /// Resolves one string-array path relative to the source that supplied the array.
+    pub fn resolve_string_array_path(&self, key: &str, index: usize) -> Option<PathBuf> {
+        let value = self.string_arrays.get(key)?;
+        let configured = Path::new(value.value.get(index)?);
+        if configured.is_absolute() {
+            return Some(configured.to_path_buf());
+        }
+        let base = match &value.origin.relative_path_base {
+            Some(base) => base.clone(),
+            None => std::env::current_dir().ok()?,
+        };
+        Some(base.join(configured))
+    }
+
     /// Iterates over string-array keys and values in lexical key order.
     pub fn iter_string_arrays(&self) -> impl Iterator<Item = (&str, &[String])> {
         self.string_arrays
@@ -705,6 +781,7 @@ impl ConfigBuilder {
         self.build_with_environment(std::env::vars_os())
     }
 
+    /// Merges sources, resolves exact placeholders, and attributes each value to its winner.
     fn build_with_environment<I, K, V>(self, environment: I) -> Result<Config>
     where
         I: IntoIterator<Item = (K, V)>,
@@ -731,18 +808,20 @@ impl ConfigBuilder {
             }
         }
 
-        let mut values = BTreeMap::new();
-        let mut string_arrays = BTreeMap::new();
-        let mut tables = BTreeMap::new();
+        let mut config = Config::empty();
         for source in self.sources {
             let origin = ConfigOrigin {
                 label: source.name().to_owned(),
                 relative_path_base: source.relative_path_base().map(Path::to_path_buf),
             };
             let document = source.load_document()?;
+            for key in document.tables {
+                config.remove_incompatible_shapes(&key, true);
+                config.tables.insert(key, origin.clone());
+            }
             for (key, value) in document.scalars {
-                string_arrays.remove(&key);
-                values.insert(
+                config.remove_incompatible_shapes(&key, false);
+                config.values.insert(
                     key,
                     ConfigValue {
                         value,
@@ -751,8 +830,8 @@ impl ConfigBuilder {
                 );
             }
             for (key, value) in document.string_arrays {
-                values.remove(&key);
-                string_arrays.insert(
+                config.remove_incompatible_shapes(&key, false);
+                config.string_arrays.insert(
                     key,
                     ConfigStringArrayValue {
                         value,
@@ -760,17 +839,14 @@ impl ConfigBuilder {
                     },
                 );
             }
-            for key in document.tables {
-                tables.insert(key, origin.clone());
-            }
         }
-        for (key, value) in &mut values {
+        for (key, value) in &mut config.values {
             if let Some(variable) = exact_variable_name(&value.value) {
                 let resolved = resolve_variable(key, variable, &variables)?;
                 value.value.clone_from(resolved);
             }
         }
-        for (key, value) in &mut string_arrays {
+        for (key, value) in &mut config.string_arrays {
             for element in &mut value.value {
                 if let Some(variable) = exact_variable_name(element) {
                     let resolved = resolve_variable(key, variable, &variables)?;
@@ -778,14 +854,11 @@ impl ConfigBuilder {
                 }
             }
         }
-        Ok(Config {
-            values,
-            string_arrays,
-            tables,
-        })
+        Ok(config)
     }
 }
 
+/// Resolves a placeholder by name and reports a safe diagnostic when it is absent.
 fn resolve_variable<'a>(
     key: &str,
     variable: &str,
@@ -803,6 +876,7 @@ fn resolve_variable<'a>(
     })
 }
 
+/// Converts dotenv read failures to a stable diagnostic while retaining I/O causes.
 fn dotenv_open_error(source: &DotenvSource, error: dotenvy::Error) -> Error {
     match error {
         dotenvy::Error::Io(error) => Error::with_source(
@@ -821,6 +895,7 @@ fn dotenv_open_error(source: &DotenvSource, error: dotenvy::Error) -> Error {
     }
 }
 
+/// Creates the value-free diagnostic used for malformed dotenv input.
 fn dotenv_parse_error(source: &DotenvSource) -> Error {
     Error::new(
         Diagnostic::new(
@@ -835,6 +910,7 @@ fn dotenv_parse_error(source: &DotenvSource) -> Error {
     )
 }
 
+/// Accepts only a whole-value `${NAME}` placeholder without defaults or nesting.
 fn exact_variable_name(value: &str) -> Option<&str> {
     let variable = value.strip_prefix("${")?.strip_suffix('}')?;
     (!variable.is_empty()
@@ -844,6 +920,7 @@ fn exact_variable_name(value: &str) -> Option<&str> {
     .then_some(variable)
 }
 
+/// Converts environment keys to lowercase dotted configuration paths.
 fn normalize_environment_key(key: &str) -> String {
     key.to_ascii_lowercase().replace("__", ".")
 }

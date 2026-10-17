@@ -43,6 +43,7 @@ impl ProjectName {
 }
 
 impl fmt::Display for ProjectName {
+    /// Formats the scaffolding value for its human-readable display.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(self.as_str())
     }
@@ -70,6 +71,7 @@ impl ProjectNameError {
 }
 
 impl fmt::Display for ProjectNameError {
+    /// Formats the scaffolding value for its human-readable display.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidGrammar => formatter.write_str(
@@ -84,6 +86,7 @@ impl fmt::Display for ProjectNameError {
 
 impl std::error::Error for ProjectNameError {}
 
+/// Checks the lowercase ASCII package-name grammar before reserved-word validation.
 fn has_approved_grammar(value: &str) -> bool {
     let mut bytes = value.bytes();
     let Some(first) = bytes.next() else {
@@ -96,6 +99,7 @@ fn has_approved_grammar(value: &str) -> bool {
         })
 }
 
+/// Rejects names reserved by Cargo or the Rust 2024 edition.
 fn is_reserved(value: &str) -> bool {
     CARGO_RESERVED_PACKAGE_NAMES.contains(&value)
         || RUST_2024_STRICT_KEYWORDS.contains(&value)

@@ -507,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs"
-version = "1.0.2"
+version = "2.0.0"
 dependencies = [
  "furnace-rs-common",
  "furnace-rs-core",
@@ -515,13 +515,15 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common"
-version = "1.0.2"
+version = "2.0.0"
 dependencies = [
  "axum",
  "axum-extra",
  "chrono",
  "furnace-rs-common-macros",
  "furnace-rs-core",
+ "futures-util",
+ "http",
  "hyper",
  "hyper-util",
  "rustix",
@@ -537,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-common-macros"
-version = "1.0.2"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -547,7 +549,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core"
-version = "1.0.2"
+version = "2.0.0"
 dependencies = [
  "dotenvy",
  "furnace-rs-core-macros",
@@ -559,7 +561,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-core-macros"
-version = "1.0.2"
+version = "2.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -579,7 +581,7 @@ dependencies = [
 
 [[package]]
 name = "furnace-rs-persistence"
-version = "1.0.2"
+version = "2.0.0"
 dependencies = [
  "furnace-rs-core",
  "sea-orm",
@@ -620,6 +622,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53c0fa8157de1303bfffdaa1cc2a673bfffb60102f76b0ef4441659124373fed"
 
 [[package]]
+name = "futures-macro"
+version = "0.3.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fb9654ba8355388abeb8dcb4fc62f511300867002afc858860463bdd9fe0c44"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.6",
+]
+
+[[package]]
 name = "futures-sink"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -639,6 +652,7 @@ checksum = "0d50a92467f8ba5dd6e3ee5d4bd04d73ab2e4e1c44474a0674821dfce14b79bc"
 dependencies = [
  "futures-core",
  "futures-io",
+ "futures-macro",
  "futures-sink",
  "futures-task",
  "memchr",
@@ -1335,9 +1349,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.45"
+version = "0.23.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d41d731c7d2f962d1ccc364cec258de3c0e93b38c2fb3ba97ac74513048d634"
+checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"
 dependencies = [
  "once_cell",
  "ring",
@@ -1399,9 +1413,9 @@ dependencies = [
 
 [[package]]
 name = "sea-orm"
-version = "2.0.0"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "549c6d29a2e7a84e35c5dfbc06370a62c4d35f2328c31005267bec586b34f682"
+checksum = "40bc08e0aa1963295a30473f98d9b4c9c2b0b3a028381e0143cb2647d0a59a32"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -1425,9 +1439,9 @@ dependencies = [
 
 [[package]]
 name = "sea-orm-macros"
-version = "2.0.3"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e24c82fc1e76c014dffe5ecdac8f654da73161d703a16ea13414581e07459c83"
+checksum = "91fa8c81c20fc8cfe78d22d9a2721ca5ef151dc4a8a7b372de218aaba33733fa"
 dependencies = [
  "heck 0.5.0",
  "itertools",
@@ -1827,6 +1841,17 @@ name = "sync_wrapper"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
+
+[[package]]
+name = "synstructure"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "728a70f3dbaf5bab7f0c4b1ac8d7ae5ea60a4b5549c8a5914361c99147a709d2"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
 
 [[package]]
 name = "synstructure"
@@ -2395,14 +2420,14 @@ dependencies = [
 
 [[package]]
 name = "yoke-derive"
-version = "0.8.3"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33811428bee40dbceb6d545e95754741d17a6aef9a4849f0fd62e2ba4f412a78"
+checksum = "de844c262c8848816172cef550288e7dc6c7b7814b4ee56b3e1553f275f1858e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 3.0.6",
- "synstructure",
+ "syn 2.0.119",
+ "synstructure 0.13.2",
 ]
 
 [[package]]
@@ -2423,7 +2448,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.6",
- "synstructure",
+ "synstructure 0.14.0",
 ]
 
 [[package]]

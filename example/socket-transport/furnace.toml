@@ -1,0 +1,18 @@
+[furnace]
+transports = ["socket"]
+[socket]
+address = "127.0.0.1:3001"
+namespace = "socket-example"
+origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+# Enable feature redis and uncomment to share rooms across instances:
+# [socket.redis]
+# url = "redis://127.0.0.1:6379"
+# [demo]
+# replay = true
+# Native TLS (feature tls):
+# [socket.tls]
+# certificate = "server.pem"
+# private_key = "server-key.pem"
+# Handshake JWT (feature jwt):
+# [passport]
+# secret = "replace-with-a-strong-application-secret"

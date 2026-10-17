@@ -51,6 +51,7 @@ pub(crate) struct EffectiveGuard {
 }
 
 impl Parse for GuardSpec {
+    /// Parses guard strategy, source, principal, role, permission, and predicate arguments.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let span = input.span();
         let mut result = Self {
@@ -145,6 +146,7 @@ impl Parse for GuardSpec {
     }
 }
 
+/// Rejects a guard field that was specified more than once.
 fn set_once<T>(slot: &mut Option<T>, span: Span, name: &str) -> syn::Result<()> {
     if slot.is_some() {
         return Err(Error::new(
@@ -155,6 +157,7 @@ fn set_once<T>(slot: &mut Option<T>, span: Span, name: &str) -> syn::Result<()> 
     Ok(())
 }
 
+/// Parses Bearer or feature-gated cookie token-source syntax.
 fn parse_source(input: ParseStream<'_>) -> syn::Result<TokenSourceSpec> {
     let source: Ident = input.parse()?;
     match source.to_string().as_str() {
@@ -187,6 +190,7 @@ fn parse_source(input: ParseStream<'_>) -> syn::Result<TokenSourceSpec> {
     }
 }
 
+/// Parses a nonempty `any` or `all` role/permission clause.
 fn parse_policy_clause(input: ParseStream<'_>, subject: &str) -> syn::Result<PolicyClauseSpec> {
     let content;
     parenthesized!(content in input);
@@ -225,6 +229,7 @@ fn parse_policy_clause(input: ParseStream<'_>, subject: &str) -> syn::Result<Pol
     })
 }
 
+/// Enforces the lowercase ASCII strategy-name syntax accepted by the runtime catalog.
 fn validate_strategy_name(value: &LitStr) -> syn::Result<()> {
     if value.value().is_empty()
         || !value.value().bytes().all(|byte| {
@@ -240,6 +245,7 @@ fn validate_strategy_name(value: &LitStr) -> syn::Result<()> {
 }
 
 #[cfg(feature = "cookies")]
+/// Enforces the RFC cookie-name token syntax for a literal auth-cookie source.
 fn validate_cookie_name(value: &LitStr) -> syn::Result<()> {
     if value.value().is_empty()
         || !value.value().bytes().all(|byte| {
@@ -271,6 +277,7 @@ fn validate_cookie_name(value: &LitStr) -> syn::Result<()> {
     Ok(())
 }
 
+/// Rejects empty role or permission values and embedded control characters.
 fn validate_policy_value(value: &LitStr, subject: &str) -> syn::Result<()> {
     if value.value().is_empty() || value.value().chars().any(char::is_control) {
         return Err(Error::new(
@@ -292,6 +299,7 @@ pub(crate) fn is_guard_attribute(attribute: &Attribute) -> bool {
         .is_some_and(|segment| segment.ident == "guard")
 }
 
+/// Requires the strategy and principal fields and fills default guard settings.
 fn complete_policy(spec: &GuardSpec) -> syn::Result<EffectiveGuard> {
     Ok(EffectiveGuard {
         strategy: spec.strategy.clone().ok_or_else(|| {
@@ -309,6 +317,7 @@ fn complete_policy(spec: &GuardSpec) -> syn::Result<EffectiveGuard> {
 }
 
 impl EffectiveGuard {
+    /// Emits static policy metadata and a registration callback for one guarded method.
     fn static_tokens_with_registration(
         &self,
         common: &syn::Path,
@@ -348,6 +357,7 @@ impl EffectiveGuard {
                 quote! {
                     #(#conditional_attributes)*
                     #[doc(hidden)]
+                    #[doc = "Evaluates a typed guard predicate against the selected principal."]
                     #[allow(non_snake_case)]
                     fn #adapter(
                         __furnace_authentication: &#common::ErasedAuthentication,
@@ -386,6 +396,7 @@ impl EffectiveGuard {
         let tokens = quote! {
             #(#conditional_attributes)*
             #[doc(hidden)]
+            #[doc = "Returns the exact principal type identifier required by this guard."]
             #[allow(non_snake_case)]
             fn #type_id() -> ::core::any::TypeId {
                 ::core::any::TypeId::of::<#principal>()
@@ -393,6 +404,7 @@ impl EffectiveGuard {
 
             #(#conditional_attributes)*
             #[doc(hidden)]
+            #[doc = "Returns the stable Rust type name required by this guard."]
             #[allow(non_snake_case)]
             fn #type_name() -> &'static str {
                 ::core::any::type_name::<#principal>()
@@ -425,6 +437,7 @@ impl EffectiveGuard {
     }
 }
 
+/// Converts the parsed token source to the common crate's descriptor syntax.
 fn source_tokens(source: &TokenSourceSpec, common: &syn::Path) -> TokenStream {
     match source {
         TokenSourceSpec::Bearer => quote!(#common::TokenSource::Bearer),
@@ -433,6 +446,7 @@ fn source_tokens(source: &TokenSourceSpec, common: &syn::Path) -> TokenStream {
     }
 }
 
+/// Converts an optional parsed role or permission clause to descriptor tokens.
 fn clause_tokens(clause: &Option<PolicyClauseSpec>, common: &syn::Path) -> TokenStream {
     let Some(clause) = clause else {
         return quote!(None);
@@ -445,6 +459,7 @@ fn clause_tokens(clause: &Option<PolicyClauseSpec>, common: &syn::Path) -> Token
     quote!(Some(#common::PolicyClause::new(#mode, &[#(#values,)*])))
 }
 
+/// Emits the built-in JWT adapter only when the declared principal is claims-backed.
 fn builtin_adapter_tokens(
     principal: &Type,
     common: &syn::Path,
@@ -460,6 +475,7 @@ fn builtin_adapter_tokens(
         quote! {
             #(#conditional_attributes)*
             #[doc(hidden)]
+            #[doc = "Verifies an access JWT and constructs its typed claims-backed principal."]
             #[allow(non_snake_case)]
             fn #adapter<'a>(
                 __furnace_application: &'a #common::core::ApplicationContext,
@@ -492,6 +508,7 @@ fn builtin_adapter_tokens(
     )
 }
 
+/// Extracts the custom claims type from a direct `ClaimsPrincipal<C>` path.
 fn claims_principal_claims(principal: &Type) -> Option<Type> {
     let Type::Path(path) = principal else {
         return None;
@@ -530,6 +547,7 @@ pub(crate) fn outside_contract(arguments: TokenStream, item: TokenStream) -> Tok
     quote!(#item #error)
 }
 
+/// Validates a unit policy struct and emits its static `GuardPolicy` descriptor.
 fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result<TokenStream> {
     if !cfg!(feature = "passport") {
         return Err(Error::new(
@@ -584,7 +602,9 @@ fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result
         #metadata
         #(#conditional_attributes)*
         impl #common::GuardPolicy for #ident {
+            #[doc = "Returns this policy's generated static guard descriptor."]
             fn descriptor() -> &'static #common::GuardDescriptor {
+                #[doc = "Checks that the authored principal implements the Passport policy contract."]
                 fn __furnace_assert_principal<P: #common::PassportPrincipal>() {}
                 __furnace_assert_principal::<#principal>();
                 &#descriptor

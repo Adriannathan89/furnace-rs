@@ -1,13 +1,17 @@
 //! Selected HTTP metadata fails before provider/default constructors.
 #![cfg(feature = "http")]
 #![allow(missing_docs)]
+
+#[macro_use]
+#[path = "support/cauldron_metadata.rs"]
+mod cauldron_metadata;
 use furnace_rs_common::core::__private::{
     AutoConfigurationApplyContext, AutoConfigurationContext, AutoConfigurationContribution,
     AutoConfigurationDescriptor, AutoConfigurationEvaluation,
 };
 use furnace_rs_common::core::{
-    AutoConfigurationReasonCode, Cauldron, CauldronRegistration, FURNACE008, FURNACE030, Furnace,
-    SourceLocation, cauldron,
+    __private::ModuleContract, AutoConfigurationReasonCode, FURNACE008, FURNACE030, Furnace,
+    SourceLocation,
 };
 use furnace_rs_common::{SealRegistration, Sealable, controller};
 use std::any::TypeId;
@@ -67,7 +71,9 @@ furnace_rs_common::core::__private::inventory::submit! {
 }
 #[controller]
 struct Conflict {
+    #[inject]
     _resource: Resource,
+    #[inject]
     _default: DefaultResource,
 }
 impl Sealable for Conflict {
@@ -83,14 +89,13 @@ impl Conflict {
     #[get("/{name}")]
     fn second(&self) {}
 }
-#[cauldron]
-struct ConflictRoot;
-impl Cauldron for ConflictRoot {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<Resource, ResourceInjector>()
-            .controller::<Conflict>()
-    }
+cauldron_metadata! {
+    struct ConflictRoot;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Resource, ResourceInjector>()
+        .controller::<Conflict>()
 }
+
 #[controller]
 struct Missing;
 impl Sealable for Missing {
@@ -98,13 +103,12 @@ impl Sealable for Missing {
         panic!("missing endpoint metadata must be checked first")
     }
 }
-#[cauldron]
-struct MissingRoot;
-impl Cauldron for MissingRoot {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<Missing>()
-    }
+cauldron_metadata! {
+    struct MissingRoot;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .controller::<Missing>()
 }
+
 #[controller]
 struct Duplicate;
 impl Sealable for Duplicate {
@@ -122,13 +126,12 @@ impl Duplicate {
     #[get]
     fn two(&self) {}
 }
-#[cauldron]
-struct DuplicateRoot;
-impl Cauldron for DuplicateRoot {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<Duplicate>()
-    }
+cauldron_metadata! {
+    struct DuplicateRoot;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .controller::<Duplicate>()
 }
+
 #[controller]
 struct Valid;
 impl Sealable for Valid {
@@ -142,12 +145,10 @@ impl Valid {
     #[get]
     fn valid(&self) {}
 }
-#[cauldron]
-struct ValidRoot;
-impl Cauldron for ValidRoot {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<Valid>()
-    }
+cauldron_metadata! {
+    struct ValidRoot;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .controller::<Valid>()
 }
 
 #[tokio::test]
@@ -254,13 +255,12 @@ mod security {
         #[get]
         fn endpoint(&self) {}
     }
-    #[cauldron]
-    struct MultiRoot;
-    impl Cauldron for MultiRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<MultiSeal>()
-        }
+    cauldron_metadata! {
+        struct MultiRoot;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<MultiSeal>()
     }
+
     fn config() -> Config {
         ConfigBuilder::new()
             .source(MapSource::new(
@@ -301,94 +301,86 @@ mod security {
             ));
     furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_JWT }
 
-    #[cauldron]
-    struct PrivateJwt;
-    impl Cauldron for PrivateJwt {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.provide_with::<JwtService, JwtInjector>()
-        }
+    cauldron_metadata! {
+        struct PrivateJwt;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .provide_with::<JwtService, JwtInjector>()
     }
-    #[cauldron]
-    struct ExportedJwt;
-    impl Cauldron for ExportedJwt {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.provide_with::<JwtService, JwtInjector>()
-                .export::<JwtService>()
-        }
+
+    cauldron_metadata! {
+        struct ExportedJwt;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .provide_with::<JwtService, JwtInjector>()
+            .export::<JwtService>()
     }
-    #[cauldron]
-    struct GlobalJwt;
-    impl Cauldron for GlobalJwt {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.provide_with::<JwtService, JwtInjector>()
-                .export::<JwtService>()
-                .global()
-        }
+
+    cauldron_metadata! {
+        struct GlobalJwt;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .provide_with::<JwtService, JwtInjector>()
+            .export::<JwtService>()
+            .global()
     }
-    #[cauldron]
-    struct Bridge;
-    impl Cauldron for Bridge {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.import(GlobalJwt)
-        }
+
+    cauldron_metadata! {
+        struct Bridge;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .import::<GlobalJwt>()
     }
-    #[cauldron]
-    struct PrivateRoot;
-    impl Cauldron for PrivateRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<Protected>().import(PrivateJwt)
-        }
+
+    cauldron_metadata! {
+        struct PrivateRoot;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<Protected>()
+            .import::<PrivateJwt>()
     }
-    #[cauldron]
-    struct LocalRoot;
-    impl Cauldron for LocalRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<Protected>()
-                .provide_with::<JwtService, JwtInjector>()
-        }
+
+    cauldron_metadata! {
+        struct LocalRoot;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<Protected>()
+            .provide_with::<JwtService, JwtInjector>()
     }
-    #[cauldron]
-    struct DirectRoot;
-    impl Cauldron for DirectRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<Protected>().import(ExportedJwt)
-        }
+
+    cauldron_metadata! {
+        struct DirectRoot;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<Protected>()
+            .import::<ExportedJwt>()
     }
-    #[cauldron]
-    struct GlobalRoot;
-    impl Cauldron for GlobalRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<Protected>().import(Bridge)
-        }
+
+    cauldron_metadata! {
+        struct GlobalRoot;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<Protected>()
+            .import::<Bridge>()
     }
-    #[cauldron]
-    struct AmbientRoot;
-    impl Cauldron for AmbientRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<Protected>()
-        }
+
+    cauldron_metadata! {
+        struct AmbientRoot;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<Protected>()
     }
-    #[cauldron]
-    struct Left;
-    impl Cauldron for Left {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.import(AmbientRoot)
-        }
+
+    cauldron_metadata! {
+        struct Left;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .import::<AmbientRoot>()
     }
-    #[cauldron]
-    struct Right;
-    impl Cauldron for Right {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.import(AmbientRoot)
-        }
+
+    cauldron_metadata! {
+        struct Right;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .import::<AmbientRoot>()
     }
-    #[cauldron]
-    struct Diamond;
-    impl Cauldron for Diamond {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.import(Left).import(Right)
-        }
+
+    cauldron_metadata! {
+        struct Diamond;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .import::<Left>()
+            .import::<Right>()
     }
+
     #[tokio::test]
     async fn multiple_seals_fail_before_defaults_and_providers() {
         let _lock = TEST_LOCK.lock().await;
@@ -428,7 +420,7 @@ mod security {
         assert_eq!(PROVIDERS.load(Ordering::SeqCst), 0);
         assert_eq!(DEFAULTS.load(Ordering::SeqCst), 0);
     }
-    fn valid<M: Cauldron>() {
+    fn valid<M: ModuleContract>() {
         let mut builder = Furnace::builder_with_config(config());
         builder.root::<M>().unwrap();
         let analysis = builder.analyze();
@@ -474,13 +466,12 @@ mod security {
         #[get]
         fn endpoint(&self) {}
     }
-    #[cauldron]
-    struct DisabledRoot;
-    impl Cauldron for DisabledRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<DisabledController>()
-        }
+    cauldron_metadata! {
+        struct DisabledRoot;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<DisabledController>()
     }
+
     #[tokio::test]
     async fn cfg_disabled_endpoints_do_not_require_jwt_configuration() {
         let _lock = TEST_LOCK.lock().await;
@@ -506,6 +497,7 @@ mod security {
     }
     #[furnace_rs_common::core::burner]
     struct Strategy {
+        #[inject]
         _resource: Resource,
     }
     #[furnace_rs_common::passport_strategy(name = "custom")]
@@ -521,72 +513,65 @@ mod security {
             unreachable!("metadata only")
         }
     }
-    #[cauldron]
-    struct PrivateStrategy;
-    impl Cauldron for PrivateStrategy {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.provide_with::<Resource, super::ResourceInjector>()
-                .provide::<Strategy>()
-        }
+    cauldron_metadata! {
+        struct PrivateStrategy;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .provide_with::<Resource, super::ResourceInjector>()
+            .provide::<Strategy>()
     }
-    #[cauldron]
-    struct ExportedStrategy;
-    impl Cauldron for ExportedStrategy {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.provide_with::<Resource, super::ResourceInjector>()
-                .provide::<Strategy>()
-                .export::<Strategy>()
-        }
+
+    cauldron_metadata! {
+        struct ExportedStrategy;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .provide_with::<Resource, super::ResourceInjector>()
+            .provide::<Strategy>()
+            .export::<Strategy>()
     }
-    #[cauldron]
-    struct GlobalStrategy;
-    impl Cauldron for GlobalStrategy {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.provide_with::<Resource, super::ResourceInjector>()
-                .provide::<Strategy>()
-                .export::<Strategy>()
-                .global()
-        }
+
+    cauldron_metadata! {
+        struct GlobalStrategy;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .provide_with::<Resource, super::ResourceInjector>()
+            .provide::<Strategy>()
+            .export::<Strategy>()
+            .global()
     }
-    #[cauldron]
-    struct StrategyBridge;
-    impl Cauldron for StrategyBridge {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.import(GlobalStrategy)
-        }
+
+    cauldron_metadata! {
+        struct StrategyBridge;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .import::<GlobalStrategy>()
     }
-    #[cauldron]
-    struct CustomPrivate;
-    impl Cauldron for CustomPrivate {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<CustomController>()
-                .import(PrivateStrategy)
-        }
+
+    cauldron_metadata! {
+        struct CustomPrivate;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<CustomController>()
+            .import::<PrivateStrategy>()
     }
-    #[cauldron]
-    struct CustomLocal;
-    impl Cauldron for CustomLocal {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<CustomController>()
-                .provide_with::<Resource, super::ResourceInjector>()
-                .provide::<Strategy>()
-        }
+
+    cauldron_metadata! {
+        struct CustomLocal;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<CustomController>()
+            .provide_with::<Resource, super::ResourceInjector>()
+            .provide::<Strategy>()
     }
-    #[cauldron]
-    struct CustomDirect;
-    impl Cauldron for CustomDirect {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<CustomController>()
-                .import(ExportedStrategy)
-        }
+
+    cauldron_metadata! {
+        struct CustomDirect;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<CustomController>()
+            .import::<ExportedStrategy>()
     }
-    #[cauldron]
-    struct CustomGlobal;
-    impl Cauldron for CustomGlobal {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<CustomController>().import(StrategyBridge)
-        }
+
+    cauldron_metadata! {
+        struct CustomGlobal;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<CustomController>()
+            .import::<StrategyBridge>()
     }
+
     struct UnmanagedStrategy;
     impl furnace_rs_core::Injector for UnmanagedStrategy {
         type Dependencies = ();
@@ -607,13 +592,13 @@ mod security {
             unreachable!("metadata only")
         }
     }
-    #[cauldron]
-    struct InvalidStrategyRoot;
-    impl Cauldron for InvalidStrategyRoot {
-        fn register(self) -> CauldronRegistration<Self> {
-            self.controller::<Valid>().provide::<UnmanagedStrategy>()
-        }
+    cauldron_metadata! {
+        struct InvalidStrategyRoot;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .controller::<Valid>()
+            .provide::<UnmanagedStrategy>()
     }
+
     #[tokio::test]
     async fn custom_strategy_visibility_is_checked_from_the_controller_owner() {
         let _lock = TEST_LOCK.lock().await;
@@ -665,18 +650,13 @@ mod security {
 }
 
 struct UndeclaredCauldron;
-impl Cauldron for UndeclaredCauldron {
-    fn register(self) -> CauldronRegistration<Self> {
-        CauldronRegistration::new(self)
-    }
+
+cauldron_metadata! {
+    struct InvalidGraphRoot;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .import::<UndeclaredCauldron>()
 }
-#[cauldron]
-struct InvalidGraphRoot;
-impl Cauldron for InvalidGraphRoot {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.import(UndeclaredCauldron)
-    }
-}
+
 #[tokio::test]
 async fn failed_root_selection_does_not_validate_the_complete_inventory() {
     let _lock = TEST_LOCK.lock().await;

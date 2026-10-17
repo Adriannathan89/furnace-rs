@@ -17,27 +17,20 @@ mod declarations {
 
     #[cauldron]
     pub(super) struct PreludeCauldron;
-
-    impl furnace_rs::core::Cauldron for PreludeCauldron {
-        fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-            furnace_rs::core::CauldronRegistration::new(self)
-        }
-    }
 }
 
 #[test]
 fn prelude_exposes_the_http_runtime_surface() {
     use furnace_rs::prelude::{
-        BadRequest, Cauldron, CauldronGraph, CauldronImportDescriptor, CauldronImportEdge,
-        CauldronNode, Conflict, Created, Forbidden, Furnace, FurnaceBurnExt, Header, HttpError,
-        HttpResult, HttpRuntimeError, Input, InternalError, Json, NoContent, NotFound, Path,
-        ProviderOwnership, Query, Request, SourcedValidationIssue, Unauthorized, ValidatedJson,
-        ValidatedPath, ValidatedQuery, ValidationError, ValidationErrors, ValidationIssue,
-        ValidationPathSegment, ValidationResult, ValidationSource, build_router, configure_router,
-        serve, serve_router,
+        BadRequest, CauldronGraph, CauldronImportDescriptor, CauldronImportEdge, CauldronNode,
+        Conflict, Created, Forbidden, Furnace, FurnaceBurnExt, Header, HttpError, HttpResult,
+        HttpRuntimeError, Input, InternalError, Json, NoContent, NotFound, Path, ProviderOwnership,
+        Query, Request, SourcedValidationIssue, Unauthorized, ValidatedJson, ValidatedPath,
+        ValidatedQuery, ValidationError, ValidationErrors, ValidationIssue, ValidationPathSegment,
+        ValidationResult, ValidationSource, build_router, configure_router, serve, serve_router,
     };
 
-    fn assert_module<T: Cauldron>() {}
+    fn assert_module<T: furnace_rs::core::__private::ModuleContract>() {}
     fn assert_input<T: Input>() {}
 
     let _ = std::any::TypeId::of::<BadRequest>();
@@ -80,7 +73,7 @@ fn prelude_exposes_the_http_runtime_surface() {
     };
     let _ = <Furnace as FurnaceBurnExt>::burn::<declarations::PreludeCauldron>;
 
-    fn assert_root_cauldron<T: furnace_rs::Cauldron>() {}
+    fn assert_root_cauldron<T: furnace_rs::core::__private::ModuleContract>() {}
     assert_root_cauldron::<declarations::PreludeCauldron>();
     let _ = std::any::TypeId::of::<furnace_rs::CauldronGraph>();
     let _ = std::any::TypeId::of::<furnace_rs::CauldronImportDescriptor>();
@@ -164,17 +157,8 @@ fn prelude_exposes_core_types_and_bare_attributes() {
     mod core_declarations {
         use furnace_rs::prelude::*;
 
-        #[cauldron]
+        #[cauldron(providers = [usize => PreludeValueInjector, PreludeRepository, PreludeService], controllers = [PreludeController])]
         struct PreludeCauldron;
-
-        impl furnace_rs::core::Cauldron for PreludeCauldron {
-            fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-                self.provide_with::<usize, PreludeValueInjector>()
-                    .provide::<PreludeRepository>()
-                    .provide::<PreludeService>()
-                    .controller::<PreludeController>()
-            }
-        }
 
         fn prelude_value() -> usize {
             1
@@ -226,23 +210,8 @@ fn prelude_exposes_core_types_and_bare_attributes() {
     let _: furnace_rs::core::FurnaceBuilder = Furnace::builder_with_config(Config::empty());
 }
 
-#[furnace_rs::cauldron]
+#[furnace_rs::cauldron(providers = [PublicGraphService, u16 => RestrictedGraphValueInjector, FacadeRepository, QueryUsecase, CommandUsecase, GroupedFallibleProvider => GroupedFallibleProviderInjector, FacadeService], controllers = [FacadeController, RootController], exports = [PublicGraphService])]
 struct FacadeCauldron;
-
-impl furnace_rs::core::Cauldron for FacadeCauldron {
-    fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-        self.provide::<PublicGraphService>()
-            .provide_with::<u16, RestrictedGraphValueInjector>()
-            .provide::<FacadeRepository>()
-            .provide::<QueryUsecase>()
-            .provide::<CommandUsecase>()
-            .controller::<FacadeController>()
-            .provide_with::<GroupedFallibleProvider, GroupedFallibleProviderInjector>()
-            .provide::<FacadeService>()
-            .controller::<RootController>()
-            .export::<PublicGraphService>()
-    }
-}
 
 /// Public managed service used to verify facade visibility metadata.
 #[furnace_rs::burner]
@@ -290,7 +259,9 @@ struct CommandUsecase;
 
 #[furnace_rs::controller]
 struct FacadeController {
+    #[inject]
     query: QueryUsecase,
+    #[inject]
     command: CommandUsecase,
 }
 
@@ -346,7 +317,9 @@ furnace_rs::core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_
 
 #[furnace_rs::burner]
 struct FacadeService {
+    #[inject]
     repository: FacadeRepository,
+    #[inject]
     clock: Clock,
 }
 
