@@ -197,3 +197,62 @@ async fn a_blocked_writer_is_cancelled_without_exhausting_shutdown_drain() {
     server.stop().await;
     drop(client);
 }
+
+static CONNECT_CANCELLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static DISCONNECTED: tokio::sync::Notify = tokio::sync::Notify::const_new();
+struct Connecting;
+impl Injector for Connecting {
+    type Dependencies = ();
+    async fn inject(_: ()) -> furnace_rs_core::Result<Self> {
+        Ok(Self)
+    }
+}
+#[socket_gateway(path = "/connecting", mode = "events")]
+impl Connecting {
+    #[on_connect]
+    async fn connect(&self, _: SocketContext) -> SocketResult<()> {
+        struct Cancel;
+        impl Drop for Cancel {
+            fn drop(&mut self) {
+                CONNECT_CANCELLED.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+        }
+        let _cancel = Cancel;
+        std::future::pending().await
+    }
+    #[on_disconnect]
+    async fn disconnect(&self, _: SocketContext) -> SocketResult<()> {
+        DISCONNECTED.notify_one();
+        Ok(())
+    }
+}
+#[cauldron(root, socket_gateways = [Connecting])]
+struct ConnectingApp;
+#[tokio::test]
+async fn blocked_connect_hook_keeps_controls_responsive_and_cancels_on_peer_close() {
+    let s = support::Server::start::<ConnectingApp>().await;
+    let mut c = s.connect("/connecting").await;
+    c.send(tokio_tungstenite::tungstenite::Message::Ping(
+        vec![1, 2, 3].into(),
+    ))
+    .await
+    .unwrap();
+    let response = tokio::time::timeout(Duration::from_millis(500), c.next()).await;
+    // Close even on failure so the pre-fix server can be shut down.
+    if response.is_err() {
+        drop(c);
+        s.stop().await;
+        panic!("connect hook blocked Ping/Pong");
+    }
+    assert_eq!(
+        response.unwrap().unwrap().unwrap(),
+        tokio_tungstenite::tungstenite::Message::Pong(vec![1, 2, 3].into())
+    );
+    c.close(None).await.unwrap();
+    tokio::time::timeout(Duration::from_secs(2), DISCONNECTED.notified())
+        .await
+        .unwrap();
+    assert!(CONNECT_CANCELLED.load(std::sync::atomic::Ordering::SeqCst));
+    drop(c);
+    s.stop().await;
+}

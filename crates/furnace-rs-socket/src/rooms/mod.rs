@@ -25,3 +25,6 @@ pub(crate) struct Room {
 pub(crate) mod redis;
 #[cfg(feature = "redis")]
 pub(crate) mod replay;
+
+#[cfg(all(test, feature = "redis"))]
+mod tests;

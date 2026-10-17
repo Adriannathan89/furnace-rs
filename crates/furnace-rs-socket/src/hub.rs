@@ -11,11 +11,21 @@ pub(crate) struct Queued {
 }
 #[derive(Clone)]
 pub(crate) struct Sender {
+    pub mode: crate::EndpointMode,
     pub queue: mpsc::Sender<Queued>,
     pub bytes: Arc<Semaphore>,
     pub close: watch::Sender<bool>,
 }
 impl Sender {
+    pub fn error(&self, mut envelope: crate::SocketEnvelope) -> SocketResult<()> {
+        if self.mode == crate::EndpointMode::Raw {
+            self.close.send_replace(true);
+            return Ok(());
+        }
+        envelope.event = "furnace.error".into();
+        self.send(Message::Text(envelope.to_text()?.into()))
+    }
+
     pub fn send(&self, message: Message) -> SocketResult<()> {
         let size = message_size(&message).max(1);
         let permit = u32::try_from(size)
@@ -110,11 +120,13 @@ impl SocketGatewayHub {
 }
 pub(crate) fn sender(
     config: &SocketServerConfig,
+    mode: crate::EndpointMode,
 ) -> (Sender, mpsc::Receiver<Queued>, watch::Receiver<bool>) {
     let (queue, receiver) = mpsc::channel(config.queue_messages);
     let (close, closed) = watch::channel(false);
     (
         Sender {
+            mode,
             queue,
             bytes: Arc::new(Semaphore::new(config.queue_bytes)),
             close,
@@ -149,10 +161,9 @@ impl SocketGatewayHub {
         if let Some(backend) = self.backend() {
             backend.create(&self.path, room, &mode).await?;
             let info = backend.info(&self.path, room).await?;
-            self.hub
-                .state
-                .lock()
-                .unwrap()
+            let mut state = self.hub.state.lock().unwrap();
+            state.replace_generation(&self.path, room, &info.generation);
+            state
                 .rooms
                 .entry((self.path.clone(), room.to_owned()))
                 .or_insert(crate::rooms::Room {
@@ -275,9 +286,11 @@ impl SocketGatewayHub {
     ) -> SocketResult<()> {
         #[cfg(feature = "redis")]
         if let Some(backend) = self.backend() {
+            let membership = backend.membership.lock().await;
             let info = backend.join(&self.path, room, context.id(), after).await?;
             {
                 let mut state = self.hub.state.lock().unwrap();
+                state.replace_generation(&self.path, room, &info.generation);
                 let entry = state
                     .rooms
                     .entry((self.path.clone(), room.to_owned()))
@@ -289,6 +302,7 @@ impl SocketGatewayHub {
                 entry.generation = Some(info.generation.clone());
                 entry.members.insert(context.id().clone());
             }
+            drop(membership);
             let result = if matches!(info.mode, crate::RoomMode::Replayable { .. }) {
                 crate::rooms::replay::join(
                     backend,
@@ -322,10 +336,19 @@ impl SocketGatewayHub {
     }
     pub(crate) async fn leave(&self, id: &ConnectionId, room: &str) -> SocketResult<()> {
         #[cfg(feature = "redis")]
-        if let Some(backend) = self.backend() {
-            backend.leave(&self.path, room, id).await?;
-        }
-
+        let backend = self.backend();
+        #[cfg(feature = "redis")]
+        let _membership = if let Some(backend) = &backend {
+            Some(backend.membership.lock().await)
+        } else {
+            None
+        };
+        #[cfg(feature = "redis")]
+        let result = if let Some(backend) = &backend {
+            backend.leave(&self.path, room, id).await
+        } else {
+            Ok(())
+        };
         let mut state = self.hub.state.lock().expect("socket hub poisoned");
         if let Some(stop) = state
             .readers
@@ -336,6 +359,9 @@ impl SocketGatewayHub {
         if let Some(room) = state.rooms.get_mut(&(self.path.clone(), room.to_owned())) {
             room.members.remove(id);
         }
+        #[cfg(feature = "redis")]
+        return result;
+        #[cfg(not(feature = "redis"))]
         Ok(())
     }
 }
@@ -344,5 +370,46 @@ impl SocketGatewayHub {
     #[cfg(feature = "redis")]
     pub(crate) fn backend(&self) -> Option<Arc<crate::rooms::redis::RedisBackend>> {
         self.hub.state.lock().unwrap().backend.clone()
+    }
+}
+
+#[cfg(feature = "redis")]
+impl HubState {
+    pub(crate) fn retire_generation(&mut self, path: &str, room: &str, generation: Option<&str>) {
+        let key = (path.to_owned(), room.to_owned());
+        if self.rooms.get(&key).and_then(|r| r.generation.as_deref()) != generation {
+            return;
+        }
+        let Some(retired) = self.rooms.remove(&key) else {
+            return;
+        };
+        self.readers.retain(|(p, r, _), stop| {
+            if p == path && r == room {
+                stop.send_replace(true);
+                false
+            } else {
+                true
+            }
+        });
+        for id in retired.members {
+            if let Some(sender) = self.connections.get(&(path.to_owned(), id)) {
+                let mut e = crate::SocketEnvelope::event(
+                    "furnace.error",
+                    serde_json::json!({"code":"history_expired","message":"room lifetime ended"}),
+                );
+                e.room = Some(room.to_owned());
+                let _ = sender.error(e);
+            }
+        }
+    }
+    pub(crate) fn replace_generation(&mut self, path: &str, room: &str, generation: &str) {
+        if let Some(old) = self
+            .rooms
+            .get(&(path.to_owned(), room.to_owned()))
+            .map(|r| r.generation.clone())
+            && old.as_deref() != Some(generation)
+        {
+            self.retire_generation(path, room, old.as_deref());
+        }
     }
 }

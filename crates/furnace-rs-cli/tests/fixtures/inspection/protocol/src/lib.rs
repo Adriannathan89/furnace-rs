@@ -107,6 +107,7 @@ const fn inspection_kind_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
         InspectionKind::Grpc => "grpc",
+        InspectionKind::Socket => "socket",
         InspectionKind::Graph => "graph",
         InspectionKind::Doctor => "doctor",
     }
@@ -116,6 +117,7 @@ fn inspection_kind(value: &str) -> InspectionKind {
     match value {
         "routes" => InspectionKind::Routes,
         "grpc" => InspectionKind::Grpc,
+        "socket" => InspectionKind::Socket,
         "graph" => InspectionKind::Graph,
         "doctor" => InspectionKind::Doctor,
         _ => panic!("unexpected inspection kind"),

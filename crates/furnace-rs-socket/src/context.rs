@@ -29,6 +29,7 @@ impl std::fmt::Display for ConnectionId {
 /// Managed connection controls passed to gateway methods.
 #[derive(Clone)]
 pub struct SocketContext {
+    pub(crate) transitions: Arc<tokio::sync::Mutex<()>>,
     pub(crate) id: ConnectionId,
     pub(crate) handshake: SocketHandshake,
     pub(crate) hub: crate::SocketGatewayHub,
@@ -82,6 +83,7 @@ impl SocketHandshake {
 impl SocketContext {
     /// Requests room membership after approval by the application's join hook.
     pub async fn join(&self, room: &str, after: Option<&str>) -> crate::SocketResult<()> {
+        let _transition = self.transitions.lock().await;
         self.gateway
             .call(
                 self.clone(),
@@ -92,6 +94,7 @@ impl SocketContext {
     }
     /// Leaves a room without requiring a new authorization decision.
     pub async fn leave(&self, room: &str) -> crate::SocketResult<()> {
+        let _transition = self.transitions.lock().await;
         self.hub.leave(self.id(), room).await
     }
 }

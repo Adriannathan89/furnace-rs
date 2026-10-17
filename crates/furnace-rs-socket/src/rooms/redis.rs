@@ -14,6 +14,9 @@ use std::{
 use tokio::sync::watch;
 static INSTANCE: AtomicU64 = AtomicU64::new(1);
 pub(crate) struct RedisBackend {
+    #[cfg(test)]
+    pub(super) pause: Mutex<Option<super::tests::Pause>>,
+    pub(crate) membership: tokio::sync::Mutex<()>,
     pub client: redis::Client,
     connection: Mutex<redis::aio::MultiplexedConnection>,
     subscription: Mutex<Option<redis::aio::PubSub>>,
@@ -68,6 +71,9 @@ impl RedisBackend {
             INSTANCE.fetch_add(1, Ordering::Relaxed)
         );
         let backend = Arc::new(Self {
+            #[cfg(test)]
+            pause: Mutex::new(None),
+            membership: tokio::sync::Mutex::new(()),
             client,
             connection: Mutex::new(connection),
             subscription: Mutex::new(None),
@@ -83,6 +89,21 @@ impl RedisBackend {
         *backend.subscription.lock().unwrap() = Some(subscription);
         backend.ready.store(true, Ordering::Release);
         Ok(backend)
+    }
+    #[cfg(test)]
+    pub(super) async fn checkpoint(&self, name: &str) {
+        let pause = {
+            let mut slot = self.pause.lock().unwrap();
+            if slot.as_ref().is_some_and(|p| p.name == name) {
+                slot.take()
+            } else {
+                None
+            }
+        };
+        if let Some(pause) = pause {
+            pause.entered.notify_one();
+            pause.release.notified().await;
+        }
     }
     pub fn healthy(&self) -> bool {
         self.ready.load(Ordering::Acquire) && Instant::now() < *self.deadline.lock().unwrap()
@@ -327,7 +348,8 @@ impl RedisBackend {
             self.ready.store(false,Ordering::Release);
         });
     }
-    async fn restore(&self) -> SocketResult<()> {
+    pub(super) async fn restore(&self) -> SocketResult<()> {
+        let _membership = self.membership.lock().await;
         let Some(shared) = self.state.upgrade() else {
             return Ok(());
         };
@@ -357,41 +379,18 @@ impl RedisBackend {
                 })
             }
             .await;
+            #[cfg(test)]
+            self.checkpoint("restore_info").await;
             let valid = match &info {
                 Ok(info) => Some(info.generation.as_str()) == generation.as_deref(),
                 Err(error) if error.code() == "room_not_found" => false,
                 Err(_) => return info.map(|_| ()),
             };
             if !valid {
-                let mut state = shared.lock().unwrap();
-                if state
-                    .rooms
-                    .get(&(path.clone(), room.clone()))
-                    .and_then(|r| r.generation.as_deref())
-                    == generation.as_deref()
-                {
-                    state.rooms.remove(&(path.clone(), room.clone()));
-                    state.readers.retain(|(p, r, _), stop| {
-                        if p == &path && r == &room {
-                            stop.send_replace(true);
-                            false
-                        } else {
-                            true
-                        }
-                    });
-                    for id in &members {
-                        if let Some(sender) = state.connections.get(&(path.clone(), id.clone())) {
-                            let mut e = crate::SocketEnvelope::event(
-                                "furnace.error",
-                                serde_json::json!({"code":"history_expired","message":"room lifetime ended"}),
-                            );
-                            e.room = Some(room.clone());
-                            if let Ok(text) = e.to_text() {
-                                let _ = sender.send(Message::Text(text.into()));
-                            }
-                        }
-                    }
-                }
+                shared
+                    .lock()
+                    .unwrap()
+                    .retire_generation(&path, &room, generation.as_deref());
                 continue;
             }
             for member in members {
@@ -405,7 +404,14 @@ impl RedisBackend {
                     .await
                 {
                     Ok(_) => {}
-                    Err(e) if matches!(e.code(), "room_not_found" | "history_expired") => {}
+                    Err(e) if matches!(e.code(), "room_not_found" | "history_expired") => {
+                        shared.lock().unwrap().retire_generation(
+                            &path,
+                            &room,
+                            generation.as_deref(),
+                        );
+                        break;
+                    }
                     Err(e) => return Err(e),
                 }
             }

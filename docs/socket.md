@@ -92,6 +92,7 @@ Supported methods are async shared `&self` methods returning `SocketResult<()>`:
 
 Each endpoint chooses `mode = "events"` or `mode = "raw"`. Raw gateways interpret
 text/binary themselves; Furnace does not detect JSON events inside raw text.
+Transport-generated errors close raw connections without inserting JSON frames.
 Lifecycle hooks work in either mode. Duplicate paths, event names, handlers,
 unsupported signatures, and reserved application event names are rejected.
 
@@ -246,7 +247,10 @@ Clients save each room's cursor after processing. Resume with:
 ```
 
 Furnace authorizes the join again, replays retained entries after the cursor,
-acknowledges catch-up with `furnace.ok`, then continues in room order. A join
+acknowledges catch-up with `furnace.ok`, then continues in room order.
+Room transitions serialize per connection, including under concurrent processing.
+Rejoining replaces the previous reader before catch-up; leaving waits for an
+in-flight join and stops its reader before completing. A join
 without `after` receives future messages. Approved clients may request any
 retained history, including messages predating their first membership.
 Applications needing narrower access must enforce it in their join hook.

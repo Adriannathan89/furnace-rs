@@ -67,6 +67,7 @@ impl Drop for Cleanup {
             let path = self.hub.path.clone();
             let id = self.id.clone();
             self.tasks.spawn(async move {
+                let _membership = backend.membership.lock().await;
                 for room in rooms {
                     let _ = backend.leave(&path, &room, &id).await;
                 }
@@ -89,7 +90,7 @@ pub(crate) async fn run(
         NEXT_ID.fetch_add(1, Ordering::Relaxed)
     ));
     let hub = runtime.hub.gateway(endpoint.path);
-    let (sender, mut outbound, mut closed) = crate::hub::sender(&runtime.config);
+    let (sender, mut outbound, mut closed) = crate::hub::sender(&runtime.config, endpoint.mode);
     hub.hub
         .state
         .lock()
@@ -102,6 +103,7 @@ pub(crate) async fn run(
         tasks: runtime.tasks.clone(),
     };
     let context = SocketContext {
+        transitions: Arc::new(tokio::sync::Mutex::new(())),
         id,
         handshake,
         hub,
@@ -136,9 +138,7 @@ pub(crate) async fn run(
             }
         }
     });
-    let connect = gateway.call(context.clone(), SocketInput::Connect);
-    tokio::pin!(connect);
-    tokio::select! {_=runtime.shutdown.changed()=>{sender.close.send_replace(true);return;},result=&mut connect=>if result.is_err(){sender.close.send_replace(true);return;}}
+    let mut connecting = Some(gateway.call(context.clone(), SocketInput::Connect));
     let limit = match endpoint.processing {
         ProcessingMode::Sequential => 1,
         ProcessingMode::Concurrent { max_concurrency } => max_concurrency,
@@ -149,7 +149,7 @@ pub(crate) async fn run(
     let mut next_ping = Instant::now() + runtime.config.heartbeat_interval;
     let mut awaiting: Option<(Vec<u8>, Instant)> = None;
     loop {
-        while jobs.len() < limit {
+        while connecting.is_none() && jobs.len() < limit {
             if let Some((ctx, input, size)) = pending.pop_front() {
                 pending_bytes -= size;
                 let gateway = gateway.clone();
@@ -179,6 +179,10 @@ pub(crate) async fn run(
                 if sender.send(Message::Ping(nonce.clone().into())).is_err(){break;}
                 awaiting=Some((nonce,Instant::now()+runtime.config.pong_timeout));
             },
+            result=async {connecting.as_mut().unwrap().await},if connecting.is_some()=>{
+                connecting=None;
+                if result.is_err(){break;}
+            },
             _=jobs.join_next(),if !jobs.is_empty()=>{},
             incoming=stream.next()=>{
                 let message=match incoming{Some(Ok(message))=>message,_=>break};let size=crate::hub::message_size(&message);
@@ -197,13 +201,35 @@ pub(crate) async fn run(
             }
         }
     }
+    drop(connecting);
     jobs.abort_all();
     while jobs.join_next().await.is_some() {}
     sender.close.send_replace(true);
     let _ = gateway.call(context, SocketInput::Disconnect).await;
 }
 async fn send_error(context: &SocketContext, error: SocketError) -> SocketResult<()> {
-    context.emit("furnace.error",serde_json::json!({"code":error.code(),"message":if error.code()=="internal_error"{"internal server error"}else{error.code()}})).await
+    send_room_error(context, error, None).await
+}
+pub(crate) async fn send_room_error(
+    context: &SocketContext,
+    error: SocketError,
+    room: Option<&str>,
+) -> SocketResult<()> {
+    let mut envelope = SocketEnvelope::event(
+        "furnace.error",
+        serde_json::json!({"code":error.code(),"message":if error.code()=="internal_error"{"internal server error"}else{error.code()}}),
+    );
+    envelope.id = context.request_id.clone();
+    if let Some(room) = room {
+        envelope.room = Some(room.to_owned());
+        envelope.data["room"] = serde_json::Value::String(room.to_owned());
+    }
+    let state = context.hub.hub.state.lock().expect("socket hub poisoned");
+    state
+        .connections
+        .get(&(context.hub.path.clone(), context.id.clone()))
+        .ok_or_else(|| SocketError::new("closed"))?
+        .error(envelope)
 }
 
 async fn handle(

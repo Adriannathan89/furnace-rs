@@ -2,7 +2,7 @@
 
 Date: 2026-10-17
 Branch: `feat/websocket-transport`
-Status: Design review; implementation has not started.
+Status: Approved design; implementation complete, final verification in progress.
 
 ## Intent and success criteria
 

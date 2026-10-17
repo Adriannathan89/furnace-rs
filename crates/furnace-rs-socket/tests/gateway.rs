@@ -47,6 +47,9 @@ impl Raw {
 
     #[on_text]
     async fn text(&self, ctx: SocketContext, data: String) -> SocketResult<()> {
+        if data == "fail" {
+            return Err(furnace_rs_socket::SocketError::new("internal_error"));
+        }
         ctx.send(furnace_rs_socket::Message::Text(data.into()))
             .await
     }
@@ -112,5 +115,26 @@ async fn macros_dispatch_events_raw_and_owned_and_keep_errors_recoverable() {
     client.close(None).await.unwrap();
     raw.close(None).await.unwrap();
     drop(owned);
+    server.stop().await;
+}
+
+#[tokio::test]
+async fn raw_handler_errors_close_without_injecting_json() {
+    let server = support::Server::start::<App>().await;
+    let mut raw = server.connect("/raw").await;
+    raw.send(tokio_tungstenite::tungstenite::Message::Text("fail".into()))
+        .await
+        .unwrap();
+    let response = tokio::time::timeout(std::time::Duration::from_secs(2), raw.next())
+        .await
+        .unwrap();
+    assert!(
+        matches!(
+            response,
+            None | Some(Err(_)) | Some(Ok(tokio_tungstenite::tungstenite::Message::Close(_)))
+        ),
+        "{response:?}"
+    );
+    drop(raw);
     server.stop().await;
 }
