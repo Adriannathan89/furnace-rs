@@ -47,7 +47,6 @@ pub use builder::{Furnace, FurnaceBuilder};
 pub use catalog::Catalog;
 #[doc(hidden)]
 pub use cauldron::CauldronDefinition;
-pub use cauldron::{Cauldron, CauldronRegistration};
 pub use config::{
     Config, ConfigBuilder, ConfigDocument, ConfigSource, ConfigValue, DotenvSource, EnvSource,
     MapSource, TomlSource,
@@ -91,7 +90,7 @@ pub use furnace_rs_core_macros::{Configuration, burner, cauldron, main, storage,
 /// Implementation details used by furnace-rs procedural macro expansions.
 #[doc(hidden)]
 pub mod __private {
-    pub use crate::cauldron::TransportProvider;
+    pub use crate::cauldron::{CauldronDefinitionBuilder, TransportProvider};
     #[doc(hidden)]
     pub use crate::di_contract::*;
     #[doc(hidden)]
@@ -110,7 +109,7 @@ pub mod __private {
     pub use inventory;
 
     /// Builds a rooted module graph for integration coverage and downstream framework crates.
-    pub fn build_cauldron_graph<M: crate::Cauldron>() -> crate::Result<crate::CauldronGraph> {
+    pub fn build_cauldron_graph<M: 'static>() -> crate::Result<crate::CauldronGraph> {
         let cauldrons = crate::Catalog::cauldrons();
         crate::graph::build_cauldron_graph(TypeId::of::<M>(), &cauldrons)
     }

@@ -1,4 +1,4 @@
-# furnace-rs
+furnace-rs
 
 [![Latest release](https://img.shields.io/github/v/release/Adriannathan89/furnace-rs?display_name=tag&sort=semver)](https://github.com/Adriannathan89/furnace-rs/releases/latest)
 [![CI](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Adriannathan89/furnace-rs/actions/workflows/ci.yml)
@@ -110,9 +110,9 @@ Start the smallest example with:
 ```sh
 cd example/hello-world
 cargo run --locked
-# In another terminal:
+In another terminal:
 curl http://127.0.0.1:3000/
-# Hello, world!
+Hello, world!
 ```
 
 All CRUD projects require PostgreSQL, a local `.env` copied from `.env.example`,
@@ -125,7 +125,7 @@ different port:
 ```sh
 cd example/post-crud-with-service
 FURNACE_SERVER__PORT=3003 cargo run --locked
-# Use http://127.0.0.1:3003/posts for requests to this instance.
+Use http://127.0.0.1:3003/posts for requests to this instance.
 ```
 
 The entity-storage example enables the optional feature in its own manifest;
@@ -149,13 +149,8 @@ impl HelloController {
     fn hello(&self) -> &'static str { "Hello, world!" }
 }
 
-#[cauldron]
+#[cauldron(controllers = [HelloController])]
 struct AppCauldron;
-impl Cauldron for AppCauldron {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<HelloController>()
-    }
-}
 
 #[furnace_rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {
@@ -164,11 +159,11 @@ async fn main() -> Result<(), HttpRuntimeError> {
 ```
 
 `Furnace::burn` starts the root cauldron and its imports. Register dependencies with
-`.provide::<T>()`, controllers with `.controller::<T>()`, and imported cauldrons
-with `.import(OtherCauldron)`. Cross-cauldron injection requires `.export::<T>()`;
-`.global()` exposes only those exports throughout the reachable application.
-For trait or third-party outputs, select an implementer with
-`.provide_with::<Arc<dyn Trait>, Implementer>()`. Plain services implement
+`#[cauldron(providers = [Service], controllers = [Controller], imports = [OtherCauldron])]`.
+Cross-cauldron injection requires `exports = [Service]`; `global` exposes only
+those exports throughout the reachable application. Bare `#[cauldron]` registers
+an empty cauldron. For trait or third-party outputs, select an injector with
+`providers = [Arc<dyn Trait> => Implementer]`. Plain services implement
 `Injector`, declaring typed tuple dependencies and an async `inject` constructor;
 the managed service/repository macros generate this contract automatically.
 Lifecycle constructors override `Injector::lifecycle` to attach resource hooks.
@@ -286,7 +281,7 @@ unreadable or malformed file is a bootstrap failure. FURNACE does not search
 parent directories or `CARGO_MANIFEST_DIR`.
 
 ```toml
-# furnace.toml
+furnace.toml
 [server]
 host = "127.0.0.1" # default
 port = 3000        # default
@@ -577,7 +572,7 @@ used in a handler. See the [simple CRUD example](example/posts-crud/) and the
 Configure the connection URL through conventional configuration:
 
 ```toml
-# furnace.toml
+furnace.toml
 [persistence.seaorm]
 url = "${DATABASE_URL}"
 ```
@@ -590,13 +585,8 @@ application-defined `UserRepository` with a `new(DatabaseConnection)` constructo
 ```rust,ignore
 use furnace_rs_persistence::sea_orm::{DatabaseConnection, DatabaseCauldron};
 
-#[furnace_rs::cauldron]
+#[furnace_rs::cauldron(imports = [DatabaseCauldron], providers = [UserRepository])]
 struct AppCauldron;
-impl furnace_rs::Cauldron for AppCauldron {
-    fn register(self) -> furnace_rs::CauldronRegistration<Self> {
-        self.import(DatabaseCauldron).provide::<UserRepository>()
-    }
-}
 
 impl furnace_rs::Injector for UserRepository {
     type Dependencies = (DatabaseConnection,);
@@ -643,7 +633,7 @@ arrays such as `algorithms` and `audiences` belong in TOML or a programmatic
 `ConfigDocument`/`MapSource`.
 
 ```toml
-# furnace.toml
+furnace.toml
 [passport]
 secret = "${JWT_SECRET}"
 algorithms = ["HS256"]
@@ -831,11 +821,8 @@ impl UserController {
     }
 }
 
-#[cauldron]
+#[cauldron(controllers = [UserController])]
 struct AppCauldron;
-impl Cauldron for AppCauldron {
-    fn register(self) -> CauldronRegistration<Self> { self.controller::<UserController>() }
-}
 
 #[furnace_rs::main]
 async fn main() -> Result<(), HttpRuntimeError> {
@@ -884,7 +871,7 @@ the complete-catalog rootless compatibility path, native Axum extractors and
 responses, ordinary human CLI output, and application-owned database policy.
 
 Application-authored `Injector<Output>` bindings support native shared trait
-objects through `.provide_with::<Output, Implementer>()`.
+objects through `#[cauldron(providers = [Output => Implementer])]`.
 It does **not** implement `Inject<dyn Trait>`,
 asynchronous or database-backed derive validators, automatic validation for
 native extractors, full-RFC/DNS email validation, login or credential

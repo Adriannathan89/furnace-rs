@@ -8,15 +8,8 @@ struct Settings {
     port: u16,
 }
 
-#[runtime::cauldron]
+#[runtime::cauldron(providers = [Repository])]
 struct AppCauldron;
-
-impl runtime::Cauldron for AppCauldron {
-    fn register(self) -> runtime::CauldronRegistration<Self> {
-        self.provide::<Repository>()
-    }
-}
-
 
 #[runtime::storage]
 struct Repository;

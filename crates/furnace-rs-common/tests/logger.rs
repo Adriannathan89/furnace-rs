@@ -96,28 +96,15 @@ mod consumer {
         _logger: Logger,
     }
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [LoggingService], exports = [LoggingService])]
     pub struct ConsumerCauldron;
-
-    impl furnace_rs_core::Cauldron for ConsumerCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<LoggingService>().export::<LoggingService>()
-        }
-    }
 }
 
 mod default_logger_application {
     use furnace_rs_common::LoggerCauldron;
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(imports = [LoggerCauldron, super::consumer::ConsumerCauldron])]
     pub struct ApplicationCauldron;
-
-    impl furnace_rs_core::Cauldron for ApplicationCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.import(LoggerCauldron)
-                .import(super::consumer::ConsumerCauldron)
-        }
-    }
 }
 
 #[tokio::test]
@@ -145,14 +132,8 @@ mod custom_logger {
         fn log(&self, _level: LogLevel, _message: &str) {}
     }
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [Logger], exports = [Logger], global)]
     pub struct CustomLoggerCauldron;
-
-    impl furnace_rs_core::Cauldron for CustomLoggerCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<Logger>().export::<Logger>().global()
-        }
-    }
 
     pub fn custom_logger() -> Logger {
         Logger::new(TestLogger)
@@ -160,15 +141,8 @@ mod custom_logger {
 }
 
 mod custom_logger_application {
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(imports = [super::custom_logger::CustomLoggerCauldron, super::consumer::ConsumerCauldron])]
     pub struct CustomLoggerApplicationCauldron;
-
-    impl furnace_rs_core::Cauldron for CustomLoggerApplicationCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.import(super::custom_logger::CustomLoggerCauldron)
-                .import(super::consumer::ConsumerCauldron)
-        }
-    }
 }
 
 #[tokio::test]

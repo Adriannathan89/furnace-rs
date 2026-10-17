@@ -1,10 +1,10 @@
 //! Public furnace-rs facade and feature composition boundary.
 //!
 //! The default facade composes the HTTP and logger integrations with the
-//! Tokio runtime. A root [`Cauldron`] selects explicitly registered providers,
+//! Tokio runtime. A root `#[cauldron]` declaration selects explicitly registered providers,
 //! controllers, routes, guards, strategies, and official auto-configurations
 //! that belong to one application. Direct imports and explicit
-//! `.export::<T>()` declarations govern DI access across cauldron boundaries.
+//! `exports = [T]` declarations govern DI access across cauldron boundaries.
 //! Rust `pub` controls Rust name visibility only.
 //!
 //! The standard startup path loads optional `.env`, optional `furnace.toml`, and
@@ -21,17 +21,13 @@
 //!
 //!     #[cauldron]
 //!     pub struct UserHttpCauldron;
-//!     impl Cauldron for UserHttpCauldron {
-//!         fn register(self) -> CauldronRegistration<Self> { CauldronRegistration::new(self) }
-//!     }
+//!
 //! }
 //! use user::UserHttpCauldron;
 //!
-//! #[cauldron]
+//! #[cauldron(imports = [UserHttpCauldron])]
 //! struct AppCauldron;
-//! impl Cauldron for AppCauldron {
-//!     fn register(self) -> CauldronRegistration<Self> { self.import(UserHttpCauldron) }
-//! }
+//!
 //!
 //! #[furnace_rs::main]
 //! async fn main() -> Result<(), HttpRuntimeError> {
@@ -49,24 +45,22 @@
 //! ```no_run
 //! use furnace_rs::prelude::*;
 //!
-//! # #[cauldron]
-//! # struct AppCauldron;
-//! # impl Cauldron for AppCauldron {
-//! #     fn register(self) -> CauldronRegistration<Self> { CauldronRegistration::new(self) }
-//! # }
-//! # async fn low_level(
-//! #     config: Config,
-//! #     native_router: furnace_rs::axum::Router,
-//! # )
-//! # -> Result<(), Box<dyn std::error::Error>> {
+//! #[cauldron]
+//! struct AppCauldron;
+//!
+//! async fn low_level(
+//!     config: Config,
+//!     native_router: furnace_rs::axum::Router,
+//! )
+//! -> Result<(), Box<dyn std::error::Error>> {
 //! let mut builder = Furnace::builder_with_config(config);
 //! builder.root::<AppCauldron>()?;
 //! // builder.lifecycle_hook(MyHook);
 //! let application = builder.build().await?;
 //! let router = build_router(&application)?.merge(native_router);
 //! serve_router(application, router, "127.0.0.1:0").await?;
-//! # Ok(())
-//! # }
+//! Ok(())
+//! }
 //! ```
 //!
 //! The explicit address overrides `[server]` binding and may use port zero.
@@ -191,8 +185,7 @@ pub use furnace_rs_core::test;
 
 /// Re-exports explicit cauldron registration and dependency declarations.
 pub use furnace_rs_core::{
-    Cauldron, CauldronRegistration, Furnace, FurnaceBuilder, InjectionDependencies, Injector,
-    burner, cauldron, storage,
+    Furnace, FurnaceBuilder, InjectionDependencies, Injector, burner, cauldron, storage,
 };
 
 /// Static guard policy metadata used by generated controller registration.
@@ -313,8 +306,8 @@ pub use furnace_rs_common::{PassportGuard, PassportGuardBuilder, PassportRejecti
 /// gRPC configuration and native Tonic types.
 #[cfg(feature = "grpc")]
 pub use furnace_rs_grpc::{
-    GrpcCauldronExt, GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes, grpc_client,
-    grpc_reflection, grpc_service, set_grpc_bearer_token,
+    GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes, grpc_client, grpc_reflection,
+    grpc_service, set_grpc_bearer_token,
 };
 /// gRPC configuration and native Tonic types.
 #[cfg(feature = "grpc")]
@@ -374,8 +367,8 @@ pub mod prelude {
     /// Managed protobuf service registration.
     #[cfg(feature = "grpc")]
     pub use furnace_rs_grpc::{
-        GrpcCauldronExt, GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes,
-        grpc_client, grpc_reflection, grpc_service, set_grpc_bearer_token,
+        GrpcChannel, GrpcService, GrpcTokenProvider, build_grpc_routes, grpc_client,
+        grpc_reflection, grpc_service, set_grpc_bearer_token,
     };
     /// gRPC configuration and native protobuf transport contracts.
     #[cfg(feature = "grpc")]
@@ -390,9 +383,7 @@ pub mod prelude {
     #[cfg(feature = "http")]
     pub use furnace_rs_common::{SealRegistration, Sealable};
     /// Re-exports explicit cauldron registration and dependency declarations.
-    pub use furnace_rs_core::{
-        Cauldron, CauldronRegistration, InjectionDependencies, Injector, burner, cauldron, storage,
-    };
+    pub use furnace_rs_core::{InjectionDependencies, Injector, burner, cauldron, storage};
 
     /// Re-exports the asynchronous furnace-rs entry-point attribute.
     pub use furnace_rs_core::main;

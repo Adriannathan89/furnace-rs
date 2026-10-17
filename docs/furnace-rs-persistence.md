@@ -1,4 +1,4 @@
-# Native SeaORM PostgreSQL persistence
+Native SeaORM PostgreSQL persistence
 
 FURNACE 1.0.2 introduced SeaORM's native PostgreSQL connection through the
 separate `furnace-rs-persistence` crate. Version 2.0.0 adds entity-bound CRUD
@@ -35,14 +35,9 @@ struct PostRepository {
     database: DatabaseConnection,
 }
 
-#[cauldron]
+#[cauldron(imports = [DatabaseCauldron], providers = [PostRepository])]
 struct AppCauldron;
 
-impl Cauldron for AppCauldron {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.import(DatabaseCauldron).provide::<PostRepository>()
-    }
-}
 ```
 
 Add and register a controller to run this root with `Furnace::burn`.
@@ -57,7 +52,7 @@ apply or generate migrations, and the `furnace` CLI has no database commands.
 optional `furnace.toml`, then scalar `FURNACE_*` environment overrides.
 
 ```toml
-# furnace.toml
+furnace.toml
 [persistence.seaorm]
 url = "${DATABASE_URL}"
 max_connections = 10
@@ -99,7 +94,7 @@ async fn connect(url: String) -> PersistenceResult<DatabaseConnection> {
 allows native option customization. The connector validates PostgreSQL scheme
 and duration bounds before connecting. A manually created connection does not
 attach lifecycle hooks automatically. Application-authored injectors can use
-`.provide_with::<DatabaseConnection, Implementer>()` and override
+`providers = [DatabaseConnection => Implementer]` and override
 `Injector::lifecycle` to manage their own resources.
 
 ## Errors and tracing

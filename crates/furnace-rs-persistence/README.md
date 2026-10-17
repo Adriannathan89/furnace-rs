@@ -47,4 +47,4 @@ Tracing outside connection establishment and configured statement logging on
 the returned database connection keep their existing behavior. Applications
 should keep credentials out of their own diagnostic messages and log events.
 
-The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
+The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Registration uses only `#[cauldron(...)]`; bare `#[cauldron]` registers an empty cauldron.

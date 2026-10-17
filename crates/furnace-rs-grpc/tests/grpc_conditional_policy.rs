@@ -86,7 +86,7 @@ struct GuardedRoot;
 #[cauldron(grpc_services = [Public])]
 struct PublicRoot;
 
-async fn application<M: furnace_rs_core::Cauldron>() -> Furnace {
+async fn application<M: furnace_rs_core::__private::ModuleContract>() -> Furnace {
     let config = ConfigBuilder::new()
         .source(MapSource::new(
             "synthetic regression configuration",

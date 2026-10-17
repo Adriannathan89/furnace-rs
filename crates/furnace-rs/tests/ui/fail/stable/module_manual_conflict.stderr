@@ -1,0 +1,13 @@
+error[E0432]: unresolved imports `furnace_rs::Cauldron`, `furnace_rs::CauldronRegistration`
+ --> tests/ui/fail/stable/module_manual_conflict.rs:1:18
+  |
+1 | use furnace_rs::{Cauldron, CauldronRegistration};
+  |                  ^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^ no `CauldronRegistration` in the root
+  |                  |
+  |                  no `Cauldron` in the root
+  |
+help: a similar name exists in the module (notice the capitalization)
+  |
+1 - use furnace_rs::{Cauldron, CauldronRegistration};
+1 + use furnace_rs::{cauldron, CauldronRegistration};
+  |

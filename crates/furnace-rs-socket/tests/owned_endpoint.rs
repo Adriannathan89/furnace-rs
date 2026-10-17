@@ -1,5 +1,5 @@
 //! Real WebSocket owned-socket serving and runtime drain.
-use furnace_rs_core::{Cauldron, CauldronRegistration, Furnace, Injector};
+use furnace_rs_core::{Furnace, Injector};
 use furnace_rs_socket::runtime::{
     RuntimeBindings, RuntimeRoutes, RuntimeSocketExt, serve_transports,
 };
@@ -53,13 +53,9 @@ static ENDPOINT: SocketEndpointDescriptor = SocketEndpointDescriptor::new(
 )
 .with_route(route);
 furnace_rs_core::__private::inventory::submit! {SocketEndpointRegistration {descriptor:&ENDPOINT}}
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(grpc_services = [Echo])]
 struct App;
-impl Cauldron for App {
-    fn register(self) -> CauldronRegistration<Self> {
-        CauldronRegistration::new(self).transport_provider::<Echo>()
-    }
-}
+
 #[tokio::test]
 async fn owned_text_binary_and_bounded_shutdown() {
     let probe = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();

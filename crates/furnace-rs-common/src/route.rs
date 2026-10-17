@@ -1189,7 +1189,7 @@ mod tests {
         body::Body,
         http::{Request, StatusCode, header::AUTHORIZATION},
     };
-    use furnace_rs_core::{Cauldron, Config, ConfigBuilder, Furnace, MapSource};
+    use furnace_rs_core::{__private::ModuleContract, Config, ConfigBuilder, Furnace, MapSource};
     use tower::ServiceExt;
 
     use super::{RouterBuildContext, ValidatedController, validate_scoped_descriptors};
@@ -1268,16 +1268,8 @@ mod tests {
             }
         }
 
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(providers = [FirstStrategy], controllers = [FirstController], exports = [FirstStrategy])]
         pub struct FirstCauldron;
-
-        impl furnace_rs_core::Cauldron for FirstCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide::<FirstStrategy>()
-                    .controller::<FirstController>()
-                    .export::<FirstStrategy>()
-            }
-        }
     }
 
     mod second {
@@ -1327,16 +1319,8 @@ mod tests {
             }
         }
 
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(providers = [SecondStrategy], controllers = [SecondController], exports = [SecondStrategy])]
         pub struct SecondCauldron;
-
-        impl furnace_rs_core::Cauldron for SecondCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide::<SecondStrategy>()
-                    .controller::<SecondController>()
-                    .export::<SecondStrategy>()
-            }
-        }
     }
 
     mod foreign {
@@ -1362,60 +1346,24 @@ mod tests {
             }
         }
 
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(providers = [ForeignStrategy], exports = [ForeignStrategy])]
         pub struct ForeignCauldron;
-
-        impl furnace_rs_core::Cauldron for ForeignCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide::<ForeignStrategy>()
-                    .export::<ForeignStrategy>()
-            }
-        }
     }
 
     mod roots {
         pub(super) mod first {
-            #[furnace_rs_core::cauldron]
+            #[furnace_rs_core::cauldron(providers = [crate::JwtService], exports = [crate::JwtService], imports = [super::super::first::FirstCauldron], global)]
             pub struct FirstRoot;
-
-            impl furnace_rs_core::Cauldron for FirstRoot {
-                fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                    self.provide::<crate::JwtService>()
-                        .export::<crate::JwtService>()
-                        .global()
-                        .import(super::super::first::FirstCauldron)
-                }
-            }
         }
 
         pub(super) mod second {
-            #[furnace_rs_core::cauldron]
+            #[furnace_rs_core::cauldron(providers = [crate::JwtService], exports = [crate::JwtService], imports = [super::super::second::SecondCauldron], global)]
             pub struct SecondRoot;
-
-            impl furnace_rs_core::Cauldron for SecondRoot {
-                fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                    self.provide::<crate::JwtService>()
-                        .export::<crate::JwtService>()
-                        .global()
-                        .import(super::super::second::SecondCauldron)
-                }
-            }
         }
 
         pub(super) mod combined {
-            #[furnace_rs_core::cauldron]
+            #[furnace_rs_core::cauldron(providers = [crate::JwtService], exports = [crate::JwtService], imports = [super::super::first::FirstCauldron, super::super::second::SecondCauldron, super::super::foreign::ForeignCauldron], global)]
             pub struct CombinedRoot;
-
-            impl furnace_rs_core::Cauldron for CombinedRoot {
-                fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                    self.provide::<crate::JwtService>()
-                        .export::<crate::JwtService>()
-                        .global()
-                        .import(super::super::first::FirstCauldron)
-                        .import(super::super::second::SecondCauldron)
-                        .import(super::super::foreign::ForeignCauldron)
-                }
-            }
         }
     }
 
@@ -1429,7 +1377,7 @@ mod tests {
             .unwrap()
     }
 
-    async fn application_for<M: Cauldron>() -> Furnace {
+    async fn application_for<M: ModuleContract>() -> Furnace {
         let config = config();
         let jwt = JwtService::from_config(&config).unwrap();
         let mut builder = Furnace::builder_with_config(config);

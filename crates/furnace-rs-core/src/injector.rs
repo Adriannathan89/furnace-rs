@@ -19,7 +19,7 @@ use std::{
 /// constructor type to an output such as `Arc<dyn Trait>`.
 ///
 /// ```
-/// use furnace_rs_core::{Cauldron, CauldronRegistration, Config, Injector, Result};
+/// use furnace_rs_core::{Config, Injector, Result};
 /// struct Greeting(String);
 /// impl Injector for Greeting {
 ///     type Dependencies = (Config,);
@@ -27,13 +27,9 @@ use std::{
 ///         Ok(Self(config.get("app.name").unwrap_or("demo").to_owned()))
 ///     }
 /// }
-/// #[furnace_rs_core::cauldron]
+/// #[furnace_rs_core::cauldron(providers = [Greeting])]
 /// struct App;
-/// impl Cauldron for App {
-///     fn register(self) -> CauldronRegistration<Self> {
-///         self.provide::<Greeting>()
-///     }
-/// }
+///
 /// ```
 pub trait Injector<T = Self>: Sized + Send + Sync + 'static
 where

@@ -5,7 +5,7 @@ use furnace_rs_common::{
     ClaimsPrincipal, JwtClaims, JwtService, JwtTokenKind, PassportContext, PassportPrincipal,
     PassportResult, PassportStrategy,
 };
-use furnace_rs_core::{Cauldron, CauldronRegistration, Config, FURNACE009, Furnace};
+use furnace_rs_core::{Config, FURNACE009, Furnace};
 
 #[derive(serde::Deserialize)]
 struct Claims;
@@ -54,41 +54,20 @@ impl Controller {
     }
 }
 
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(providers = [JwtService], controllers = [Controller])]
 struct LocalJwt;
-impl Cauldron for LocalJwt {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<JwtService>().controller::<Controller>()
-    }
-}
-#[furnace_rs_core::cauldron]
+
+#[furnace_rs_core::cauldron(providers = [JwtService])]
 struct PrivateJwt;
-impl Cauldron for PrivateJwt {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<JwtService>()
-    }
-}
-#[furnace_rs_core::cauldron]
+
+#[furnace_rs_core::cauldron(controllers = [Controller])]
 struct Http;
-impl Cauldron for Http {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<Controller>()
-    }
-}
-#[furnace_rs_core::cauldron]
+
+#[furnace_rs_core::cauldron(imports = [PrivateJwt, Http])]
 struct PrivateApp;
-impl Cauldron for PrivateApp {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.import(PrivateJwt).import(Http)
-    }
-}
-#[furnace_rs_core::cauldron]
+
+#[furnace_rs_core::cauldron(providers = [IncorrectStrategy])]
 struct InvalidRegistered;
-impl Cauldron for InvalidRegistered {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<IncorrectStrategy>()
-    }
-}
 
 fn config() -> Config {
     furnace_rs_core::ConfigBuilder::new()

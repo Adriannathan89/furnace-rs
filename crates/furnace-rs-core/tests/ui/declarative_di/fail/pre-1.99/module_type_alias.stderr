@@ -5,9 +5,3 @@ error: cannot find macro `Alias` in this scope
   |                           ^^^^^
   |
   = note: `Alias` is in scope, but it is a type alias, not a macro
-
-error[E0423]: expected value, found type alias `Alias`
- --> tests/ui/declarative_di/fail/pre-1.99/module_type_alias.rs:4:27
-  |
-4 | #[cauldron(root, imports=[Alias])] struct App;
-  |                           ^^^^^ not a value

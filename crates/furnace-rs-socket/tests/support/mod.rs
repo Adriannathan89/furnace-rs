@@ -1,6 +1,6 @@
 #![allow(missing_docs, dead_code)]
 //! Test-only listener ownership and client helpers.
-use furnace_rs_core::{Cauldron, ConfigBuilder, Furnace, MapSource};
+use furnace_rs_core::{__private::ModuleContract, ConfigBuilder, Furnace, MapSource};
 use furnace_rs_socket::runtime::{
     RuntimeBindings, RuntimeRoutes, RuntimeSocketExt, serve_transports,
 };
@@ -13,13 +13,13 @@ pub struct Server {
     >,
 }
 impl Server {
-    pub async fn start<M: Cauldron>() -> Self {
+    pub async fn start<M: ModuleContract>() -> Self {
         Self::configured::<M>(&[]).await
     }
-    pub async fn configured<M: Cauldron>(extra: &[(&str, &str)]) -> Self {
+    pub async fn configured<M: ModuleContract>(extra: &[(&str, &str)]) -> Self {
         Self::with_origins::<M>(extra, &[]).await
     }
-    pub async fn with_origins<M: Cauldron>(extra: &[(&str, &str)], origins: &[&str]) -> Self {
+    pub async fn with_origins<M: ModuleContract>(extra: &[(&str, &str)], origins: &[&str]) -> Self {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         drop(listener);

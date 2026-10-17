@@ -2,14 +2,8 @@
 
 use furnace_rs::prelude::*;
 
-#[cauldron]
+#[cauldron(providers = [Repository], controllers = [Controller])]
 struct AppCauldron;
-
-impl furnace_rs::core::Cauldron for AppCauldron {
-    fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-        self.provide::<Repository>().controller::<Controller>()
-    }
-}
 
 #[storage]
 struct Repository {

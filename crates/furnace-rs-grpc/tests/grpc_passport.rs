@@ -363,7 +363,7 @@ impl pb::transport_server::Transport for OverrideService {
 #[cauldron(providers = [Counters, Strategy], grpc_services = [OverrideService])]
 struct OverrideApp;
 
-async fn configured_app<M: furnace_rs_core::Cauldron>() -> Furnace {
+async fn configured_app<M: furnace_rs_core::__private::ModuleContract>() -> Furnace {
     let config = ConfigBuilder::new()
         .source(MapSource::new(
             "test",

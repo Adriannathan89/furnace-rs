@@ -56,15 +56,8 @@ impl UserController {
     }
 }
 
-#[furnace::cauldron]
+#[furnace::cauldron(providers = [Marker => MarkerProviderInjector], controllers = [UserController])]
 struct AppCauldron;
-
-impl furnace::core::Cauldron for AppCauldron {
-    fn register(self) -> furnace::core::CauldronRegistration<Self> {
-        self.provide_with::<Marker, MarkerProviderInjector>()
-            .controller::<UserController>()
-    }
-}
 
 #[furnace::main]
 async fn main() -> Result<(), HttpRuntimeError> {

@@ -78,16 +78,8 @@ impl sea_orm::ActiveModelBehavior for ActiveModel {}
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {}
 
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(providers = [ItemRepository => ItemRepositoryInjector], imports = [DatabaseCauldron], exports = [ItemRepository])]
 pub struct Root;
-
-impl furnace_rs_core::Cauldron for Root {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        self.provide_with::<ItemRepository, ItemRepositoryInjector>()
-            .import(DatabaseCauldron)
-            .export::<ItemRepository>()
-    }
-}
 
 #[derive(Clone)]
 pub struct ItemRepository {

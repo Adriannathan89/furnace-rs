@@ -1,26 +1,18 @@
 //! Official global furnaces participate only through reachable imports.
 #![cfg(feature = "logger")]
 use furnace_rs_common::{Logger, LoggerCauldron};
-use furnace_rs_core::{Cauldron, CauldronRegistration, Furnace};
+use furnace_rs_core::Furnace;
 #[furnace_rs_core::burner]
 struct Consumer {
     #[inject]
     _logger: Logger,
 }
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(providers = [Consumer])]
 struct Feature;
-impl Cauldron for Feature {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Consumer>()
-    }
-}
-#[furnace_rs_core::cauldron]
+
+#[furnace_rs_core::cauldron(imports = [LoggerCauldron, Feature])]
 struct App;
-impl Cauldron for App {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.import(LoggerCauldron).import(Feature)
-    }
-}
+
 #[test]
 fn logger_global_requires_reachable_import() {
     let mut builder = Furnace::builder();

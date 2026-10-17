@@ -911,10 +911,12 @@ fn furnace_migration_guide_documents_the_complete_breaking_surface() {
         "impl Sealable",
         "SealRegistration::new()",
         "Self::seal::<UserGuard>()",
-        ".provide::<UserService>()",
-        ".controller::<UserController>()",
-        ".export::<",
-        ".global()",
+        "providers = [UserStorage, UserService]",
+        "controllers = [UserController, HealthController]",
+        "providers = [Arc<dyn UserRepository> => MemoryRepository, UserService]",
+        "exports = [UserService]",
+        "`global`",
+        "register empty cauldrons",
         "FURNACE_SERVER__PORT",
         "schema 2",
         "E0446",
@@ -924,6 +926,17 @@ fn furnace_migration_guide_documents_the_complete_breaking_surface() {
         assert!(
             guide.contains(required),
             "migration guide missing {required}"
+        );
+    }
+    for retired in [
+        ".provide::<",
+        ".provide_with::<",
+        "impl Cauldron",
+        "CauldronRegistration",
+    ] {
+        assert!(
+            !guide.contains(retired),
+            "migration guide still documents {retired}"
         );
     }
     let facade = fs::read_to_string(root.join("crates/furnace-rs/src/lib.rs")).unwrap();

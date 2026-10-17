@@ -1,25 +1,18 @@
-error: cannot find macro `Legacy` in this scope
- --> tests/ui/declarative_di/fail/stable/legacy_import.rs:4:27
+error[E0432]: unresolved imports `furnace_rs_core::Cauldron`, `furnace_rs_core::CauldronRegistration`
+ --> tests/ui/declarative_di/fail/stable/legacy_import.rs:1:33
   |
-4 | #[cauldron(root, imports=[Legacy])] struct App;
-  |                           ^^^^^^
+1 | use furnace_rs_core::{cauldron, Cauldron, CauldronRegistration};
+  |                                 ^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^ no `CauldronRegistration` in the root
+  |                                 |
+  |                                 no `Cauldron` in the root
   |
-  = note: `Legacy` is in scope, but it is a struct, not a macro
-
-error[E0277]: the trait bound `Legacy: furnace_rs_core::__private::ModuleContract` is not satisfied
- --> tests/ui/declarative_di/fail/stable/legacy_import.rs:4:1
+help: a similar name exists in the module (notice the capitalization)
   |
-4 | #[cauldron(root, imports=[Legacy])] struct App;
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+1 - use furnace_rs_core::{cauldron, Cauldron, CauldronRegistration};
+1 + use furnace_rs_core::{cauldron, cauldron, CauldronRegistration};
   |
-help: the trait `furnace_rs_core::__private::ModuleContract` is not implemented for `Legacy`
- --> tests/ui/declarative_di/fail/stable/legacy_import.rs:2:13
+help: a similar name exists in the module
   |
-2 | #[cauldron] struct Legacy;
-  |             ^^^^^^^^^^^^^
-help: the trait `furnace_rs_core::__private::ModuleContract` is implemented for `App`
- --> tests/ui/declarative_di/fail/stable/legacy_import.rs:4:1
+1 - use furnace_rs_core::{cauldron, Cauldron, CauldronRegistration};
+1 + use furnace_rs_core::{cauldron, Cauldron, CauldronDefinition};
   |
-4 | #[cauldron(root, imports=[Legacy])] struct App;
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  = note: this error originates in the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

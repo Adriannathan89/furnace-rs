@@ -1,5 +1,9 @@
 //! Explicit registration must not construct dependencies during analysis.
-use furnace_rs_core::{Cauldron, CauldronRegistration, Furnace};
+
+#[macro_use]
+#[path = "support/cauldron_metadata.rs"]
+mod cauldron_metadata;
+use furnace_rs_core::Furnace;
 use std::any::TypeId;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -40,16 +44,9 @@ const __FURNACE_INJECTOR_DESCRIPTOR_DEPENDENCY: furnace_rs_core::ProviderDescrip
         ));
 furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_DEPENDENCY }
 
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(providers = [NamedService, Dependency => DependencyInjector], exports = [NamedService], global)]
 struct Root;
-impl Cauldron for Root {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<NamedService>()
-            .provide_with::<Dependency, DependencyInjector>()
-            .export::<NamedService>()
-            .global()
-    }
-}
+
 #[test]
 fn named_field_types_register_without_construction() {
     let mut builder = Furnace::builder();
@@ -69,36 +66,32 @@ fn named_field_types_register_without_construction() {
     assert_eq!(CONSTRUCTIONS.load(Ordering::SeqCst), 0);
 }
 
-#[furnace_rs_core::cauldron]
-struct Duplicate;
-impl Cauldron for Duplicate {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<Dependency, DependencyInjector>()
-            .provide_with::<Dependency, DependencyInjector>()
-    }
+cauldron_metadata! {
+    struct Duplicate;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Dependency, DependencyInjector>()
+        .provide_with::<Dependency, DependencyInjector>()
 }
-#[furnace_rs_core::cauldron]
-struct BadExport;
-impl Cauldron for BadExport {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.export::<Dependency>()
-    }
+
+cauldron_metadata! {
+    struct BadExport;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .export::<Dependency>()
 }
-#[furnace_rs_core::cauldron]
-struct Other;
-impl Cauldron for Other {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<Dependency, DependencyInjector>()
-    }
+
+cauldron_metadata! {
+    struct Other;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Dependency, DependencyInjector>()
 }
-#[furnace_rs_core::cauldron]
-struct Conflict;
-impl Cauldron for Conflict {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<Dependency, DependencyInjector>()
-            .import(Other)
-    }
+
+cauldron_metadata! {
+    struct Conflict;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Dependency, DependencyInjector>()
+        .import::<Other>()
 }
+
 #[test]
 fn duplicate_members_and_nonlocal_exports_fail_before_construction() {
     for analysis in [
@@ -115,19 +108,15 @@ fn duplicate_members_and_nonlocal_exports_fail_before_construction() {
         );
     }
 }
-fn analyze<M: furnace_rs_core::Cauldron>() -> furnace_rs_core::GraphAnalysis {
+fn analyze<M: furnace_rs_core::__private::ModuleContract>() -> furnace_rs_core::GraphAnalysis {
     let mut builder = Furnace::builder();
     builder.root::<M>().unwrap();
     builder.analyze()
 }
 
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(providers = [NamedService])]
 struct Omitted;
-impl Cauldron for Omitted {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<NamedService>()
-    }
-}
+
 #[test]
 fn linked_factory_is_not_implicitly_registered() {
     let analysis = analyze::<Omitted>();

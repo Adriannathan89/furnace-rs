@@ -13,15 +13,8 @@ use furnace_rs_core::{
 
 mod rooted {
     pub mod app {
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(providers = [ReachableService => ReachableServiceInjector], exports = [ReachableService])]
         pub struct AppCauldron;
-
-        impl furnace_rs_core::Cauldron for AppCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide_with::<ReachableService, ReachableServiceInjector>()
-                    .export::<ReachableService>()
-            }
-        }
 
         #[derive(Clone)]
         pub struct ReachableService;
@@ -45,15 +38,8 @@ mod rooted {
     }
 
     pub mod unreachable {
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(providers = [UnreachableService => UnreachableServiceInjector], exports = [UnreachableService])]
         pub struct UnreachableCauldron;
-
-        impl furnace_rs_core::Cauldron for UnreachableCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide_with::<UnreachableService, UnreachableServiceInjector>()
-                    .export::<UnreachableService>()
-            }
-        }
 
         #[derive(Clone)]
         pub struct UnreachableService;

@@ -7,9 +7,10 @@ use crate::auto_configuration::{
     self, AutoConfigurationApplyContext, AutoConfigurationDescriptor, AutoConfigurationInputs,
 };
 use crate::{
-    ApplicationContext, ApplicationGraph, AutoConfigurationReport, Catalog, Cauldron,
-    CauldronGraph, Config, ConstructionContext, ConstructionPlan, ConstructionStep, Diagnostic,
-    Error, FURNACE006, FURNACE008, GraphAnalysis, LifecycleHook, LifecycleManager, LifecycleState,
+    __private::ModuleContract,
+    ApplicationContext, ApplicationGraph, AutoConfigurationReport, Catalog, CauldronGraph, Config,
+    ConstructionContext, ConstructionPlan, ConstructionStep, Diagnostic, Error, FURNACE006,
+    FURNACE008, GraphAnalysis, LifecycleHook, LifecycleManager, LifecycleState,
     ProviderContribution, ProviderDescriptor, ProviderRegistry, Result,
     graph::{
         SatisfiedProvider, analyze_catalog, build_cauldron_graph, select_focused_providers,
@@ -51,7 +52,7 @@ impl FurnaceBuilder {
 
     /// Selects the root module for scoped analysis and construction.
     #[allow(clippy::result_large_err)]
-    pub fn root<M: Cauldron>(&mut self) -> Result<&mut Self> {
+    pub fn root<M: ModuleContract>(&mut self) -> Result<&mut Self> {
         if let Some((_, name)) = self.focus {
             return Err(root_already_selected_error(
                 name,
@@ -440,7 +441,7 @@ struct CauldronRoot {
 
 impl CauldronRoot {
     /// Captures the selected root's stable runtime identity and display name.
-    fn of<M: Cauldron>() -> Self {
+    fn of<M: ModuleContract>() -> Self {
         Self {
             type_id: TypeId::of::<M>(),
             type_name: std::any::type_name::<M>(),

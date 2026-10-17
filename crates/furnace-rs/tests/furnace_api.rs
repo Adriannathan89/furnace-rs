@@ -3,11 +3,7 @@
 use furnace_rs::prelude::*;
 #[furnace_rs::cauldron]
 struct Empty;
-impl Cauldron for Empty {
-    fn register(self) -> CauldronRegistration<Self> {
-        CauldronRegistration::new(self)
-    }
-}
+
 #[tokio::test]
 async fn burn_rejects_an_application_without_routes_before_binding() {
     fn assert_send<T: Send>(_: &T) {}
@@ -18,20 +14,11 @@ async fn burn_rejects_an_application_without_routes_before_binding() {
 
 #[storage]
 struct SharedStorage;
-#[cauldron]
+#[cauldron(providers = [SharedStorage], exports = [SharedStorage])]
 struct Shared;
-impl Cauldron for Shared {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<SharedStorage>().export::<SharedStorage>()
-    }
-}
-#[cauldron]
+
+#[cauldron(providers = [SharedStorage])]
 struct PrivateShared;
-impl Cauldron for PrivateShared {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<SharedStorage>()
-    }
-}
 
 #[controller]
 struct FirstController {
@@ -73,34 +60,18 @@ impl SecondController {
     }
 }
 
-#[cauldron]
+#[cauldron(controllers = [FirstController], imports = [Shared])]
 struct FirstFeature;
-impl Cauldron for FirstFeature {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<FirstController>().import(Shared)
-    }
-}
-#[cauldron]
+
+#[cauldron(controllers = [SecondController], imports = [Shared])]
 struct SecondFeature;
-impl Cauldron for SecondFeature {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<SecondController>().import(Shared)
-    }
-}
-#[cauldron]
+
+#[cauldron(imports = [FirstFeature, SecondFeature])]
 struct App;
-impl Cauldron for App {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.import(FirstFeature).import(SecondFeature)
-    }
-}
-#[cauldron]
+
+#[cauldron(controllers = [FirstController], imports = [PrivateShared])]
 struct PrivateApp;
-impl Cauldron for PrivateApp {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.controller::<FirstController>().import(PrivateShared)
-    }
-}
+
 #[tokio::test]
 async fn imported_features_share_one_exported_storage_and_select_both_routes() {
     use furnace_rs::axum::{

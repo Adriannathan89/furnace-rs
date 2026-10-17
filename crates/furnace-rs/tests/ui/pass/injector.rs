@@ -22,15 +22,9 @@ impl Injector for Plain {
         furnace_rs::core::LifecycleResource::new(value)
     }
 }
-#[cauldron]
+#[cauldron(providers = [Managed, Plain, Arc<dyn Service> => Implementation])]
 struct App;
-impl Cauldron for App {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Managed>()
-            .provide::<Plain>()
-            .provide_with::<Arc<dyn Service>, Implementation>()
-    }
-}
+
 fn main() {
     fn dependencies<T: InjectionDependencies>() {}
     dependencies::<()>();

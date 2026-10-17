@@ -18,11 +18,7 @@ impl pb::hidden_server::Hidden for Service {
 struct Shared;
 #[cauldron(root, imports = [Shared], grpc_services = [Service])]
 struct App;
-#[cauldron]
+#[cauldron(providers = [Dependency], grpc_services = [Service])]
 struct Fluent;
-impl Cauldron for Fluent {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Dependency>().grpc_service::<Service>()
-    }
-}
+
 fn main() {}

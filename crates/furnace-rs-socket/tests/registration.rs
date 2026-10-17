@@ -111,13 +111,9 @@ static UNRELATED: SocketEndpointDescriptor = SocketEndpointDescriptor::new(
 );
 furnace_rs_core::__private::inventory::submit! {furnace_rs_socket::SocketEndpointRegistration {descriptor: &SELECTED}}
 furnace_rs_core::__private::inventory::submit! {furnace_rs_socket::SocketEndpointRegistration {descriptor: &UNRELATED}}
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(grpc_services = [Selected])]
 struct App;
-impl furnace_rs_core::Cauldron for App {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        furnace_rs_core::CauldronRegistration::new(self).transport_provider::<Selected>()
-    }
-}
+
 #[test]
 fn scope_only_includes_reachable_providers_without_construction() {
     let graph = furnace_rs_core::__private::build_cauldron_graph::<App>().unwrap();

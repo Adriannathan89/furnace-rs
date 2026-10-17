@@ -6,11 +6,6 @@ impl Injector for Implementation {
         Ok(Self)
     }
 }
-#[cauldron]
+#[cauldron(providers = [String => Implementation])]
 struct App;
-impl Cauldron for App {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<String, Implementation>()
-    }
-}
 fn main() {}

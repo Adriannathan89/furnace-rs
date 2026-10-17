@@ -1,6 +1,10 @@
 //! Explicit injector choices retain cauldron ownership and pre-construction validation.
+
+#[macro_use]
+#[path = "support/cauldron_metadata.rs"]
+mod cauldron_metadata;
 use furnace_rs_core::{
-    Cauldron, CauldronRegistration, FURNACE003, FURNACE005, FURNACE008, FURNACE009, Furnace,
+    __private::ModuleContract, FURNACE003, FURNACE005, FURNACE008, FURNACE009, Furnace,
     GraphAnalysis, Injector, LifecycleResource, Result,
 };
 use std::{
@@ -69,41 +73,57 @@ impl furnace_rs_core::Injector<Arc<dyn Service>> for CompetingLinkedFactoryInjec
 const __FURNACE_INJECTOR_DESCRIPTOR_COMPETING_LINKED_FACTORY : furnace_rs_core :: ProviderDescriptor = furnace_rs_core :: __private :: InjectorMetadata :: < Arc < dyn Service > , CompetingLinkedFactoryInjector > :: DESCRIPTOR . with_authored_type_name (stringify ! (Arc < dyn Service >)) . with_namespace (module_path ! ()) . with_visibility (furnace_rs_core :: ProviderVisibility :: Private) . with_location (furnace_rs_core :: SourceLocation :: new (file ! () , line ! () , column ! ())) ;
 furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_COMPETING_LINKED_FACTORY }
 
-macro_rules! cauldron {
-    ($name:ident, $body:expr) => {
-        #[furnace_rs_core::cauldron]
-        struct $name;
-        impl Cauldron for $name {
-            fn register(self) -> CauldronRegistration<Self> {
-                ($body)(self)
-            }
-        }
-    };
+cauldron_metadata! {
+    struct Local;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Dependency, Dependency>()
+        .provide_with::<Arc<dyn Service>, Implementation>()
 }
-cauldron!(Local, |m: Local| m
-    .provide_with::<Dependency, Dependency>()
-    .provide_with::<Arc<dyn Service>, Implementation>());
-cauldron!(PublicDependency, |m: PublicDependency| m
-    .provide_with::<Dependency, Dependency>()
-    .export::<Dependency>());
-cauldron!(PrivateDependency, |m: PrivateDependency| m
-    .provide_with::<Dependency, Dependency>());
-cauldron!(Imported, |m: Imported| m
-    .provide_with::<Arc<dyn Service>, Implementation>()
-    .import(PublicDependency));
-cauldron!(Hidden, |m: Hidden| m
-    .provide_with::<Arc<dyn Service>, Implementation>()
-    .import(PrivateDependency));
-cauldron!(Missing, |m: Missing| m
-    .provide_with::<Arc<dyn Service>, Implementation>());
-cauldron!(Duplicate, |m: Duplicate| m
-    .provide_with::<Arc<dyn Service>, Implementation>()
-    .provide_with::<Arc<dyn Service>, Alternative>());
-cauldron!(OtherOwner, |m: OtherOwner| m
-    .provide_with::<Arc<dyn Service>, Alternative>());
-cauldron!(ConflictingOwners, |m: ConflictingOwners| m
-    .provide_with::<Arc<dyn Service>, Implementation>()
-    .import(OtherOwner));
+cauldron_metadata! {
+    struct PublicDependency;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Dependency, Dependency>()
+        .export::<Dependency>()
+}
+cauldron_metadata! {
+    struct PrivateDependency;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Dependency, Dependency>()
+}
+cauldron_metadata! {
+    struct Imported;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Arc<dyn Service>, Implementation>()
+        .import::<PublicDependency>()
+}
+cauldron_metadata! {
+    struct Hidden;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Arc<dyn Service>, Implementation>()
+        .import::<PrivateDependency>()
+}
+cauldron_metadata! {
+    struct Missing;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Arc<dyn Service>, Implementation>()
+}
+cauldron_metadata! {
+    struct Duplicate;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Arc<dyn Service>, Implementation>()
+        .provide_with::<Arc<dyn Service>, Alternative>()
+}
+cauldron_metadata! {
+    struct OtherOwner;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Arc<dyn Service>, Alternative>()
+}
+cauldron_metadata! {
+    struct ConflictingOwners;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<Arc<dyn Service>, Implementation>()
+        .import::<OtherOwner>()
+}
 
 static CYCLE_CONSTRUCTIONS: AtomicUsize = AtomicUsize::new(0);
 #[derive(Clone)]
@@ -124,11 +144,14 @@ impl Injector for CycleB {
         Ok(Self)
     }
 }
-cauldron!(Cyclic, |m: Cyclic| m
-    .provide_with::<CycleA, CycleA>()
-    .provide_with::<CycleB, CycleB>());
+cauldron_metadata! {
+    struct Cyclic;
+    furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+        .provide_with::<CycleA, CycleA>()
+        .provide_with::<CycleB, CycleB>()
+}
 
-fn analyze<M: Cauldron>() -> GraphAnalysis {
+fn analyze<M: ModuleContract>() -> GraphAnalysis {
     let mut builder = Furnace::builder();
     builder.root::<M>().unwrap();
     builder.analyze()

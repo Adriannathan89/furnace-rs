@@ -1,29 +1,30 @@
-error[E0277]: the trait bound `NotACauldron: Cauldron` is not satisfied
-  --> tests/ui/fail/stable/module_non_module_import.rs:10:21
-   |
-10 |         self.import(NotACauldron)
-   |              ------ ^^^^^^^^^^^^ unsatisfied trait bound
-   |              |
-   |              required by a bound introduced by this call
-   |
-help: the trait `Cauldron` is not implemented for `NotACauldron`
-  --> tests/ui/fail/stable/module_non_module_import.rs:3:1
-   |
- 3 | struct NotACauldron;
-   | ^^^^^^^^^^^^^^^^^^^
-help: the following other types implement trait `Cauldron`
-  --> tests/ui/fail/stable/module_non_module_import.rs:8:1
-   |
- 8 | impl furnace_rs::core::Cauldron for AppCauldron {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `AppCauldron`
-   |
-  ::: $WORKSPACE/crates/furnace-rs-common/src/logger/mod.rs
-   |
-   | #[crate::core::cauldron(providers = [Logger], exports = [Logger], global)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `LoggerCauldron`
-note: required by a bound in `AppCauldron::import`
-  --> tests/ui/fail/stable/module_non_module_import.rs:5:1
-   |
- 5 | #[cauldron]
-   | ^^^^^^^^^^^ required by this bound in `AppCauldron::import`
-   = note: this error originates in the attribute macro `crate::core::cauldron` which comes from the expansion of the attribute macro `cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
+error: cannot find macro `NotACauldron` in this scope
+ --> tests/ui/fail/stable/module_non_module_import.rs:2:35
+  |
+2 | #[furnace_rs::cauldron(imports = [NotACauldron])]
+  |                                   ^^^^^^^^^^^^
+  |
+  = note: `NotACauldron` is in scope, but it is a struct, not a macro
+
+error[E0277]: the trait bound `NotACauldron: furnace_rs_core::__private::ModuleContract` is not satisfied
+ --> tests/ui/fail/stable/module_non_module_import.rs:2:1
+  |
+2 | #[furnace_rs::cauldron(imports = [NotACauldron])]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+  |
+help: the trait `furnace_rs_core::__private::ModuleContract` is not implemented for `NotACauldron`
+ --> tests/ui/fail/stable/module_non_module_import.rs:1:1
+  |
+1 | struct NotACauldron;
+  | ^^^^^^^^^^^^^^^^^^^
+help: the following other types implement trait `furnace_rs_core::__private::ModuleContract`
+ --> tests/ui/fail/stable/module_non_module_import.rs:2:1
+  |
+2 | #[furnace_rs::cauldron(imports = [NotACauldron])]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `AppCauldron`
+  |
+ ::: $WORKSPACE/crates/furnace-rs-common/src/logger/mod.rs
+  |
+  | #[crate::core::cauldron(providers = [Logger], exports = [Logger], global)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `LoggerCauldron`
+  = note: this error originates in the attribute macro `furnace_rs::cauldron` which comes from the expansion of the attribute macro `crate::core::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)

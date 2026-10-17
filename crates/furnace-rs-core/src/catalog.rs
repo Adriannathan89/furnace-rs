@@ -4,8 +4,8 @@ use std::any::TypeId;
 use std::sync::OnceLock;
 
 use crate::{
-    Cauldron, CauldronDescriptor, Diagnostic, Error, FURNACE001, FURNACE002, FURNACE003,
-    ProviderDescriptor, Result,
+    __private::ModuleContract, CauldronDescriptor, Diagnostic, Error, FURNACE001, FURNACE002,
+    FURNACE003, ProviderDescriptor, Result,
 };
 
 inventory::collect!(ProviderDescriptor);
@@ -33,7 +33,7 @@ impl Catalog {
 
     /// Selects the single static module descriptor registered for `M`.
     #[allow(clippy::result_large_err)]
-    pub fn cauldron_for<M: Cauldron>() -> Result<&'static CauldronDescriptor> {
+    pub fn cauldron_for<M: ModuleContract>() -> Result<&'static CauldronDescriptor> {
         let type_id = TypeId::of::<M>();
         let cauldrons: Vec<_> = Self::cauldrons()
             .into_iter()

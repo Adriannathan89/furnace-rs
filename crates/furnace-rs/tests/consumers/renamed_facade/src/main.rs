@@ -8,16 +8,8 @@ struct Settings {
     host: String,
 }
 
-#[cauldron]
+#[cauldron(providers = [RenamedRepository], controllers = [Controller, ExtractorController])]
 struct AppCauldron;
-
-impl framework::Cauldron for AppCauldron {
-    fn register(self) -> framework::CauldronRegistration<Self> {
-        self.provide::<RenamedRepository>()
-            .controller::<Controller>()
-            .controller::<ExtractorController>()
-    }
-}
 
 #[storage]
 struct RenamedRepository {

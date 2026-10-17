@@ -1,12 +1,6 @@
 //! Explicit cauldron composition without constructing application dependencies.
 use crate::SourceLocation;
-use std::{any::TypeId, marker::PhantomData};
-
-/// Describes the members and imports of one application cauldron.
-pub trait Cauldron: Send + Sync + Sized + 'static {
-    /// Records static topology without constructing providers or performing I/O.
-    fn register(self) -> CauldronRegistration<Self>;
-}
+use std::any::TypeId;
 
 /// Framework-neutral membership implemented by optional transport integrations.
 #[doc(hidden)]
@@ -15,10 +9,11 @@ pub trait TransportProvider: crate::Injector {
     const TRANSPORT: &'static str;
 }
 
-/// A fluent declaration of a cauldron's local dependencies and public interface.
-pub struct CauldronRegistration<M: Cauldron> {
+/// Metadata builder used only by declarative macro expansions.
+#[doc(hidden)]
+#[derive(Default)]
+pub struct CauldronDefinitionBuilder {
     definition: CauldronDefinition,
-    marker: PhantomData<fn() -> M>,
 }
 
 /// Erased registration metadata consumed by graph analysis.
@@ -54,13 +49,10 @@ fn location() -> SourceLocation {
     SourceLocation::new(caller.file(), caller.line(), caller.column())
 }
 
-impl<M: Cauldron> CauldronRegistration<M> {
-    /// Starts an empty declaration. The unit value is not retained.
-    pub fn new(_module: M) -> Self {
-        Self {
-            definition: CauldronDefinition::default(),
-            marker: PhantomData,
-        }
+impl CauldronDefinitionBuilder {
+    /// Starts an empty metadata definition.
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Registers a managed provider or a plain service implementing `Injector`.
@@ -128,7 +120,7 @@ impl<M: Cauldron> CauldronRegistration<M> {
 
     /// Connects another cauldron without evaluating its registration here.
     #[track_caller]
-    pub fn import<I: Cauldron>(mut self, _module: I) -> Self {
+    pub fn import<I: 'static>(mut self) -> Self {
         self.definition.imports.push(CauldronImport {
             type_id: TypeId::of::<I>(),
             type_name: std::any::type_name::<I>(),
@@ -157,7 +149,7 @@ impl<M: Cauldron> CauldronRegistration<M> {
         self
     }
 
-    /// Erases the authored cauldron type for the declaration catalog.
+    /// Finishes the metadata consumed by the declaration catalog.
     #[doc(hidden)]
     pub fn into_definition(self) -> CauldronDefinition {
         self.definition

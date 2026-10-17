@@ -4,18 +4,19 @@ use super::{
     serve_prepared_transports,
 };
 use furnace_rs_core::{
-    Cauldron, Config, ConfigBuilder, DotenvSource, EnvSource, Furnace, TomlSource,
+    __private::ModuleContract, Config, ConfigBuilder, DotenvSource, EnvSource, Furnace, TomlSource,
 };
 use std::{future::Future, path::Path};
 /// Conventional automatic startup for the configured application transports.
 pub trait FurnaceBurnExt {
     /// Loads conventional configuration and runs the rooted application.
-    fn burn<M: Cauldron>() -> impl Future<Output = Result<(), ApplicationRuntimeError>> + Send;
+    fn burn<M: ModuleContract>() -> impl Future<Output = Result<(), ApplicationRuntimeError>> + Send;
 }
 impl FurnaceBurnExt for Furnace {
     #[allow(clippy::manual_async_fn)] // Explicit Send promise on the public trait.
     /// Loads conventional settings, prepares selected transports, and runs their shared lifecycle.
-    fn burn<M: Cauldron>() -> impl Future<Output = Result<(), ApplicationRuntimeError>> + Send {
+    fn burn<M: ModuleContract>() -> impl Future<Output = Result<(), ApplicationRuntimeError>> + Send
+    {
         async move {
             let root = std::env::current_dir().map_err(|source| {
                 ApplicationRuntimeError::Bootstrap(furnace_rs_core::Error::with_source(
@@ -48,7 +49,7 @@ pub fn load_standard_config(root: &Path) -> furnace_rs_core::Result<Config> {
 }
 /// Prepares selected automatic listeners without starting lifecycle or binding.
 #[doc(hidden)]
-pub async fn prepare_application<M: Cauldron>(
+pub async fn prepare_application<M: ModuleContract>(
     config: Config,
 ) -> Result<(Furnace, Vec<super::PreparedTransport>), ApplicationRuntimeError> {
     let adapters: Vec<_> =

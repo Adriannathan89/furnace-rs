@@ -14,12 +14,9 @@ pub use logger_service::{LogLevel, Logger, LoggerService};
 /// ```
 /// use furnace_rs_common::LoggerCauldron;
 ///
-/// use furnace_rs_common::core::{Cauldron, CauldronRegistration};
-/// #[furnace_rs_common::core::cauldron]
+/// #[furnace_rs_common::core::cauldron(imports = [LoggerCauldron])]
 /// struct AppCauldron;
-/// impl Cauldron for AppCauldron {
-///     fn register(self) -> CauldronRegistration<Self> { self.import(LoggerCauldron) }
-/// }
+///
 /// ```
 ///
 /// To override the logger, supply a value constructed with [`Logger::new`] to

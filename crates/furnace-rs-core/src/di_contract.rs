@@ -2,7 +2,7 @@
 #![allow(missing_docs)]
 use std::marker::PhantomData;
 
-pub trait ModuleContract: crate::Cauldron {
+pub trait ModuleContract: Send + Sync + Sized + 'static {
     type Metadata: ModuleMetadata;
 }
 pub trait ModuleMetadata {

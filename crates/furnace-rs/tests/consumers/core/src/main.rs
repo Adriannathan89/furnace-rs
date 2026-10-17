@@ -2,15 +2,8 @@
 
 use furnace_rs_core::AutoConfigurationStatus;
 
-#[furnace_rs_core::cauldron]
+#[furnace_rs_core::cauldron(providers = [Repository])]
 struct AppCauldron;
-
-impl furnace_rs_core::Cauldron for AppCauldron {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        self.provide::<Repository>()
-    }
-}
-
 
 #[furnace_rs_core::storage]
 struct Repository;

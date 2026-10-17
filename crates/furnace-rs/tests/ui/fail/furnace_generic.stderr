@@ -1,4 +1,4 @@
-error: `#[furnace_rs::cauldron]` supports only non-generic unit structs; legacy registration uses `Cauldron::register`
+error: `#[furnace_rs::cauldron]` supports only non-generic unit structs
  --> tests/ui/fail/furnace_generic.rs:2:19
   |
 2 | struct AppCauldron<T>;

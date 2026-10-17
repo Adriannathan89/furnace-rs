@@ -101,7 +101,7 @@ fn name_and_templates_render_the_exact_minimal_project_manifest() {
         ),
         (
             "src/app/mod.rs".to_owned(),
-            "// src/app/mod.rs\nmod controller;\nmod service;\n\nuse furnace::prelude::*;\n\n#[cauldron]\npub struct AppCauldron;\n\nimpl Cauldron for AppCauldron {\n    fn register(self) -> CauldronRegistration<Self> {\n        self.provide::<service::AppService>()\n            .controller::<controller::AppController>()\n    }\n}\n"
+            "// src/app/mod.rs\nmod controller;\nmod service;\n\nuse furnace::prelude::*;\n\n#[cauldron(providers = [service::AppService], controllers = [controller::AppController])]\npub struct AppCauldron;\n"
                 .to_owned(),
         ),
         (

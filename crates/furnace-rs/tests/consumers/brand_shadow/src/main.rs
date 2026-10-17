@@ -1,5 +1,5 @@
 mod furnace {}
-use ::furnace::{Cauldron, CauldronRegistration, Furnace, Injector, cauldron};
+use ::furnace::{Furnace, Injector, cauldron};
 
 #[derive(Clone)]
 struct Plain;
@@ -21,14 +21,9 @@ impl Injector<std::sync::Arc<dyn Service>> for Implementation {
     }
 }
 
-#[cauldron]
+#[cauldron(providers = [Plain, std::sync::Arc<dyn Service> => Implementation])]
 struct AppCauldron;
-impl Cauldron for AppCauldron {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<Plain>()
-            .provide_with::<std::sync::Arc<dyn Service>, Implementation>()
-    }
-}
+
 fn main() {
     let mut builder = Furnace::builder();
     builder.root::<AppCauldron>().unwrap();

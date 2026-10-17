@@ -1,5 +1,5 @@
 //! Declarative registration preserves runtime graph selection and construction.
-use furnace_rs_core::{Cauldron, CauldronRegistration, Furnace, Injector};
+use furnace_rs_core::{__private::ModuleContract, Furnace, Injector};
 use std::{
     any::TypeId,
     sync::{
@@ -39,24 +39,20 @@ struct Infrastructure;
 )]
 struct Declarative;
 
-#[furnace_rs_core::cauldron]
-struct Legacy;
-impl Cauldron for Legacy {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.import(Infrastructure)
-            .provide::<Service>()
-            .export::<Service>()
-    }
-}
+#[furnace_rs_core::cauldron(imports = [Infrastructure], providers = [Service], exports = [Service])]
+struct SecondDeclarative;
 
 #[test]
-fn declarative_and_legacy_roots_select_the_same_outputs_without_construction() {
+fn declarative_roots_select_the_same_outputs_without_construction() {
     for (select, root_id) in [
         (
             select::<Declarative> as fn() -> furnace_rs_core::GraphAnalysis,
             TypeId::of::<Declarative>(),
         ),
-        (select::<Legacy>, TypeId::of::<Legacy>()),
+        (
+            select::<SecondDeclarative>,
+            TypeId::of::<SecondDeclarative>(),
+        ),
     ] {
         let analysis = select();
         assert!(analysis.is_valid(), "{:?}", analysis.diagnostics());
@@ -78,7 +74,7 @@ fn declarative_and_legacy_roots_select_the_same_outputs_without_construction() {
     assert_eq!(CONSTRUCTIONS.load(Ordering::SeqCst), 0);
 }
 
-fn select<M: Cauldron>() -> furnace_rs_core::GraphAnalysis {
+fn select<M: ModuleContract>() -> furnace_rs_core::GraphAnalysis {
     let mut builder = Furnace::builder();
     builder.root::<M>().unwrap();
     builder.analyze()
@@ -88,17 +84,20 @@ fn select<M: Cauldron>() -> furnace_rs_core::GraphAnalysis {
 struct Empty;
 
 #[furnace_rs_core::cauldron()]
-struct ParenthesesLegacy;
-impl Cauldron for ParenthesesLegacy {
-    fn register(self) -> CauldronRegistration<Self> {
-        CauldronRegistration::new(self)
-    }
-}
+struct ParenthesesEmpty;
+
+#[furnace_rs_core::cauldron]
+struct BareEmpty;
 
 #[test]
-fn empty_declarations_and_zero_argument_legacy_attributes_keep_their_contracts() {
+fn empty_declarations_and_zero_argument_attributes_register_empty_cauldrons() {
     assert!(select::<Empty>().is_valid());
-    assert!(select::<ParenthesesLegacy>().is_valid());
+    assert!(select::<ParenthesesEmpty>().is_valid());
+    let bare = select::<BareEmpty>();
+    assert!(bare.is_valid());
+    let graph = bare.cauldron_graph().unwrap();
+    assert_eq!(graph.cauldrons().len(), 1);
+    assert!(graph.owner_of(TypeId::of::<Service>()).is_none());
 }
 
 struct Controller;

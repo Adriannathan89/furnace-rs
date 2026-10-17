@@ -6,8 +6,9 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use furnace_rs_core::{
-    AutoConfigurationStatus, Cauldron, CauldronGraph, Config, Diagnostic, DiagnosticCode, Error,
-    Furnace, GraphInspectionSnapshot, ProviderOrigin, ProviderState, ProviderVisibility,
+    __private::ModuleContract, AutoConfigurationStatus, CauldronGraph, Config, Diagnostic,
+    DiagnosticCode, Error, Furnace, GraphInspectionSnapshot, ProviderOrigin, ProviderState,
+    ProviderVisibility,
 };
 use serde::{Deserialize, Serialize};
 
@@ -301,7 +302,7 @@ fn publish_atomic(path: &Path, bytes: &[u8]) -> furnace_rs_core::Result<()> {
 }
 
 /// Publishes a token-bound acknowledgement and the requested rooted-application report.
-fn run_inspection<M: Cauldron>(
+fn run_inspection<M: ModuleContract>(
     root: &Path,
     request: InspectionRequest,
 ) -> furnace_rs_core::Result<()> {
@@ -327,7 +328,7 @@ fn run_inspection<M: Cauldron>(
 }
 
 /// Runs private inspection only when its environment request is present and valid.
-pub(crate) fn try_run_inspection<M: Cauldron>(
+pub(crate) fn try_run_inspection<M: ModuleContract>(
     root: &Path,
 ) -> Option<Result<(), crate::runtime::ApplicationRuntimeError>> {
     let request = match InspectionRequest::from_environment() {
@@ -614,7 +615,7 @@ impl InspectionEnvelope {
 
 /// Assembles a side-effect-free report for a rooted standard HTTP application.
 /// Assembles a report from selected graph metadata without constructing providers or binding listeners.
-pub(crate) fn inspect_standard_application<M: Cauldron>(
+pub(crate) fn inspect_standard_application<M: ModuleContract>(
     root: &Path,
     kind: InspectionKind,
 ) -> InspectionReport {
@@ -1210,15 +1211,8 @@ mod tests {
             ));
     furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_MARKER_PROVIDER }
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [Marker => MarkerProviderInjector], controllers = [InspectionController])]
     struct AppCauldron;
-
-    impl furnace_rs_core::Cauldron for AppCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide_with::<Marker, MarkerProviderInjector>()
-                .controller::<InspectionController>()
-        }
-    }
 
     #[crate::controller]
     struct InspectionController;
@@ -1274,13 +1268,9 @@ mod tests {
             #[crate::get]
             fn index(&self) {}
         }
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(controllers = [Mixed, Public])]
         struct Root;
-        impl furnace_rs_core::Cauldron for Root {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.controller::<Mixed>().controller::<Public>()
-            }
-        }
+
         #[test]
         fn reports_protection_for_each_method_and_public_default() {
             let root = tempfile::tempdir().unwrap();

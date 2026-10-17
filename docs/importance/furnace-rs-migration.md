@@ -1,8 +1,8 @@
-# Migrating to furnace-rs 1.0.0
+# Migrating from MADS to furnace-rs
 
-Version 1.0.0 introduced breaking API changes from MADS. This guide documents
-that migration and retains its original 1.0.2 dependency examples. For the
-additional breaking changes in 2.0.0, see the [2.0.0 release notes](../releases/2.0.0.md).
+This guide covers the package and API migration from MADS. The examples use
+furnace-rs 2.0.0 and declarative cauldron registration. See the
+[2.0.0 release notes](../releases/2.0.0.md) for the complete release changes.
 Local path dependencies can be used for checkout development.
 There are no compatibility aliases for the removed declarations.
 
@@ -11,7 +11,7 @@ There are no compatibility aliases for the removed declarations.
 | `mads` / `mads-*` packages | `furnace-rs` / `furnace-rs-*` packages |
 | `mads` executable | `furnace` executable |
 | `Mads::run`, `MadsRunExt` | `Furnace::burn`, `FurnaceBurnExt` |
-| `#[module]`, `Module` | `#[cauldron]`, `Cauldron` |
+| `#[module]`, `Module` | `#[cauldron(...)]` |
 | `#[service]` | `#[burner]` |
 | `#[repository]` | `#[storage]` |
 | `#[provider]`, `#[element]`, and their lifecycle forms | `Injector::inject` and `Injector::lifecycle` |
@@ -30,7 +30,7 @@ recommended for applications:
 
 ```toml
 [dependencies]
-furnace = { package = "furnace-rs", version = "=1.0.2", default-features = false, features = ["http", "jwt", "runtime-tokio"] }
+furnace = { package = "furnace-rs", version = "=2.0.0", default-features = false, features = ["http", "jwt", "runtime-tokio"] }
 serde = { version = "1", features = ["derive"] }
 ```
 
@@ -91,16 +91,11 @@ impl HealthController {
     fn health() -> &'static str { "ok" }
 }
 
-#[cauldron]
+#[cauldron(
+    providers = [UserStorage, UserService],
+    controllers = [UserController, HealthController],
+)]
 pub struct AppCauldron;
-impl Cauldron for AppCauldron {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<UserStorage>()
-            .provide::<UserService>()
-            .controller::<UserController>()
-            .controller::<HealthController>()
-    }
-}
 #[furnace::main]
 async fn main() -> Result<(), HttpRuntimeError> {
     Furnace::burn::<AppCauldron>().await
@@ -130,13 +125,17 @@ retain their existing behavior.
 
 ## Explicit ownership, imports, and exports
 
+Cauldron registration uses only `#[cauldron(...)]`. Bare `#[cauldron]` and
+`#[cauldron()]` register empty cauldrons. Manual cauldron implementations and
+fluent registration were removed in 2.0.0.
+
 Each selected provider output and controller belongs to one cauldron. Rust
 namespace placement and Rust `pub` control Rust names, not DI membership or DI
 visibility. Register managed providers or plain `T: Injector<T>` services with
-`.provide::<T>()`; register controllers with `.controller::<T>()`.
-For a trait output, use `.provide_with::<Arc<dyn Trait>, Implementer>()`, where
+`providers = [T]`; register controllers with `controllers = [T]`.
+For a trait output, use `providers = [Arc<dyn Trait> => Implementer]`, where
 `Implementer: Injector<Arc<dyn Trait>>` constructs the selected trait value.
-The same method supports third-party native outputs such as `DatabaseConnection`.
+The same binding syntax supports third-party native outputs such as `DatabaseConnection`.
 Exports name the output type, not the constructor type.
 
 ### Writing an injector
@@ -167,7 +166,7 @@ pub struct UserService {
 
 Rust visibility does not export a dependency from its cauldron. Making
 `UserDependency` public only satisfies Rust's type visibility rules; it remains
-private to its owning cauldron until explicitly exported with `.export::<T>()`.
+private to its owning cauldron until explicitly exported with `exports = [T]`.
 
 ```rust
 use furnace::prelude::*;
@@ -192,14 +191,8 @@ impl Injector<Arc<dyn UserRepository>> for MemoryRepository {
 #[burner]
 struct UserService { #[inject] repository: Arc<dyn UserRepository> }
 
-#[cauldron]
+#[cauldron(providers = [Arc<dyn UserRepository> => MemoryRepository, UserService])]
 struct AppCauldron;
-impl Cauldron for AppCauldron {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide_with::<Arc<dyn UserRepository>, MemoryRepository>()
-            .provide::<UserService>()
-    }
-}
 ```
 
 `inject` is an associated async constructor: `Type::inject(dependencies).await`,
@@ -224,12 +217,12 @@ the selected application.
 The `element` macro and its lifecycle form are removed, with no compatibility
 alias. Ordinary helper functions remain usable but no longer register outputs.
 
-`.import(UserCauldron)` exposes that directly imported cauldron's explicit
-`.export::<UserService>()` outputs. Transitive imports do not expose transitive
+`imports = [UserCauldron]` exposes that directly imported cauldron's explicit
+`exports = [UserService]` outputs. Transitive imports do not expose transitive
 exports, and imported outputs cannot be re-exported. Register a shared output
 once in its owning cauldron and import that cauldron wherever needed.
 
-A reachable cauldron marked with `.global()` exposes only its explicit exports
+A reachable cauldron marked with `global` exposes only its explicit exports
 to the selected application. It does not select an otherwise unreachable
 cauldron. Independent roots keep distinct instances and analysis state.
 

@@ -1,6 +1,6 @@
 //! A transport integration can tag providers without bringing transport types into core.
 use furnace_rs_core::__private::TransportProvider;
-use furnace_rs_core::{Cauldron, CauldronRegistration, Furnace, burner, cauldron};
+use furnace_rs_core::{Furnace, burner, cauldron};
 use std::any::TypeId;
 
 #[burner]
@@ -15,20 +15,14 @@ struct OrdinaryService;
 #[cauldron(root, providers = [OrdinaryService], grpc_services = [TransportService])]
 struct DeclarativeRoot;
 
-#[cauldron]
-struct FluentRoot;
-impl Cauldron for FluentRoot {
-    fn register(self) -> CauldronRegistration<Self> {
-        self.provide::<OrdinaryService>()
-            .transport_provider::<TransportService>()
-    }
-}
+#[cauldron(providers = [OrdinaryService], grpc_services = [TransportService])]
+struct UnmarkedRoot;
 
 #[tokio::test]
-async fn transport_membership_is_explicit_for_both_registration_styles() {
+async fn transport_membership_is_explicit_for_marked_and_unmarked_roots() {
     for graph in [
         furnace_rs_core::__private::build_cauldron_graph::<DeclarativeRoot>().unwrap(),
-        furnace_rs_core::__private::build_cauldron_graph::<FluentRoot>().unwrap(),
+        furnace_rs_core::__private::build_cauldron_graph::<UnmarkedRoot>().unwrap(),
     ] {
         assert_eq!(
             graph

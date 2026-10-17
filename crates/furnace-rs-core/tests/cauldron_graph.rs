@@ -1,179 +1,130 @@
 //! Integration tests for deterministic rooted module graph construction.
 
-use furnace_rs_core::{CauldronNode, FURNACE008, cauldron};
+#[macro_use]
+#[path = "support/cauldron_metadata.rs"]
+mod cauldron_metadata;
+use furnace_rs_core::{CauldronNode, FURNACE008};
 
 struct UndeclaredRoot;
 
-impl furnace_rs_core::Cauldron for UndeclaredRoot {
-    fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-        furnace_rs_core::CauldronRegistration::new(self)
-    }
-}
-
 mod diamond {
-    use super::cauldron;
 
     pub mod shared {
-        use super::cauldron;
 
-        #[cauldron]
-        pub struct SharedCauldron;
-
-        impl furnace_rs_core::Cauldron for SharedCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                furnace_rs_core::CauldronRegistration::new(self)
-            }
+        cauldron_metadata! {
+            pub struct SharedCauldron;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
         }
     }
 
     pub mod left {
-        use super::{cauldron, shared::SharedCauldron};
+        use super::shared::SharedCauldron;
 
-        #[cauldron]
-        pub struct LeftCauldron;
-
-        impl furnace_rs_core::Cauldron for LeftCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.import(SharedCauldron)
-            }
+        cauldron_metadata! {
+            pub struct LeftCauldron;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+                .import::<SharedCauldron>()
         }
     }
 
     pub mod right {
-        use super::{cauldron, shared::SharedCauldron};
+        use super::shared::SharedCauldron;
 
-        #[cauldron]
-        pub struct RightCauldron;
-
-        impl furnace_rs_core::Cauldron for RightCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.import(SharedCauldron)
-            }
+        cauldron_metadata! {
+            pub struct RightCauldron;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+                .import::<SharedCauldron>()
         }
     }
 
     pub mod root {
-        use super::{cauldron, left::LeftCauldron, right::RightCauldron};
+        use super::{left::LeftCauldron, right::RightCauldron};
 
-        #[cauldron]
-        pub struct DiamondRoot;
-
-        impl furnace_rs_core::Cauldron for DiamondRoot {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.import(LeftCauldron).import(RightCauldron)
-            }
+        cauldron_metadata! {
+            pub struct DiamondRoot;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+                .import::<LeftCauldron>()
+                .import::<RightCauldron>()
         }
     }
 }
 
 mod duplicate_import {
-    use super::cauldron;
 
     pub mod leaf {
-        use super::cauldron;
 
-        #[cauldron]
-        pub struct LeafCauldron;
-
-        impl furnace_rs_core::Cauldron for LeafCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                furnace_rs_core::CauldronRegistration::new(self)
-            }
+        cauldron_metadata! {
+            pub struct LeafCauldron;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
         }
     }
 
     pub mod root {
-        use super::{cauldron, leaf::LeafCauldron};
+        use super::leaf::LeafCauldron;
 
-        #[cauldron]
-        pub struct DuplicateImportRoot;
-
-        impl furnace_rs_core::Cauldron for DuplicateImportRoot {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.import(LeafCauldron).import(LeafCauldron)
-            }
+        cauldron_metadata! {
+            pub struct DuplicateImportRoot;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+                .import::<LeafCauldron>()
+                .import::<LeafCauldron>()
         }
     }
 }
 
 mod self_import {
-    use super::cauldron;
 
-    #[cauldron]
-    pub struct SelfImportCauldron;
-
-    impl furnace_rs_core::Cauldron for SelfImportCauldron {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.import(SelfImportCauldron)
-        }
+    cauldron_metadata! {
+        pub struct SelfImportCauldron;
+        furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+            .import::<SelfImportCauldron>()
     }
 }
 
 mod cycle {
-    use super::cauldron;
 
     pub mod first {
-        use super::{cauldron, second::SecondCycleCauldron};
+        use super::second::SecondCycleCauldron;
 
-        #[cauldron]
-        pub struct FirstCycleCauldron;
-
-        impl furnace_rs_core::Cauldron for FirstCycleCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.import(SecondCycleCauldron)
-            }
+        cauldron_metadata! {
+            pub struct FirstCycleCauldron;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+                .import::<SecondCycleCauldron>()
         }
     }
 
     pub mod second {
-        use super::{cauldron, first::FirstCycleCauldron};
+        use super::first::FirstCycleCauldron;
 
-        #[cauldron]
-        pub struct SecondCycleCauldron;
-
-        impl furnace_rs_core::Cauldron for SecondCycleCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.import(FirstCycleCauldron)
-            }
+        cauldron_metadata! {
+            pub struct SecondCycleCauldron;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+                .import::<FirstCycleCauldron>()
         }
     }
 }
 
 mod namespace_collision {
-    use super::cauldron;
 
     pub mod shared_namespace {
-        use super::cauldron;
 
-        #[cauldron]
-        pub struct FirstCauldron;
-
-        impl furnace_rs_core::Cauldron for FirstCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                furnace_rs_core::CauldronRegistration::new(self)
-            }
+        cauldron_metadata! {
+            pub struct FirstCauldron;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
         }
 
-        #[cauldron]
-        pub struct SecondCauldron;
-
-        impl furnace_rs_core::Cauldron for SecondCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                furnace_rs_core::CauldronRegistration::new(self)
-            }
+        cauldron_metadata! {
+            pub struct SecondCauldron;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
         }
     }
 
     pub mod root {
-        use super::{cauldron, shared_namespace::FirstCauldron};
+        use super::shared_namespace::FirstCauldron;
 
-        #[cauldron]
-        pub struct CollisionRoot;
-
-        impl furnace_rs_core::Cauldron for CollisionRoot {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.import(FirstCauldron)
-            }
+        cauldron_metadata! {
+            pub struct CollisionRoot;
+            furnace_rs_core::__private::CauldronDefinitionBuilder::new()
+                .import::<FirstCauldron>()
         }
     }
 }

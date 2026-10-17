@@ -1,12 +1,8 @@
 //! Listener selection rejects invalid applications before provider startup.
-use furnace_rs_core::{Cauldron, CauldronRegistration, ConfigBuilder, MapSource};
+use furnace_rs_core::{ConfigBuilder, MapSource};
 #[furnace_rs_core::cauldron]
 struct Empty;
-impl Cauldron for Empty {
-    fn register(self) -> CauldronRegistration<Self> {
-        CauldronRegistration::new(self)
-    }
-}
+
 #[tokio::test]
 async fn no_runnable_socket_fails_before_start() {
     let config = ConfigBuilder::new()

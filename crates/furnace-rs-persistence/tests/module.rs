@@ -34,16 +34,8 @@ fn native_database_injector_declares_inputs_and_lifecycle_without_io() {
 mod imported {
     use super::*;
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [Repository => RepositoryInjector], imports = [DatabaseCauldron], exports = [Repository])]
     pub struct Root;
-
-    impl furnace_rs_core::Cauldron for Root {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide_with::<Repository, RepositoryInjector>()
-                .import(DatabaseCauldron)
-                .export::<Repository>()
-        }
-    }
 
     pub struct Repository;
 
@@ -79,12 +71,6 @@ mod imported {
 mod unimported {
     #[furnace_rs_core::cauldron]
     pub struct Root;
-
-    impl furnace_rs_core::Cauldron for Root {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            furnace_rs_core::CauldronRegistration::new(self)
-        }
-    }
 }
 
 mod private_infrastructure {
@@ -98,14 +84,8 @@ mod private_infrastructure {
         _connector: SeaOrmPostgres,
     }
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(providers = [Consumer], imports = [super::DatabaseCauldron])]
     pub struct Root;
-
-    impl furnace_rs_core::Cauldron for Root {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.provide::<Consumer>().import(super::DatabaseCauldron)
-        }
-    }
 }
 
 #[test]
@@ -126,28 +106,15 @@ mod duplicate {
     pub mod other {
         use super::super::DatabaseConnection;
 
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(providers = [DatabaseConnection => furnace_rs_persistence::sea_orm::SeaOrmDatabaseInjector], exports = [DatabaseConnection])]
         pub struct OtherCauldron;
-
-        impl furnace_rs_core::Cauldron for OtherCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.provide_with::<DatabaseConnection, furnace_rs_persistence::sea_orm::SeaOrmDatabaseInjector>()
-                    .export::<DatabaseConnection>()
-            }
-        }
     }
 
     pub mod app {
         use super::{super::DatabaseCauldron, other::OtherCauldron};
 
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(imports = [DatabaseCauldron, OtherCauldron])]
         pub struct Root;
-
-        impl furnace_rs_core::Cauldron for Root {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.import(DatabaseCauldron).import(OtherCauldron)
-            }
-        }
     }
 }
 

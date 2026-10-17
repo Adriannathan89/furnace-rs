@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 #[cfg(test)]
-use furnace_rs_core::Cauldron;
+use furnace_rs_core::__private::ModuleContract;
 use furnace_rs_core::{Diagnostic, DiagnosticCode, Error, Furnace};
 use tokio::net::TcpListener;
 
@@ -113,7 +113,7 @@ impl PreparedStandardRun {
 }
 
 #[cfg(test)]
-async fn prepare_standard_run<M: Cauldron>(
+async fn prepare_standard_run<M: ModuleContract>(
     root: &Path,
 ) -> Result<PreparedStandardRun, HttpRuntimeError> {
     let config = load_standard_config_from(root).map_err(HttpRuntimeError::Bootstrap)?;
@@ -550,8 +550,9 @@ mod tests {
     use std::time::Duration;
 
     use furnace_rs_core::{
-        ApplicationContext, AutoConfigurationStatus, Cauldron, ConfigBuilder, Diagnostic, Error,
-        FURNACE011, FURNACE020, Furnace, LifecycleFuture, LifecycleHook, MapSource, SourceLocation,
+        __private::ModuleContract, ApplicationContext, AutoConfigurationStatus, ConfigBuilder,
+        Diagnostic, Error, FURNACE011, FURNACE020, Furnace, LifecycleFuture, LifecycleHook,
+        MapSource, SourceLocation,
     };
     use tokio::net::TcpListener;
 
@@ -1117,26 +1118,12 @@ mod tests {
             .unwrap();
     }
 
-    #[furnace_rs_core::cauldron]
+    #[furnace_rs_core::cauldron(controllers = [PreflightController], providers = [RouterPreflightEvents, PreflightPermit])]
     struct ServerTestApp;
-
-    impl furnace_rs_core::Cauldron for ServerTestApp {
-        fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-            self.controller::<PreflightController>()
-                .provide::<RouterPreflightEvents>()
-                .provide::<PreflightPermit>()
-        }
-    }
 
     mod raw_router {
         #[furnace_rs_core::cauldron]
         pub(super) struct App;
-
-        impl furnace_rs_core::Cauldron for App {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                furnace_rs_core::CauldronRegistration::new(self)
-            }
-        }
     }
 
     mod standard_run {
@@ -1159,25 +1146,13 @@ mod tests {
                 }
             }
 
-            #[furnace_rs_core::cauldron]
+            #[furnace_rs_core::cauldron(controllers = [RoutedController])]
             pub struct RoutedApp;
-
-            impl furnace_rs_core::Cauldron for RoutedApp {
-                fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                    self.controller::<RoutedController>()
-                }
-            }
         }
 
         pub(super) mod empty {
             #[furnace_rs_core::cauldron]
             pub struct EmptyApp;
-
-            impl furnace_rs_core::Cauldron for EmptyApp {
-                fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                    furnace_rs_core::CauldronRegistration::new(self)
-                }
-            }
         }
     }
 
@@ -1218,17 +1193,17 @@ mod tests {
             }
         }
 
-        #[furnace_rs_core::cauldron]
+        #[furnace_rs_core::cauldron(controllers = [UnreachableController])]
         pub(super) struct UnreachableJwtCauldron;
-
-        impl furnace_rs_core::Cauldron for UnreachableJwtCauldron {
-            fn register(self) -> furnace_rs_core::CauldronRegistration<Self> {
-                self.controller::<UnreachableController>()
-            }
-        }
     }
 
     struct PreflightController;
+    impl furnace_rs_core::Injector for PreflightController {
+        type Dependencies = ();
+        async fn inject(_: ()) -> furnace_rs_core::Result<Self> {
+            Ok(Self)
+        }
+    }
     struct PreflightPermit(bool);
 
     #[derive(Clone)]
@@ -1357,7 +1332,9 @@ mod tests {
         SocketAddr::from((Ipv4Addr::LOCALHOST, 0))
     }
 
-    fn automatic_standard_builder<M: Cauldron>(host: &str) -> furnace_rs_core::FurnaceBuilder {
+    fn automatic_standard_builder<M: ModuleContract>(
+        host: &str,
+    ) -> furnace_rs_core::FurnaceBuilder {
         let config = ConfigBuilder::new()
             .source(MapSource::new(
                 "test",

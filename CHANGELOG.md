@@ -12,12 +12,13 @@ Consolidates all changes from 2.0.0-beta.1, beta.2, beta.3, and Unreleased.
 
 ### Breaking
 
+- Make cauldron registration declarative only through `#[cauldron(providers = [...], controllers = [...], imports = [...], exports = [...], ...)]`. Remove the `Cauldron` trait, manual `impl Cauldron`, `CauldronRegistration`, fluent registration helpers, and `GrpcCauldronExt`; use `grpc_services = [...]` for gRPC services. Bare `#[cauldron]` and `#[cauldron()]` register empty cauldrons.
 - Require parameterless `#[inject]` on every dependency field of burner, storage and managed controller structs. Unmarked fields now fail compilation; unit structs and manual `Injector` implementations are unchanged.
 
 ### Declarative DI
 
 - Add registration in the existing cauldron attribute and root-scoped compile-time dependency/visibility checks, including reachable globals and native injector outputs.
-- Retain legacy fluent registration alongside declarative cauldron registration.
+- Register cauldrons exclusively through the declarative attribute, including empty cauldrons.
 - Adopt declarative contracts for DatabaseCauldron and LoggerCauldron while retaining native overrides and lifecycle behavior.
 - Add a standalone compile-time DI example with a missing-logger compile-fail Cargo test. See [2.0 release notes](docs/releases/2.0.0-beta.1.md).
 - Make checker callback names independent of the checkout directory so compile-fail diagnostics remain reproducible.
@@ -236,7 +237,7 @@ Consolidates all changes from 2.0.0-beta.1, beta.2, beta.3, and Unreleased.
 ### Declarative DI
 
 - Add registration in the existing cauldron attribute and root-scoped compile-time dependency/visibility checks, including reachable globals and native injector outputs.
-- Retain legacy fluent registration alongside declarative cauldron registration.
+- Initially retain legacy fluent registration alongside declarative registration in beta.1; the final 2.0.0 release removes fluent cauldron registration.
 - Adopt declarative contracts for DatabaseCauldron and LoggerCauldron while retaining native overrides and lifecycle behavior.
 - Add a standalone compile-time DI example with a missing-logger compile-fail Cargo test. See [2.0 release notes](docs/releases/2.0.0-beta.1.md).
 - Make checker callback names independent of the checkout directory so compile-fail diagnostics remain reproducible.
@@ -330,10 +331,11 @@ the `v1.0.0` tag, and the GitHub release still require the release workflow.
   the `FURNACE` family. No aliases preserve the retired declarations.
 - Replace module/service/repository attributes with `#[cauldron]`, `#[burner]`,
   and `#[storage]`. Replace provider/element factories with typed `Injector`
-  construction and explicit `.provide_with::<Output, Implementer>()` bindings,
+  construction and explicit injector/output bindings,
   including application-authored shared trait-object outputs.
 - Declare members, controllers, imports, exports, and global status in
-  `Cauldron::register`. Rust `pub` controls Rust visibility; cauldron exports
+  manual cauldron registration, superseded by declarative attributes in 2.0.0.
+  Rust `pub` controls Rust visibility; cauldron exports
   control dependency access, and explicit guards control HTTP authorization.
 - Start conventional applications with `Furnace::burn` and `FurnaceBurnExt`.
 - Declare endpoints in inherent `#[controller(route = "/users")]`

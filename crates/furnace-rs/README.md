@@ -80,7 +80,7 @@ versions are maintained in the workspace root `Cargo.toml`.
 The facade re-exports:
 
 - Core declarations: `cauldron`, `burner`, `storage`, and typed `Injector` construction,
-  `Configuration`, `Secret`, `Cauldron`, `CauldronRegistration`, and the builder/application types under
+  `Configuration`, `Secret`, and the builder/application types under
   `furnace_rs::core`.
 - Integration declarations: HTTP verbs, `controller`, `guard`,
   `Input`, Passport derives, and strategy metadata when the required features
@@ -151,7 +151,7 @@ See the [root workspace guide](../../README.md#workspace-crates),
 [architecture reference](../../docs/ARCHITECTURE.md), and
 [contribution guide](../../CONTRIBUTING.md).
 
-The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Legacy fluent roots remain supported.
+The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Registration uses only `#[cauldron(...)]`; bare `#[cauldron]` registers an empty cauldron.
 
 See the [gRPC guide](../../docs/grpc.md) and [standalone crate](../furnace-rs-grpc/README.md).
 

@@ -165,9 +165,9 @@ needs another HTTP status.
 
 ## Root scope and normal runtime
 
-`#[cauldron]` declares a unit root type with an authored `Cauldron::register`
-chain. Membership uses `.provide::<T>()` and `.controller::<T>()`; `.import(M)`
-collects reachable cauldrons. `.provide_with::<T, I>()` selects an explicit
+`#[cauldron(...)]` declares a unit cauldron and its registration metadata.
+Bare `#[cauldron]` registers an empty cauldron. Membership uses `providers = [T]` and `controllers = [T]`; `imports = [M]`
+collects reachable cauldrons. `providers = [T => I]` selects an explicit
 `I: Injector<T>` for native outputs or trait objects such as `Arc<dyn Trait>`;
 exports name the output type. `Injector::lifecycle` attaches hooks to a
 constructed native value. Outputs have one owner in the selected graph.
@@ -245,7 +245,6 @@ JWT/strategy requirements or receive Passport bindings.
 Each endpoint binding retains its controller, method, canonical path, handler,
 and owning cauldron context. The Passport layer wraps each protected method router before methods are merged, preserving native extractor behavior and local strategy visibility.
 See [the breaking migration guide](importance/furnace-rs-migration.md).
-
 
 ## gRPC and shared runtime in 2.0.0
 

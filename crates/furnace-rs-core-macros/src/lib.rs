@@ -40,9 +40,9 @@ pub fn main(arguments: TokenStream, item: TokenStream) -> TokenStream {
     }
 }
 
-/// Declares a unit cauldron with fluent or declarative registration.
+/// Declares a unit cauldron with declarative registration.
 ///
-/// Bare attributes retain manual `Cauldron::register`. Options declare providers,
+/// Bare attributes register an empty cauldron. Options declare providers,
 /// controllers, imports, exports and global status; `root` checks the reachable
 /// declarative graph's typed dependencies during compilation.
 #[proc_macro_attribute]

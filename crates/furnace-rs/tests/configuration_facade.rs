@@ -45,15 +45,8 @@ mod selected {
 
     pub static CONSTRUCTIONS: AtomicUsize = AtomicUsize::new(0);
 
-    #[cauldron]
+    #[cauldron(providers = [AppConfig => AppConfigInjector, Consumer => ConsumerInjector])]
     pub struct AppCauldron;
-
-    impl furnace_rs::core::Cauldron for AppCauldron {
-        fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-            self.provide_with::<AppConfig, AppConfigInjector>()
-                .provide_with::<Consumer, ConsumerInjector>()
-        }
-    }
 
     fn app_config(config: Config) -> furnace_rs::core::Result<AppConfig> {
         Ok(config.parse()?)
@@ -138,12 +131,6 @@ mod unused {
 
     #[cauldron]
     pub struct EmptyCauldron;
-
-    impl furnace_rs::core::Cauldron for EmptyCauldron {
-        fn register(self) -> furnace_rs::core::CauldronRegistration<Self> {
-            furnace_rs::core::CauldronRegistration::new(self)
-        }
-    }
 
     #[derive(Configuration)]
     #[allow(dead_code)]

@@ -15,7 +15,7 @@ pub use descriptor::{
     GrpcGuard, GrpcMethodOverride, GrpcServiceDescriptor, GrpcServiceRegistration,
 };
 pub use scope::{GrpcApplicationScope, GrpcMethodRecord, ScopedGrpcService};
-pub use service::{GrpcCauldronExt, GrpcService};
+pub use service::GrpcService;
 
 pub use config::{
     GrpcClientConfig, GrpcClientTlsConfig, GrpcConnectionMode, GrpcServerConfig,

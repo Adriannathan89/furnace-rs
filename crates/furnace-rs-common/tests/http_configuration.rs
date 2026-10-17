@@ -8,8 +8,9 @@ use furnace_rs_common::__private::{
     load_standard_config_from_for_test, server_binding_address_for_test,
 };
 use furnace_rs_common::core::{
-    AutoConfigurationReport, AutoConfigurationStatus, Cauldron, Config, ConfigBuilder, EnvSource,
-    FURNACE020, Furnace, FurnaceBuilder, GraphAnalysis, MapSource, TomlSource,
+    __private::ModuleContract, AutoConfigurationReport, AutoConfigurationStatus, Config,
+    ConfigBuilder, EnvSource, FURNACE020, Furnace, FurnaceBuilder, GraphAnalysis, MapSource,
+    TomlSource,
 };
 
 const CORS_ID: &str = "furnace.common.http.cors";
@@ -49,25 +50,13 @@ mod routed {
         }
     }
 
-    #[furnace_rs_common::core::cauldron]
+    #[furnace_rs_common::core::cauldron(controllers = [RoutedController])]
     pub struct RoutedApp;
-
-    impl furnace_rs_common::core::Cauldron for RoutedApp {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            self.controller::<RoutedController>()
-        }
-    }
 }
 
 mod empty {
     #[furnace_rs_common::core::cauldron]
     pub struct EmptyApp;
-
-    impl furnace_rs_common::core::Cauldron for EmptyApp {
-        fn register(self) -> furnace_rs_common::core::CauldronRegistration<Self> {
-            furnace_rs_common::core::CauldronRegistration::new(self)
-        }
-    }
 }
 
 fn config(values: impl IntoIterator<Item = (&'static str, &'static str)>) -> Config {
@@ -124,7 +113,7 @@ fn assert_invalid_cors(config: Config, redacted_value: Option<&str>) {
     }
 }
 
-fn automatic_builder<M: Cauldron>(config: Config) -> FurnaceBuilder {
+fn automatic_builder<M: ModuleContract>(config: Config) -> FurnaceBuilder {
     let mut builder = Furnace::builder_with_config(config);
     builder.root::<M>().unwrap();
     assert!(enable_automatic_server_for_test(&mut builder));
@@ -137,7 +126,7 @@ fn automatic_rootless_builder(config: Config) -> FurnaceBuilder {
     builder
 }
 
-fn automatic_cors_builder<M: Cauldron>(config: Config) -> FurnaceBuilder {
+fn automatic_cors_builder<M: ModuleContract>(config: Config) -> FurnaceBuilder {
     let mut builder = Furnace::builder_with_config(config);
     builder.root::<M>().unwrap();
     assert!(enable_automatic_cors_for_test(&mut builder));
