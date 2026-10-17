@@ -47,6 +47,8 @@ migration are consolidated into the first 1.0.0 release.
 
 ### Fixed
 
+- Check missing WebSocket `Injector` implementations through structured compiler
+  diagnostics, avoiding CI failures from reordered Rust compiler suggestions.
 - List the selected WebSocket endpoint count and paths in the startup summary,
   including managed gateways and owned endpoints.
 - Keep transport-generated JSON errors out of raw WebSocket connections,

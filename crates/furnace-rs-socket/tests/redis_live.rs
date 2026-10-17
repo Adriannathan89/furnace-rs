@@ -80,7 +80,11 @@ async fn redis_outage_keeps_direct_sends_and_rejects_room_sends() {
     assert_eq!(recv(&mut c).await["event"], "furnace.ok");
     drop(redis);
     send(&mut c, "say", json!(1)).await;
-    assert_eq!(recv(&mut c).await["data"]["code"], "backend_unavailable");
+    let response = recv(&mut c).await;
+    assert_eq!(
+        response["data"]["code"], "backend_unavailable",
+        "{response}"
+    );
     send(&mut c, "direct", json!({})).await;
     assert_eq!(recv(&mut c).await["event"], "direct");
     c.close(None).await.unwrap();
