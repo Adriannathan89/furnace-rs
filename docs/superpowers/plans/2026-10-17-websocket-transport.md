@@ -2,6 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Execution status:** All twelve implementation areas are complete. See the
+[verification report](2026-10-17-websocket-transport-verification.md) for final
+test evidence, review fixes, and recorded implementation rulings. The task steps
+below preserve the original implementation plan.
+
 **Goal:** Deliver the approved server-only WebSocket transport, including managed gateways, owned sockets, optional distributed Redis rooms, replay, and Furnace lifecycle/CLI integration.
 
 **Architecture:** Axum performs upgrades on a separate supervised listener. Static descriptors select DI-managed handlers by cauldron; managed connection dispatch uses a shared sending/room service. Memory implements live local rooms, Redis Pub/Sub implements distributed live rooms, and independent Redis Stream readers implement replayable memberships.
