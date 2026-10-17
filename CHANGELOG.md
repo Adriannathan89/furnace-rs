@@ -6,6 +6,65 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### WebSocket transport
+
+- Add standalone `furnace-rs-socket` and `furnace-rs-socket-macros` packages
+  using Axum's standard WebSocket support. Expose optional facade `socket`,
+  `socket-tls`, and `socket-redis` features, with optional JWT forwarding.
+- Add DI-managed `#[socket_gateway]` registrations for raw text/binary and named
+  JSON events, plus `#[socket_endpoint]` handlers that take ownership of the
+  socket. Select registrations through cauldron `socket_gateways` and
+  `socket_endpoints` lists; validate paths, handlers, and reserved event names.
+- Serve server-only endpoints on a separate explicit listener selected through
+  `[furnace] transports`. Share provider startup, readiness, rollback, bounded
+  drain, and shutdown with HTTP and gRPC. Support native Rustls TLS and ordinary
+  WebSocket connections behind a terminating proxy.
+- Authenticate guarded handshakes through Passport using Bearer headers,
+  configured cookies, or query parameters. Reject repeated or ambiguous
+  credentials without fallback, expose typed principals, and enforce exact
+  allowlist matching for supplied browser origins.
+- Add `SocketContext` and injectable `SocketHub` controls for direct sends,
+  gateway broadcasts, and dynamic rooms. Require application approval for joins,
+  provide built-in JSON join/leave commands and correlated responses, and allow
+  room deletion only when empty.
+- Support local in-memory live delivery and optional cross-instance Redis
+  Pub/Sub delivery, with namespace and gateway isolation, leased memberships,
+  room-generation fencing, and reconnect handling. During Redis outages,
+  distributed sends fail explicitly while local direct sends remain available.
+- Add replayable named JSON room events through Redis Streams, client-held
+  resume cursors, explicit age and count retention, ordered catch-up and live
+  continuation, and expired-history errors. Fix delivery mode for each room's
+  lifetime; require Redis 6.2+ for age trimming. Replay does not provide client
+  acknowledgement tracking or exactly-once delivery.
+- Add sequential processing by default and configurable bounded concurrency,
+  managed ping/pong heartbeats, a 1 MiB incoming-message limit, and outbound
+  queues bounded by both message count and bytes. Disconnect slow consumers and
+  keep control frames responsive while application handlers run.
+- Add a runnable [WebSocket example](example/socket-transport/README.md), the
+  [transport guide](docs/socket.md), standalone and renamed consumer coverage,
+  real WebSocket/Redis/TLS regressions, Rust 1.94 checks, and package/version/
+  publication-order integration for both new crates.
+
+### Fixed
+
+- List the selected WebSocket endpoint count and paths in the startup summary,
+  including managed gateways and owned endpoints.
+- Keep transport-generated JSON errors out of raw WebSocket connections,
+  including errors from background Redis room retirement.
+- Serialize room transitions and stop previous replay readers before catch-up,
+  preventing delivery after leave and interleaved readers during rejoin.
+- Retire stale local memberships when Redis rooms are deleted or recreated,
+  including generation changes during membership restoration.
+- Receive control frames and cancel connection work while a WebSocket connect
+  hook is blocked; cancel blocked writes within the configured shutdown drain.
+
+### CLI
+
+- Add side-effect-free `furnace socket` text/JSON inspection and WebSocket doctor
+  checks. Report selected endpoint and handler metadata without constructing
+  providers, opening listeners, reading TLS identities, or contacting Redis;
+  preserve deserialization of older reports without socket metadata.
+
 ## [2.0.0-beta.3] - 2026-10-16
 
 ### Added
