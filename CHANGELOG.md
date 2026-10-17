@@ -6,6 +6,69 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### WebSocket transport
+
+- Add standalone `furnace-rs-socket` and `furnace-rs-socket-macros` packages
+  using Axum's standard WebSocket support. Expose optional facade `socket`,
+  `socket-tls`, and `socket-redis` features, with optional JWT forwarding.
+- Add DI-managed `#[socket_gateway]` registrations for raw text/binary and named
+  JSON events, plus `#[socket_endpoint]` handlers that take ownership of the
+  socket. Select registrations through cauldron `socket_gateways` and
+  `socket_endpoints` lists; validate paths, handlers, and reserved event names.
+- Serve server-only endpoints on a separate explicit listener selected through
+  `[furnace] transports`. Share provider startup, readiness, rollback, bounded
+  drain, and shutdown with HTTP and gRPC. Support native Rustls TLS and ordinary
+  WebSocket connections behind a terminating proxy.
+- Authenticate guarded handshakes through Passport using Bearer headers,
+  configured cookies, or query parameters. Reject repeated or ambiguous
+  credentials without fallback, expose typed principals, and enforce exact
+  allowlist matching for supplied browser origins.
+- Add `SocketContext` and injectable `SocketHub` controls for direct sends,
+  gateway broadcasts, and dynamic rooms. Require application approval for joins,
+  provide built-in JSON join/leave commands and correlated responses, and allow
+  room deletion only when empty.
+- Support local in-memory live delivery and optional cross-instance Redis
+  Pub/Sub delivery, with namespace and gateway isolation, leased memberships,
+  room-generation fencing, and reconnect handling. During Redis outages,
+  distributed sends fail explicitly while local direct sends remain available.
+- Add replayable named JSON room events through Redis Streams, client-held
+  resume cursors, explicit age and count retention, ordered catch-up and live
+  continuation, and expired-history errors. Fix delivery mode for each room's
+  lifetime; require Redis 6.2+ for age trimming. Replay does not provide client
+  acknowledgement tracking or exactly-once delivery.
+- Add sequential processing by default and configurable bounded concurrency,
+  managed ping/pong heartbeats, a 1 MiB incoming-message limit, and outbound
+  queues bounded by both message count and bytes. Disconnect slow consumers and
+  keep control frames responsive while application handlers run.
+- Add a runnable [WebSocket example](example/socket-transport/README.md), the
+  [transport guide](docs/socket.md), standalone and renamed consumer coverage,
+  real WebSocket/Redis/TLS regressions, Rust 1.94 checks, and package/version/
+  publication-order integration for both new crates.
+
+### Fixed
+
+- Check missing WebSocket `Injector` implementations through structured compiler
+  diagnostics, avoiding CI failures from reordered Rust compiler suggestions.
+- List the selected WebSocket endpoint count and paths in the startup summary,
+  including managed gateways and owned endpoints.
+- Keep transport-generated JSON errors out of raw WebSocket connections,
+  including errors from background Redis room retirement.
+- Serialize room transitions and stop previous replay readers before catch-up,
+  preventing delivery after leave and interleaved readers during rejoin.
+- Retire stale local memberships when Redis rooms are deleted or recreated,
+  including generation changes during membership restoration.
+- Receive control frames and cancel connection work while a WebSocket connect
+  hook is blocked; cancel blocked writes within the configured shutdown drain.
+
+### CLI
+
+- Add side-effect-free `furnace socket` text/JSON inspection and WebSocket doctor
+  checks. Report selected endpoint and handler metadata without constructing
+  providers, opening listeners, reading TLS identities, or contacting Redis;
+  preserve deserialization of older reports without socket metadata.
+
+## [2.0.0-beta.3] - 2026-10-16
+
 ### Added
 
 - Add optional `furnace-rs-persistence/sea-orm-storage` entity-bound storage
@@ -23,7 +86,7 @@ migration are consolidated into the first 1.0.0 release.
   compiled, preventing inactive public methods from weakening guarded RPC
   policies. Reject unsupported conditional `grpc_method` attributes and
   validate active duplicate overrides before route construction. See the
-  [F01 before/after reproduction](benchmark/GRPC_POLICY_SECURITY.md).
+  [F01 before/after reproduction](benchmark/SECURITY.md#f01-conditional-grpc-admission-policy).
 - Update all committed Rustls lockfile entries to 0.23.46 and audit every
   committed lockfile in beta and stable publication workflows.
 - Validate response cookie names with the same rules used for request cookies
@@ -31,6 +94,17 @@ migration are consolidated into the first 1.0.0 release.
 
 ### Fixed
 
+- Include `furnace-rs-persistence-types` in version preparation, package
+  verification, and dependency-ordered publication. Update independent example
+  pins during release preparation and retry beta publication while new crates
+  propagate through the registry index.
+- Prepare standalone consumer dependencies in every workspace test job and
+  retain compiler-specific UI snapshots for Rust 1.94, 1.96, and 1.99.
+- Keep storage error conversion independent of PostgreSQL provider registration.
+- Run generated storage's PostgreSQL acceptance test in CI and both publication
+  gates, including CRUD, relation loading, ordering, and pagination.
+- Replace remaining yanked `yoke-derive` 0.8.3 lock entries with compatible,
+  non-yanked 0.8.2.
 - Preserve lifecycle startup progress and failure records across cancellation;
   retry pending shutdown hooks while skipping completed hooks.
 - Reject conditionally compiled controller dependency fields with a clear
@@ -142,7 +216,7 @@ configuration, and inventory provider construction.
   options can still disable these policies with `None`.
 - Reject inventory constructor outputs whose concrete type differs from their
   declared type identifier before application construction succeeds.
-- Record [before/after database and inventory regression measurements](benchmark/DATABASE_INVENTORY_SECURITY.md),
+- Record [before/after database and inventory regression measurements](benchmark/SECURITY.md#database-jwt-and-inventory-regressions),
   including retained JWT algorithm binding and native PostgreSQL recovery controls.
 - Bound incomplete initial HTTP requests, including idle sockets and partial
   protocol prefaces, and HTTP/1 request headers to ten seconds. Preserve HTTP/2,
@@ -152,7 +226,7 @@ configuration, and inventory provider construction.
   headers are sent and close the affected HTTP/1 connection. A timeout during
   response streaming terminates that stream. Body-size limits remain enforced.
 - Record isolated before/after regression measurements in the
-  [HTTP runtime security report](benchmark/HTTP_RUNTIME_SECURITY.md).
+  [HTTP runtime security report](benchmark/SECURITY.md#http-runtime-request-deadlines).
 
 ## [1.0.0] - 2026-10-03
 

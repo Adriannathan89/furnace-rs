@@ -1,0 +1,49 @@
+{
+  "check": "auth request handlers emit no request-path logs",
+  "checked_markers": [
+    "login rejected",
+    "login succeeded",
+    "protected profile read",
+    "[debug]"
+  ],
+  "requests_per_framework": 4,
+  "frameworks": [
+    {
+      "framework": "furnace-rs",
+      "binary_sha256": "fd2792a2298c60e91f7e51c84825beb70dcce084a94ae44d0dc8c28f64fac8a6",
+      "statuses": {
+        "unauthenticated_profile": 401,
+        "rejected_login": 401,
+        "successful_login": 200,
+        "authenticated_profile": 200
+      },
+      "request_log_lines": [],
+      "passed": true
+    },
+    {
+      "framework": "axum",
+      "binary_sha256": "5b6ab9a6a966ef71addbfcfe0a351bf763d95fe9e6ed15645c43b31eb9e43a24",
+      "statuses": {
+        "unauthenticated_profile": 401,
+        "rejected_login": 401,
+        "successful_login": 200,
+        "authenticated_profile": 200
+      },
+      "request_log_lines": [],
+      "passed": true
+    },
+    {
+      "framework": "fiber",
+      "binary_sha256": "80fdad028b37453c5986045897f82bba409b692ac55b7ba8bfde89a368857614",
+      "statuses": {
+        "unauthenticated_profile": 401,
+        "rejected_login": 401,
+        "successful_login": 200,
+        "authenticated_profile": 200
+      },
+      "request_log_lines": [],
+      "passed": true
+    }
+  ],
+  "passed": true
+}

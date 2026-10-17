@@ -55,15 +55,15 @@ pub async fn prepare_application<M: Cauldron>(
         furnace_rs_core::__private::inventory::iter::<RuntimeTransportDescriptor>
             .into_iter()
             .collect();
-    let selection = RuntimeSelection::parse(
+    let selection = RuntimeSelection::parse_registered(
         &config,
-        adapters.iter().any(|a| a.name == "http"),
-        adapters.iter().any(|a| a.name == "grpc"),
+        &adapters.iter().map(|a| a.name).collect::<Vec<_>>(),
     )
     .map_err(ApplicationRuntimeError::Bootstrap)?;
     let selected = |name| match name {
         "http" => selection.http,
         "grpc" => selection.grpc,
+        "socket" => selection.socket,
         _ => false,
     };
     let graph = furnace_rs_core::__private::build_cauldron_graph::<M>()

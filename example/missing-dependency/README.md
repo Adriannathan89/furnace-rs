@@ -1,6 +1,6 @@
 # Missing dependency blocked at compile time
 
-This independent FURNACE 2.0.0-beta.2 example intentionally fails compilation.
+This independent FURNACE 2.0.0-beta.3 example intentionally fails compilation.
 `OrderService` injects `OrderRepository`, but `AppCauldron` registers only
 `OrderService`. Requires Rust 1.94 or newer.
 

@@ -21,12 +21,13 @@ internal FURNACE crate dependency to `=1.0.2`, updates matching FURNACE package
 records in every `Cargo.lock`, then runs locked Cargo metadata and workspace
 checks.
 
-All eleven distributable packages, including `furnace-rs-testing` and `furnace-rs-cli`, inherit the
+All twelve distributable packages, including `furnace-rs-testing` and `furnace-rs-cli`, inherit the
 workspace version. The script rejects a CLI manifest that pins its own version.
 
 It does not edit README or changelog content, commit, tag, push, or publish.
 Review the Cargo changes and complete the release documentation manually.
-Independent example manifests must also pin the prepared FURNACE version.
+Independent examples' exact local FURNACE dependency pins are updated as well;
+the examples retain their own application versions.
 
 Version 1.0.2 is already released on crates.io.
 See the [release guide](../docs/releases/1.0.2.md) for changes and verification.

@@ -1,0 +1,5 @@
+error: max_concurrency requires concurrent processing and a positive limit
+ --> tests/ui-socket/fail/concurrency.rs:4:1
+  |
+4 | impl Gateway{}
+  | ^^^^^^^^^^^^^^

@@ -3,7 +3,7 @@ mod auth;
 use auth::AuthCauldron;
 use furnace_rs::prelude::*;
 
-#[cauldron(root, imports = [LoggerCauldron, AuthCauldron])]
+#[cauldron(root, imports = [AuthCauldron])]
 struct AppCauldron;
 
 #[furnace_rs::main]

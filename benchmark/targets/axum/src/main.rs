@@ -216,7 +216,6 @@ async fn login(
         return error(StatusCode::UNPROCESSABLE_ENTITY, "validation_error").into_response();
     }
     if input.username != state.username || input.password != state.password {
-        eprintln!("login rejected");
         return error(StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
     let exp = (SystemTime::now()
@@ -234,10 +233,7 @@ async fn login(
         &claims,
         &EncodingKey::from_secret(state.secret.as_bytes()),
     ) {
-        Ok(token) => {
-            eprintln!("login succeeded");
-            Json(json!({"access_token": token})).into_response()
-        }
+        Ok(token) => Json(json!({"access_token": token})).into_response(),
         Err(_) => error(StatusCode::INTERNAL_SERVER_ERROR, "internal").into_response(),
     }
 }
@@ -253,7 +249,6 @@ async fn me(State(state): State<AuthState>, headers: HeaderMap) -> impl IntoResp
     );
     match decoded {
         Ok(data) if data.claims.user_id == 1 && data.claims.sub == "1" => {
-            eprintln!("protected profile read");
             Json(json!({"id": 1, "username": state.username})).into_response()
         }
         _ => passport_unauthorized(),

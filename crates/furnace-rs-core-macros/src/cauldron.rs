@@ -36,7 +36,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             }
         });
         let controllers = d.controllers.iter().map(|t| quote!(.controller::<#t>()));
-        let grpc_services = d.grpc_services.iter().map(|t| quote!(.transport_provider::<#t>()));
+        let grpc_services = d.grpc_services.iter().chain(d.socket_gateways.iter()).chain(d.socket_endpoints.iter()).map(|t| quote!(.transport_provider::<#t>()));
         let imports = d.imports.iter().map(|t| quote!(.import(#t)));
         let exports = d.exports.iter().map(|t| quote!(.export::<#t>()));
         let global = d.global.then(|| quote!(.global()));

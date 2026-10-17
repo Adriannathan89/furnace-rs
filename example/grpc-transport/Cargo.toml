@@ -12,7 +12,7 @@ default = []
 http = ["furnace/http"]
 
 [dependencies]
-furnace = { package = "furnace-rs", path = "../../crates/furnace-rs", version = "=2.0.0-beta.2", default-features = false, features = ["grpc", "grpc-tls", "jwt", "runtime-tokio"] }
+furnace = { package = "furnace-rs", path = "../../crates/furnace-rs", version = "=2.0.0-beta.3", default-features = false, features = ["grpc", "grpc-tls", "jwt", "runtime-tokio"] }
 tonic = { version = "=0.14.6", default-features = false, features = ["transport", "codegen"] }
 tonic-prost = "=0.14.6"
 prost = "=0.14.4"

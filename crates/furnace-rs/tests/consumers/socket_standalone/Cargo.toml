@@ -1,0 +1,10 @@
+[package]
+name = "furnace-socket-standalone-consumer"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.94"
+[dependencies]
+socket = { package = "furnace-rs-socket", path = "../../../../furnace-rs-socket", default-features = false, features = ["jwt"] }
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+[workspace]

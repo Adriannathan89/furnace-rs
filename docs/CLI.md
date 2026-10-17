@@ -3,7 +3,7 @@
 The released FURNACE 1.0.2 CLI provides Cargo-native execution, HTTP route and
 graph inspection, a minimal-project generator, and versioned JSON results for
 finite FURNACE-owned commands. This guide also covers additions in the
-2.0.0-beta.2 checkout; those commands are labeled where they appear. Human-readable
+2.0.0-beta.3 checkout; those commands are labeled where they appear. Human-readable
 output remains the default.
 
 ## Start a minimal HTTP application
@@ -75,7 +75,7 @@ furnace graph [--package <package>] [--bin <binary>]
 furnace doctor [--package <package>] [--bin <binary>]
 ```
 
-`furnace grpc` is available in the 2.0.0-beta.2 checkout only; it is not part
+`furnace grpc` is available in the 2.0.0-beta.3 checkout only; it is not part
 of the released 1.0.2 CLI contract. It inspects selected protobuf methods,
 streaming shapes, and effective policies without application startup. See the
 [gRPC guide](grpc.md).
@@ -127,7 +127,7 @@ Every document has this version-2 envelope:
 ```
 
 `command` is the canonical spelling (`new`, `routes`, `graph`, or `doctor`); the
-2.0.0-beta.2 checkout adds `grpc`. It is `null` only when syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
+2.0.0-beta.3 checkout adds `grpc`. It is `null` only when syntax cannot identify a command. `ok` is true only for exit-zero FURNACE-owned
 completion. `data` is the command object, safe partial inspection data, or
 `null`. `diagnostics` is an ordered list of FURNACE-owned records:
 

@@ -9,6 +9,8 @@ members = [
     "crates/furnace-rs-common",
     "crates/furnace-rs-common-macros",
     "crates/furnace-rs-grpc",
+    "crates/furnace-rs-socket",
+    "crates/furnace-rs-socket-macros",
     "crates/furnace-rs-grpc-macros",
     "crates/furnace-rs-cli",
     "crates/furnace-rs-extra",
@@ -17,7 +19,7 @@ members = [
 ]
 
 [workspace.package]
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 edition = "2024"
 rust-version = "1.94"
 authors = ["furnace-rs contributors"]

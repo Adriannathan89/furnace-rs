@@ -246,5 +246,5 @@ fn parse_diagnostic(error: &ParseError) -> CliError {
 
 /// Returns the static command and application-selection help text.
 const fn help() -> &'static str {
-    "Usage: furnace <command> [options]\n\nCommands:\n  run       Build and run a FURNACE application\n  dev       Watch, rebuild, and restart a FURNACE application\n  new       Create a minimal FURNACE application\n  routes    Inspect application routes\n  grpc      Inspect protobuf services and admission policies\n  graph     Inspect the application graph\n  doctor    Diagnose application configuration and metadata\n\nApplication selection:\n  -p, --package <package>\n      --bin <binary>"
+    "Usage: furnace <command> [options]\n\nCommands:\n  run       Build and run a FURNACE application\n  dev       Watch, rebuild, and restart a FURNACE application\n  new       Create a minimal FURNACE application\n  routes    Inspect application routes\n  grpc      Inspect protobuf services and admission policies\n  socket    Inspect WebSocket endpoints and admission policies\n  graph     Inspect the application graph\n  doctor    Diagnose application configuration and metadata\n\nApplication selection:\n  -p, --package <package>\n      --bin <binary>"
 }

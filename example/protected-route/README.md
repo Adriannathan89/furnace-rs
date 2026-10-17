@@ -1,6 +1,6 @@
-# Protected route, validation, and logger
+# Protected route and validation
 
-This independent FURNACE 2.0.0-beta.2 project demonstrates the
+This independent FURNACE 2.0.0-beta.3 project demonstrates the
 [TPRS pattern](https://github.com/Adriannathan89/furnace-rs-rs-example): Trait,
 Provider, Repository, Service. `src/auth/traits.rs` declares the contracts;
 `mod.rs` binds them with `Output => Injector` entries in `#[cauldron(providers = [...])]`;
@@ -37,9 +37,8 @@ curl -i http://127.0.0.1:3002/auth/me \
 Try the failure paths too: omit the header for a 401, use the wrong password
 for a 401, or send an empty username/short password for a 422. `ValidatedJson`
 rejects invalid input before `login` runs. The guard verifies the token and
-requires the `reader` role. `LoggerCauldron` provides the default console logger;
-the service logs login outcomes and the controller logs protected reads without
-printing passwords or tokens.
+requires the `reader` role. The request handlers do not write logs or credentials
+to the console.
 
 This intentionally stores a plaintext demo password in memory. It has no user
 registration, password hashing, token revocation, or durable sessions. For a
@@ -50,8 +49,8 @@ hashes, and apply your session and rotation policy.
 `ProfileController` seals every profile endpoint with `ProfileGuard`; both
 controllers are explicitly registered in `AuthCauldron`.
 
-`AppCauldron` is a checked root importing `AuthCauldron` and global
-`LoggerCauldron`. `AuthCauldron` explicitly registers `JwtService`, whose
+`AppCauldron` is a checked root importing `AuthCauldron`. `AuthCauldron`
+explicitly registers `JwtService`, whose
 constructor reads the existing Passport configuration from intrinsic `Config`.
-`#[inject]` marks managed dependencies. Missing providers or logger imports fail
-compilation; credentials and signing configuration are still checked at runtime.
+`#[inject]` marks managed dependencies. Missing providers fail compilation;
+credentials and signing configuration are still checked at runtime.

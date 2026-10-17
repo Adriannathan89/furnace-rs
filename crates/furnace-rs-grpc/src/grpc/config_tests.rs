@@ -37,7 +37,8 @@ fn transport_selection_rejects_empty_duplicate_unknown_or_uncompiled() {
         RuntimeSelection::parse(&Config::empty(), true, true).unwrap(),
         RuntimeSelection {
             http: true,
-            grpc: false
+            grpc: false,
+            socket: false
         }
     );
     for values in [vec![], vec!["grpc", "grpc"], vec!["ws"]] {
@@ -62,7 +63,8 @@ fn transport_selection_rejects_empty_duplicate_unknown_or_uncompiled() {
         RuntimeSelection::parse(&c, false, true).unwrap(),
         RuntimeSelection {
             http: false,
-            grpc: true
+            grpc: true,
+            socket: false
         }
     );
     assert!(

@@ -407,6 +407,27 @@ pub(crate) fn render_grpc(report: &InspectionReport) -> String {
     output
 }
 
+/// Renders selected WebSocket paths and event methods without runtime state.
+pub(crate) fn render_socket(report: &InspectionReport) -> String {
+    let mut rows = vec!["WebSocket endpoints".to_owned()];
+    for endpoint in &report.socket_endpoints {
+        rows.push(format!(
+            "{}  {}  {}  {}",
+            endpoint.path,
+            endpoint.mode,
+            endpoint.implementation,
+            endpoint
+                .protection
+                .as_ref()
+                .map_or("public", |p| p.strategy.as_str())
+        ));
+        for handler in &endpoint.handlers {
+            rows.push(format!("  {}  {}", handler.kind, handler.name));
+        }
+    }
+    rows.join("\n")
+}
+
 #[cfg(test)]
 mod tests {
     use furnace_rs_common::__private::{
@@ -419,6 +440,7 @@ mod tests {
     fn report() -> InspectionReport {
         InspectionReport {
             grpc_services: Vec::new(),
+            socket_endpoints: Vec::new(),
             kind: InspectionKind::Doctor,
             graph: GraphReport {
                 root_cauldron: Some("AppCauldron".into()),
@@ -574,6 +596,7 @@ mod tests {
     fn failed_reports_keep_empty_partial_sections_visible() {
         let report = InspectionReport {
             grpc_services: Vec::new(),
+            socket_endpoints: Vec::new(),
             kind: InspectionKind::Graph,
             graph: GraphReport::default(),
             routes: Vec::new(),

@@ -1,6 +1,6 @@
 //! Private child-process handshake and conversion of inspection reports to CLI output.
 
-use crate::output::model::{GrpcData, GrpcServiceData};
+use crate::output::model::{GrpcData, GrpcServiceData, SocketData, SocketEndpointData};
 use std::{
     fs,
     path::Path,
@@ -115,6 +115,7 @@ pub(crate) fn inspection_outcome(report: &InspectionReport, package_root: &Path)
     let body = match report.kind {
         InspectionKind::Routes => render::render_routes(report),
         InspectionKind::Grpc => render::render_grpc(report),
+        InspectionKind::Socket => render::render_socket(report),
         InspectionKind::Graph => render::render_graph(report),
         InspectionKind::Doctor => render::render_doctor(report),
     };
@@ -151,6 +152,21 @@ pub(crate) fn inspection_failure_outcome(kind: InspectionKind, error: &CliError)
 /// Converts report data into the stable output model for its inspection kind.
 fn inspection_data(report: &InspectionReport, package_root: &Path) -> CommandData {
     match report.kind {
+        InspectionKind::Socket => CommandData::Socket(SocketData {
+            endpoints: report
+                .socket_endpoints
+                .iter()
+                .map(|e| SocketEndpointData {
+                    path: e.path.clone(),
+                    mode: e.mode.clone(),
+                    implementation: e.implementation.clone(),
+                    processing: e.processing.clone(),
+                    location: source_location(&e.location, package_root),
+                    protection: e.protection.clone(),
+                    handlers: e.handlers.clone(),
+                })
+                .collect(),
+        }),
         InspectionKind::Grpc => CommandData::Grpc(GrpcData {
             services: report
                 .grpc_services
@@ -272,6 +288,7 @@ const fn inspection_command_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
         InspectionKind::Grpc => "grpc",
+        InspectionKind::Socket => "socket",
         InspectionKind::Graph => "graph",
         InspectionKind::Doctor => "doctor",
     }
@@ -399,6 +416,7 @@ const fn inspection_kind_name(kind: InspectionKind) -> &'static str {
     match kind {
         InspectionKind::Routes => "routes",
         InspectionKind::Grpc => "grpc",
+        InspectionKind::Socket => "socket",
         InspectionKind::Graph => "graph",
         InspectionKind::Doctor => "doctor",
     }

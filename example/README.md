@@ -1,6 +1,6 @@
 # FURNACE examples
 
-These are independent Rust projects. The checkout targets the 2.0.0-beta.2 release. Run each command from its example
+These are independent Rust projects. The checkout targets the 2.0.0-beta.3 release. Run each command from its example
 directory so `Furnace::burn` loads that project's `furnace.toml` and optional `.env`.
 Each project uses local workspace crates, declarative `#[cauldron(...)]`
 registration and a marked `root` for compile-time dependency checking.
@@ -28,3 +28,5 @@ providers bind them to implementations, repositories handle data access, and
 services implement use cases. Controllers are the HTTP boundary. The JWT
 example follows that pattern with an in-memory repository. The reference uses
 FURNACE 0.8 APIs, so these projects use the current 2.0 crate boundaries.
+
+[WebSocket server example](socket-transport/README.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

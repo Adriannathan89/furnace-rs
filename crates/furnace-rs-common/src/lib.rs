@@ -269,7 +269,8 @@ pub mod __private {
         INSPECTION_ACK_ENV, INSPECTION_KIND_ENV, INSPECTION_PROTOCOL_VERSION,
         INSPECTION_RESPONSE_ENV, INSPECTION_TOKEN_ENV, INSPECTION_VERSION_ENV, InspectionEnvelope,
         InspectionKind, InspectionReport, InspectionTransportDescriptor, ProviderReport,
-        RouteReport, SourceReport,
+        RouteReport, SocketEndpointReport, SocketHandlerReport, SocketInspectionDescriptor,
+        SourceReport,
     };
 }
 

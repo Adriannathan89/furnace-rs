@@ -15,11 +15,14 @@ const PACKAGES: &[&str] = &[
     "furnace-rs-core-macros",
     "furnace-rs-common-macros",
     "furnace-rs-grpc-macros",
+    "furnace-rs-socket-macros",
     "furnace-rs-core",
+    "furnace-rs-persistence-types",
     "furnace-rs-persistence",
     "furnace-rs-extra",
     "furnace-rs-common",
     "furnace-rs-grpc",
+    "furnace-rs-socket",
     "furnace-rs-testing",
     "furnace-rs",
     "furnace-rs-cli",
@@ -29,15 +32,30 @@ const PUBLISH_ORDER: &[&str] = &[
     "furnace-rs-core-macros",
     "furnace-rs-common-macros",
     "furnace-rs-grpc-macros",
+    "furnace-rs-socket-macros",
     "furnace-rs-core",
+    "furnace-rs-persistence-types",
     "furnace-rs-extra",
     "furnace-rs-common",
     "furnace-rs-grpc",
+    "furnace-rs-socket",
     "furnace-rs-testing",
     "furnace-rs",
     "furnace-rs-persistence",
     "furnace-rs-cli",
 ];
+
+#[test]
+fn postgres_workflows_exercise_generated_storage_against_the_database() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for name in ["ci.yml", "beta-publish.yml", "stable-publish.yml"] {
+        let workflow = fs::read_to_string(root.join(".github/workflows").join(name)).unwrap();
+        assert!(
+            workflow.contains("--features sea-orm-storage,sea-orm-postgres --test storage_postgres -- --ignored --test-threads=1"),
+            "{name} must exercise the ignored generated storage PostgreSQL acceptance test"
+        );
+    }
+}
 
 #[cfg(unix)]
 #[test]
@@ -117,6 +135,24 @@ fn beta_release_advances_cli_with_workspace() {
     let cli_manifest = fs::read_to_string(fixture.root().join("crates/furnace-rs-cli/Cargo.toml"))
         .expect("furnace-rs-cli manifest should exist");
     assert!(cli_manifest.contains("version.workspace = true"));
+}
+
+#[cfg(unix)]
+#[test]
+fn beta_release_updates_independent_example_dependency_pins() {
+    let fixture = ReleaseFixture::new("0.7.0-beta.1");
+    let example = fixture.root().join("example/application");
+    fs::create_dir_all(example.join("src")).unwrap();
+    write(&example.join("src/lib.rs"), "");
+    let manifest = example.join("Cargo.toml");
+    write(
+        &manifest,
+        "[package]\nname = \"example-application\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[workspace]\n\n[dependencies]\nfurnace = { package = \"furnace-rs\", path = \"../../crates/furnace-rs\", version = \"=0.7.0-beta.1\" }\n",
+    );
+    assert_success(&fixture.run("release-beta.sh", "0.7.0"));
+    let updated = fs::read_to_string(manifest).unwrap();
+    assert!(updated.contains("version = \"=0.7.0-beta.2\""));
+    assert!(updated.contains("version = \"0.1.0\""));
 }
 
 #[cfg(unix)]
@@ -209,6 +245,9 @@ fn beta_and_stable_workflows_require_the_complete_v090_gate_set() {
         ("stable", &stable, "environment: stable"),
     ] {
         let verify = workflow_job(workflow, "verify");
+        let publish = workflow_job(workflow, "publish");
+        assert!(publish.contains("for attempt in {1..6}"));
+        assert!(publish.contains("publish_with_retry \"$package\""));
         for required in [
             "runs-on: ubuntu-latest",
             "cargo fmt --all --check",
@@ -390,14 +429,35 @@ fn package_content_policy_checks_every_workspace_archive() {
         .output()
         .expect("package-content policy should start");
     assert_success(&output);
-    assert!(
-        String::from_utf8_lossy(&output.stdout).contains("verified package contents for 11 crates")
-    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains(&format!(
+        "verified package contents for {} crates",
+        PACKAGES.len()
+    )));
 }
 
 #[test]
 fn all_packages_use_exact_pins_and_workspace_version() {
     let root = workspace_root();
+    let metadata = cargo_metadata::MetadataCommand::new()
+        .manifest_path(root.join("Cargo.toml"))
+        .no_deps()
+        .other_options(vec!["--locked".into(), "--offline".into()])
+        .exec()
+        .expect("workspace metadata should resolve");
+    let distributable: std::collections::BTreeSet<_> = metadata
+        .packages
+        .iter()
+        .filter(|package| metadata.workspace_members.contains(&package.id))
+        .filter(|package| {
+            package
+                .publish
+                .as_ref()
+                .is_none_or(|registries| !registries.is_empty())
+        })
+        .map(|package| package.name.as_str())
+        .collect();
+    assert_eq!(distributable, PACKAGES.iter().copied().collect());
+    assert_eq!(distributable, PUBLISH_ORDER.iter().copied().collect());
     let workspace_manifest =
         fs::read_to_string(root.join("Cargo.toml")).expect("workspace manifest should exist");
     let version = env!("CARGO_PKG_VERSION");
@@ -700,6 +760,17 @@ fn fixture_manifest(package: &str, version: &str) -> String {
         "furnace-rs-common" => vec![
             ("furnace-rs-common-macros", "../furnace-rs-common-macros"),
             ("furnace-rs-core", "../furnace-rs-core"),
+            (
+                "furnace-rs-persistence-types",
+                "../furnace-rs-persistence-types",
+            ),
+        ],
+        "furnace-rs-persistence" => vec![
+            ("furnace-rs-core", "../furnace-rs-core"),
+            (
+                "furnace-rs-persistence-types",
+                "../furnace-rs-persistence-types",
+            ),
         ],
         "furnace-rs-testing" => vec![
             ("furnace-rs-core", "../furnace-rs-core"),

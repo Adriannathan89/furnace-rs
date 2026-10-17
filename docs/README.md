@@ -1,29 +1,49 @@
 # FURNACE documentation
 
-The current released version is **1.0.2**, available on
+The current stable release is **1.0.2**, available on
 [crates.io](https://crates.io/crates/furnace-rs/1.0.2). The root
-[README](../README.md) describes installation and usage; current source and tests
-define behavior.
+[README](../README.md) covers installation and first use. The guides below
+describe the current workspace; release records preserve behavior and
+verification for their named versions.
+
+## Guides
 
 | Guide | Purpose |
 | --- | --- |
-| [gRPC transport (2.0.0-beta.2)](grpc.md) | Protobuf services, named clients, Passport/JWT, shared runtime, TLS, and static inspection |
-| [Declarative DI beta](declarative-di.md) | Compile-time roots, API, visibility and migration |
-| [2.0.0-beta.1 release preparation](releases/2.0.0-beta.1.md) | Mandatory injection markers, migration and checker verification |
-| [2.0.0-beta.2 release notes](releases/2.0.0-beta.2.md) | Native protobuf gRPC serving, clients, security and shared runtime |
 | [Architecture](ARCHITECTURE.md) | Crate boundaries, graph selection, construction, and lifecycle |
-| [Implementation guide](IMPLEMENTATION.md) | Source-linked walkthrough of the workspace and its major compile-time and runtime flows |
+| [Implementation guide](IMPLEMENTATION.md) | Source-linked walkthrough of compile-time and runtime flows |
 | [CLI](CLI.md) | Scaffolding, run/dev, inspection, target selection, and JSON schema 2 |
+| [Declarative DI](declarative-di.md) | Compile-time roots, module API, visibility, and migration |
+| [gRPC transport](grpc.md) | Protobuf services, named clients, Passport/JWT, shared runtime, TLS, and static inspection |
+| [Entity-bound storage](storage.md) | SeaORM CRUD, relation loading, ordering, pagination, and error mapping |
 | [Persistence](furnace-rs-persistence.md) | Native SeaORM PostgreSQL setup, configuration, and errors |
 | [Migration from MADS](importance/furnace-rs-migration.md) | Removed declarations and their FURNACE replacements |
-| [Security policy](SECURITY.md) | Current release, reporting, scope, and application responsibilities |
-| [Security audit](SECURITY_AUDIT.md) | Historical 1.0.0 evidence and links to subsequent fixes |
-| [1.0.2 release](releases/1.0.2.md) | Released changes, version alignment, and verification |
-| [1.0.1 release](releases/1.0.1.md) | Released fixes and recorded preparation checks |
-| [1.0.0 release record](releases/1.0.0.md) | Original stable-release contract and verification evidence |
-| [Extractor error redaction](security/2026-10-09-extractor-error-redaction.md) | Fix released in 1.0.2 and baseline/patched evidence |
+
+## Release records
+
+| Release | Notes and verification |
+| --- | --- |
+| 2.0.0-beta.3 | [Release notes](releases/2.0.0-beta.3.md), [verification](releases/2.0.0-beta.3-verification.md) |
+| 2.0.0-beta.2 | [Release notes](releases/2.0.0-beta.2.md) |
+| 2.0.0-beta.1 | [Release preparation](releases/2.0.0-beta.1.md), [verification](releases/2.0.0-beta.1-verification.md) |
+| 1.0.2 | [Release record](releases/1.0.2.md) |
+| 1.0.1 | [Release record](releases/1.0.1.md) |
+| 1.0.0 | [Release record](releases/1.0.0.md) |
+
+## Security and benchmark evidence
+
+| Document | Purpose |
+| --- | --- |
+| [Security policy](SECURITY.md) | Current released version, vulnerability reporting, and application responsibilities |
+| [Security audit](SECURITY_AUDIT.md) | Historical audit findings and their remediation records |
+| [1.0.2 implementation scan](security/2026-10-10-implementation-scan.md) | Historical source-review scope, evidence, and limits |
+| [Benchmark performance report](../benchmark/PERFORMANCE.md) | Benchmark method and recorded performance comparisons |
+| [Benchmark security report](../benchmark/SECURITY.md) | Consolidated security findings, fixes, before/after evidence, and scope limits |
+| [Extractor error redaction](security/2026-10-09-extractor-error-redaction.md) | 1.0.2 fix and baseline/patched evidence |
 
 Use the [runnable examples](../example/) for Hello World, PostgreSQL CRUD, and
-JWT-protected routes. The [crate guides](../README.md#workspace-crates) document
-individual packages; the [benchmark suite](../benchmark/) retains measured
-results and security regressions for their recorded source revisions.
+JWT-protected routes. The [crate guides](../README.md#workspace-crates) cover
+individual packages; the [benchmark suite](../benchmark/) retains performance
+results and security evidence for their recorded revisions.
+
+[WebSocket transport](socket.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

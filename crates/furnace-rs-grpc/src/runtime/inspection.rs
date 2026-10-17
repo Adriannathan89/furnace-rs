@@ -28,10 +28,9 @@ fn inspect(
     >
         .into_iter()
         .collect();
-    let selection = furnace_rs_common::runtime::RuntimeSelection::parse(
+    let selection = furnace_rs_common::runtime::RuntimeSelection::parse_registered(
         config,
-        adapters.iter().any(|a| a.name == "http"),
-        true,
+        &adapters.iter().map(|a| a.name).collect::<Vec<_>>(),
     )?;
     if selection.grpc {
         crate::GrpcServerConfig::parse(config)?;

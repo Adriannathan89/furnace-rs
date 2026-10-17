@@ -1,6 +1,6 @@
 # furnace-rs implementation guide
 
-This guide explains how the current 2.0.0-beta.2 workspace is assembled and
+This guide explains how the current 2.0.0-beta.3 workspace is assembled and
 how an application moves from declarations to serving. It is for contributors
 and readers tracing implementation behavior. The [architecture guide](ARCHITECTURE.md),
 [gRPC guide](grpc.md), [CLI reference](CLI.md), [declarative DI guide](declarative-di.md),

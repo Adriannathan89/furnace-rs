@@ -5,8 +5,8 @@
 
 The released 1.0.2 framework provides a framework-neutral core, a scoped Axum
 HTTP runtime, source-aware typed configuration, safe REST errors, request
-validation, and opt-in native SeaORM persistence. This 2.0.0-beta.2 checkout
-also includes the optional protobuf gRPC transport described below. A root
+validation, and opt-in native SeaORM persistence. This 2.0.0-beta.3 checkout
+also includes optional protobuf gRPC transport and entity storage helpers. A root
 module selects one application; startup validates its scoped graph and routes
 before it starts lifecycle hooks, checks a database, or binds a socket.
 
@@ -19,7 +19,7 @@ before it starts lifecycle hooks, checks a database, or binds a socket.
 cargo install furnace-rs-cli --version 1.0.2 --locked
 ```
 
-This checkout and its local examples target **2.0.0-beta.2**, with [declarative DI and compile-time root checking](docs/declarative-di.md). Version 2.0.0-beta.2 is prepared for release. See the [beta.2 release notes](docs/releases/2.0.0-beta.2.md). To install the CLI
+This checkout and its local examples target **2.0.0-beta.3**, with [declarative DI and compile-time root checking](docs/declarative-di.md) and [optional entity storage](docs/storage.md). See the [beta.3 release notes](docs/releases/2.0.0-beta.3.md). To install the CLI
 from this checkout instead, use:
 
 ```sh
@@ -864,14 +864,11 @@ listener.
 
 ## Benchmarks
 
-The repository includes HTTP stress workloads, security regression runners,
-and a [recorded FURNACE/native Axum/Go Fiber comparison](benchmark/COMPARISON.md)
-for Hello World, PostgreSQL CRUD, and login plus protected JWT requests.
-That comparison was measured on 2026-09-25 using FURNACE 0.9.1 source; it is
-historical evidence for that revision, not a measurement of the 1.0.2 release.
-
-See [the benchmark guide](benchmark/README.md) for runnable workloads, raw results,
-methodology, and limits. Throughput and latency depend on the host, client,
+The repository includes HTTP performance workloads and security regression
+runners. [PERFORMANCE.md](benchmark/PERFORMANCE.md) contains the latest
+FURNACE/Axum/Fiber comparison and historical results; [SECURITY.md](benchmark/SECURITY.md)
+indexes security findings, fixes, and evidence. See the [benchmark guide](benchmark/README.md)
+for the documentation map. Throughput and latency depend on the host, client,
 database access pattern, and application workload.
 
 ## Current scope
@@ -968,3 +965,5 @@ All participants are expected to follow the [code of conduct](CODE_OF_CONDUCT.md
 
 furnace-rs is licensed under either the [Apache License 2.0](LICENSE-APACHE) or
 the [MIT License](LICENSE-MIT), at your option.
+
+[WebSocket transport](docs/socket.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

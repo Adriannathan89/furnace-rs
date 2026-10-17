@@ -1,0 +1,14 @@
+error[E0308]: mismatched types
+ --> tests/ui-socket/fail/signature.rs:4:1
+  |
+4 | #[socket_gateway(path="/chat",mode="events")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `usize`, found `Value`
+5 | impl Gateway{#[on_event("echo")]async fn echo(&self,_:SocketContext,_:usize)->SocketResult<()>{Ok(())}}
+  |                                          ---- arguments to this method are incorrect
+  |
+note: method defined here
+ --> tests/ui-socket/fail/signature.rs:5:42
+  |
+5 | impl Gateway{#[on_event("echo")]async fn echo(&self,_:SocketContext,_:usize)->SocketResult<()>{Ok(())}}
+  |                                          ^^^^                       -------
+  = note: this error originates in the attribute macro `socket_gateway` (in Nightly builds, run with -Z macro-backtrace for more info)

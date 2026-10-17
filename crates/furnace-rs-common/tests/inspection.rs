@@ -15,6 +15,7 @@ fn protocol_round_trip_preserves_the_inspection_envelope() {
             graph: GraphReport::default(),
             routes: Vec::new(),
             grpc_services: Vec::new(),
+            socket_endpoints: Vec::new(),
             checks: vec![DoctorCheck::pass("configuration", "sources loaded")],
             diagnostics: Vec::new(),
             failed: false,
@@ -54,6 +55,7 @@ fn protocol_never_serializes_or_debugs_configuration_values() {
             },
             routes: Vec::new(),
             grpc_services: Vec::new(),
+            socket_endpoints: Vec::new(),
             checks: vec![DoctorCheck::pass("configuration", "sources loaded")],
             diagnostics: Vec::new(),
             failed: false,
@@ -65,4 +67,22 @@ fn protocol_never_serializes_or_debugs_configuration_values() {
 
     assert!(!json.contains(secret));
     assert!(!debug.contains(secret));
+}
+
+#[test]
+fn older_inspection_reports_deserialize_without_socket_field() {
+    let report = InspectionReport {
+        kind: InspectionKind::Doctor,
+        graph: GraphReport::default(),
+        routes: Vec::new(),
+        grpc_services: Vec::new(),
+        socket_endpoints: Vec::new(),
+        checks: Vec::new(),
+        diagnostics: Vec::new(),
+        failed: false,
+    };
+    let mut json = serde_json::to_value(report).unwrap();
+    json.as_object_mut().unwrap().remove("socket_endpoints");
+    let decoded: InspectionReport = serde_json::from_value(json).unwrap();
+    assert!(decoded.socket_endpoints.is_empty());
 }

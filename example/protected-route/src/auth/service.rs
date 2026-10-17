@@ -14,8 +14,6 @@ pub struct AuthServiceImpl {
     repository: Arc<dyn UserRepository>,
     #[inject]
     jwt: JwtService,
-    #[inject]
-    logger: Logger,
 }
 
 impl Injector<Arc<dyn AuthService>> for AuthServiceImpl {
@@ -30,7 +28,6 @@ impl Injector<Arc<dyn AuthService>> for AuthServiceImpl {
 impl AuthService for AuthServiceImpl {
     fn login(&self, username: &str, password: &str) -> JwtResult<Option<String>> {
         let Some(user) = self.repository.authenticate(username, password) else {
-            self.logger.warn("login rejected");
             return Ok(None);
         };
 
@@ -38,7 +35,6 @@ impl AuthService for AuthServiceImpl {
             UserClaims { user_id: user.id },
             JwtSignOptions::access(Duration::from_secs(15 * 60)).subject(user.id.to_string()),
         )?;
-        self.logger.info("login succeeded");
         Ok(Some(token))
     }
 

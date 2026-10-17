@@ -1,0 +1,266 @@
+{
+  "capacity_definition": "per framework, two consecutive concurrency doublings with under 5% median response-throughput gain; results are closed-loop with no think time",
+  "schema1_baseline": "schema1-64.json",
+  "client_cpu_limit_percent_one_core": 360.0,
+  "configured_concurrency_ceiling": 1024,
+  "maximum_concurrency_tested": 256,
+  "maximum_concurrency_tested_by_scenario": {
+    "hello": 256,
+    "posts": 256,
+    "auth": 256
+  },
+  "scenario_results": {
+    "hello": {
+      "operations_per_client": 512,
+      "runs_per_framework_level": 3,
+      "levels": [
+        {
+          "concurrency": 128,
+          "operations_per_run": 65536,
+          "frameworks": {
+            "axum": {
+              "passed": true,
+              "responses_per_second": 69253.82014136191,
+              "p95_ms": 2.518628,
+              "client_cpu_percent_one_core": 234.44647108946572,
+              "server_cpu_percent_one_core": 99.96697593713377,
+              "throughput_gain_from_previous_level": -0.021369608185395683
+            },
+            "fiber": {
+              "passed": true,
+              "responses_per_second": 69110.9299625411,
+              "p95_ms": 3.430933,
+              "client_cpu_percent_one_core": 231.43392476106456,
+              "server_cpu_percent_one_core": 99.81604456006512,
+              "throughput_gain_from_previous_level": -0.002604065457625926
+            },
+            "furnace-rs": {
+              "passed": true,
+              "responses_per_second": 65291.25891522795,
+              "p95_ms": 2.786308,
+              "client_cpu_percent_one_core": 223.6925190532623,
+              "server_cpu_percent_one_core": 99.93822189045738,
+              "throughput_gain_from_previous_level": -0.03768076896453432
+            }
+          }
+        },
+        {
+          "concurrency": 256,
+          "operations_per_run": 131072,
+          "frameworks": {
+            "axum": {
+              "passed": true,
+              "responses_per_second": 59437.99137173245,
+              "p95_ms": 5.96986,
+              "client_cpu_percent_one_core": 221.82025263994694,
+              "server_cpu_percent_one_core": 99.98954724477758,
+              "throughput_gain_from_previous_level": -0.1417370009277935
+            },
+            "fiber": {
+              "passed": true,
+              "responses_per_second": 63474.162464971174,
+              "p95_ms": 6.117792000000001,
+              "client_cpu_percent_one_core": 229.71980090023743,
+              "server_cpu_percent_one_core": 99.79365792999111,
+              "throughput_gain_from_previous_level": -0.08156115828024757
+            },
+            "furnace-rs": {
+              "passed": true,
+              "responses_per_second": 61308.2949917316,
+              "p95_ms": 5.215345,
+              "client_cpu_percent_one_core": 221.6813972686548,
+              "server_cpu_percent_one_core": 99.61858300882092,
+              "throughput_gain_from_previous_level": -0.06100301923520424
+            }
+          }
+        }
+      ],
+      "stop_reason": "all frameworks reached the two-step throughput plateau",
+      "framework_outcomes": {
+        "axum": {
+          "two_step_plateau_observed": true,
+          "last_plateau_streak": 2,
+          "plateau_level": 256
+        },
+        "fiber": {
+          "two_step_plateau_observed": true,
+          "last_plateau_streak": 2,
+          "plateau_level": 256
+        },
+        "furnace-rs": {
+          "two_step_plateau_observed": true,
+          "last_plateau_streak": 2,
+          "plateau_level": 256
+        }
+      }
+    },
+    "posts": {
+      "operations_per_client": 64,
+      "runs_per_framework_level": 3,
+      "levels": [
+        {
+          "concurrency": 128,
+          "operations_per_run": 8192,
+          "frameworks": {
+            "axum": {
+              "passed": true,
+              "responses_per_second": 6246.400575527733,
+              "p95_ms": 24.646647,
+              "client_cpu_percent_one_core": 30.806590531192253,
+              "server_cpu_percent_one_core": 57.52427555175572,
+              "throughput_gain_from_previous_level": -0.12090486083661167
+            },
+            "fiber": {
+              "passed": true,
+              "responses_per_second": 5696.143889356265,
+              "p95_ms": 68.21075,
+              "client_cpu_percent_one_core": 27.073652142460002,
+              "server_cpu_percent_one_core": 49.84058105724111,
+              "throughput_gain_from_previous_level": 0.04057593635880896
+            },
+            "furnace-rs": {
+              "passed": true,
+              "responses_per_second": 5493.3453087188145,
+              "p95_ms": 35.106262,
+              "client_cpu_percent_one_core": 28.4214701673421,
+              "server_cpu_percent_one_core": 68.96864819634719,
+              "throughput_gain_from_previous_level": -0.08951715461584664
+            }
+          }
+        },
+        {
+          "concurrency": 256,
+          "operations_per_run": 16384,
+          "frameworks": {
+            "axum": {
+              "passed": true,
+              "responses_per_second": 5828.310674968666,
+              "p95_ms": 52.174151,
+              "client_cpu_percent_one_core": 29.435286871573364,
+              "server_cpu_percent_one_core": 55.05367014149892,
+              "throughput_gain_from_previous_level": -0.06693293129439504
+            },
+            "fiber": {
+              "passed": true,
+              "responses_per_second": 5929.1919606701995,
+              "p95_ms": 147.514959,
+              "client_cpu_percent_one_core": 30.094948528629374,
+              "server_cpu_percent_one_core": 52.30210955400397,
+              "throughput_gain_from_previous_level": 0.04091330483231026
+            },
+            "furnace-rs": {
+              "passed": true,
+              "responses_per_second": 5225.621103895162,
+              "p95_ms": 73.122329,
+              "client_cpu_percent_one_core": 27.46070302199366,
+              "server_cpu_percent_one_core": 66.96159999669858,
+              "throughput_gain_from_previous_level": -0.0487360960904335
+            }
+          }
+        }
+      ],
+      "stop_reason": "all frameworks reached the two-step throughput plateau",
+      "framework_outcomes": {
+        "axum": {
+          "two_step_plateau_observed": true,
+          "last_plateau_streak": 2,
+          "plateau_level": 256
+        },
+        "fiber": {
+          "two_step_plateau_observed": true,
+          "last_plateau_streak": 2,
+          "plateau_level": 256
+        },
+        "furnace-rs": {
+          "two_step_plateau_observed": true,
+          "last_plateau_streak": 2,
+          "plateau_level": 256
+        }
+      }
+    },
+    "auth": {
+      "operations_per_client": 256,
+      "runs_per_framework_level": 3,
+      "levels": [
+        {
+          "concurrency": 128,
+          "operations_per_run": 32768,
+          "frameworks": {
+            "axum": {
+              "passed": true,
+              "responses_per_second": 41256.80911729954,
+              "p95_ms": 3.99534,
+              "client_cpu_percent_one_core": 173.37041508968196,
+              "server_cpu_percent_one_core": 99.97930763530026,
+              "throughput_gain_from_previous_level": -0.09493366615061571
+            },
+            "fiber": {
+              "passed": true,
+              "responses_per_second": 33565.80091829488,
+              "p95_ms": 6.9912589999999994,
+              "client_cpu_percent_one_core": 142.1309147862887,
+              "server_cpu_percent_one_core": 99.98154450976507,
+              "throughput_gain_from_previous_level": -0.035689925356032215
+            },
+            "furnace-rs": {
+              "passed": true,
+              "responses_per_second": 35373.20310479762,
+              "p95_ms": 4.793668,
+              "client_cpu_percent_one_core": 153.57506709312233,
+              "server_cpu_percent_one_core": 99.98045988923951,
+              "throughput_gain_from_previous_level": 0.004954437031572834
+            }
+          }
+        },
+        {
+          "concurrency": 256,
+          "operations_per_run": 65536,
+          "frameworks": {
+            "axum": {
+              "passed": true,
+              "responses_per_second": 39947.920300562284,
+              "p95_ms": 7.429603,
+              "client_cpu_percent_one_core": 177.09805739659294,
+              "server_cpu_percent_one_core": 99.99147357918744,
+              "throughput_gain_from_previous_level": -0.03172540108508837
+            },
+            "fiber": {
+              "passed": true,
+              "responses_per_second": 32099.21773377159,
+              "p95_ms": 11.773337,
+              "client_cpu_percent_one_core": 148.835643721542,
+              "server_cpu_percent_one_core": 99.98068205674264,
+              "throughput_gain_from_previous_level": -0.043692780878168636
+            },
+            "furnace-rs": {
+              "passed": true,
+              "responses_per_second": 32924.2265827901,
+              "p95_ms": 8.963561,
+              "client_cpu_percent_one_core": 149.04171384692864,
+              "server_cpu_percent_one_core": 99.7927924485068,
+              "throughput_gain_from_previous_level": -0.06923253499978832
+            }
+          }
+        }
+      ],
+      "stop_reason": "all frameworks reached the two-step throughput plateau",
+      "framework_outcomes": {
+        "axum": {
+          "two_step_plateau_observed": true,
+          "last_plateau_streak": 2,
+          "plateau_level": 256
+        },
+        "fiber": {
+          "two_step_plateau_observed": true,
+          "last_plateau_streak": 2,
+          "plateau_level": 256
+        },
+        "furnace-rs": {
+          "two_step_plateau_observed": true,
+          "last_plateau_streak": 2,
+          "plateau_level": 256
+        }
+      }
+    }
+  }
+}

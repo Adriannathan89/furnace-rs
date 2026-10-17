@@ -196,7 +196,10 @@ pub use furnace_rs_core::{
 };
 
 /// Static guard policy metadata used by generated controller registration.
-#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+#[cfg(all(
+    any(feature = "http", feature = "grpc", feature = "socket"),
+    feature = "jwt"
+))]
 #[doc(hidden)]
 pub use furnace_rs_common::GuardPolicy;
 #[cfg(all(feature = "http", feature = "jwt"))]
@@ -294,7 +297,10 @@ pub use furnace_rs_common::{
 };
 
 /// Re-exports guarded Passport authentication and policy contracts.
-#[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+#[cfg(all(
+    any(feature = "http", feature = "grpc", feature = "socket"),
+    feature = "jwt"
+))]
 pub use furnace_rs_common::{
     Authenticated, ClaimsPrincipal, FURNACE130, FURNACE131, PassportContext, PassportError,
     PassportErrorKind, PassportPrincipal, PassportResult, PassportStrategy, TokenSource,
@@ -347,11 +353,17 @@ pub use furnace_rs_extra as extra;
 
 /// Collects application-facing furnace-rs imports.
 pub mod prelude {
-    #[cfg(all(feature = "grpc", not(feature = "http")))]
+    #[cfg(feature = "socket")]
+    pub use furnace_rs_socket::{
+        RoomMode, RuntimeSocketExt, SocketContext, SocketError, SocketGatewayHub, SocketHandshake,
+        SocketHub, SocketResult, SocketServerConfig, socket_endpoint, socket_gateway,
+    };
+
+    #[cfg(all(any(feature = "grpc", feature = "socket"), not(feature = "http")))]
     pub use crate::FurnaceBurnExt;
     #[cfg(feature = "grpc")]
     pub use crate::RuntimeGrpcExt;
-    #[cfg(any(feature = "http", feature = "grpc"))]
+    #[cfg(any(feature = "http", feature = "grpc", feature = "socket"))]
     pub use crate::{
         ApplicationRuntimeError, RuntimeBindings, RuntimeRoutes, RuntimeSelection, serve_transports,
     };
@@ -420,7 +432,10 @@ pub mod prelude {
     };
 
     /// Re-exports application-facing Passport guards, strategies, and extractors.
-    #[cfg(all(any(feature = "http", feature = "grpc"), feature = "jwt"))]
+    #[cfg(all(
+        any(feature = "http", feature = "grpc", feature = "socket"),
+        feature = "jwt"
+    ))]
     pub use furnace_rs_common::{
         Authenticated, ClaimsPrincipal, FURNACE130, FURNACE131, PassportContext, PassportError,
         PassportErrorKind, PassportPrincipal, PassportResult, PassportStrategy, TokenSource,
@@ -487,4 +502,21 @@ pub use furnace_rs_grpc::RuntimeGrpcExt;
 pub use furnace_rs_grpc::{
     ApplicationRuntimeError, FurnaceBurnExt, RuntimeBindings, RuntimeRoutes, RuntimeSelection,
     serve_transports,
+};
+
+/// Standard WebSocket server transport.
+#[cfg(feature = "socket")]
+pub use furnace_rs_socket as socket;
+
+/// Socket-only automatic startup and native transport composition.
+#[cfg(all(feature = "socket", not(any(feature = "http", feature = "grpc"))))]
+pub use furnace_rs_socket::runtime::{
+    ApplicationRuntimeError, FurnaceBurnExt, RuntimeBindings, RuntimeRoutes, RuntimeSelection,
+    serve_transports,
+};
+/// WebSocket gateway registration and application controls.
+#[cfg(feature = "socket")]
+pub use furnace_rs_socket::{
+    RoomMode, RuntimeSocketExt, SocketContext, SocketError, SocketGatewayHub, SocketHandshake,
+    SocketHub, SocketResult, SocketServerConfig, socket_endpoint, socket_gateway,
 };

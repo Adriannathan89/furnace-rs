@@ -1,0 +1,21 @@
+[package]
+name = "furnace-rs-example-socket-transport"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+publish = false
+[workspace]
+[features]
+default = []
+jwt = ["furnace/jwt"]
+tls = ["furnace/socket-tls"]
+redis = ["furnace/socket-redis"]
+http = ["furnace/http"]
+[dependencies]
+furnace = { package = "furnace-rs", path = "../../crates/furnace-rs", version = "=2.0.0-beta.3", default-features = false, features = ["socket", "runtime-tokio"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+[dev-dependencies]
+tokio-tungstenite = "0.29"
+futures-util = "0.3"

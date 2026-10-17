@@ -1,0 +1,14 @@
+[package]
+name = "furnace-socket-injector-consumer"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.94"
+
+[features]
+missing-injector = []
+jwt = ["furnace_rs/jwt"]
+
+[dependencies]
+furnace_rs = { package = "furnace-rs", path = "../../..", features = ["socket"] }
+
+[workspace]

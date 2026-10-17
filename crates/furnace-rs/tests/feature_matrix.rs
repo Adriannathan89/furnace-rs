@@ -269,3 +269,26 @@ fn core_retains_toml_without_transport_or_direct_serde_dependencies() {
     assert!(!manifest.contains("serde.workspace"));
     assert!(!manifest.contains("serde ="));
 }
+
+#[test]
+fn socket_is_optional_and_basic_socket_excludes_other_transports_and_backends() {
+    for tree in [default_dependency_tree(), dependency_tree("jwt")] {
+        assert!(!tree.contains("furnace-rs-socket v"));
+    }
+    let tree = dependency_tree("socket");
+    assert!(tree.contains("furnace-rs-socket v"));
+    for forbidden in [
+        "redis v",
+        "jsonwebtoken v",
+        "tonic v",
+        "sea-orm v",
+        "axum-extra v",
+        "tower-http v",
+    ] {
+        assert!(!tree.contains(forbidden), "unexpected {forbidden}: {tree}");
+    }
+    let tree = dependency_tree("socket,jwt");
+    assert!(tree.contains("jsonwebtoken v"));
+    assert!(tree.contains("cookie v"));
+    assert!(!tree.contains("axum-extra v"));
+}
