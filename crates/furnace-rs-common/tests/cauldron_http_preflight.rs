@@ -10,8 +10,7 @@ use furnace_rs_common::core::__private::{
     AutoConfigurationDescriptor, AutoConfigurationEvaluation,
 };
 use furnace_rs_common::core::{
-    __private::ModuleContract, AutoConfigurationReasonCode, FURNACE008, FURNACE030, Furnace,
-    SourceLocation,
+    AutoConfigurationReasonCode, FURNACE008, FURNACE030, Furnace, SourceLocation,
 };
 use furnace_rs_common::{SealRegistration, Sealable, controller};
 use std::any::TypeId;
@@ -218,7 +217,9 @@ async fn complete_catalog_builder_also_rejects_invalid_endpoint_metadata() {
 #[cfg(feature = "jwt")]
 mod security {
     use super::*;
-    use furnace_rs_common::core::{Config, ConfigBuilder, FURNACE009, MapSource};
+    use furnace_rs_common::core::{
+        __private::ModuleContract, Config, ConfigBuilder, FURNACE009, MapSource,
+    };
     use furnace_rs_common::{
         ClaimsPrincipal, JwtService, PassportConfig, PassportPrincipal, guard,
     };
