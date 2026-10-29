@@ -9,9 +9,10 @@ migration are consolidated into the first 1.0.0 release.
 ### Added
 
 - Add the optional `password-hasher` feature to `furnace-rs-common` and forward
-  it through `furnace-rs`, with private Argon2 helpers for independently salted
-  PHC hashes and password verification. Document feature selection, helper
-  visibility, and error behavior in the [password hasher guide](docs/password-hasher.md).
+  it through `furnace-rs`, with public `hash_password` and `validate_password`
+  helpers for independently salted PHC hashes and password verification.
+  Re-export the helpers from both crate roots and the facade prelude. Document
+  feature selection, usage, and error behavior in the [password hasher guide](docs/password-hasher.md).
 - Add seven password hasher unit tests covering PHC output, matching and incorrect
   passwords, independent salts, malformed hashes, unsupported algorithms, and
   empty and Unicode passwords.

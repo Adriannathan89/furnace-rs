@@ -1,6 +1,6 @@
 //! Standard integration contracts for furnace-rs.
 //!
-//! Enable the `http`, `jwt`, `cookies`, `logger`, `sea-orm`, or
+//! Enable the `http`, `jwt`, `cookies`, `logger`, `password-hasher`, `sea-orm`, or
 //! `sea-orm-storage` feature to select only the integration contracts an
 //! application needs. The framework-neutral core boundary is always available
 //! through [`core`].
@@ -39,6 +39,10 @@ mod validation;
 /// Application password hashing and verification contracts.
 #[cfg(feature = "password-hasher")]
 pub mod password_hasher;
+
+/// Re-exports Argon2 password hashing and verification helpers.
+#[cfg(feature = "password-hasher")]
+pub use password_hasher::{hash_password, validate_password};
 
 /// Application logging contracts and the default console logger.
 #[cfg(feature = "logger")]

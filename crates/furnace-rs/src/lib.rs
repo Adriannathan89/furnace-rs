@@ -231,9 +231,14 @@ pub use furnace_rs_core::{
     feature = "http",
     feature = "jwt",
     feature = "cookies",
-    feature = "logger"
+    feature = "logger",
+    feature = "password-hasher"
 ))]
 pub use furnace_rs_common as common;
+
+/// Re-exports Argon2 password hashing and verification helpers.
+#[cfg(feature = "password-hasher")]
+pub use furnace_rs_common::{hash_password, password_hasher, validate_password};
 
 /// Re-exports Axum for native HTTP runtime integration.
 #[cfg(feature = "http")]
@@ -346,6 +351,9 @@ pub use furnace_rs_extra as extra;
 
 /// Collects application-facing furnace-rs imports.
 pub mod prelude {
+    #[cfg(feature = "password-hasher")]
+    pub use furnace_rs_common::{hash_password, validate_password};
+
     #[cfg(feature = "socket")]
     pub use furnace_rs_socket::{
         RoomMode, RuntimeSocketExt, SocketContext, SocketError, SocketGatewayHub, SocketHandshake,

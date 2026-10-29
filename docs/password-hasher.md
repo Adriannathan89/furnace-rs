@@ -16,9 +16,19 @@ dependency; it does not require HTTP. To select it alone in a workspace consumer
 furnace-rs-common = { path = "../crates/furnace-rs-common", default-features = false, features = ["password-hasher"] }
 ```
 
-Adjust the path for your consumer. The module is public, but `hash_password` and
-`validate_password` are currently private helpers. Applications cannot import
-them yet; the contracts below describe their existing internal behavior.
+Adjust the path for your consumer. Import the helpers from the crate root:
+
+```rust
+use furnace_rs_common::{hash_password, validate_password};
+
+let hashed = hash_password("my password").expect("hash password");
+assert!(validate_password("my password", &hashed).expect("parse stored hash"));
+```
+
+With the facade's `password-hasher` feature enabled, use
+`furnace_rs::{hash_password, validate_password}` or `furnace_rs::prelude::*`.
+The helpers are also available through `furnace_rs::common` and the
+`password_hasher` module in either crate.
 
 ## Creating hashes
 

@@ -1,7 +1,7 @@
 //! Password hashing and verification using Argon2 defaults.
 //!
-//! Enabled by the `password-hasher` feature. The helpers are currently private
-//! to this module. Each hash uses a fresh OS-generated salt and is serialized
+//! Enabled by the `password-hasher` feature. The helpers are also re-exported
+//! from the crate root. Each hash uses a fresh OS-generated salt and is serialized
 //! as a PHC string containing the algorithm, version, parameters, salt, and hash.
 //! Store the complete string so verification can recover those settings.
 //!
@@ -10,8 +10,8 @@
 //! algorithm) becomes `Ok(false)`.
 
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier},
     Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, rand_core::OsRng},
 };
 
 /// Hashes the password's UTF-8 bytes with Argon2 defaults and a fresh random salt.
@@ -23,7 +23,7 @@ use argon2::{
 ///
 /// Returns the underlying error if Argon2 cannot hash or encode the password.
 /// Salt generation uses OS randomness and can panic if that source fails.
-fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
+pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
     let salt = argon2::password_hash::SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
     let password_hash = argon2
@@ -40,7 +40,10 @@ fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error>
 /// # Errors
 ///
 /// Returns the parsing error when `hashed` is not a valid PHC string.
-fn validate_password(password: &str, hashed: &str) -> Result<bool, argon2::password_hash::Error> {
+pub fn validate_password(
+    password: &str,
+    hashed: &str,
+) -> Result<bool, argon2::password_hash::Error> {
     let parsed_hash = PasswordHash::new(hashed)?;
     let argon2 = Argon2::default();
     Ok(argon2
