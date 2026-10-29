@@ -36,6 +36,10 @@ mod server_config;
 #[cfg(feature = "http")]
 mod validation;
 
+/// Application password hashing and verification contracts.
+#[cfg(feature = "password-hasher")]
+pub mod password_hasher;
+
 /// Application logging contracts and the default console logger.
 #[cfg(feature = "logger")]
 pub mod logger;

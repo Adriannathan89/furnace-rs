@@ -22,6 +22,7 @@ facade disables those defaults and maps its own features explicitly.
 | `transport-runtime` | Shared selection, lifecycle coordinator, inspection, and task supervision. | Tokio and neutral runtime dependencies; no Tonic/Prost. |
 | `passport` | Shared Passport contracts and derives. | JWT and shared metadata; no Axum. |
 | `logger` | Timestamped console application logging. | Chrono dependency. |
+| `password-hasher` | Argon2 password hashing module (helpers currently private); see the [guide](../../docs/password-hasher.md). | Argon2 dependency; no HTTP requirement. |
 | `jwt` | `JwtService`, claims, validation profiles, algorithms, keyrings, and JWT auto-configuration. | No Axum or database dependency. |
 | `cookies` | Strict cookie extraction and checked response-cookie composition. | Implies `http` and enables the cookie/Passport macro support. |
 | `sea-orm` | `From<sea_orm::DbErr> for HttpError`, enabling `?` in HTTP handlers. | Implies `http`; adds SeaORM without a database driver. |
