@@ -15,6 +15,7 @@ pub struct PreflightDescriptor {
     location: SourceLocation,
     validator: PreflightValidator,
 }
+
 impl PreflightDescriptor {
     /// Registers a validator under a stable integration identifier.
     pub const fn new(
@@ -29,6 +30,7 @@ impl PreflightDescriptor {
         }
     }
 }
+
 inventory::collect!(PreflightDescriptor);
 
 /// Selected virtual state available before default applications and constructors.
@@ -40,6 +42,7 @@ pub struct PreflightContext<'a> {
     memo: &'a AnalysisMemo,
     supplied: &'a [crate::graph::SatisfiedProvider],
 }
+
 impl<'a> PreflightContext<'a> {
     /// Stores selected configuration, graph analysis, and supplied outputs for validators.
     pub(crate) const fn new(
@@ -57,22 +60,27 @@ impl<'a> PreflightContext<'a> {
             supplied,
         }
     }
+
     /// Returns immutable builder configuration.
     pub const fn config(&self) -> &Config {
         self.config
     }
+
     /// Returns rooted ownership and visibility, when a root was selected.
     pub const fn cauldron_graph(&self) -> Option<&CauldronGraph> {
         self.analysis.cauldron_graph()
     }
+
     /// Returns the exact provider selected by an official focused fixture.
     pub const fn focus_type_id(&self) -> Option<TypeId> {
         self.focus
     }
+
     /// Reports whether a selected provider, supplied value, or virtual default owns an output.
     pub fn has_output<T: Send + Sync + 'static>(&self) -> bool {
         self.has_output_type_id(TypeId::of::<T>())
     }
+
     /// Reports availability for an integration's dynamically selected provider identity.
     pub fn has_output_type_id(&self, type_id: TypeId) -> bool {
         self.supplied.iter().any(|value| value.type_id == type_id)
@@ -83,10 +91,12 @@ impl<'a> PreflightContext<'a> {
                 .iter()
                 .any(|node| node.type_id == type_id)
     }
+
     /// Returns diagnostics already emitted by graph and default-condition analysis.
     pub fn diagnostics(&self) -> &[Diagnostic] {
         self.analysis.diagnostics()
     }
+
     /// Shares immutable integration metadata within this analysis only.
     pub fn memoize<T: Clone + 'static>(&self, build: impl FnOnce() -> T) -> T {
         self.memo.get_or_insert(build)
@@ -97,6 +107,7 @@ impl<'a> PreflightContext<'a> {
 pub(crate) struct AnalysisMemo {
     values: RefCell<HashMap<TypeId, Box<dyn Any>>>,
 }
+
 impl AnalysisMemo {
     /// Builds one typed value per analysis and returns clones to later validators.
     pub(crate) fn get_or_insert<T: Clone + 'static>(&self, build: impl FnOnce() -> T) -> T {
@@ -106,10 +117,12 @@ impl AnalysisMemo {
                 .expect("memo type identity matches its key")
                 .clone();
         }
+
         let value = build();
         self.values
             .borrow_mut()
             .insert(TypeId::of::<T>(), Box::new(value.clone()));
+
         value
     }
 }
@@ -126,6 +139,7 @@ pub(crate) fn validate(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
         )
     });
     let mut diagnostics = Vec::new();
+
     for descriptor in descriptors {
         for diagnostic in (descriptor.validator)(context) {
             if !context.analysis.diagnostics().contains(&diagnostic)
@@ -135,5 +149,6 @@ pub(crate) fn validate(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
             }
         }
     }
+
     diagnostics
 }

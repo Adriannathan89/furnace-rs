@@ -6,6 +6,7 @@ pub(crate) mod preflight;
 mod router;
 mod scope;
 mod service;
+
 pub use router::build_grpc_routes;
 #[doc(hidden)]
 pub use router::{GrpcRegistrationContext, GrpcServiceRegistrar};
@@ -30,10 +31,12 @@ pub use tonic;
 
 #[cfg(feature = "jwt")]
 mod passport;
+
 #[cfg(feature = "jwt")]
 pub use passport::{GrpcPassportService, grpc_authenticated, grpc_verified_token, passport_status};
 
 mod client;
+
 pub(crate) use client::parse_timeout;
 #[doc(hidden)]
 pub use client::{ErasedTokenProvider, GrpcClientLifecycle};
@@ -42,10 +45,12 @@ pub use client::{GrpcChannel, GrpcTokenProvider, set_grpc_bearer_token};
 pub use descriptor::{GrpcClientDescriptor, GrpcClientRegistration};
 
 mod tls;
+
 pub use tls::{client_endpoint, configure_grpc_server};
 
 mod health;
 pub(crate) mod reflection;
+
 #[doc(hidden)]
 pub use descriptor::{GrpcReflectionDescriptor, GrpcReflectionRegistration};
 pub use health::{GrpcHealth, install_grpc_infrastructure};

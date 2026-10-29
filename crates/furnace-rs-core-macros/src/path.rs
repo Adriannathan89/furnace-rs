@@ -65,11 +65,13 @@ fn found_path(found: FoundCrate, facade: bool) -> syn::Result<Path> {
 /// Builds a Rust path for a direct dependency, including Cargo name normalization.
 fn named_path(name: &str, facade: bool) -> syn::Result<Path> {
     let ident = syn::Ident::new(&name.replace('-', "_"), Span::call_site());
+
     if facade {
         Ok(parse_quote!(::#ident::core))
     } else {
         Ok(parse_quote!(::#ident))
     }
 }
+
 #[cfg(test)]
 include!("../tests/support/path.rs");

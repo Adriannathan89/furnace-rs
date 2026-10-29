@@ -6,35 +6,42 @@ use syn::{
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
+
 struct Arguments {
     name: LitStr,
     client: Path,
     provider: Option<Path>,
 }
+
 impl Parse for Arguments {
     /// Parses named-client attribute arguments and rejects duplicates or unknown keys.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let (mut name, mut client, mut provider) = (None, None, None);
+
         while !input.is_empty() {
             let key: Ident = input.parse()?;
             input.parse::<Token![=]>()?;
+
             match key.to_string().as_str() {
                 "name" => {
                     if name.is_some() {
                         return Err(input.error("duplicate grpc_client name"));
                     }
+
                     name = Some(input.parse()?);
                 }
                 "client" => {
                     if client.is_some() {
                         return Err(input.error("duplicate grpc_client client"));
                     }
+
                     client = Some(input.parse()?);
                 }
                 "token_provider" => {
                     if provider.is_some() {
                         return Err(input.error("duplicate grpc_client token_provider"));
                     }
+
                     provider = Some(input.parse()?);
                 }
                 _ => {
@@ -44,10 +51,12 @@ impl Parse for Arguments {
                     ));
                 }
             }
+
             if !input.is_empty() {
                 input.parse::<Token![,]>()?;
             }
         }
+
         Ok(Self {
             name: name.ok_or_else(|| input.error("grpc_client requires name"))?,
             client: client
@@ -56,10 +65,12 @@ impl Parse for Arguments {
         })
     }
 }
+
 /// Validates a client wrapper declaration and emits its DI and lifecycle integration.
 pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     let args: Arguments = syn::parse2(arguments)?;
     let item: ItemStruct = syn::parse2(item)?;
+
     if !matches!(item.fields, Fields::Unit)
         || !item.generics.params.is_empty()
         || item.generics.where_clause.is_some()
@@ -69,7 +80,9 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             "grpc_client requires a non-generic unit struct",
         ));
     }
+
     let name_value = args.name.value();
+
     if !name_value
         .bytes()
         .next()
@@ -83,12 +96,14 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             "grpc_client name must start with a lowercase ASCII letter and contain only [a-z0-9_-]",
         ));
     }
+
     if args.client.segments.iter().any(|s| !s.arguments.is_empty()) {
         return Err(Error::new(
             args.client.span(),
             "grpc_client client must be an unparameterized generated client path",
         ));
     }
+
     let common = crate::path::grpc_path()?;
     let ty = &item.ident;
     let name = &args.name;
@@ -109,6 +124,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         ),
     };
     let descriptor = format_ident!("__FURNACE_GRPC_CLIENT_{}", ty);
+
     Ok(quote! {
         #(#attrs)*
         #[derive(Clone)]

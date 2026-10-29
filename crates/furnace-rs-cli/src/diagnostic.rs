@@ -9,13 +9,21 @@ use std::{
 use crate::command::ParseError;
 
 pub(crate) const FURNACE200: &str = "FURNACE200";
+
 pub(crate) const FURNACE201: &str = "FURNACE201";
+
 pub(crate) const FURNACE202: &str = "FURNACE202";
+
 pub(crate) const FURNACE204: &str = "FURNACE204";
+
 pub(crate) const FURNACE211: &str = "FURNACE211";
+
 pub(crate) const FURNACE212: &str = "FURNACE212";
+
 pub(crate) const FURNACE213: &str = "FURNACE213";
+
 pub(crate) const FURNACE220: &str = "FURNACE220";
+
 pub(crate) const FURNACE230: &str = "FURNACE230";
 
 /// A source location attached to a CLI-owned diagnostic before output rendering.
@@ -73,12 +81,14 @@ impl CliError {
     /// Adds a subject to the structured diagnostic.
     pub(crate) fn with_subject(mut self, subject: impl Into<String>) -> Self {
         self.details.subject = Some(subject.into());
+
         self
     }
 
     /// Appends one remediation suggestion in output order.
     pub(crate) fn with_suggestion(mut self, suggestion: impl Into<String>) -> Self {
         self.details.suggestions.push(suggestion.into());
+
         self
     }
 
@@ -94,6 +104,7 @@ impl CliError {
             line,
             column,
         });
+
         self
     }
 
@@ -103,6 +114,7 @@ impl CliError {
         E: Error + Send + Sync + 'static,
     {
         self.source = Some(Box::new(source));
+
         self
     }
 
@@ -154,13 +166,17 @@ impl fmt::Display for CliError {
     /// Formats a CLI diagnostic for human display or redacted debug output.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "error[{}]: {}", self.code, self.title)?;
+
         if let Some(subject) = &self.details.subject {
             write!(formatter, "\n  = subject: {subject}")?;
         }
+
         write!(formatter, "\n  = {}", self.message)?;
+
         for suggestion in &self.details.suggestions {
             write!(formatter, "\n  help: {suggestion}")?;
         }
+
         Ok(())
     }
 }

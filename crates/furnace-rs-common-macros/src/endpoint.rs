@@ -5,7 +5,9 @@ use std::collections::BTreeSet;
 use syn::{
     Attribute, Error, FnArg, LitStr, Meta, Token, Type, punctuated::Punctuated, spanned::Spanned,
 };
+
 const VERBS: &[&str] = &["get", "post", "put", "patch", "delete"];
+
 /// Identifies body-consuming extractors whose crate path is known to FURNACE.
 ///
 /// This intentionally inspects syntax only. A bare `Json` or an application
@@ -17,10 +19,12 @@ pub(crate) fn validate_body_extractor_order(
 ) -> syn::Result<()> {
     let skip = usize::from(matches!(inputs.first(), Some(FnArg::Receiver(_))));
     let arguments = inputs.iter().skip(skip).collect::<Vec<_>>();
+
     for (index, argument) in arguments.iter().enumerate() {
         let FnArg::Typed(argument) = argument else {
             continue;
         };
+
         if known_body_consumer(&argument.ty, common) && index + 1 != arguments.len() {
             return Err(Error::new(
                 argument.ty.span(),
@@ -28,6 +32,7 @@ pub(crate) fn validate_body_extractor_order(
             ));
         }
     }
+
     Ok(())
 }
 
@@ -36,20 +41,25 @@ pub(crate) fn known_body_consumer(ty: &Type, common: &syn::Path) -> bool {
     let Type::Path(type_path) = ty else {
         return false;
     };
+
     if type_path.qself.is_some() {
         return false;
     }
 
     let path = &type_path.path;
+
     if is_furnace_type(path, common, "Json") || is_axum_type(path, common, "Json") {
         return true;
     }
+
     if is_furnace_type(path, common, "ValidatedJson") {
         return true;
     }
+
     if is_furnace_type(path, common, "Request") || is_axum_type(path, common, "Request") {
         return true;
     }
+
     false
 }
 
@@ -73,12 +83,14 @@ fn facade_path_with_suffix_is(path: &syn::Path, common: &syn::Path, suffix: &[&s
     let Some(last) = common.segments.last() else {
         return false;
     };
+
     if last.ident != "common" {
         return false;
     }
 
     let prefix_len = common.segments.len() - 1;
     let path_len = path.segments.len();
+
     path_len == prefix_len + suffix.len()
         && path
             .segments
@@ -98,6 +110,7 @@ fn facade_path_with_suffix_is(path: &syn::Path, common: &syn::Path, suffix: &[&s
 fn path_with_suffix_is(path: &syn::Path, prefix: &syn::Path, suffix: &[&str]) -> bool {
     let prefix_len = prefix.segments.len();
     let path_len = path.segments.len();
+
     path_len == prefix_len + suffix.len()
         && path
             .segments
@@ -181,12 +194,14 @@ pub(crate) fn route_verb(attribute: &Attribute) -> Option<&'static str> {
 /// Recognizes an HTTP verb from the final identifier in an attribute path.
 fn route_verb_path(path: &syn::Path) -> Option<&'static str> {
     let ident = path.segments.last()?.ident.to_string();
+
     VERBS.iter().copied().find(|verb| ident == *verb)
 }
 
 /// Detects endpoint verbs nested in `cfg_attr`, which endpoint expansion does not support.
 pub(crate) fn cfg_attr_contains_route_verb(attribute: &Attribute) -> syn::Result<bool> {
     let nested = attribute.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
+
     Ok(nested
         .iter()
         .skip(1)
@@ -204,6 +219,7 @@ pub(crate) fn join_paths(prefix: &LitStr, path: &LitStr) -> syn::Result<LitStr> 
     } else {
         format!("{prefix}{path_value}")
     };
+
     Ok(LitStr::new(&full_path, path.span()))
 }
 
@@ -264,12 +280,15 @@ pub(crate) fn canonical_path(path: &LitStr, is_prefix: bool) -> syn::Result<LitS
         &input
     };
     let error = |message| Error::new(path.span(), message);
+
     if is_prefix && value.is_empty() {
         return Ok(LitStr::new("", path.span()));
     }
+
     if value.is_empty() || !value.starts_with('/') {
         return Err(error("endpoint paths must start with `/`"));
     }
+
     if value.contains(['?', '#', '\\', '%'])
         || value.chars().any(|c| c.is_control() || c.is_whitespace())
     {
@@ -277,18 +296,22 @@ pub(crate) fn canonical_path(path: &LitStr, is_prefix: bool) -> syn::Result<LitS
             "endpoint paths must not contain queries, fragments, escapes, control characters, or whitespace",
         ));
     }
+
     if value == "/" {
         return Ok(LitStr::new(value, path.span()));
     }
+
     let segments: Vec<_> = value.split('/').skip(1).collect();
     let mut names = BTreeSet::new();
     let mut normalized = Vec::new();
+
     for (index, segment) in segments.iter().enumerate() {
         if segment.is_empty() || matches!(*segment, "." | "..") {
             return Err(error(
                 "endpoint paths must not contain empty, `.` or `..` segments",
             ));
         }
+
         let capture = if let Some(name) = segment.strip_prefix(':') {
             Some((name, false))
         } else if let Some(name) = segment.strip_prefix('{').and_then(|s| s.strip_suffix('}')) {
@@ -299,11 +322,14 @@ pub(crate) fn canonical_path(path: &LitStr, is_prefix: bool) -> syn::Result<LitS
         } else {
             segment.strip_prefix('*').map(|name| (name, true))
         };
+
         if let Some((name, wildcard)) = capture {
             if is_prefix {
                 return Err(error("controller route prefixes must not contain captures"));
             }
+
             let mut chars = name.chars();
+
             if !chars
                 .next()
                 .is_some_and(|c| c == '_' || c.is_ascii_alphabetic())
@@ -311,12 +337,15 @@ pub(crate) fn canonical_path(path: &LitStr, is_prefix: bool) -> syn::Result<LitS
             {
                 return Err(error("capture names must use `[A-Za-z_][A-Za-z0-9_]*`"));
             }
+
             if !names.insert(name) {
                 return Err(error("endpoint paths must not repeat capture names"));
             }
+
             if wildcard && index + 1 != segments.len() {
                 return Err(error("wildcard captures must be the final path segment"));
             }
+
             normalized.push(if wildcard {
                 format!("{{*{name}}}")
             } else {
@@ -326,9 +355,11 @@ pub(crate) fn canonical_path(path: &LitStr, is_prefix: bool) -> syn::Result<LitS
             if segment.contains([':', '{', '}', '*']) {
                 return Err(error("captures must occupy an entire path segment"));
             }
+
             normalized.push((*segment).to_owned());
         }
     }
+
     Ok(LitStr::new(
         &format!("/{}", normalized.join("/")),
         path.span(),

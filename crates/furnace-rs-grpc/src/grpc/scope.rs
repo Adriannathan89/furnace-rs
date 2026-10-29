@@ -30,21 +30,25 @@ pub struct ScopedGrpcService {
     owner: Option<TypeId>,
     methods: Vec<GrpcMethodRecord>,
 }
+
 impl ScopedGrpcService {
     /// Returns the fully qualified protobuf service name.
     pub fn name(&self) -> &'static str {
         self.descriptor.name()
     }
+
     /// Returns the owning cauldron, if a root selected it.
     #[doc(hidden)]
     pub const fn owner(&self) -> Option<TypeId> {
         self.owner
     }
+
     /// Returns the static typed registration.
     #[doc(hidden)]
     pub const fn descriptor(&self) -> &'static GrpcServiceDescriptor {
         self.descriptor
     }
+
     /// Returns methods in protobuf-name order.
     pub fn methods(&self) -> &[GrpcMethodRecord] {
         &self.methods
@@ -59,18 +63,21 @@ pub struct GrpcApplicationScope {
     root: Option<TypeId>,
     files: BTreeMap<String, prost_types::FileDescriptorProto>,
 }
+
 impl GrpcApplicationScope {
     /// Selects and validates registrations without constructing providers or reading files.
     #[allow(clippy::result_large_err)]
     pub fn for_cauldron_graph(graph: Option<&CauldronGraph>) -> Result<Self> {
         Self::select(graph, None)
     }
+
     /// Selects one managed implementation for focused fixtures.
     #[doc(hidden)]
     #[allow(clippy::result_large_err)]
     pub fn for_focus(target: TypeId) -> Result<Self> {
         Self::select(None, Some(target))
     }
+
     #[allow(clippy::result_large_err)]
     /// Builds the service scope selected by the application or focused test.
     fn select(graph: Option<&CauldronGraph>, focus: Option<TypeId>) -> Result<Self> {
@@ -79,12 +86,15 @@ impl GrpcApplicationScope {
                 .into_iter()
                 .map(|entry| entry.descriptor)
                 .collect();
+
         if let Some(target) = focus {
             descriptors.retain(|d| d.provider_type_id() == target);
         }
+
         if let Some(graph) = graph {
             let selected: BTreeSet<_> = graph.registered_transport_providers("grpc").collect();
             descriptors.retain(|d| selected.contains(&d.provider_type_id()));
+
             if selected
                 .iter()
                 .any(|id| !descriptors.iter().any(|d| d.provider_type_id() == *id))
@@ -95,23 +105,29 @@ impl GrpcApplicationScope {
                 ));
             }
         }
+
         descriptors.sort_by_key(|descriptor| (descriptor.name(), descriptor.implementation()));
+
         Self::validate(&descriptors, graph)
     }
+
     /// Returns validated service metadata selected for a constructed application.
     #[allow(clippy::result_large_err)]
     pub fn for_application(application: &Furnace) -> Result<Self> {
         Self::for_cauldron_graph(application.cauldron_graph())
     }
+
     #[cfg(feature = "jwt")]
     /// Returns the selected application root identity when graph metadata is available.
     pub(crate) const fn root_type_id(&self) -> Option<TypeId> {
         self.root
     }
+
     /// Returns selected services in fully qualified protobuf-name order.
     pub fn services(&self) -> &[ScopedGrpcService] {
         &self.services
     }
+
     #[cfg(feature = "jwt")]
     /// Returns the method guards selected in this application scope.
     pub(crate) fn guards(&self) -> Vec<crate::common::passport::__private::ScopedGuard> {
@@ -133,11 +149,13 @@ impl GrpcApplicationScope {
             })
             .collect()
     }
+
     /// Returns merged descriptor files; service filtering is applied by reflection.
     #[doc(hidden)]
     pub fn files(&self) -> &BTreeMap<String, prost_types::FileDescriptorProto> {
         &self.files
     }
+
     #[allow(clippy::result_large_err)]
     /// Validates selected service descriptors and builds their merged scope.
     fn validate(
@@ -147,6 +165,7 @@ impl GrpcApplicationScope {
         let mut files = BTreeMap::new();
         let mut names = BTreeSet::new();
         let mut services = Vec::new();
+
         for descriptor in descriptors {
             if descriptor.name() == super::reflection::HEALTH
                 || super::reflection::NAMES.contains(&descriptor.name())
@@ -156,14 +175,17 @@ impl GrpcApplicationScope {
                     "application service conflicts with a reserved infrastructure service",
                 ));
             }
+
             if !names.insert(descriptor.name()) {
                 return Err(metadata_error(
                     Some(descriptor),
                     "duplicate selected protobuf service",
                 ));
             }
+
             let fds = prost_types::FileDescriptorSet::decode(descriptor.descriptor_set())
                 .map_err(|_| metadata_error(Some(descriptor), "invalid protobuf descriptor set"))?;
+
             for mut file in fds.file {
                 let file_name = file
                     .name
@@ -173,6 +195,7 @@ impl GrpcApplicationScope {
                         metadata_error(Some(descriptor), "descriptor file name is missing")
                     })?;
                 file.source_code_info = None;
+
                 if let Some(existing) = files.get(&file_name) {
                     if existing != &file {
                         return Err(metadata_error(
@@ -185,6 +208,7 @@ impl GrpcApplicationScope {
                 }
             }
         }
+
         for descriptor in descriptors {
             let matching: Vec<_> = files
                 .values()
@@ -192,6 +216,7 @@ impl GrpcApplicationScope {
                 .filter(|(file, service)| {
                     let name = service.name.as_deref().unwrap_or("");
                     let package = file.package.as_deref().unwrap_or("");
+
                     if package.is_empty() {
                         name == descriptor.name()
                     } else {
@@ -199,21 +224,26 @@ impl GrpcApplicationScope {
                     }
                 })
                 .collect();
+
             if matching.len() != 1 {
                 return Err(metadata_error(
                     Some(descriptor),
                     "generated service identity must match exactly one descriptor declaration",
                 ));
             }
+
             let (_, service) = matching[0];
+
             if service.method.is_empty() {
                 return Err(metadata_error(
                     Some(descriptor),
                     "selected service has no protobuf methods",
                 ));
             }
+
             let mut methods = Vec::new();
             let mut method_names = BTreeSet::new();
+
             for method in &service.method {
                 let name = method
                     .name
@@ -222,6 +252,7 @@ impl GrpcApplicationScope {
                     .ok_or_else(|| {
                         metadata_error(Some(descriptor), "protobuf method name is missing")
                     })?;
+
                 if !method_names.insert(name.clone())
                     || method.input_type.as_deref().is_none_or(str::is_empty)
                     || method.output_type.as_deref().is_none_or(str::is_empty)
@@ -231,14 +262,17 @@ impl GrpcApplicationScope {
                         "invalid or duplicate protobuf method declaration",
                     ));
                 }
+
                 let guard = descriptor
                     .overrides()
                     .iter()
                     .find(|entry| entry.wire_name == name)
                     .map_or(descriptor.guard(), |entry| entry.guard);
+
                 #[cfg(feature = "jwt")]
                 if let Some(guard) = guard {
                     crate::GuardCatalog::validate_descriptors(&[guard.descriptor()])?;
+
                     if guard.descriptor().source() != crate::TokenSource::Bearer {
                         return Err(metadata_error(
                             Some(descriptor),
@@ -246,6 +280,7 @@ impl GrpcApplicationScope {
                         ));
                     }
                 }
+
                 methods.push(GrpcMethodRecord {
                     path: format!("/{}/{name}", descriptor.name()),
                     name,
@@ -254,12 +289,14 @@ impl GrpcApplicationScope {
                     guard,
                 });
             }
+
             if let Some(authored) = descriptor.rust_methods() {
                 let actual: BTreeSet<_> = authored.iter().copied().collect();
                 let expected: BTreeSet<_> = method_names
                     .iter()
                     .map(|name| rust_method_name(name))
                     .collect();
+
                 if actual.len() != authored.len()
                     || actual != expected.iter().map(String::as_str).collect()
                 {
@@ -269,15 +306,19 @@ impl GrpcApplicationScope {
                     ));
                 }
             }
+
             let mut overrides = BTreeSet::new();
+
             for entry in descriptor.overrides() {
                 let rust_name = rust_method_name(entry.wire_name);
+
                 if rust_name != entry.rust_name {
                     return Err(metadata_error(
                         Some(descriptor),
                         "protobuf method override does not match its Rust implementation method",
                     ));
                 }
+
                 if !method_names.contains(entry.wire_name) || !overrides.insert(entry.wire_name) {
                     return Err(metadata_error(
                         Some(descriptor),
@@ -285,6 +326,7 @@ impl GrpcApplicationScope {
                     ));
                 }
             }
+
             methods.sort_by(|a, b| a.name.cmp(&b.name));
             services.push(ScopedGrpcService {
                 descriptor,
@@ -295,6 +337,7 @@ impl GrpcApplicationScope {
                 methods,
             });
         }
+
         Ok(Self {
             services,
             files,
@@ -303,14 +346,17 @@ impl GrpcApplicationScope {
         })
     }
 }
+
 /// Builds a registration diagnostic with the descriptor source location.
 fn metadata_error(descriptor: Option<&GrpcServiceDescriptor>, message: &'static str) -> Error {
     let mut diagnostic = Diagnostic::new(FURNACE150, "invalid gRPC registration", message);
+
     if let Some(descriptor) = descriptor {
         diagnostic = diagnostic
             .with_subject(descriptor.name())
             .with_location(descriptor.location());
     }
+
     Error::new(diagnostic)
 }
 
@@ -318,9 +364,11 @@ fn metadata_error(descriptor: Option<&GrpcServiceDescriptor>, message: &'static 
 fn rust_method_name(wire_name: &str) -> String {
     use heck::ToSnakeCase;
     let mut name = wire_name.to_snake_case();
+
     if matches!(name.as_str(), "self" | "super" | "crate" | "extern" | "_") {
         name.push('_');
     }
+
     name
 }
 

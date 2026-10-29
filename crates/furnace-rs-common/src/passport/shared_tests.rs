@@ -68,12 +68,15 @@ fn adapter<'a>(
 ) -> PassportStrategyFuture<'a> {
     Box::pin(async move {
         assert_eq!(token, "opaque-token");
+
         for header in ["authorization", "proxy-authorization", "cookie"] {
             assert!(context.headers().get(header).is_none());
         }
+
         assert_eq!(context.headers()["x-request-id"], "request-123");
         assert_eq!(context.method(), Method::POST);
         assert_eq!(context.uri().path(), "/furnace.test.v1.Transport/Unary");
+
         Ok(authentication(true, true, true))
     })
 }
@@ -84,6 +87,7 @@ async fn bearer_context_strips_credentials() {
     builder.root::<SharedTestRoot>().unwrap();
     let application = builder.build().await.unwrap();
     let mut headers = HeaderMap::new();
+
     for (name, value) in [
         ("authorization", "Bearer opaque-token"),
         ("proxy-authorization", "Bearer proxy-secret"),
@@ -92,6 +96,7 @@ async fn bearer_context_strips_credentials() {
     ] {
         headers.insert(name, HeaderValue::from_static(value));
     }
+
     super::authentication::authenticate_bearer(
         application.context(),
         adapter,
@@ -123,6 +128,7 @@ fn shared_policy_keeps_and_clauses() {
         SourceLocation::new(file!(), line!(), column!()),
         None,
     );
+
     for (reader, write, active, allowed) in [
         (true, true, true, true),
         (false, true, true, false),

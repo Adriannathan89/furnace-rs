@@ -40,6 +40,7 @@ pub(crate) fn cargo_build_command(target: &ResolvedApplication) -> tokio::proces
         .stderr(Stdio::inherit())
         .stdout(Stdio::piped())
         .kill_on_drop(true);
+
     command
 }
 
@@ -55,6 +56,7 @@ pub(crate) async fn build_application_owned(
     target: ResolvedApplication,
 ) -> Result<BuiltApplication, CliError> {
     let mut build = CargoBuild::start(target)?;
+
     build.wait().await
 }
 
@@ -130,6 +132,7 @@ impl CargoBuild {
             )
             .with_source(error)
         })?;
+
         if !status.success() {
             return Err(CliError::new(
                 FURNACE201,
@@ -141,6 +144,7 @@ impl CargoBuild {
         if self.runtime_query.is_none() {
             self.runtime_query = Some(RuntimeLibraryQuery::start(&self.target)?);
         }
+
         let library_path = self
             .runtime_query
             .as_mut()
@@ -150,6 +154,7 @@ impl CargoBuild {
         self.runtime_query = None;
         let mut built = std::mem::take(&mut self.collector).finish(self.target.clone())?;
         built.library_paths.push(library_path);
+
         Ok(built)
     }
 
@@ -159,6 +164,7 @@ impl CargoBuild {
             let _ = query.child.start_kill();
             query.child.wait().await.map_err(runtime_library_error)?;
         }
+
         let kill_result = self.child.start_kill();
         let wait_result = self.child.wait().await;
 
@@ -184,18 +190,22 @@ impl BuiltApplication {
     /// Supplies Cargo's platform loader paths while retaining the caller's existing entries.
     pub(crate) fn configure_runtime(&self, command: &mut tokio::process::Command) {
         let mut paths = self.library_paths.clone();
+
         if let Some(parent) = self.executable.parent() {
             paths.push(parent.join("deps"));
             paths.push(parent.to_path_buf());
         }
+
         if let Some(existing) = std::env::var_os(library_path_variable()) {
             paths.extend(std::env::split_paths(&existing));
         } else if cfg!(target_os = "macos") {
             if let Some(home) = std::env::var_os("HOME") {
                 paths.push(PathBuf::from(home).join("lib"));
             }
+
             paths.extend([PathBuf::from("/usr/local/lib"), PathBuf::from("/usr/lib")]);
         }
+
         // All entries came from Cargo/rustc or an already valid platform search path.
         if let Ok(value) = std::env::join_paths(paths) {
             command.env(library_path_variable(), value);
@@ -252,6 +262,7 @@ impl RuntimeLibraryQuery {
             .kill_on_drop(true);
         let mut child = query.spawn().map_err(runtime_library_error)?;
         let stdout = child.stdout.take().expect("runtime query stdout was piped");
+
         Ok(Self {
             child,
             lines: BufReader::new(stdout).lines(),
@@ -270,7 +281,9 @@ impl RuntimeLibraryQuery {
                 self.path = Some(PathBuf::from(line.trim()));
             }
         }
+
         let status = self.child.wait().await.map_err(runtime_library_error)?;
+
         if !status.success() {
             return Err(CliError::new(
                 FURNACE201,
@@ -278,6 +291,7 @@ impl RuntimeLibraryQuery {
                 "could not locate Rust runtime libraries",
             ));
         }
+
         self.path.clone().ok_or_else(|| {
             CliError::new(
                 FURNACE201,
@@ -364,6 +378,7 @@ impl ArtifactCollector {
                         }
                     }
                 }
+
                 for path in script.linked_paths {
                     let path = path.as_str();
                     let path = ["native=", "framework=", "dependency=", "crate=", "all="]
@@ -371,6 +386,7 @@ impl ArtifactCollector {
                         .find_map(|prefix| path.strip_prefix(prefix))
                         .unwrap_or(path);
                     let path = PathBuf::from(path);
+
                     // Cargo includes build-script library directories only inside target.
                     if path.starts_with(target.package().target_directory()) {
                         self.library_paths.push(path);
@@ -567,6 +583,7 @@ mod tests {
 
     fn foreign_server_artifact() -> String {
         let foreign = selected_fixture("web", "web");
+
         artifact(&foreign, "server", Some("/tmp/target/debug/foreign-server"))
     }
 

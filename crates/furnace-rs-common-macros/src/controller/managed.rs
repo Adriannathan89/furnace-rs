@@ -23,18 +23,21 @@ pub(super) fn expand_controller_with_common(
             "`#[controller]` supports only non-generic named-field or unit structs",
         ));
     }
+
     if let Fields::Unnamed(fields) = &item.fields {
         return Err(Error::new(
             fields.span(),
             "`#[controller]` supports only named-field or unit structs",
         ));
     }
+
     if let Some(attribute) = item.attrs.iter().find(is_repr) {
         return Err(Error::new(
             attribute.span(),
             "representation attributes are not supported on `#[controller]` structs",
         ));
     }
+
     if let Some(attribute) = item
         .attrs
         .iter()
@@ -45,6 +48,7 @@ pub(super) fn expand_controller_with_common(
             "`#[controller]` structs support documentation and lint attributes only",
         ));
     }
+
     if let Fields::Named(fields) = &mut item.fields {
         if fields.named.len() > 16 {
             return Err(Error::new(
@@ -52,6 +56,7 @@ pub(super) fn expand_controller_with_common(
                 "managed injectors support at most sixteen dependencies",
             ));
         }
+
         for field in &mut fields.named {
             if let Some(attribute) = field.attrs.iter().find(is_cfg) {
                 return Err(Error::new(
@@ -59,8 +64,10 @@ pub(super) fn expand_controller_with_common(
                     "conditional attributes are not supported on `#[controller]` fields; conditionally compile the complete controller instead",
                 ));
             }
+
             let span = field.span();
             consume_inject(&mut field.attrs, span)?;
+
             if let Some(attribute) = field
                 .attrs
                 .iter()
@@ -99,6 +106,7 @@ pub(super) fn expand_controller_with_common(
                     .map(|mut field| {
                         let dependency_span = field.ty.span();
                         normalize_self_type(&mut field.ty, &ident);
+
                         (field, dependency_span)
                     })
                     .collect();
@@ -109,6 +117,7 @@ pub(super) fn expand_controller_with_common(
                     let vis = &field.vis;
                     let ident = &field.ident;
                     let ty = &field.ty;
+
                     quote!(#(#attrs)* #vis #ident: #ty)
                 });
                 let resolutions = normalized_fields.iter().map(|(field, dependency_span)| {
@@ -126,6 +135,7 @@ pub(super) fn expand_controller_with_common(
                         )
                     }
                 });
+
                 (
                     quote!({ #(#declarations,)* }),
                     quote!({ #(#resolutions,)* }),
@@ -268,6 +278,7 @@ fn generated_suffix(item: &ItemStruct, ident: &Ident) -> String {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     item.to_token_stream().to_string().hash(&mut hasher);
     ident.hash(&mut hasher);
+
     format!("{ident}_{:016x}", hasher.finish())
 }
 
@@ -314,6 +325,7 @@ impl VisitMut for SelfTypeNormalizer<'_> {
         {
             segment.ident = self.handle.clone();
         }
+
         visit_mut::visit_expr_path_mut(self, expression_path);
     }
 
@@ -325,9 +337,11 @@ impl VisitMut for SelfTypeNormalizer<'_> {
         {
             segment.ident = self.handle.clone();
         }
+
         visit_mut::visit_type_path_mut(self, type_path);
     }
 }
+
 #[cfg(test)]
 #[path = "../../tests/support/controller.rs"]
 mod tests;
@@ -337,21 +351,27 @@ mod tests;
 /// Each dependency field must carry exactly one marker, which is consumed by the macro.
 fn consume_inject(attributes: &mut Vec<Attribute>, span: proc_macro2::Span) -> syn::Result<()> {
     let mut seen = false;
+
     for attribute in attributes.iter().filter(|a| a.path().is_ident("inject")) {
         if seen {
             return Err(Error::new_spanned(attribute, "duplicate #[inject] marker"));
         }
+
         if !matches!(attribute.meta, syn::Meta::Path(_)) {
             return Err(Error::new_spanned(
                 attribute,
                 "#[inject] takes no arguments",
             ));
         }
+
         seen = true;
     }
+
     if !seen {
         return Err(Error::new(span, "dependency fields require #[inject]"));
     }
+
     attributes.retain(|a| !a.path().is_ident("inject"));
+
     Ok(())
 }

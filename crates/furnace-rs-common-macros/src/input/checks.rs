@@ -49,6 +49,7 @@ pub(super) fn expand(
         || matches!(ty, Type::Reference(reference) if type_name(&reference.elem) == "str");
     let runtime = quote!(#common::__private::input_validation);
     let mut checks = Vec::new();
+
     for validator in validators {
         let compatible = match validator.name.as_str() {
             "email" => string,
@@ -59,13 +60,16 @@ pub(super) fn expand(
             "nested" | "custom" => true,
             _ => false,
         };
+
         if !compatible {
             return Err(Error::new(
                 validator.span,
                 "input validator is incompatible with the field type",
             ));
         }
+
         let mut conditions = Vec::new();
+
         match validator.name.as_str() {
             "required" => continue,
             "custom" => {
@@ -84,6 +88,7 @@ pub(super) fn expand(
                 if float {
                     continue;
                 }
+
                 let body = nested(ty, quote!(__furnace_checked), common, generics)?;
                 checks.push(quote! {
                     #runtime::merge(&mut __furnace_errors, (#body).map_err(|errors| errors.__prefix(__furnace_path)));
@@ -101,6 +106,7 @@ pub(super) fn expand(
                 check_number(expression, &name)?;
                 let value = if float {
                     let number = numeric(expression)?;
+
                     quote!((#number) as #ty)
                 } else {
                     quote!(#expression)
@@ -116,6 +122,7 @@ pub(super) fn expand(
                 } else {
                     quote!(*__furnace_checked)
                 };
+
                 for (bound, expression) in &validator.arguments {
                     check_number(
                         expression,
@@ -127,13 +134,16 @@ pub(super) fn expand(
                     )?;
                     let value = if float {
                         let number = numeric(expression)?;
+
                         quote!((#number) as #ty)
                     } else {
                         quote!(#expression)
                     };
+
                     if bound == "min" || bound == "exact" {
                         conditions.push((quote!(#observed < #value), "TooSmall"));
                     }
+
                     if bound == "max" || bound == "exact" {
                         conditions.push((quote!(#observed > #value), "TooBig"));
                     }
@@ -141,8 +151,10 @@ pub(super) fn expand(
             }
             _ => unreachable!("parsed validator"),
         }
+
         for (condition, kind) in conditions {
             let failure = failure(kind, common);
+
             if float {
                 checks.push(quote!(if __furnace_finite && (#condition) { #failure }));
             } else {
@@ -150,8 +162,10 @@ pub(super) fn expand(
             }
         }
     }
+
     let checks = if float {
         let failure = failure("InvalidType", common);
+
         // Invalid floats suppress numeric rules, not independent callbacks.
         quote!(let __furnace_finite = #runtime::Number::finite(*__furnace_checked);
             if !__furnace_finite { #failure }
@@ -168,10 +182,12 @@ pub(super) fn expand(
         } else {
             quote!()
         };
+
         quote!(if let Some(__furnace_checked) = __furnace_value { #checks } else { #required })
     } else {
         quote!(let __furnace_checked = __furnace_value; #checks)
     };
+
     Ok(body)
 }
 
@@ -188,6 +204,7 @@ fn failure(kind: &str, common: &Path) -> TokenStream {
 fn length(ty: &Type, runtime: &TokenStream) -> TokenStream {
     if let Type::Tuple(tuple) = ty {
         let len = tuple.elems.len();
+
         quote!(#len)
     } else {
         quote!(#runtime::Length::length(__furnace_checked))
@@ -197,6 +214,7 @@ fn length(ty: &Type, runtime: &TokenStream) -> TokenStream {
 /// Recognizes nested sequence/map types and requires string map keys.
 fn collection(ty: &Type) -> syn::Result<bool> {
     let name = type_name(ty);
+
     if matches!(name.as_str(), "HashMap" | "BTreeMap") {
         if arguments(ty)
             .first()
@@ -207,8 +225,10 @@ fn collection(ty: &Type) -> syn::Result<bool> {
                 "automatic input map validation requires String keys",
             ));
         }
+
         return Ok(true);
     }
+
     Ok(name == "Vec" || matches!(ty, Type::Array(_) | Type::Tuple(_)))
 }
 
@@ -223,17 +243,21 @@ fn nested(
     collection(ty)?;
     let name = type_name(ty);
     let args = arguments(ty);
+
     if name == "Option" {
         let inner = args
             .first()
             .ok_or_else(|| Error::new_spanned(ty, "expected Option<T>"))?;
         let child = nested(inner, quote!(__furnace_item), common, generics)?;
+
         return Ok(
             quote!({ match (#value).as_ref() { Some(__furnace_item) => #child, None => Ok(()) } }),
         );
     }
+
     let sequence = name == "Vec" || matches!(ty, Type::Array(_));
     let map = matches!(name.as_str(), "HashMap" | "BTreeMap");
+
     if sequence || map {
         let inner = match ty {
             Type::Array(array) => &array.elem,
@@ -254,6 +278,7 @@ fn nested(
                 quote!(#common::ValidationPathSegment::Index(__furnace_key)),
             )
         };
+
         return Ok(quote!({
             let mut __furnace_collection_errors = None;
             for (__furnace_key, __furnace_item) in #iterator {
@@ -263,8 +288,10 @@ fn nested(
             #common::__private::input_validation::finish(__furnace_collection_errors)
         }));
     }
+
     if let Type::Tuple(tuple) = ty {
         let mut children = Vec::new();
+
         for (index, ty) in tuple.elems.iter().enumerate() {
             let access = syn::Index::from(index);
             let child = nested(ty, quote!(&__furnace_tuple.#access), common, generics)?;
@@ -273,16 +300,19 @@ fn nested(
                     (#child).map_err(|errors| errors.__prefix(&[#common::ValidationPathSegment::Index(#index)])));
             });
         }
+
         return Ok(
             quote!({ let __furnace_tuple = #value; let mut __furnace_tuple_errors = None; #(#children)* #common::__private::input_validation::finish(__furnace_tuple_errors) }),
         );
     }
+
     if needs_bound(ty, generics) {
         generics
             .make_where_clause()
             .predicates
             .push(parse_quote_spanned!(ty.span()=> #ty: #common::Input));
     }
+
     Ok(quote_spanned!(ty.span()=> {
         let __furnace_nested: fn(&#ty) -> #common::ValidationResult = <#ty as #common::Input>::validate;
         __furnace_nested(#value)
@@ -305,6 +335,7 @@ fn needs_bound(ty: &Type, generics: &Generics) -> bool {
                     .type_params()
                     .any(|parameter| parameter.ident == first.ident);
             }
+
             syn::visit_mut::visit_type_path_mut(self, path);
         }
     }
@@ -313,5 +344,6 @@ fn needs_bound(ty: &Type, generics: &Generics) -> bool {
         found: false,
     };
     visitor.visit_type_mut(&mut ty.clone());
+
     visitor.found
 }

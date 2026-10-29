@@ -7,6 +7,7 @@ pub fn nested<T: crate::Configuration>(config: &Config, key: &str) -> Configurat
     if config.get(key).is_some() || config.get_string_array(key).is_some() {
         return Err(failure(config, key, "invalid_type"));
     }
+
     T::__from_config_prefix(config, key)
 }
 
@@ -22,6 +23,7 @@ pub fn collect<T>(
                 Some(errors) => errors.extend(next),
                 None => *errors = Some(next),
             }
+
             None
         }
     }
@@ -121,6 +123,7 @@ fn failure(config: &Config, key: &str, code: &str) -> ConfigurationErrors {
         "configuration value has an invalid type"
     };
     let mut issue = ConfigurationIssue::new(key, code, message);
+
     if let Some(source) = config
         .source_of(key)
         .or_else(|| config.source_of_string_array(key))
@@ -128,5 +131,6 @@ fn failure(config: &Config, key: &str, code: &str) -> ConfigurationErrors {
     {
         issue = issue.with_source(source);
     }
+
     ConfigurationErrors::from_issue(issue)
 }

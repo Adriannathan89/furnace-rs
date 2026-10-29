@@ -1,6 +1,7 @@
 //! Immutable link-time WebSocket metadata.
 use crate::{EndpointMode, ProcessingMode};
 use std::any::TypeId;
+
 /// One declared gateway operation.
 #[derive(Clone, Copy, Debug)]
 pub struct SocketHandlerDescriptor {
@@ -9,6 +10,7 @@ pub struct SocketHandlerDescriptor {
     /// One of event, text, binary, connect, disconnect, join, owned.
     pub kind: &'static str,
 }
+
 /// Static registration of one gateway or owned endpoint.
 pub struct SocketEndpointDescriptor {
     /// DI output identity.
@@ -41,10 +43,12 @@ pub struct SocketEndpointDescriptor {
     /// Static gateway operation metadata.
     pub handlers: &'static [SocketHandlerDescriptor],
 }
+
 impl SocketEndpointDescriptor {
     /// Records the authored registration location.
     pub const fn with_location(mut self, location: furnace_rs_core::SourceLocation) -> Self {
         self.location = location;
+
         self
     }
 
@@ -52,11 +56,14 @@ impl SocketEndpointDescriptor {
     pub const fn with_credentials(mut self, cookie: &'static str, query: &'static str) -> Self {
         self.cookie = cookie;
         self.query = query;
+
         self
     }
+
     /// Applies a handshake policy.
     pub const fn with_guard(mut self, guard: SocketGuard) -> Self {
         self.guard = Some(guard);
+
         self
     }
 
@@ -68,8 +75,10 @@ impl SocketEndpointDescriptor {
         ) -> furnace_rs_core::Result<axum::routing::MethodRouter>,
     ) -> Self {
         self.route = Some(route);
+
         self
     }
+
     /// Constructs side-effect-free registration metadata.
     pub const fn new(
         provider: fn() -> TypeId,
@@ -94,13 +103,16 @@ impl SocketEndpointDescriptor {
         }
     }
 }
+
 /// Link-time descriptor entry.
 #[doc(hidden)]
 pub struct SocketEndpointRegistration {
     /// Selected endpoint metadata.
     pub descriptor: &'static SocketEndpointDescriptor,
 }
+
 furnace_rs_core::__private::inventory::collect!(SocketEndpointRegistration);
+
 /// Optional typed Passport policy bound at handshake.
 #[doc(hidden)]
 #[derive(Clone, Copy)]
@@ -108,6 +120,7 @@ pub struct SocketGuard {
     #[cfg(feature = "jwt")]
     pub(crate) descriptor: fn() -> &'static furnace_rs_common::GuardDescriptor,
 }
+
 #[cfg(feature = "jwt")]
 impl SocketGuard {
     /// Captures a typed guard without resolving its strategy.

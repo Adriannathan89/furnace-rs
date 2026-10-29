@@ -41,6 +41,7 @@ fn transport_selection_rejects_empty_duplicate_unknown_or_uncompiled() {
             socket: false
         }
     );
+
     for values in [vec![], vec!["grpc", "grpc"], vec!["ws"]] {
         let c = ConfigBuilder::new()
             .source(
@@ -51,6 +52,7 @@ fn transport_selection_rejects_empty_duplicate_unknown_or_uncompiled() {
             .unwrap();
         assert!(RuntimeSelection::parse(&c, true, true).is_err());
     }
+
     let c = ConfigBuilder::new()
         .source(
             MapSource::new("test", [] as [(&str, &str); 0])
@@ -88,6 +90,7 @@ fn grpc_config_rejects_zero_overflow_partial_tls_and_custom_ca_only_without_cas(
         let error = GrpcServerConfig::parse(&config(&[(key, value)])).expect_err(key);
         assert!(!error.to_string().contains("private-token-sentinel"));
     }
+
     for (key, value) in [
         ("grpc.clients.users.connect", "other"),
         ("grpc.clients.users.connect_timeout_ms", "0"),
@@ -107,6 +110,7 @@ fn grpc_config_rejects_zero_overflow_partial_tls_and_custom_ca_only_without_cas(
         ]);
         assert!(GrpcClientConfig::parse(&c, "users").is_err());
     }
+
     assert!(GrpcClientConfig::parse(&Config::empty(), "users").is_err());
 }
 
@@ -123,6 +127,7 @@ fn grpc_configuration_paths_follow_source() {
         .source(TomlSource::file(path))
         .build()
         .unwrap();
+
     #[cfg(feature = "tls")]
     {
         let s = GrpcServerConfig::parse(&c).unwrap();

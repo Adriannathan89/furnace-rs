@@ -25,6 +25,7 @@ pub fn grpc_authenticated<P: PassportPrincipal, T>(
         .cloned()
         .ok_or_else(|| Status::internal("internal server error"))
 }
+
 /// Reads the exact verified claims installed at RPC admission.
 pub fn grpc_verified_token<C: Send + Sync + 'static, T>(
     request: &tonic::Request<T>,
@@ -35,6 +36,7 @@ pub fn grpc_verified_token<C: Send + Sync + 'static, T>(
         .cloned()
         .ok_or_else(|| Status::internal("internal server error"))
 }
+
 /// Maps Passport failures to fixed, credential-free gRPC statuses.
 pub fn passport_status(error: PassportError) -> Status {
     match error.kind() {
@@ -44,6 +46,7 @@ pub fn passport_status(error: PassportError) -> Status {
         _ => Status::internal("internal server error"),
     }
 }
+
 /// Generated-service adapter retaining the native service name and readiness contract.
 #[doc(hidden)]
 #[derive(Clone)]
@@ -52,6 +55,7 @@ pub struct GrpcPassportService<S> {
     application: ApplicationContext,
     bindings: Arc<BTreeMap<String, Option<PassportStrategyBinding<'static>>>>,
 }
+
 impl<S> GrpcPassportService<S> {
     /// Wraps a generated service with its application context and method bindings.
     pub(crate) fn new(
@@ -66,9 +70,11 @@ impl<S> GrpcPassportService<S> {
         }
     }
 }
+
 impl<S: NamedService> NamedService for GrpcPassportService<S> {
     const NAME: &'static str = S::NAME;
 }
+
 impl<S> Service<http::Request<Body>> for GrpcPassportService<S>
 where
     S: Service<http::Request<Body>, Response = http::Response<Body>> + Clone + Send + 'static,
@@ -76,22 +82,28 @@ where
     S::Error: Send + 'static,
 {
     type Response = http::Response<Body>;
+
     type Error = S::Error;
+
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+
     /// Delegates readiness polling to the generated service.
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
     }
+
     /// Authenticates guarded RPC metadata before dispatching to the generated service.
     fn call(&mut self, mut request: http::Request<Body>) -> Self::Future {
         let application = self.application.clone();
         let binding = self.bindings.get(request.uri().path()).cloned();
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
+
         Box::pin(async move {
             let Some(binding) = binding else {
                 return Ok(Status::unimplemented("unimplemented method").into_http());
             };
+
             if let Some(binding) = binding {
                 let peer = request
                     .extensions()
@@ -119,17 +131,21 @@ where
                     if !authorizes(binding.guard(), &authentication) {
                         return Err(PassportError::forbidden());
                     }
+
                     if !authentication.install_extensions(request.extensions_mut()) {
                         return Err(PassportError::internal(std::io::Error::other(
                             "authentication type binding failed",
                         )));
                     }
+
                     Ok(())
                 });
+
                 if let Err(error) = result {
                     return Ok(passport_status(error).into_http());
                 }
             }
+
             inner.call(request).await
         })
     }
@@ -150,19 +166,24 @@ mod tests {
         time::Duration,
     };
     use tonic::codegen::tokio_stream::{self as streams, Stream};
+
     static NOW: AtomicU64 = AtomicU64::new(0);
+
     #[derive(Clone, serde::Serialize, serde::Deserialize)]
     struct Claims {
         id: u64,
     }
+
     impl PassportPrincipal for Claims {
         fn has_role(&self, _: &str) -> bool {
             false
         }
+
         fn has_permission(&self, _: &str) -> bool {
             false
         }
     }
+
     fn adapter<'a>(
         app: &'a ApplicationContext,
         _: &'a crate::PassportContext<'a>,
@@ -173,15 +194,18 @@ mod tests {
                 .resolve::<JwtService>()
                 .map_err(PassportError::internal)?;
             let verified = jwt.verify::<Claims>(token, JwtValidation::access())?;
+
             if verified.claims.registered.expires_at <= NOW.load(Ordering::SeqCst) {
                 return Err(PassportError::reject());
             }
+
             Ok(ErasedAuthentication::new(
                 verified.claims.custom.clone(),
                 verified,
             ))
         })
     }
+
     static GUARD: GuardDescriptor = GuardDescriptor::new(
         "Expiry",
         "seal",
@@ -195,12 +219,16 @@ mod tests {
         SourceLocation::new(file!(), line!(), column!()),
         Some(adapter),
     );
+
     type Output = Pin<Box<dyn Stream<Item = Result<pb::Item, Status>> + Send>>;
+
     type Input = tokio::sync::mpsc::Receiver<Result<pb::Item, Status>>;
+
     #[derive(Clone)]
     struct ExpiryService {
         input: Arc<tokio::sync::Mutex<Option<Input>>>,
     }
+
     #[tonic::async_trait]
     impl pb::transport_server::Transport for ExpiryService {
         async fn unary(
@@ -208,9 +236,12 @@ mod tests {
             request: tonic::Request<pb::Item>,
         ) -> Result<tonic::Response<pb::Item>, Status> {
             assert_eq!(grpc_authenticated::<Claims, _>(&request)?.id, 7);
+
             Ok(tonic::Response::new(request.into_inner()))
         }
+
         type ServerStreamStream = Output;
+
         async fn server_stream(
             &self,
             request: tonic::Request<pb::Item>,
@@ -221,17 +252,21 @@ mod tests {
                 7
             );
             let receiver = self.input.lock().await.take().unwrap();
+
             Ok(tonic::Response::new(Box::pin(
                 streams::wrappers::ReceiverStream::new(receiver),
             )))
         }
+
         async fn client_stream(
             &self,
             _: tonic::Request<tonic::Streaming<pb::Item>>,
         ) -> Result<tonic::Response<pb::Summary>, Status> {
             unreachable!()
         }
+
         type BidiStream = Output;
+
         async fn bidi(
             &self,
             _: tonic::Request<tonic::Streaming<pb::Item>>,
@@ -239,8 +274,10 @@ mod tests {
             unreachable!()
         }
     }
+
     #[furnace_rs_core::cauldron(providers = [JwtService])]
     struct ExpiryApp;
+
     #[tokio::test]
     async fn admitted_stream_survives_token_expiry_but_next_call_fails() {
         let config = ConfigBuilder::new()
@@ -293,6 +330,7 @@ mod tests {
             let mut req = tonic::Request::new(pb::Item { value: 0 });
             req.metadata_mut()
                 .insert("authorization", format!("Bearer {token}").parse().unwrap());
+
             req
         };
         let mut output = client.server_stream(request()).await.unwrap().into_inner();
@@ -312,8 +350,10 @@ mod tests {
             tonic::Code::Unauthenticated
         );
     }
+
     #[derive(Clone)]
     struct UnknownService(Arc<std::sync::atomic::AtomicUsize>);
+
     #[tonic::async_trait]
     impl pb::hidden_server::Hidden for UnknownService {
         async fn secret(
@@ -321,9 +361,11 @@ mod tests {
             request: tonic::Request<pb::Item>,
         ) -> Result<tonic::Response<pb::Item>, Status> {
             self.0.fetch_add(1, Ordering::SeqCst);
+
             Ok(tonic::Response::new(request.into_inner()))
         }
     }
+
     #[tokio::test]
     async fn operation_missing_policy_metadata_never_dispatches() {
         let config = ConfigBuilder::new()

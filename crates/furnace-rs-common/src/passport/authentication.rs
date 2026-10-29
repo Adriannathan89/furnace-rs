@@ -17,6 +17,7 @@ pub async fn authenticate_bearer(
 ) -> PassportResult<ErasedAuthentication> {
     let token = bearer_token(headers)?;
     let context = PassportContext::new(headers, method, uri, remote_addr);
+
     adapter(application, &context, token).await
 }
 
@@ -65,9 +66,11 @@ mod bearer_syntax_tests {
             ["Bearer invalid", "Bearer valid"],
         ] {
             let mut headers = HeaderMap::new();
+
             for value in values {
                 headers.append(AUTHORIZATION, HeaderValue::from_str(value).unwrap());
             }
+
             assert!(bearer_token(&headers).is_err());
         }
     }

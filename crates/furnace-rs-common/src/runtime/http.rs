@@ -5,14 +5,18 @@ use super::{
 };
 use furnace_rs_core::{CauldronGraph, Config, Furnace, FurnaceBuilder};
 use futures_util::future::BoxFuture;
+
 /// Checks selected HTTP routes and validates their automatic bind configuration.
 fn validate(graph: &CauldronGraph, config: &Config) -> furnace_rs_core::Result<()> {
     if !crate::http_scope::HttpApplicationScope::for_cauldron_graph(Some(graph))?.has_routes() {
         return Err(crate::server::no_runnable_route_error());
     }
+
     crate::server_config::ServerBinding::from_config(config)?;
+
     Ok(())
 }
+
 /// Enables the automatic HTTP and CORS configuration inputs for a Furnace builder.
 fn configure(builder: &mut FurnaceBuilder) {
     crate::server_config::enable_automatic_server(builder);
@@ -21,6 +25,7 @@ fn configure(builder: &mut FurnaceBuilder) {
         crate::server_config::HttpRuntimeMode::Automatic,
     );
 }
+
 /// Builds an HTTP router and packages its address, summary, and supervised serving operation.
 fn prepare<'a>(
     app: &'a Furnace,
@@ -47,6 +52,7 @@ fn prepare<'a>(
                 .resolve::<crate::server_config::ServerBinding>()
                 .map_err(RuntimeError::Bootstrap)?;
             let host = binding.host();
+
             if host.contains(':') {
                 format!("[{host}]:{}", binding.port())
             } else {
@@ -60,6 +66,7 @@ fn prepare<'a>(
             .map(|(_, route)| route)
             .collect::<Vec<_>>();
         let mut summary = format!("Routes  {}", routes.len());
+
         if !routes.is_empty() {
             let rows = routes
                 .iter()
@@ -68,7 +75,9 @@ fn prepare<'a>(
                 .join("\n");
             summary.push_str(&format!("\n\nMETHOD  PATH\n──────  ────\n{rows}"));
         }
+
         let debug = app.context().config().get("furnace.mode") == Some("debug");
+
         Ok(PreparedTransport {
             name: "http",
             address,
@@ -95,4 +104,5 @@ fn prepare<'a>(
         })
     })
 }
+
 furnace_rs_core::__private::inventory::submit! { RuntimeTransportDescriptor { name: "http", validate, configure, prepare } }

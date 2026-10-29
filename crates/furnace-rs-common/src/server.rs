@@ -33,6 +33,7 @@ use crate::{build_router, configure_router};
 mod body;
 
 const HEADER_READ_TIMEOUT: Duration = Duration::from_secs(10);
+
 const BODY_READ_IDLE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// A standard application run had no reachable managed HTTP route.
@@ -85,9 +86,11 @@ impl fmt::Display for StartupSummary {
             "\n\nFURNACE · Application ready\n────────────────────────────\nServer  http://{}:{}\nRoutes  {}",
             self.host, self.port, self.route_count
         )?;
+
         if !self.routes.is_empty() {
             write!(formatter, "\n\nMETHOD  PATH\n──────  ────")?;
         }
+
         for route in &self.routes {
             write!(
                 formatter,
@@ -96,6 +99,7 @@ impl fmt::Display for StartupSummary {
                 route.full_path()
             )?;
         }
+
         writeln!(formatter)
     }
 }
@@ -136,9 +140,11 @@ fn prepare_standard_application(
 ) -> Result<PreparedStandardRun, HttpRuntimeError> {
     let scope =
         HttpApplicationScope::for_application(&application).map_err(HttpRuntimeError::Bootstrap)?;
+
     if !scope.has_routes() {
         return Err(HttpRuntimeError::Bootstrap(no_runnable_route_error()));
     }
+
     let route_count = scope.route_records().count();
 
     let router = build_router(&application).map_err(HttpRuntimeError::Bootstrap)?;
@@ -177,6 +183,7 @@ where
         routes: _,
     } = prepared;
     let address = (binding.host().to_owned(), binding.port());
+
     serve_configured_router_with(application, router, address, binder, shutdown).await
 }
 
@@ -234,6 +241,7 @@ pub async fn serve(
     address: impl tokio::net::ToSocketAddrs,
 ) -> Result<(), HttpRuntimeError> {
     let router = build_router(&application).map_err(HttpRuntimeError::Bootstrap)?;
+
     serve_router(application, router, address).await
 }
 
@@ -289,6 +297,7 @@ where
     Shutdown: Future<Output = ()> + Send + 'static,
 {
     let router = build_router(&application).map_err(HttpRuntimeError::Bootstrap)?;
+
     serve_router_with(application, router, address, binder, shutdown).await
 }
 
@@ -306,6 +315,7 @@ where
     Shutdown: Future<Output = ()> + Send + 'static,
 {
     let router = configure_router(&application, router).map_err(HttpRuntimeError::Bootstrap)?;
+
     serve_configured_router_with(application, router, address, binder, shutdown).await
 }
 
@@ -336,6 +346,7 @@ where
     let result = serve_http(debug, listener, router, shutdown)
         .await
         .map_err(HttpRuntimeError::Serve);
+
     finish(application, result).await
 }
 
@@ -374,6 +385,7 @@ pub(crate) async fn serve_http_supervised(
     let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(());
     let mut connections = tokio::task::JoinSet::new();
     tokio::pin!(shutdown);
+
     loop {
         tokio::select! {
             biased;
@@ -467,10 +479,13 @@ pub(crate) async fn serve_http_supervised(
             }
         }
     }
+
     // Stop accepting before draining active requests and running lifecycle hooks.
     drop(listener);
     drop(shutdown_tx);
+
     while connections.join_next().await.is_some() {}
+
     Ok(())
 }
 
@@ -502,6 +517,7 @@ async fn finish_after_error(
 async fn shutdown_signal() {
     let Some(path) = std::env::var_os(crate::__private::DEV_SHUTDOWN_ENV).map(PathBuf::from) else {
         os_shutdown_signal().await;
+
         return;
     };
 
@@ -521,6 +537,7 @@ async fn os_shutdown_signal() {
             _ = tokio::signal::ctrl_c() => {}
             _ = terminate.recv() => {}
         }
+
         return;
     }
 
@@ -536,6 +553,7 @@ async fn wait_for_dev_shutdown(path: PathBuf) {
         {
             return;
         }
+
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
 }
@@ -567,7 +585,9 @@ mod tests {
     use crate::{ControllerEndpointDescriptor, HttpMethod, RouteDescriptor};
 
     static STARTS: AtomicUsize = AtomicUsize::new(0);
+
     static BINDS: AtomicUsize = AtomicUsize::new(0);
+
     static TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
     /// Adds real middleware headers and obsolete representation metadata to upload responses.
@@ -577,9 +597,11 @@ mod tests {
                 async |request: axum::extract::Request, next: axum::middleware::Next| {
                     let upload = request.uri().path() == "/upload";
                     let mut response = next.run(request).await;
+
                     if !upload {
                         return response;
                     }
+
                     for (name, value) in [
                         ("x-request-id", "upload-correlation"),
                         ("content-security-policy", "default-src 'none'"),
@@ -592,6 +614,7 @@ mod tests {
                     ] {
                         response.headers_mut().insert(name, value.parse().unwrap());
                     }
+
                     response
                 },
             ))
@@ -631,6 +654,7 @@ mod tests {
                     .unwrap();
             let client = tokio::spawn(connection);
             let response = sender.send_request(request).await.unwrap();
+
             (response, client)
         } else {
             let (mut sender, connection) =
@@ -639,6 +663,7 @@ mod tests {
                     .unwrap();
             let client = tokio::spawn(connection);
             let response = sender.send_request(request).await.unwrap();
+
             (response, client)
         };
         let status = response.status();
@@ -691,6 +716,7 @@ mod tests {
         let server = tokio::spawn(super::serve_http(false, listener, router, async move {
             let _ = shutdown_rx.await;
         }));
+
         for (length, body, status) in [
             (2, "{}", "200"),
             (1, "{", "400"),
@@ -711,6 +737,7 @@ mod tests {
                 "unexpected response: {response:?}"
             );
         }
+
         let _ = shutdown_tx.send(());
         tokio::time::timeout(Duration::from_secs(2), server)
             .await
@@ -726,7 +753,9 @@ mod tests {
         struct StalledBody;
         impl hyper::body::Body for StalledBody {
             type Data = hyper::body::Bytes;
+
             type Error = std::convert::Infallible;
+
             fn poll_frame(
                 self: std::pin::Pin<&mut Self>,
                 _: &mut std::task::Context<'_>,
@@ -784,9 +813,11 @@ mod tests {
         );
         assert_eq!(response.headers()["x-content-type-options"], "nosniff");
         assert_eq!(response.headers()["content-type"], "application/json");
+
         for stale in ["content-encoding", "content-range", "etag"] {
             assert!(!response.headers().contains_key(stale));
         }
+
         assert!(
             !response
                 .headers()
@@ -884,6 +915,7 @@ mod tests {
         assert!(headers.contains("x-content-type-options: nosniff\r\n"));
         assert!(headers.contains("content-type: application/json\r\n"));
         assert!(headers.contains("connection: close"));
+
         for stale in [
             "content-encoding:",
             "content-range:",
@@ -895,6 +927,7 @@ mod tests {
                 "obsolete header remained: {stale}"
             );
         }
+
         assert_eq!(
             serde_json::from_str::<serde_json::Value>(body).unwrap(),
             serde_json::json!({"error": {"code": "request_timeout", "message": "request body read timed out"}})
@@ -916,9 +949,11 @@ mod tests {
             axum::routing::get(move || {
                 let started = Arc::clone(&handler_started);
                 let release = Arc::clone(&handler_release);
+
                 async move {
                     started.notify_one();
                     release.notified().await;
+
                     "completed"
                 }
             }),
@@ -938,6 +973,7 @@ mod tests {
                 .await
                 .unwrap()
                 .unwrap();
+
             response
         });
         tokio::time::timeout(Duration::from_secs(2), started.notified())
@@ -977,20 +1013,26 @@ mod tests {
             },
         ));
         let mut checks = tokio::task::JoinSet::new();
+
         for prefix in [b"".as_slice(), b"PRI", b"G"] {
             let mut stream = tokio::net::TcpStream::connect(address).await.unwrap();
             stream.write_all(prefix).await.unwrap();
             checks.spawn(async move {
                 let mut byte = [0];
+
                 tokio::time::timeout(Duration::from_secs(12), stream.read(&mut byte)).await
             });
         }
+
         let mut results = Vec::new();
+
         while let Some(result) = checks.join_next().await {
             results.push(result.unwrap());
         }
+
         let _ = shutdown_tx.send(());
         server.await.unwrap().unwrap();
+
         for result in results {
             assert!(
                 matches!(result, Ok(Ok(0)) | Ok(Err(_))),
@@ -1198,12 +1240,15 @@ mod tests {
     }
 
     struct PreflightController;
+
     impl furnace_rs_core::Injector for PreflightController {
         type Dependencies = ();
+
         async fn inject(_: ()) -> furnace_rs_core::Result<Self> {
             Ok(Self)
         }
     }
+
     struct PreflightPermit(bool);
 
     #[derive(Clone)]
@@ -1211,12 +1256,15 @@ mod tests {
 
     impl furnace_rs_core::Injector for RouterPreflightEvents {
         type Dependencies = ();
+
         async fn inject((): ()) -> furnace_rs_core::Result<Self> {
             Ok(Self(Arc::new(Mutex::new(Vec::new()))))
         }
     }
+
     impl furnace_rs_core::Injector for PreflightPermit {
         type Dependencies = ();
+
         async fn inject((): ()) -> furnace_rs_core::Result<Self> {
             Ok(Self(false))
         }
@@ -1238,6 +1286,7 @@ mod tests {
                 "the registrar has not been permitted",
             )));
         }
+
         context
             .application()
             .resolve::<RouterPreflightEvents>()?
@@ -1247,9 +1296,11 @@ mod tests {
             .push("router_preflight");
         let Some(path) = routes.next(HttpMethod::Get, "health")? else {
             routes.finish()?;
+
             return Ok(router);
         };
         routes.finish()?;
+
         Ok(router.route(path, axum::routing::get(|| async { "ok" })))
     }
 
@@ -1286,6 +1337,7 @@ mod tests {
             Box::pin(async move {
                 STARTS.fetch_add(1, Ordering::SeqCst);
                 self.events.lock().unwrap().push("lifecycle_start");
+
                 Ok(())
             })
         }
@@ -1293,6 +1345,7 @@ mod tests {
         fn stop<'a>(&'a self, _: &'a ApplicationContext) -> LifecycleFuture<'a> {
             Box::pin(async move {
                 self.events.lock().unwrap().push("lifecycle_stop");
+
                 if self.fail_shutdown {
                     Err(test_core_error("shutdown failed"))
                 } else {
@@ -1325,6 +1378,7 @@ mod tests {
         builder
             .provide(PreflightPermit(preflight_permitted))
             .unwrap();
+
         builder.build().await.unwrap()
     }
 
@@ -1354,6 +1408,7 @@ mod tests {
             CORS_AUTO_CONFIGURATION_ID,
             HttpRuntimeMode::Automatic,
         ));
+
         builder
     }
 
@@ -1512,6 +1567,7 @@ mod tests {
         let binder = move |(host, port): (String, u16)| async move {
             assert_eq!((host.as_str(), port), ("api.internal", 3000));
             binder_events.lock().unwrap().push("bind");
+
             Err(io::Error::new(
                 io::ErrorKind::AddrNotAvailable,
                 "unavailable",
@@ -1546,6 +1602,7 @@ mod tests {
         let binder = move |(host, port): (String, u16)| async move {
             assert_eq!((host.as_str(), port), ("api.internal", 3000));
             binder_events.lock().unwrap().push("bind");
+
             Err(io::Error::new(
                 io::ErrorKind::AddrNotAvailable,
                 "unavailable",
@@ -1566,6 +1623,7 @@ mod tests {
             }
             other => panic!("expected combined failure, got {other:?}"),
         }
+
         assert_eq!(STARTS.load(Ordering::SeqCst), 1);
         assert_eq!(
             *events.lock().unwrap(),
@@ -1601,6 +1659,7 @@ mod tests {
         let application = application(Arc::clone(&events), false, false).await;
         let binder = |address| async move {
             BINDS.fetch_add(1, Ordering::SeqCst);
+
             tokio::net::TcpListener::bind(address).await
         };
 
@@ -1624,6 +1683,7 @@ mod tests {
         let binder_events = Arc::clone(&events);
         let binder = move |address| async move {
             binder_events.lock().unwrap().push("bind");
+
             tokio::net::TcpListener::bind(address).await
         };
         let shutdown_events = Arc::clone(&events);
@@ -1655,6 +1715,7 @@ mod tests {
         let binder_events = Arc::clone(&events);
         let binder = move |_| async move {
             binder_events.lock().unwrap().push("bind");
+
             Err(io::Error::new(io::ErrorKind::AddrInUse, "occupied"))
         };
 
@@ -1705,6 +1766,7 @@ mod tests {
             }
             other => panic!("expected combined failure, got {other:?}"),
         }
+
         assert_eq!(
             *events.lock().unwrap(),
             ["router_preflight", "lifecycle_start", "lifecycle_stop"]
@@ -1770,6 +1832,7 @@ mod tests {
             bound_address_sender
                 .send(listener.local_addr().unwrap())
                 .unwrap();
+
             Ok(listener)
         };
         let shutdown_events = Arc::clone(&events);
@@ -1782,6 +1845,7 @@ mod tests {
                 )?;
                 let mut response = String::new();
                 stream.read_to_string(&mut response)?;
+
                 Ok::<_, io::Error>(response)
             })
             .await
@@ -1805,6 +1869,7 @@ mod tests {
 
 #[derive(Clone)]
 struct HttpExecutor(Option<crate::runtime::RuntimeTasks>);
+
 impl<F> hyper::rt::Executor<F> for HttpExecutor
 where
     F: Future + Send + 'static,

@@ -67,6 +67,7 @@ impl PassportConfig {
             {
                 return Err(invalid_configuration());
             }
+
             parse_named_key_mode(config)?
         } else {
             parse_simple_hmac_mode(config)?
@@ -81,6 +82,7 @@ impl PassportConfig {
             parse_optional_u64(config, "passport.clock_skew_seconds")?.unwrap_or_default();
         let max_token_bytes = parse_optional_usize(config, "passport.max_token_bytes")?
             .unwrap_or(DEFAULT_MAX_TOKEN_BYTES);
+
         if max_token_bytes == 0 {
             return Err(invalid_configuration());
         }
@@ -149,10 +151,12 @@ impl fmt::Debug for PassportConfig {
         let (key_mode, named_key_count) = match &self.mode {
             PassportKeyMode::SimpleHmac { secret } => {
                 debug_assert!(!secret.is_empty());
+
                 ("simple-hmac", 0)
             }
             PassportKeyMode::Named { keys, .. } => ("named", keys.len()),
         };
+
         formatter
             .debug_struct("PassportConfig")
             .field("key_mode", &key_mode)
@@ -179,6 +183,7 @@ fn parse_simple_hmac_mode(config: &Config) -> JwtResult<(PassportKeyMode, Vec<Jw
         }
         _ => return Err(invalid_configuration()),
     };
+
     if secret.len() < minimum_hmac_secret_bytes(algorithm) {
         return Err(invalid_configuration());
     }
@@ -196,28 +201,34 @@ fn parse_named_key_mode(config: &Config) -> JwtResult<(PassportKeyMode, Vec<JwtA
     reject_named_string_arrays(config)?;
     let algorithms = named_algorithms(config)?;
     let active_key = required_scalar(config, "passport.active_key")?;
+
     if !valid_key_id(active_key) {
         return Err(invalid_configuration());
     }
 
     let mut fields_by_key = BTreeMap::<String, NamedKeyFields>::new();
+
     for (key, value) in config.iter() {
         let Some((key_id, field)) = named_key_field(key) else {
             continue;
         };
+
         if !valid_key_id(key_id) {
             return Err(invalid_configuration());
         }
+
         fields_by_key
             .entry(key_id.to_owned())
             .or_default()
             .insert(field, value.value())?;
     }
+
     if fields_by_key.is_empty() || !fields_by_key.contains_key(active_key) {
         return Err(invalid_configuration());
     }
 
     let mut keys = BTreeMap::new();
+
     for (key_id, fields) in fields_by_key {
         let configured_key =
             configured_key(config, &key_id, fields, &algorithms, key_id == active_key)?;
@@ -254,6 +265,7 @@ fn reject_named_string_arrays(config: &Config) -> JwtResult<()> {
     {
         return Err(invalid_configuration());
     }
+
     Ok(())
 }
 
@@ -263,22 +275,28 @@ fn named_algorithms(config: &Config) -> JwtResult<Vec<JwtAlgorithm>> {
         optional_string_array(config, "passport.algorithms")?.ok_or_else(invalid_configuration)?;
     let mut seen = HashSet::new();
     let mut algorithms = Vec::with_capacity(values.len());
+
     for value in values {
         let algorithm = JwtAlgorithm::from_str(value).map_err(|_| invalid_configuration())?;
+
         if !seen.insert(algorithm) {
             return Err(invalid_configuration());
         }
+
         algorithms.push(algorithm);
     }
+
     if algorithms.is_empty() {
         return Err(invalid_configuration());
     }
+
     Ok(algorithms)
 }
 
 /// Splits a named-key setting into its key identifier and field suffix.
 fn named_key_field(key: &str) -> Option<(&str, &str)> {
     let remainder = key.strip_prefix("passport.keys.")?;
+
     remainder.rsplit_once('.')
 }
 
@@ -313,9 +331,11 @@ impl NamedKeyFields {
             "public_key_file" => &mut self.public_key_file,
             _ => return Err(invalid_configuration()),
         };
+
         if target.replace(value.to_owned()).is_some() {
             return Err(invalid_configuration());
         }
+
         Ok(())
     }
 }
@@ -335,6 +355,7 @@ fn configured_key(
         .and_then(|algorithm| {
             JwtAlgorithm::from_str(algorithm).map_err(|_| invalid_configuration())
         })?;
+
     if !algorithms.contains(&algorithm) {
         return Err(invalid_configuration());
     }
@@ -359,10 +380,13 @@ fn configured_key(
             if private_key.is_some() || public_key.is_some() {
                 return Err(invalid_configuration());
             }
+
             let secret = fields.secret.ok_or_else(invalid_configuration)?;
+
             if secret.is_empty() || secret.len() < minimum_hmac_secret_bytes(algorithm) {
                 return Err(invalid_configuration());
             }
+
             Ok(ConfiguredKey {
                 algorithm,
                 secret: Some(Arc::from(secret.as_bytes())),
@@ -378,11 +402,15 @@ fn configured_key(
             if fields.secret.is_some() {
                 return Err(invalid_configuration());
             }
+
             let public_key = public_key.ok_or_else(invalid_configuration)?;
+
             if active && private_key.is_none() {
                 return Err(invalid_configuration());
             }
+
             validate_asymmetric_material(algorithm, &public_key, private_key.as_ref())?;
+
             Ok(ConfiguredKey {
                 algorithm,
                 secret: None,
@@ -411,6 +439,7 @@ fn material_source(
             let path = config
                 .resolve_path(&key)
                 .ok_or_else(invalid_configuration)?;
+
             Ok(Some(KeyMaterial::File(path)))
         }
         (None, None) => Ok(None),
@@ -440,10 +469,12 @@ fn validate_asymmetric_material(
             algorithm.as_jsonwebtoken(),
         )
         .map_err(invalid_key_material_with_source)?;
+
         if !matches {
             return Err(JwtError::new(JwtErrorKind::InvalidKeyMaterial));
         }
     }
+
     Ok(())
 }
 
@@ -516,6 +547,7 @@ fn optional_scalar<'a>(config: &'a Config, key: &str) -> JwtResult<Option<&'a st
     if config.get_string_array(key).is_some() {
         return Err(invalid_configuration());
     }
+
     match config.get(key) {
         Some("") => Err(invalid_configuration()),
         value => Ok(value),
@@ -527,6 +559,7 @@ fn optional_string_array<'a>(config: &'a Config, key: &str) -> JwtResult<Option<
     if config.get(key).is_some() {
         return Err(invalid_configuration());
     }
+
     match config.get_string_array(key) {
         Some(values) if values.is_empty() || values.iter().any(String::is_empty) => {
             Err(invalid_configuration())
@@ -553,18 +586,22 @@ fn parse_optional_usize(config: &Config, key: &str) -> JwtResult<Option<usize>> 
 fn deduplicate_algorithms(values: &[String]) -> JwtResult<Vec<JwtAlgorithm>> {
     let mut seen = HashSet::new();
     let mut algorithms = Vec::new();
+
     for value in values {
         let algorithm = JwtAlgorithm::from_str(value).map_err(|_| invalid_configuration())?;
+
         if seen.insert(algorithm) {
             algorithms.push(algorithm);
         }
     }
+
     Ok(algorithms)
 }
 
 /// Removes duplicate strings while preserving their first-seen order.
 fn deduplicate_strings(values: &[String]) -> Vec<String> {
     let mut seen = HashSet::new();
+
     values
         .iter()
         .filter(|value| seen.insert(value.as_str()))

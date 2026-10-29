@@ -2,6 +2,7 @@
 use super::{ApplicationRuntimeError, SocketRuntime};
 use hyper_util::{rt::TokioIo, service::TowerToHyperService};
 use tokio::net::TcpListener;
+
 pub(super) async fn serve(
     listener: TcpListener,
     router: axum::Router,
@@ -9,17 +10,21 @@ pub(super) async fn serve(
 ) -> Result<(), ApplicationRuntimeError> {
     #[cfg(not(feature = "tls"))]
     let _ = runtime.tls;
+
     #[cfg(feature = "redis")]
     {
         let backend = runtime.hub.state.lock().unwrap().backend.clone();
+
         if let Some(backend) = backend {
             backend.start(runtime.shutdown.clone(), &runtime.tasks);
         }
     }
+
     loop {
         if *runtime.shutdown.borrow_and_update() {
             break;
         }
+
         tokio::select! {biased;
             _=runtime.shutdown.changed()=>break,
             accepted=listener.accept()=>{
@@ -42,8 +47,10 @@ pub(super) async fn serve(
             }
         }
     }
+
     Ok(())
 }
+
 async fn connection<IO>(
     stream: IO,
     router: axum::Router,

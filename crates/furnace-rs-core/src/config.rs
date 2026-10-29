@@ -170,6 +170,7 @@ impl MapSource {
         self.scalars.remove(&key);
         self.string_arrays
             .insert(key, values.into_iter().map(Into::into).collect());
+
         self
     }
 }
@@ -251,9 +252,11 @@ impl ConfigSource for EnvSource {
             .filter_map(|(key, value)| {
                 let key = key.to_str()?.strip_prefix(&self.prefix)?;
                 let value = value.to_str()?;
+
                 Some((normalize_environment_key(key), value.to_owned()))
             })
             .collect();
+
         Ok(values)
     }
 }
@@ -271,6 +274,7 @@ impl TomlSource {
     pub fn file(path: impl Into<PathBuf>) -> Self {
         let path = path.into();
         let name = path.to_string_lossy().into_owned();
+
         Self {
             path,
             name,
@@ -282,6 +286,7 @@ impl TomlSource {
     pub fn optional(path: impl Into<PathBuf>) -> Self {
         let path = path.into();
         let name = path.to_string_lossy().into_owned();
+
         Self {
             path,
             name,
@@ -332,6 +337,7 @@ impl TomlSource {
                 ));
             }
         };
+
         parse_toml_document(&input, &self.name, array_mode)
     }
 }
@@ -368,12 +374,14 @@ fn parse_toml_document(
             .with_subject(source_name),
         )
     })?;
+
     if let Some(key) = inline_table_key("", syntax.as_table()) {
         return Err(unsupported_value(&key, "inline table"));
     }
 
     let mut output = ConfigDocument::new();
     flatten_toml("", parsed, &mut output, array_mode)?;
+
     Ok(output)
 }
 
@@ -385,6 +393,7 @@ fn inline_table_key(prefix: &str, table: &toml_edit::Table) -> Option<String> {
         } else {
             format!("{prefix}.{segment}")
         };
+
         match item {
             toml_edit::Item::Value(toml_edit::Value::InlineTable(_)) => return Some(key),
             toml_edit::Item::Table(nested) => {
@@ -397,6 +406,7 @@ fn inline_table_key(prefix: &str, table: &toml_edit::Table) -> Option<String> {
             | toml_edit::Item::ArrayOfTables(_) => {}
         }
     }
+
     None
 }
 
@@ -412,9 +422,11 @@ fn flatten_toml(
             if !prefix.is_empty() {
                 output.insert_table(prefix);
             }
+
             if prefix.is_empty() && table.is_empty() {
                 return Ok(());
             }
+
             for (segment, value) in table {
                 if segment.is_empty() || segment.contains('.') {
                     return Err(Error::new(Diagnostic::new(
@@ -423,6 +435,7 @@ fn flatten_toml(
                         "TOML configuration key segments must be nonempty and contain no literal dots",
                     )));
                 }
+
                 let key = if prefix.is_empty() {
                     segment
                 } else {
@@ -430,6 +443,7 @@ fn flatten_toml(
                 };
                 flatten_toml(&key, value, output, array_mode)?;
             }
+
             Ok(())
         }
         toml::Value::String(value) => insert_scalar(prefix, value, output),
@@ -447,6 +461,7 @@ fn flatten_toml(
                     })
                     .collect::<Result<Vec<_>>>()?;
                 output.insert_string_array(prefix, values);
+
                 Ok(())
             }
         },
@@ -459,6 +474,7 @@ fn insert_scalar(key: &str, value: String, output: &mut ConfigDocument) -> Resul
     if key.is_empty() {
         return Err(unsupported_value(key, "root scalar"));
     }
+
     if output.scalars.contains_key(key)
         || output.string_arrays.contains_key(key)
         || output.tables.contains(key)
@@ -469,7 +485,9 @@ fn insert_scalar(key: &str, value: String, output: &mut ConfigDocument) -> Resul
             "distinct TOML keys resolve to the same configuration path",
         )));
     }
+
     output.insert_scalar(key, value);
+
     Ok(())
 }
 
@@ -507,6 +525,7 @@ impl DotenvSource {
     /// Stores the path and requiredness policy shared by the public constructors.
     fn new(path: PathBuf, required: bool) -> Self {
         let name = path.to_string_lossy().into_owned();
+
         Self {
             path,
             required,
@@ -601,6 +620,7 @@ impl Config {
         self.values.retain(|candidate, _| keep_leaf(candidate));
         self.string_arrays
             .retain(|candidate, _| keep_leaf(candidate));
+
         if !is_table {
             self.tables
                 .retain(|candidate, _| candidate != key && !candidate.starts_with(&descendants));
@@ -617,7 +637,9 @@ impl Config {
         if prefix.is_empty() {
             return self.clone();
         }
+
         let prefix = format!("{prefix}.");
+
         Self {
             values: self
                 .values
@@ -649,6 +671,7 @@ impl Config {
     /// Checks whether any scalar, array, or table is nested below the dotted key.
     pub(crate) fn has_descendants(&self, key: &str) -> bool {
         let prefix = format!("{key}.");
+
         self.values
             .keys()
             .chain(self.string_arrays.keys())
@@ -704,6 +727,7 @@ impl Config {
     pub fn resolve_path(&self, key: &str) -> Option<PathBuf> {
         let value = self.values.get(key)?;
         let configured = Path::new(&value.value);
+
         if configured.is_absolute() {
             return Some(configured.to_path_buf());
         }
@@ -712,6 +736,7 @@ impl Config {
             Some(base) => base.clone(),
             None => std::env::current_dir().ok()?,
         };
+
         Some(base.join(configured))
     }
 
@@ -719,13 +744,16 @@ impl Config {
     pub fn resolve_string_array_path(&self, key: &str, index: usize) -> Option<PathBuf> {
         let value = self.string_arrays.get(key)?;
         let configured = Path::new(value.value.get(index)?);
+
         if configured.is_absolute() {
             return Some(configured.to_path_buf());
         }
+
         let base = match &value.origin.relative_path_base {
             Some(base) => base.clone(),
             None => std::env::current_dir().ok()?,
         };
+
         Some(base.join(configured))
     }
 
@@ -766,12 +794,14 @@ impl ConfigBuilder {
         S: ConfigSource + 'static,
     {
         self.sources.push(Box::new(source));
+
         self
     }
 
     /// Adds a dotenv source used only for exact configuration interpolation.
     pub fn dotenv(mut self, source: DotenvSource) -> Self {
         self.dotenv_sources.push(source);
+
         self
     }
 
@@ -789,36 +819,43 @@ impl ConfigBuilder {
         V: Into<OsString>,
     {
         let mut variables = BTreeMap::new();
+
         for source in self.dotenv_sources {
             let iterator = match dotenvy::from_path_iter(&source.path) {
                 Ok(iterator) => iterator,
                 Err(error) if !source.required && error.not_found() => continue,
                 Err(error) => return Err(dotenv_open_error(&source, error)),
             };
+
             for entry in iterator {
                 let (key, value) = entry.map_err(|_| dotenv_parse_error(&source))?;
                 variables.insert(key, value);
             }
         }
+
         for (key, value) in environment {
             let key = key.into();
             let value = value.into();
+
             if let (Some(key), Some(value)) = (key.to_str(), value.to_str()) {
                 variables.insert(key.to_owned(), value.to_owned());
             }
         }
 
         let mut config = Config::empty();
+
         for source in self.sources {
             let origin = ConfigOrigin {
                 label: source.name().to_owned(),
                 relative_path_base: source.relative_path_base().map(Path::to_path_buf),
             };
             let document = source.load_document()?;
+
             for key in document.tables {
                 config.remove_incompatible_shapes(&key, true);
                 config.tables.insert(key, origin.clone());
             }
+
             for (key, value) in document.scalars {
                 config.remove_incompatible_shapes(&key, false);
                 config.values.insert(
@@ -829,6 +866,7 @@ impl ConfigBuilder {
                     },
                 );
             }
+
             for (key, value) in document.string_arrays {
                 config.remove_incompatible_shapes(&key, false);
                 config.string_arrays.insert(
@@ -840,12 +878,14 @@ impl ConfigBuilder {
                 );
             }
         }
+
         for (key, value) in &mut config.values {
             if let Some(variable) = exact_variable_name(&value.value) {
                 let resolved = resolve_variable(key, variable, &variables)?;
                 value.value.clone_from(resolved);
             }
         }
+
         for (key, value) in &mut config.string_arrays {
             for element in &mut value.value {
                 if let Some(variable) = exact_variable_name(element) {
@@ -854,6 +894,7 @@ impl ConfigBuilder {
                 }
             }
         }
+
         Ok(config)
     }
 }
@@ -913,6 +954,7 @@ fn dotenv_parse_error(source: &DotenvSource) -> Error {
 /// Accepts only a whole-value `${NAME}` placeholder without defaults or nesting.
 fn exact_variable_name(value: &str) -> Option<&str> {
     let variable = value.strip_prefix("${")?.strip_suffix('}')?;
+
     (!variable.is_empty()
         && !variable.contains("${")
         && !variable.contains('}')

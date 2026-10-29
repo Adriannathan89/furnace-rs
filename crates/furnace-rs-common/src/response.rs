@@ -96,6 +96,7 @@ impl HttpError {
     pub fn validation(issues: impl IntoIterator<Item = SourcedValidationIssue>) -> Self {
         Self::Validation(issues.into_iter().collect())
     }
+
     /// Creates a 400 Bad Request error with a safe client-facing message.
     ///
     /// The message is serialized as the `error.message` field. This constructor
@@ -182,6 +183,7 @@ impl HttpError {
                 INTERNAL_SERVER_ERROR_MESSAGE,
             ),
         };
+
         ResponseDescription {
             status,
             body: ErrorBody {
@@ -285,12 +287,15 @@ macro_rules! client_error {
 }
 
 client_error!(BadRequest, bad_request, "A 400 Bad Request error.");
+
 client_error!(
     Unauthorized,
     unauthorized,
     "A 401 Unauthorized error without an implicit authentication challenge."
 );
+
 client_error!(Forbidden, forbidden, "A 403 Forbidden error.");
+
 /// A 404 Not Found error.
 pub struct NotFound(HttpError);
 
@@ -300,6 +305,7 @@ impl NotFound {
         Self(HttpError::not_found(message))
     }
 }
+
 named_error_impls!(NotFound);
 
 /// A 409 Conflict error.
@@ -311,6 +317,7 @@ impl Conflict {
         Self(HttpError::conflict(message))
     }
 }
+
 named_error_impls!(Conflict);
 
 /// A 422 validation response with ordered, explicitly sourced issues.
@@ -322,6 +329,7 @@ impl ValidationError {
         Self(HttpError::validation(issues))
     }
 }
+
 named_error_impls!(ValidationError);
 
 /// A 500 response retaining its source without exposing it through formatting or JSON.
@@ -333,6 +341,7 @@ impl InternalError {
         Self(HttpError::internal(source))
     }
 }
+
 named_error_impls!(InternalError);
 
 /// A result type for HTTP handlers that use [`HttpError`] as their error type.
@@ -388,6 +397,7 @@ where
     fn into_response(self) -> Response {
         let mut response = self.0.into_response();
         *response.status_mut() = StatusCode::CREATED;
+
         response
     }
 }

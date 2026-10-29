@@ -88,6 +88,7 @@ impl WatchSet {
                 recursive: false,
             });
         }
+
         notify_roots.sort_by(|left, right| left.path.cmp(&right.path));
 
         let initial = Self {
@@ -100,6 +101,7 @@ impl WatchSet {
             excluded_package_roots,
             notify_roots,
         };
+
         initial.with_build_inputs(Vec::new())
     }
 
@@ -111,6 +113,7 @@ impl WatchSet {
             .into_iter()
             .map(|path| canonical_path(&path))
             .collect();
+
         for input in &next.build_inputs {
             if next
                 .notify_roots
@@ -119,25 +122,31 @@ impl WatchSet {
             {
                 continue;
             }
+
             let (path, recursive) = if input.is_dir() {
                 (input.clone(), true)
             } else {
                 let mut parent = input.parent();
+
                 while parent.is_some_and(|path| !path.is_dir()) {
                     parent = parent.and_then(Path::parent);
                 }
+
                 let Some(parent) = parent else {
                     continue;
                 };
+
                 // Missing parent directories require recursive events when they appear.
                 (parent.to_path_buf(), input.parent() != Some(parent))
             };
+
             if let Some(root) = next.notify_roots.iter_mut().find(|root| root.path == path) {
                 root.recursive |= recursive;
             } else {
                 next.notify_roots.push(WatchRoot { path, recursive });
             }
         }
+
         // A recursive parent owns its descendants. Separate overlapping inotify
         // registrations can otherwise remove one another during replacement.
         next.notify_roots = next
@@ -154,6 +163,7 @@ impl WatchSet {
             .collect();
         next.notify_roots
             .sort_by(|left, right| left.path.cmp(&right.path));
+
         next
     }
 
@@ -165,6 +175,7 @@ impl WatchSet {
     /// Maps a path to no change, restart, or rebuild while filtering ignored roots.
     pub(crate) fn classify(&self, path: impl AsRef<Path>) -> ChangeImpact {
         let path = path.as_ref();
+
         if path.starts_with(&self.target_directory) || is_ignored_path(path) {
             return ChangeImpact::None;
         }
@@ -176,6 +187,7 @@ impl WatchSet {
         {
             return ChangeImpact::Rebuild;
         }
+
         if self.owner_is_excluded(path) {
             return ChangeImpact::None;
         }
@@ -270,6 +282,7 @@ impl WatchEvents {
     pub(crate) fn start(watch_set: &WatchSet) -> Result<Self, CliError> {
         let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
         let watcher = Self::create_watcher(watch_set, sender.clone())?;
+
         Ok(Self {
             sender: Some(sender),
             _watcher: Some(watcher),
@@ -285,6 +298,7 @@ impl WatchEvents {
             let _ = sender.send(event);
         })
         .map_err(watch_error)?;
+
         for root in watch_set.roots() {
             let mode = if root.recursive() {
                 RecursiveMode::Recursive
@@ -293,6 +307,7 @@ impl WatchEvents {
             };
             watcher.watch(root.path(), mode).map_err(watch_error)?;
         }
+
         Ok(watcher)
     }
 
@@ -316,6 +331,7 @@ impl WatchEvents {
         if previous.roots() == next.roots() {
             return Ok(());
         }
+
         let Some(sender) = &self.sender else {
             return Ok(());
         };
@@ -323,6 +339,7 @@ impl WatchEvents {
         // previous stream alive and avoids backend overlap/refcount assumptions.
         let watcher = Self::create_watcher(next, sender.clone())?;
         self._watcher = Some(watcher);
+
         Ok(())
     }
 
@@ -357,6 +374,7 @@ fn canonical_path(path: &Path) -> PathBuf {
     if let Ok(path) = path.canonicalize() {
         return path;
     }
+
     // Inputs may not exist yet. Resolve their existing ancestor (including
     // symlinks and ..) before appending the missing suffix.
     for ancestor in path.ancestors().skip(1) {
@@ -364,6 +382,7 @@ fn canonical_path(path: &Path) -> PathBuf {
             && let Ok(suffix) = path.strip_prefix(ancestor)
         {
             let mut resolved = root;
+
             for component in suffix.components() {
                 match component {
                     Component::CurDir => {}
@@ -373,9 +392,11 @@ fn canonical_path(path: &Path) -> PathBuf {
                     component => resolved.push(component.as_os_str()),
                 }
             }
+
             return resolved;
         }
     }
+
     path.to_path_buf()
 }
 

@@ -180,6 +180,7 @@ impl ApplicationGraph {
         T: Send + Sync + 'static,
     {
         let type_id = TypeId::of::<T>();
+
         self.providers
             .iter()
             .find(|provider| provider.type_id == type_id)
@@ -287,6 +288,7 @@ impl GraphAnalysis {
         if diagnostics.is_empty() {
             return;
         }
+
         self.construction_plan = None;
         diagnostics.append(&mut self.diagnostics);
         self.diagnostics = diagnostics;
@@ -297,6 +299,7 @@ impl GraphAnalysis {
         if diagnostics.is_empty() {
             return;
         }
+
         self.construction_plan = None;
         self.diagnostics.extend(diagnostics);
     }
@@ -341,6 +344,7 @@ impl GraphAnalysis {
                 let primary = diagnostics
                     .next()
                     .expect("invalid analysis has diagnostics");
+
                 Err(crate::Error::from_diagnostics(primary, diagnostics))
             }
             (true, None) => unreachable!("valid analysis always has a plan"),
@@ -361,6 +365,7 @@ mod tests {
     use super::*;
 
     struct Database;
+
     struct Repository;
 
     #[test]

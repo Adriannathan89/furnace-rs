@@ -9,6 +9,7 @@ use crate::{
 };
 
 inventory::collect!(ProviderDescriptor);
+
 inventory::collect!(CauldronDescriptor);
 
 /// Provides deterministic access to statically registered providers and cauldrons.
@@ -28,6 +29,7 @@ impl Catalog {
                 .cmp(right.type_name())
                 .then_with(|| compare_locations(left.location(), right.location()))
         });
+
         cauldrons
     }
 
@@ -123,6 +125,7 @@ impl Catalog {
 /// Initializes and retains the provider catalog in deterministic order.
 fn provider_cache() -> &'static Vec<&'static ProviderDescriptor> {
     static PROVIDERS: OnceLock<Vec<&'static ProviderDescriptor>> = OnceLock::new();
+
     PROVIDERS.get_or_init(|| {
         let mut providers: Vec<_> = inventory::iter::<ProviderDescriptor>.into_iter().collect();
         providers.sort_by(|left, right| {
@@ -131,6 +134,7 @@ fn provider_cache() -> &'static Vec<&'static ProviderDescriptor> {
                 .then_with(|| left.kind().cmp(&right.kind()))
                 .then_with(|| compare_locations(left.location(), right.location()))
         });
+
         providers
     })
 }

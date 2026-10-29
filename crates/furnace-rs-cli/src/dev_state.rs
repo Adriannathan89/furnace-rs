@@ -55,6 +55,7 @@ impl DevState {
             DevEvent::BuildFailed => self.handle_build_failed(),
             DevEvent::ApplicationExited => {
                 self.application_running = false;
+
                 Vec::new()
             }
             DevEvent::Shutdown => self.shutdown(),
@@ -68,6 +69,7 @@ impl DevState {
         }
 
         self.build_running = true;
+
         vec![DevAction::Build]
     }
 
@@ -76,8 +78,10 @@ impl DevState {
         if impact == ChangeImpact::None {
             return Vec::new();
         }
+
         if self.build_running {
             self.pending = ChangeImpact::merge([self.pending, impact]);
+
             return Vec::new();
         }
 
@@ -98,6 +102,7 @@ impl DevState {
             vec![DevAction::Restart(built)]
         } else {
             self.application_running = true;
+
             vec![DevAction::Start(built)]
         }
     }
@@ -118,6 +123,7 @@ impl DevState {
         if pending == ChangeImpact::Rebuild {
             actions.extend(self.start_build());
         }
+
         actions
     }
 
@@ -140,11 +146,14 @@ impl DevState {
         self.pending = ChangeImpact::None;
 
         let mut actions = Vec::new();
+
         if self.application_running {
             self.application_running = false;
             actions.push(DevAction::Stop);
         }
+
         actions.push(DevAction::Exit);
+
         actions
     }
 }
@@ -357,6 +366,7 @@ mod tests {
         let mut state = DevState::new();
         state.transition(DevEvent::Start);
         state.transition(DevEvent::BuildSucceeded(binary(version)));
+
         state
     }
 

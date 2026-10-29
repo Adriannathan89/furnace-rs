@@ -29,10 +29,12 @@ impl ScopedGuard {
     pub fn occurrence(&self) -> Option<GuardOccurrence> {
         self.occurrence.clone()
     }
+
     /// Returns the selected policy.
     pub const fn guard(&self) -> &'static GuardDescriptor {
         self.guard
     }
+
     /// Returns the selected visibility context.
     pub const fn context_cauldron(&self) -> Option<TypeId> {
         self.context_cauldron
@@ -47,4 +49,5 @@ pub struct PassportScopeDescriptor {
         &furnace_rs_core::__private::AutoConfigurationContext<'a>,
     ) -> furnace_rs_core::Result<Vec<ScopedGuard>>,
 }
+
 furnace_rs_core::__private::inventory::collect!(PassportScopeDescriptor);

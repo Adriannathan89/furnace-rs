@@ -35,6 +35,7 @@ where
     B::Error: Into<axum::BoxError>,
 {
     type Data = B::Data;
+
     type Error = axum::BoxError;
 
     /// Polls the inner stream and emits one terminal timeout error after an idle interval.
@@ -45,10 +46,12 @@ where
         if self.finished {
             return Poll::Ready(None);
         }
+
         match Pin::new(&mut self.inner).poll_frame(cx) {
             Poll::Ready(frame) => {
                 self.timer = None;
                 self.finished = matches!(frame, None | Some(Err(_)));
+
                 Poll::Ready(frame.map(|frame| frame.map_err(Into::into)))
             }
             Poll::Pending => {
@@ -58,12 +61,15 @@ where
                 let timer = self
                     .timer
                     .get_or_insert_with(|| Box::pin(tokio::time::sleep(timeout)));
+
                 if timer.as_mut().poll(cx).is_pending() {
                     return Poll::Pending;
                 }
+
                 self.finished = true;
                 self.timer = None;
                 self.expired.store(true, Ordering::Relaxed);
+
                 Poll::Ready(Some(Err(std::io::Error::new(
                     std::io::ErrorKind::TimedOut,
                     "request body read timed out",
@@ -97,6 +103,7 @@ mod tests {
 
     impl Body for ChannelBody {
         type Data = Bytes;
+
         type Error = std::io::Error;
 
         fn poll_frame(
@@ -151,10 +158,12 @@ mod tests {
             }
         });
         let mut received = Vec::new();
+
         while let Some(frame) = std::future::poll_fn(|cx| Pin::new(&mut body).poll_frame(cx)).await
         {
             received.extend_from_slice(&frame.unwrap().into_data().unwrap());
         }
+
         producer.await.unwrap();
         assert_eq!(received, b"xxxx");
         assert!(!expired.load(Ordering::Relaxed));

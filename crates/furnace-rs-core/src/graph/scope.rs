@@ -22,6 +22,7 @@ pub(crate) fn select_scoped_providers(
     let mut ownership = Vec::new();
     let mut covered_missing = Vec::new();
     let mut locations = Vec::new();
+
     for supplied in satisfied {
         if supplied.type_id != TypeId::of::<crate::Config>()
             && supplied.state != crate::ProviderState::AutoConfigured
@@ -37,6 +38,7 @@ pub(crate) fn select_scoped_providers(
             );
         }
     }
+
     for (owner, member) in graph.members() {
         let matching: Vec<_> = if let Some(descriptor) = member.descriptor {
             vec![descriptor]
@@ -48,6 +50,7 @@ pub(crate) fn select_scoped_providers(
                 .collect()
         };
         let known_controller = matching.iter().any(|descriptor| descriptor.is_controller());
+
         if (member.controller && !matching.is_empty() && !known_controller)
             || (known_controller && graph.exports(owner.type_id(), member.type_id))
         {
@@ -55,6 +58,7 @@ pub(crate) fn select_scoped_providers(
                 format!("cauldron `{}` must register controller metadata with `.controller::<T>()` and cannot export controllers", owner.type_name()))
                 .with_subject(member.type_name).with_location(member.location));
         }
+
         let supplied = satisfied
             .iter()
             .find(|provider| provider.type_id == member.type_id);
@@ -66,6 +70,7 @@ pub(crate) fn select_scoped_providers(
                 .unwrap_or(member.type_name),
             cauldron_type_name: Some(owner.type_name()),
         });
+
         if matching.is_empty() && !overridden {
             diagnostics.push(
                 Diagnostic::new(
@@ -77,15 +82,19 @@ pub(crate) fn select_scoped_providers(
                 .with_location(member.location),
             );
         }
+
         if overridden {
             continue;
         }
+
         for descriptor in &matching {
             if descriptor.location() == crate::injector::DEFAULT_INJECTOR_LOCATION {
                 locations.push((member.type_id, member.location));
             }
         }
+
         selected.extend(matching.iter().copied());
+
         for descriptor in matching {
             for dependency in descriptor.dependencies() {
                 let target = dependency.type_id();
@@ -95,9 +104,11 @@ pub(crate) fn select_scoped_providers(
                             provider.type_id == target
                                 && provider.state == crate::ProviderState::AutoConfigured
                         });
+
                 if ambient {
                     continue;
                 }
+
                 if let Some(target_owner) = graph.owner_of(target)
                     && !graph.can_access(owner.type_id(), target)
                 {
@@ -111,7 +122,9 @@ pub(crate) fn select_scoped_providers(
             }
         }
     }
+
     ownership.sort_by_key(|record| record.provider_type_name);
+
     ScopedProviderCatalog {
         descriptors: selected,
         ownership,

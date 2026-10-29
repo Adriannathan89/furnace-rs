@@ -81,6 +81,7 @@ impl ProviderContribution {
         T: Send + Sync + 'static,
     {
         let (value, registrations) = resource.into_parts();
+
         Self {
             provider: Arc::new(value),
             registrations,
@@ -130,6 +131,7 @@ impl DependencyDescriptor {
     #[doc(hidden)]
     pub const fn with_runtime_type_name(mut self, name: fn() -> &'static str) -> Self {
         self.runtime_type_name = Some(name);
+
         self
     }
 
@@ -192,6 +194,7 @@ impl ProviderDescriptor {
     #[must_use]
     pub const fn with_controller(mut self) -> Self {
         self.controller = true;
+
         self
     }
 
@@ -209,6 +212,7 @@ impl ProviderDescriptor {
         constructor: LifecycleProviderConstructor,
     ) -> Self {
         self.lifecycle_constructor = Some(constructor);
+
         self
     }
 
@@ -220,6 +224,7 @@ impl ProviderDescriptor {
     #[doc(hidden)]
     pub const fn with_runtime_type_name(mut self, runtime_type_name: fn() -> &'static str) -> Self {
         self.runtime_type_name = Some(runtime_type_name);
+
         self
     }
 
@@ -227,6 +232,7 @@ impl ProviderDescriptor {
     #[must_use]
     pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
         self.namespace = Some(namespace);
+
         self
     }
 
@@ -245,6 +251,7 @@ impl ProviderDescriptor {
     #[doc(hidden)]
     pub const fn with_resolved_type_name(mut self, name: fn() -> &'static str) -> Self {
         self.resolved_type_name = Some(name);
+
         self
     }
 
@@ -253,6 +260,7 @@ impl ProviderDescriptor {
     pub const fn with_authored_type_name(mut self, name: &'static str) -> Self {
         self.type_name = name;
         self.resolved_type_name = None;
+
         self
     }
 
@@ -260,6 +268,7 @@ impl ProviderDescriptor {
     #[doc(hidden)]
     pub const fn with_location(mut self, location: SourceLocation) -> Self {
         self.location = location;
+
         self
     }
 
@@ -267,6 +276,7 @@ impl ProviderDescriptor {
     #[doc(hidden)]
     pub const fn with_visibility(mut self, visibility: ProviderVisibility) -> Self {
         self.visibility = visibility;
+
         self
     }
 
@@ -347,6 +357,7 @@ impl CauldronDescriptor {
     #[must_use]
     pub const fn with_registration(mut self, callback: fn() -> crate::CauldronDefinition) -> Self {
         self.registration = Some(callback);
+
         self
     }
 
@@ -359,6 +370,7 @@ impl CauldronDescriptor {
     #[must_use]
     pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
         self.namespace = Some(namespace);
+
         self
     }
 
@@ -366,6 +378,7 @@ impl CauldronDescriptor {
     #[must_use]
     pub const fn with_imports(mut self, imports: &'static [CauldronImportDescriptor]) -> Self {
         self.imports = imports;
+
         self
     }
 
@@ -373,6 +386,7 @@ impl CauldronDescriptor {
     #[must_use]
     pub const fn with_global(mut self) -> Self {
         self.global = true;
+
         self
     }
 

@@ -30,6 +30,7 @@ use super::{
 pub trait PassportStrategy: Send + Sync + 'static {
     /// The application-owned custom JWT claims consumed by this strategy.
     type Claims: serde::de::DeserializeOwned + Send + Sync + 'static;
+
     /// The authenticated application principal returned by this strategy.
     type Principal: PassportPrincipal;
 
@@ -90,6 +91,7 @@ impl ErasedAuthentication {
         let exact_principal = Arc::new(principal);
         let policy_principal: Arc<dyn PassportPrincipal> = exact_principal.clone();
         let exact_verified = Arc::new(verified);
+
         Self {
             principal: policy_principal,
             exact_principal,
@@ -115,6 +117,7 @@ impl ErasedAuthentication {
         let exact_principal = Arc::new(principal);
         let policy_principal: Arc<dyn PassportPrincipal> = exact_principal.clone();
         let exact_verified: Arc<dyn Any + Send + Sync> = verified;
+
         Self {
             principal: policy_principal,
             exact_principal,
@@ -199,6 +202,7 @@ where
     };
     extensions.insert(Authenticated::new(principal));
     extensions.insert(VerifiedToken::new(verified));
+
     true
 }
 
@@ -270,6 +274,7 @@ impl PassportStrategyDescriptor {
     #[must_use]
     pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
         self.namespace = Some(namespace);
+
         self
     }
 
@@ -389,9 +394,11 @@ impl PassportStrategyCatalog {
         let mut guards = guards.to_vec();
         guards.sort_by(guard_order);
         let mut bindings = Vec::with_capacity(guards.len());
+
         for guard in guards {
             bindings.push(resolve_guard(guard, &strategies)?);
         }
+
         Ok(PassportStrategyPreflight { bindings })
     }
 
@@ -423,9 +430,11 @@ impl PassportStrategyCatalog {
             .map(|scoped| {
                 let mut binding = resolve_guard(scoped.guard(), &strategies)?;
                 binding.occurrence = scoped.occurrence();
+
                 Ok(binding)
             })
             .collect::<Result<Vec<_>>>()?;
+
         Ok(PassportStrategyPreflight { bindings })
     }
 
@@ -450,17 +459,20 @@ impl PassportStrategyCatalog {
                     .is_none_or(|graph| graph.owner_of(strategy.provider_type_id()).is_some())
             })
             .collect::<Vec<_>>();
+
         if cauldron_graph.is_none() {
             validate_strategy_catalog(&strategies)?;
         } else {
             validate_strategy_metadata(&strategies)?;
         }
+
         let providers = Catalog::providers();
 
         let mut ordered_guards = guards.iter().collect::<Vec<_>>();
         ordered_guards.sort_by(|left, right| guard_order(&left.guard(), &right.guard()));
 
         let mut bindings = Vec::with_capacity(ordered_guards.len());
+
         for scoped_guard in ordered_guards {
             if let (Some(graph), Some(requester)) =
                 (cauldron_graph, scoped_guard.context_cauldron())
@@ -472,6 +484,7 @@ impl PassportStrategyCatalog {
                     .iter()
                     .find(|module| (*module).type_id() == requester)
                     .expect("rooted guards have a reachable controller owner");
+
                 return Err(Error::new(Diagnostic::new(
                     furnace_rs_core::FURNACE009,
                     "inaccessible cauldron JWT provider",
@@ -482,12 +495,14 @@ impl PassportStrategyCatalog {
                     .with_suggestion(format!("dependency path: {} -> JwtService",
                         scoped_guard.guard().requirement_subject()))));
             }
+
             let mut binding =
                 resolve_scoped_guard(scoped_guard, cauldron_graph, &strategies, &providers)?;
             binding.context_cauldron = scoped_guard.context_cauldron();
             binding.occurrence = scoped_guard.occurrence();
             bindings.push(binding);
         }
+
         Ok(PassportStrategyPreflight { bindings })
     }
 }
@@ -514,6 +529,7 @@ impl<'a> PassportStrategyBinding<'a> {
     pub const fn provider_type_id(&self) -> Option<TypeId> {
         self.provider_type_id
     }
+
     /// Returns the effective static guard.
     #[doc(hidden)]
     #[must_use]
@@ -591,6 +607,7 @@ impl<'a> PassportStrategyPreflight<'a> {
                 && binding.context_cauldron == context_cauldron
         })
     }
+
     /// Returns every selected guard binding in deterministic route order.
     #[must_use]
     pub fn bindings(&self) -> &[PassportStrategyBinding<'a>] {
@@ -624,12 +641,14 @@ impl fmt::Debug for PassportStrategyPreflight<'_> {
 /// Builds and caches the linked strategy descriptors in deterministic order.
 fn strategy_cache() -> &'static Vec<&'static PassportStrategyDescriptor> {
     static CACHE: OnceLock<Vec<&'static PassportStrategyDescriptor>> = OnceLock::new();
+
     CACHE.get_or_init(|| {
         let mut strategies: Vec<_> =
             furnace_rs_core::__private::inventory::iter::<PassportStrategyDescriptor>
                 .into_iter()
                 .collect();
         strategies.sort_by(strategy_order);
+
         strategies
     })
 }
@@ -658,6 +677,7 @@ fn guard_order(left: &&GuardDescriptor, right: &&GuardDescriptor) -> Ordering {
 /// Validates unique strategy names and their corresponding managed providers.
 fn validate_strategy_catalog(strategies: &[&'static PassportStrategyDescriptor]) -> Result<()> {
     validate_unique_strategy_names(strategies)?;
+
     validate_strategy_metadata(strategies)
 }
 
@@ -669,17 +689,21 @@ fn validate_unique_strategy_names(
         .chunk_by(|left, right| left.name() == right.name())
         .filter(|group| group.len() > 1)
         .collect::<Vec<_>>();
+
     if let Some((first, rest)) = duplicate_groups.split_first() {
         let primary = duplicate_strategy_error(first);
         let related = rest.iter().map(|group| duplicate_strategy_error(group));
+
         return Err(Error::from_diagnostics(primary, related));
     }
+
     Ok(())
 }
 
 /// Confirms each strategy descriptor matches exactly one registered provider.
 fn validate_strategy_metadata(strategies: &[&'static PassportStrategyDescriptor]) -> Result<()> {
     let providers = Catalog::providers();
+
     for strategy in strategies {
         validate_reserved_strategy_token_kind(strategy)?;
         let candidates = providers
@@ -687,6 +711,7 @@ fn validate_strategy_metadata(strategies: &[&'static PassportStrategyDescriptor]
             .copied()
             .filter(|provider| provider_matches_strategy(provider, strategy))
             .collect::<Vec<_>>();
+
         match candidates.as_slice() {
             [_provider] => {}
             [] => {
@@ -711,6 +736,7 @@ fn validate_strategy_metadata(strategies: &[&'static PassportStrategyDescriptor]
             }
         }
     }
+
     Ok(())
 }
 
@@ -752,6 +778,7 @@ fn duplicate_strategy_error(group: &[&'static PassportStrategyDescriptor]) -> Di
     let strategy = group
         .first()
         .expect("duplicate strategy groups always have an entry");
+
     Diagnostic::new(
         FURNACE130,
         "duplicate Passport strategy",
@@ -821,6 +848,7 @@ fn scoped_strategy_visible(
     let (Some(graph), Some(guard_context)) = (cauldron_graph, guard_context) else {
         return true;
     };
+
     graph.can_access(guard_context, strategy.provider_type_id())
 }
 
@@ -841,6 +869,7 @@ fn resolve_custom_strategy<'a>(
     let principal_type_id = guard
         .principal_type_id()
         .expect("guard metadata was validated before strategy resolution");
+
     if principal_type_id != strategy.principal_type_id() {
         return Err(strategy_error(
             "principal_mismatch",
@@ -858,6 +887,7 @@ fn resolve_custom_strategy<'a>(
             "declare the strategy principal type requested by the guard",
         ));
     }
+
     Ok(PassportStrategyBinding {
         occurrence: None,
         provider_type_id: Some(strategy.provider_type_id()),
@@ -933,6 +963,7 @@ fn ambiguous_scoped_strategy_error(
         .with_subject(strategy.name())
         .with_location(strategy.location())
     });
+
     Error::from_diagnostics(primary, related)
 }
 

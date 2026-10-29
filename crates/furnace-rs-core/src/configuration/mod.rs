@@ -40,6 +40,7 @@ pub trait Configuration: Sized {
     fn __from_config_prefix(config: &Config, prefix: &str) -> ConfigurationResult<Self> {
         Self::from_config(&config.project(prefix)).map_err(|mut errors| {
             errors.prefix(prefix);
+
             errors
         })
     }

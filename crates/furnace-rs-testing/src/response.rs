@@ -14,6 +14,7 @@ pub struct TestResponse {
     headers: HeaderMap,
     body: Bytes,
 }
+
 impl TestResponse {
     /// Consumes the response body once and retains status, headers, and bytes for assertions.
     pub(crate) async fn buffer(response: Response) -> TestResult<Self> {
@@ -21,12 +22,14 @@ impl TestResponse {
         let body = to_bytes(body, usize::MAX)
             .await
             .map_err(TestError::ResponseBody)?;
+
         Ok(Self {
             status: parts.status,
             headers: parts.headers,
             body,
         })
     }
+
     /// Asserts the HTTP status, panicking with expected and actual values.
     pub fn assert_status(self, expected: StatusCode) -> Self {
         assert_eq!(
@@ -34,8 +37,10 @@ impl TestResponse {
             "HTTP status: expected {expected}, actual {}",
             self.status
         );
+
         self
     }
+
     /// Compares parsed JSON values independently of object key order.
     pub fn assert_json(self, expected: serde_json::Value) -> Self {
         let actual: serde_json::Value = serde_json::from_slice(&self.body).unwrap_or_else(|error| {
@@ -45,8 +50,10 @@ impl TestResponse {
             actual, expected,
             "JSON response: expected {expected}, actual {actual}"
         );
+
         self
     }
+
     /// Asserts the UTF-8 body text, panicking on invalid UTF-8 or mismatch.
     pub fn assert_text(self, expected: &str) -> Self {
         let actual = std::str::from_utf8(&self.body).unwrap_or_else(|error| {
@@ -56,8 +63,10 @@ impl TestResponse {
             actual, expected,
             "text response: expected {expected:?}, actual {actual:?}"
         );
+
         self
     }
+
     /// Asserts a response header, including whether it is present.
     pub fn assert_header(self, name: HeaderName, expected: HeaderValue) -> Self {
         let actual = self.headers.get(&name);
@@ -66,6 +75,7 @@ impl TestResponse {
             Some(&expected),
             "header {name}: expected {expected:?}, actual {actual:?}"
         );
+
         self
     }
 }

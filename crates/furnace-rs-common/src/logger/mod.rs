@@ -33,10 +33,12 @@ pub fn logger() -> Logger {
 
 impl crate::core::Injector for Logger {
     type Dependencies = ();
+
     /// Constructs the default console logger for the global logger provider.
     async fn inject((): ()) -> crate::core::Result<Self> {
         Ok(logger())
     }
+
     /// Returns the static metadata registered for the default logger provider.
     fn descriptor() -> &'static crate::core::ProviderDescriptor {
         &LOGGER_DESCRIPTOR
@@ -53,4 +55,5 @@ const LOGGER_DESCRIPTOR: crate::core::ProviderDescriptor =
             line!(),
             column!(),
         ));
+
 crate::core::__private::inventory::submit! { LOGGER_DESCRIPTOR }

@@ -32,6 +32,7 @@ impl<T: Input, const N: usize> Input for [T; N] {
 /// Collects indexed validation failures while preserving sequence order.
 fn sequence<'a, T: Input + 'a>(values: impl Iterator<Item = &'a T>) -> ValidationResult {
     let mut errors = None;
+
     for (index, value) in values.enumerate() {
         merge(
             &mut errors,
@@ -40,6 +41,7 @@ fn sequence<'a, T: Input + 'a>(values: impl Iterator<Item = &'a T>) -> Validatio
                 .map_err(|errors| errors.__prefix(&[ValidationPathSegment::Index(index)])),
         );
     }
+
     finish(errors)
 }
 
@@ -48,6 +50,7 @@ impl<T: Input, S: BuildHasher> Input for HashMap<String, T, S> {
     fn validate(&self) -> ValidationResult {
         let mut values: Vec<_> = self.iter().collect();
         values.sort_unstable_by_key(|(key, _)| *key);
+
         mapping(values.into_iter())
     }
 }
@@ -64,6 +67,7 @@ fn mapping<'a, T: Input + 'a>(
     values: impl Iterator<Item = (&'a String, &'a T)>,
 ) -> ValidationResult {
     let mut errors = None;
+
     for (key, value) in values {
         merge(
             &mut errors,
@@ -72,5 +76,6 @@ fn mapping<'a, T: Input + 'a>(
                 .map_err(|errors| errors.__prefix(&[ValidationPathSegment::Field(key.clone())])),
         );
     }
+
     finish(errors)
 }

@@ -12,12 +12,14 @@ use super::model::Envelope;
 pub fn render(envelope: &Envelope) -> serde_json::Result<String> {
     let mut output = serde_json::to_string(envelope)?;
     output.push('\n');
+
     Ok(output)
 }
 
 /// Serializes the envelope and writes one JSON document to stdout.
 pub(crate) fn write(envelope: &Envelope) -> Result<(), OutputError> {
     let output = render(envelope).map_err(OutputError::Serialize)?;
+
     io::stdout()
         .lock()
         .write_all(output.as_bytes())

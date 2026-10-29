@@ -4,12 +4,16 @@ use std::{error::Error as StdError, fmt};
 
 /// Invalid gRPC service registration or protobuf descriptors.
 pub const FURNACE150: DiagnosticCode = DiagnosticCode::new("FURNACE150");
+
 /// Invalid source-aware gRPC configuration.
 pub const FURNACE151: DiagnosticCode = DiagnosticCode::new("FURNACE151");
+
 /// Invalid gRPC protection metadata or selected strategy.
 pub const FURNACE152: DiagnosticCode = DiagnosticCode::new("FURNACE152");
+
 /// Invalid named client or failed connection readiness.
 pub const FURNACE153: DiagnosticCode = DiagnosticCode::new("FURNACE153");
+
 /// A client operation or credential preparation result.
 pub type GrpcClientResult<T> = Result<T, GrpcClientError>;
 
@@ -41,6 +45,7 @@ impl GrpcClientError {
             source: None,
         }
     }
+
     /// Creates a redacted application token-provider failure.
     pub fn token_provider(error: impl StdError + Send + Sync + 'static) -> Self {
         Self {
@@ -48,6 +53,7 @@ impl GrpcClientError {
             source: Some(RedactedCause(Box::new(error))),
         }
     }
+
     /// Creates a redacted transport failure with an inspectable source.
     pub fn transport(error: impl StdError + Send + Sync + 'static) -> Self {
         Self {
@@ -55,6 +61,7 @@ impl GrpcClientError {
             source: Some(RedactedCause(Box::new(error))),
         }
     }
+
     /// Creates an error for use of a shut-down managed channel.
     pub const fn closed() -> Self {
         Self {
@@ -62,6 +69,7 @@ impl GrpcClientError {
             source: None,
         }
     }
+
     /// Returns the original operational cause for deliberate inspection.
     ///
     /// The standard error chain uses a redacted boundary so transport libraries
@@ -69,11 +77,13 @@ impl GrpcClientError {
     pub fn cause(&self) -> Option<&(dyn StdError + Send + Sync + 'static)> {
         self.source.as_ref().map(|source| source.0.as_ref())
     }
+
     /// Returns the stable category.
     pub const fn kind(&self) -> GrpcClientErrorKind {
         self.kind
     }
 }
+
 impl fmt::Display for GrpcClientError {
     /// Formats the stable client error category without exposing its cause.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -85,6 +95,7 @@ impl fmt::Display for GrpcClientError {
         })
     }
 }
+
 impl fmt::Debug for GrpcClientError {
     /// Formats the stable client error category without exposing its cause.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -94,6 +105,7 @@ impl fmt::Debug for GrpcClientError {
             .finish()
     }
 }
+
 impl StdError for GrpcClientError {
     /// Returns only the redacted boundary around the underlying operational cause.
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
@@ -102,23 +114,27 @@ impl StdError for GrpcClientError {
 }
 
 struct RedactedCause(Box<dyn StdError + Send + Sync>);
+
 impl fmt::Debug for RedactedCause {
     /// Formats the stable client error category without exposing its cause.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("RedactedCause(..)")
     }
 }
+
 impl fmt::Display for RedactedCause {
     /// Formats the stable client error category without exposing its cause.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("gRPC operation failed")
     }
 }
+
 impl StdError for RedactedCause {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn nested_status_cause_requires_deliberate_inspection() {
         let error =

@@ -23,6 +23,7 @@ use crate::server_config::{HttpRuntimeMode, is_valid_hostname};
 pub(crate) const CORS_AUTO_CONFIGURATION_ID: &str = "furnace.common.http.cors";
 
 const CORS_PLAN_TYPE_NAME: &str = "furnace_rs_common::cors::CorsPlan";
+
 const CORS_KEYS: [&str; 6] = [
     "server.cors.origins",
     "server.cors.methods",
@@ -111,9 +112,11 @@ impl CorsPlan {
             CorsValues::Any => layer.expose_headers(Any),
             CorsValues::List(values) => layer.expose_headers(values.clone()),
         };
+
         if let Some(max_age) = self.max_age {
             layer = layer.max_age(max_age);
         }
+
         layer
     }
 }
@@ -171,6 +174,7 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
                 );
             }
         };
+
         if !http.has_routes() {
             return no_managed_routes(context);
         }
@@ -239,6 +243,7 @@ fn parse_origin(
     let has_explicit_path_or_query = uri
         .path_and_query()
         .is_some_and(|path_and_query| path_and_query.as_str() != "/" || raw.ends_with('/'));
+
     if !matches!(uri.scheme_str(), Some("http" | "https"))
         || !uri.authority().is_some_and(is_valid_origin_authority)
         || has_explicit_path_or_query
@@ -253,6 +258,7 @@ fn parse_origin(
             "must be a canonical HTTP or HTTPS origin without paths, queries, fragments, or user information",
         ));
     }
+
     HeaderValue::from_str(raw).map_err(|_| {
         invalid_cors_array_element(key, source, position, "must be a valid HTTP header value")
     })
@@ -276,6 +282,7 @@ fn is_valid_origin_host(host: &str) -> bool {
 /// Checks that an optional authority port is numeric and fits in `u16`.
 fn has_valid_optional_port(authority: &Authority) -> bool {
     let port = &authority.as_str()[authority.host().len()..];
+
     port.is_empty()
         || port.strip_prefix(':').is_some_and(|port| {
             !port.is_empty()
@@ -294,6 +301,7 @@ fn parse_methods(config: &Config) -> Result<Vec<Method>> {
             "must be a nonempty string array",
         ));
     };
+
     if raw_methods.is_empty() {
         return Err(invalid_cors_configuration(
             key,
@@ -304,8 +312,10 @@ fn parse_methods(config: &Config) -> Result<Vec<Method>> {
 
     let source = source_for_key(config, key);
     let mut methods = Vec::new();
+
     for (index, raw) in raw_methods.iter().enumerate() {
         let position = index + 1;
+
         if raw == "*" {
             return Err(invalid_cors_array_element(
                 key,
@@ -314,14 +324,17 @@ fn parse_methods(config: &Config) -> Result<Vec<Method>> {
                 "must not contain a wildcard method",
             ));
         }
+
         let normalized = raw.to_ascii_uppercase();
         let method = Method::from_bytes(normalized.as_bytes()).map_err(|_| {
             invalid_cors_array_element(key, source, position, "must contain valid HTTP methods")
         })?;
+
         if !methods.contains(&method) {
             methods.push(method);
         }
     }
+
     Ok(methods)
 }
 
@@ -353,6 +366,7 @@ where
         if value == "*" {
             return Ok(CorsValues::Any);
         }
+
         return Err(invalid_cors_configuration(
             key,
             source_for_key(config, key),
@@ -368,8 +382,10 @@ where
                 "must be the scalar wildcard \"*\" or a nonempty string array",
             ));
         }
+
         return Ok(CorsValues::List(Vec::new()));
     };
+
     if required && raw_values.is_empty() {
         return Err(invalid_cors_configuration(
             key,
@@ -380,8 +396,10 @@ where
 
     let source = source_for_key(config, key);
     let mut values = Vec::new();
+
     for (index, raw) in raw_values.iter().enumerate() {
         let position = index + 1;
+
         if raw == "*" {
             return Err(invalid_cors_array_element(
                 key,
@@ -390,17 +408,21 @@ where
                 "must not contain a wildcard inside a string array",
             ));
         }
+
         let value = parse(raw, key, source, position)?;
+
         if !values.contains(&value) {
             values.push(value);
         }
     }
+
     Ok(CorsValues::List(values))
 }
 
 /// Parses the credentials flag, accepting only the exact scalar strings `true` or `false`.
 fn parse_credentials(config: &Config) -> Result<bool> {
     let key = "server.cors.credentials";
+
     if config.get_string_array(key).is_some() {
         return Err(invalid_cors_configuration(
             key,
@@ -408,6 +430,7 @@ fn parse_credentials(config: &Config) -> Result<bool> {
             "must be exactly true or false",
         ));
     }
+
     match config.get(key) {
         None => Ok(false),
         Some("true") => Ok(true),
@@ -423,6 +446,7 @@ fn parse_credentials(config: &Config) -> Result<bool> {
 /// Parses an optional unsigned max-age value as a duration in seconds.
 fn parse_max_age(config: &Config) -> Result<Option<Duration>> {
     let key = "server.cors.max_age_seconds";
+
     if config.get_string_array(key).is_some() {
         return Err(invalid_cors_configuration(
             key,
@@ -430,6 +454,7 @@ fn parse_max_age(config: &Config) -> Result<Option<Duration>> {
             "must be an unsigned integer number of seconds",
         ));
     }
+
     let Some(value) = config.get(key) else {
         return Ok(None);
     };
@@ -440,6 +465,7 @@ fn parse_max_age(config: &Config) -> Result<Option<Duration>> {
             "must be an unsigned integer number of seconds",
         )
     })?;
+
     Ok(Some(Duration::from_secs(seconds)))
 }
 

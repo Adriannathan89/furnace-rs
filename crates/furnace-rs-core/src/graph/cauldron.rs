@@ -238,6 +238,7 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
     if let Some(cycle_start) = state.stack.iter().position(|id| *id == module) {
         return Err(state.module_cycle_error(&state.stack[cycle_start..], module));
     }
+
     if !state.visited.insert(module) {
         return Ok(());
     }
@@ -245,9 +246,11 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
     let descriptor = state.require_descriptor(module)?;
     let node = state.push_node(descriptor)?;
     state.stack.push(module);
+
     if let Some(register) = descriptor.registration() {
         let definition = register();
         let mut seen = HashSet::new();
+
         for member in &definition.members {
             if !seen.insert(member.type_id)
                 || state.cauldrons.iter().any(|module| {
@@ -267,7 +270,9 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
                 ));
             }
         }
+
         let mut exports = HashSet::new();
+
         for export in &definition.exports {
             if !exports.insert(export.type_id)
                 || !definition
@@ -283,7 +288,9 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
                 ));
             }
         }
+
         let mut imports = HashSet::new();
+
         for import in &definition.imports {
             if !imports.insert(import.type_id) {
                 return Err(registration_error(
@@ -294,14 +301,17 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
                 ));
             }
         }
+
         let imports: Vec<_> = definition
             .imports
             .iter()
             .map(|import| import.type_id)
             .collect();
         state.cauldrons[node].definition = Some(definition);
+
         for imported in imports {
             let imported_descriptor = state.require_descriptor(imported)?;
+
             if imported_descriptor.registration().is_none() {
                 return Err(registration_error(
                     "missing cauldron registration",
@@ -310,6 +320,7 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
                     descriptor.type_name(),
                 ));
             }
+
             let imported_node = state.ensure_node(imported_descriptor)?;
             state.push_edge(node, imported_node);
             visit(imported, state)?;
@@ -322,7 +333,9 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
             descriptor.type_name(),
         ));
     }
+
     state.stack.pop();
+
     Ok(())
 }
 
@@ -376,6 +389,7 @@ impl BuildState<'_> {
                     .with_subject(descriptor.type_name())
                     .with_location(descriptor.location())
                 });
+
                 Err(Error::from_diagnostics(primary, related))
             }
         }
@@ -391,6 +405,7 @@ impl BuildState<'_> {
         if let Some(index) = self.node_index(descriptor.type_id()) {
             return Ok(index);
         }
+
         let Some(namespace) = descriptor.namespace() else {
             return Err(Error::new(
                 Diagnostic::new(
@@ -410,6 +425,7 @@ impl BuildState<'_> {
             location: descriptor.location(),
             definition: None,
         });
+
         Ok(index)
     }
 
@@ -431,9 +447,11 @@ impl BuildState<'_> {
             .iter()
             .filter_map(|type_id| self.descriptor_for_stack(*type_id))
             .collect::<Vec<_>>();
+
         if let Some(repeated) = self.descriptor_for_stack(repeated) {
             chain.push(repeated);
         }
+
         let subject = chain
             .iter()
             .map(|descriptor| descriptor.type_name())
@@ -462,6 +480,7 @@ impl BuildState<'_> {
                 .with_subject(subject.clone())
                 .with_location(descriptor.location())
             });
+
         Error::from_diagnostics(primary, related)
     }
 

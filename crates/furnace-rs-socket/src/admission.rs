@@ -4,6 +4,7 @@ use furnace_rs_core::ApplicationContext;
 use http::StatusCode;
 use http::request::Parts;
 use std::{net::SocketAddr, sync::Arc};
+
 pub(crate) async fn admit(
     app: ApplicationContext,
     endpoint: &SocketEndpointDescriptor,
@@ -15,6 +16,7 @@ pub(crate) async fn admit(
         .get_all(http::header::ORIGIN)
         .iter()
         .collect::<Vec<_>>();
+
     if origins.len() > 1
         || origins.first().is_some_and(|v| {
             v.to_str()
@@ -24,9 +26,11 @@ pub(crate) async fn admit(
     {
         return Err(StatusCode::FORBIDDEN);
     }
+
     let peer = request.extensions.get::<SocketAddr>().copied();
     #[allow(unused_mut)]
     let mut extensions = http::Extensions::new();
+
     if endpoint.guard.is_some() {
         #[cfg(feature = "jwt")]
         {
@@ -67,16 +71,20 @@ pub(crate) async fn admit(
                 furnace_rs_common::PassportErrorKind::Internal => StatusCode::INTERNAL_SERVER_ERROR,
                 _ => StatusCode::UNAUTHORIZED,
             })?;
+
             if !authorizes(binding.guard(), &auth) {
                 return Err(StatusCode::FORBIDDEN);
             }
+
             if !auth.install_extensions(&mut extensions) {
                 return Err(StatusCode::INTERNAL_SERVER_ERROR);
             }
         }
+
         #[cfg(not(feature = "jwt"))]
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
+
     Ok(SocketHandshake {
         application: app,
         headers: request.headers.clone(),
@@ -86,6 +94,7 @@ pub(crate) async fn admit(
         extensions: Arc::new(extensions),
     })
 }
+
 #[cfg(feature = "jwt")]
 fn credential(
     headers: &http::HeaderMap,
@@ -98,26 +107,34 @@ fn credential(
         .get_all(http::header::AUTHORIZATION)
         .iter()
         .collect::<Vec<_>>();
+
     if auth.len() > 1 {
         return Err(StatusCode::BAD_REQUEST);
     }
+
     if let Some(auth) = auth.first() {
         let auth = auth.to_str().map_err(|_| StatusCode::UNAUTHORIZED)?.trim();
         let (space, token) = auth.split_once(' ').ok_or(StatusCode::UNAUTHORIZED)?;
+
         if !space.eq_ignore_ascii_case("bearer") || token.trim().is_empty() {
             return Err(StatusCode::UNAUTHORIZED);
         }
+
         tokens.push(token.trim().to_owned());
     }
+
     for header in headers.get_all(http::header::COOKIE) {
         let value = header.to_str().map_err(|_| StatusCode::BAD_REQUEST)?;
+
         for item in cookie::Cookie::split_parse(value) {
             let cookie = item.map_err(|_| StatusCode::BAD_REQUEST)?;
+
             if cookie.name() == cookie_name {
                 tokens.push(cookie.value().to_owned());
             }
         }
     }
+
     let params: Vec<(String, String)> = serde_urlencoded::from_str(uri.query().unwrap_or(""))
         .map_err(|_| StatusCode::BAD_REQUEST)?;
     tokens.extend(
@@ -126,6 +143,7 @@ fn credential(
             .filter(|(key, _)| key == query_name)
             .map(|(_, value)| value),
     );
+
     if tokens.len() != 1 {
         return Err(if tokens.is_empty() {
             StatusCode::UNAUTHORIZED
@@ -133,14 +151,17 @@ fn credential(
             StatusCode::BAD_REQUEST
         });
     }
+
     Ok(tokens.pop().unwrap())
 }
+
 #[cfg(feature = "jwt")]
 #[allow(clippy::result_large_err)]
 pub(crate) fn guards(
     graph: Option<&furnace_rs_core::CauldronGraph>,
 ) -> furnace_rs_core::Result<Vec<furnace_rs_common::passport::__private::ScopedGuard>> {
     use furnace_rs_common::passport::__private::{GuardOccurrence, ScopedGuard};
+
     Ok(crate::SocketApplicationScope::for_cauldron_graph(graph)?
         .endpoints()
         .iter()
@@ -158,11 +179,13 @@ pub(crate) fn guards(
         })
         .collect())
 }
+
 #[cfg(feature = "jwt")]
 fn passport_scope(
     context: &furnace_rs_core::__private::AutoConfigurationContext<'_>,
 ) -> furnace_rs_core::Result<Vec<furnace_rs_common::passport::__private::ScopedGuard>> {
     guards(context.cauldron_graph())
 }
+
 #[cfg(feature = "jwt")]
 furnace_rs_core::__private::inventory::submit! {furnace_rs_common::passport::__private::PassportScopeDescriptor{select:passport_scope}}

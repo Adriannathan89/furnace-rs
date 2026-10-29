@@ -111,6 +111,7 @@ pub mod __private {
     /// Builds a rooted module graph for integration coverage and downstream framework crates.
     pub fn build_cauldron_graph<M: 'static>() -> crate::Result<crate::CauldronGraph> {
         let cauldrons = crate::Catalog::cauldrons();
+
         crate::graph::build_cauldron_graph(TypeId::of::<M>(), &cauldrons)
     }
 }

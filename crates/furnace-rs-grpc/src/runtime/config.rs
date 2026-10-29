@@ -28,16 +28,19 @@ impl RuntimeSelection {
             http: false,
             grpc: false,
         };
+
         if let Some(values) = config.get_string_array("furnace.transports") {
             if values.is_empty() {
                 return Err(invalid());
             }
+
             for value in values {
                 let enabled = match value.as_str() {
                     "http" if compiled_http => &mut selected.http,
                     "grpc" if compiled_grpc => &mut selected.grpc,
                     _ => return Err(invalid()),
                 };
+
                 if std::mem::replace(enabled, true) {
                     return Err(invalid());
                 }
@@ -48,8 +51,10 @@ impl RuntimeSelection {
             {
                 return Err(invalid());
             }
+
             selected.http = true;
         }
+
         Ok(selected)
     }
 }

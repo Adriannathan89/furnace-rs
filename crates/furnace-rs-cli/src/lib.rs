@@ -51,23 +51,28 @@ async fn run_with(arguments: Vec<OsString>, current_dir: io::Result<PathBuf>) ->
         Ok(invocation) => invocation,
         Err(error) => {
             let format = error.format.unwrap_or_default();
+
             if let Err(output_error) = render_parse_error(&error) {
                 if format == OutputFormat::Human {
                     let _ = output::write_human(String::new(), format!("{output_error}\n"));
                 }
+
                 return ExitCode::from(1);
             }
+
             return ExitCode::from(2);
         }
     };
 
     let format = invocation.format;
+
     match run_command(invocation.command, format, current_dir).await {
         Ok(exit_code) => exit_code,
         Err(error) => {
             if format == OutputFormat::Human {
                 let _ = output::write_human(String::new(), format!("{error}\n"));
             }
+
             ExitCode::from(1)
         }
     }
@@ -82,6 +87,7 @@ async fn run_command(
     match command {
         Command::Help => {
             output::write_human(format!("{}\n", help()), String::new())?;
+
             Ok(ExitCode::SUCCESS)
         }
         Command::Version => {
@@ -89,6 +95,7 @@ async fn run_command(
                 format!("furnace {}\n", env!("CARGO_PKG_VERSION")),
                 String::new(),
             )?;
+
             Ok(ExitCode::SUCCESS)
         }
         Command::Run(command) => {
@@ -109,6 +116,7 @@ async fn run_command(
         }
         Command::Dev(command) => {
             let root = current_dir.map_err(current_directory_error)?;
+
             run_dev(command, &root).await
         }
         Command::New(command) => run_new_command(command, format, current_dir),
@@ -155,10 +163,12 @@ fn run_new_command(
                 output::HumanOutput::stderr(format!("{error}\n")),
             );
             output::write(format, &outcome)?;
+
             return Ok(ExitCode::from(1));
         }
     };
     output::write(format, &outcome)?;
+
     Ok(ExitCode::SUCCESS)
 }
 
@@ -184,6 +194,7 @@ async fn run_inspection_command(
             OutputFormat::Human => inspect_application(&built, kind).await?,
             OutputFormat::Json => inspect_application_silently(&built, kind).await?,
         };
+
         Ok::<_, CliError>((report, package_root))
     }
     .await;
@@ -197,11 +208,13 @@ async fn run_inspection_command(
             };
             let outcome = inspection::inspection_outcome(&report, &package_root);
             output::write(format, &outcome)?;
+
             Ok(exit_code)
         }
         Err(error) => {
             let outcome = inspection::inspection_failure_outcome(kind, &error);
             output::write(format, &outcome)?;
+
             Ok(ExitCode::from(1))
         }
     }
@@ -231,6 +244,7 @@ fn render_parse_error(failure: &ParseFailure) -> Result<(), CliError> {
         output::model::CliDiagnostic::from_error(&diagnostic, None),
         human_stderr,
     );
+
     output::write(failure.format.unwrap_or_default(), &outcome)
 }
 

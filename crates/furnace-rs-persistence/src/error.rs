@@ -99,6 +99,7 @@ impl From<PersistenceError> for furnace_rs_core::Error {
     /// Converts a persistence failure to the stable FURNACE140 core diagnostic.
     fn from(error: PersistenceError) -> Self {
         let operation = error.operation;
+
         furnace_rs_core::Error::with_source(
             Diagnostic::new(
                 FURNACE140,

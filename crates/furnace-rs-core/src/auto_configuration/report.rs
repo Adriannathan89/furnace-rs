@@ -29,6 +29,7 @@ fn safe_explanation(reason_code: AutoConfigurationReasonCode, explanation: &str)
     if explanation == "Database is required and configured" {
         return "Database is required and configured";
     }
+
     if explanation == "Database is required and configured with startup migrations disabled" {
         return "Database is required and configured with startup migrations disabled";
     }

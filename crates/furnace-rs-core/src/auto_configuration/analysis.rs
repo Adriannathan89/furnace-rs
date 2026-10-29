@@ -22,21 +22,29 @@ mod tests {
     };
 
     struct DefaultResource;
+
     struct CascadingResource;
+
     struct ResourceConsumer;
+
     struct SecondResourceConsumer;
 
     static EVALUATIONS: Mutex<Vec<&str>> = Mutex::new(Vec::new());
+
     static EVALUATION_COUNT: AtomicUsize = AtomicUsize::new(0);
+
     static CONFIG_READS: AtomicUsize = AtomicUsize::new(0);
 
     static DEFAULT_DEPENDENCY: [DependencyDescriptor; 1] = [DependencyDescriptor::new(
         "DefaultResource",
         default_resource_type_id,
     )];
+
     static REQUIRING_PROVIDERS: [&ProviderDescriptor; 1] = [&RESOURCE_CONSUMER];
+
     static TWO_REQUIRING_PROVIDERS: [&ProviderDescriptor; 2] =
         [&RESOURCE_CONSUMER, &SECOND_RESOURCE_CONSUMER];
+
     static FIRST_REQUIRING_PROVIDER: [&ProviderDescriptor; 1] = [&RESOURCE_CONSUMER];
 
     static RESOURCE_CONSUMER: ProviderDescriptor = ProviderDescriptor::new(
@@ -48,6 +56,7 @@ mod tests {
         SourceLocation::new("analysis.rs", 101, 1),
         unused_constructor,
     );
+
     static SECOND_RESOURCE_CONSUMER: ProviderDescriptor = ProviderDescriptor::new(
         ProviderKind::Provider,
         "SecondResourceConsumer",
@@ -66,6 +75,7 @@ mod tests {
         evaluate_zeta,
         unused_applier,
     );
+
     static ALPHA_DESCRIPTOR: AutoConfigurationDescriptor = AutoConfigurationDescriptor::new(
         "alpha",
         "CascadingResource",
@@ -74,6 +84,7 @@ mod tests {
         evaluate_alpha,
         unused_applier,
     );
+
     static DUPLICATE_FIRST: AutoConfigurationDescriptor = AutoConfigurationDescriptor::new(
         "duplicate",
         "DefaultResource",
@@ -82,6 +93,7 @@ mod tests {
         evaluate_counted,
         unused_applier,
     );
+
     static DUPLICATE_SECOND: AutoConfigurationDescriptor = AutoConfigurationDescriptor::new(
         "duplicate",
         "CascadingResource",
@@ -90,6 +102,7 @@ mod tests {
         evaluate_counted,
         unused_applier,
     );
+
     static ACTIVE_FIRST: AutoConfigurationDescriptor = AutoConfigurationDescriptor::new(
         "active.first",
         "DefaultResource",
@@ -98,6 +111,7 @@ mod tests {
         evaluate_active_default,
         unused_applier,
     );
+
     static ACTIVE_SECOND: AutoConfigurationDescriptor = AutoConfigurationDescriptor::new(
         "active.second",
         "DefaultResource",
@@ -106,6 +120,7 @@ mod tests {
         evaluate_active_default,
         unused_applier,
     );
+
     static CONDITIONAL_DESCRIPTOR: AutoConfigurationDescriptor = AutoConfigurationDescriptor::new(
         "conditional",
         "DefaultResource",
@@ -114,6 +129,7 @@ mod tests {
         evaluate_conditional,
         unused_applier,
     );
+
     static FAILING_DESCRIPTOR: AutoConfigurationDescriptor = AutoConfigurationDescriptor::new(
         "failing",
         "DefaultResource",
@@ -122,6 +138,7 @@ mod tests {
         evaluate_failure,
         unused_applier,
     );
+
     static FIRST_DESCRIPTOR: AutoConfigurationDescriptor = AutoConfigurationDescriptor::new(
         "first",
         "DefaultResource",
@@ -130,6 +147,7 @@ mod tests {
         evaluate_active_default,
         unused_applier,
     );
+
     static CASCADE_DESCRIPTOR: AutoConfigurationDescriptor = AutoConfigurationDescriptor::new(
         "second",
         "CascadingResource",
@@ -325,6 +343,7 @@ mod tests {
         assert!(!context.has_provider::<CascadingResource>());
         assert!(context.requirements::<CascadingResource>().is_empty());
         EVALUATIONS.lock().unwrap().push("alpha");
+
         active(Vec::new())
     }
 
@@ -332,11 +351,13 @@ mod tests {
         assert!(!context.has_provider::<DefaultResource>());
         assert!(context.requirements::<DefaultResource>().is_empty());
         EVALUATIONS.lock().unwrap().push("zeta");
+
         active(Vec::new())
     }
 
     fn evaluate_counted(_: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluation {
         EVALUATION_COUNT.fetch_add(1, Ordering::SeqCst);
+
         active(Vec::new())
     }
 
@@ -357,6 +378,7 @@ mod tests {
         }
 
         let requirements = context.requirements::<DefaultResource>();
+
         if requirements.is_empty() {
             return AutoConfigurationEvaluation::skipped(
                 AutoConfigurationReasonCode::new("requirement_absent"),
@@ -368,11 +390,13 @@ mod tests {
 
         CONFIG_READS.fetch_add(1, Ordering::SeqCst);
         assert!(context.config().is_empty());
+
         active(requirements)
     }
 
     fn evaluate_failure(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluation {
         let requirements = context.requirements::<DefaultResource>();
+
         AutoConfigurationEvaluation::failed(
             AutoConfigurationReasonCode::new("missing_configuration"),
             "required configuration is missing",
@@ -390,6 +414,7 @@ mod tests {
         context: &AutoConfigurationContext<'_>,
     ) -> AutoConfigurationEvaluation {
         let requirements = context.requirements::<CascadingResource>();
+
         if requirements.is_empty() {
             AutoConfigurationEvaluation::skipped(
                 AutoConfigurationReasonCode::new("requirement_absent"),
@@ -438,6 +463,7 @@ pub(crate) fn analyze_parts(
     cauldron_graph: Option<&CauldronGraph>,
 ) -> AutoConfigurationAnalysis {
     let memo = crate::preflight::AnalysisMemo::default();
+
     analyze_parts_with_memo(
         descriptors,
         providers,
@@ -472,15 +498,18 @@ pub(crate) fn analyze_parts_with_memo(
 
     let mut decisions = Vec::with_capacity(descriptors.len());
     let mut start = 0;
+
     while start < descriptors.len() {
         let identifier = descriptors[start].identifier();
         let mut end = start + 1;
+
         while end < descriptors.len() && descriptors[end].identifier() == identifier {
             end += 1;
         }
 
         if end - start > 1 {
             let diagnostic = duplicate_identifier_diagnostic(descriptors[start]);
+
             for (index, descriptor) in descriptors[start..end].iter().enumerate() {
                 decisions.push(Decision {
                     descriptor,
@@ -514,6 +543,7 @@ pub(crate) fn analyze_parts_with_memo(
                 emit_diagnostic: true,
             });
         }
+
         start = end;
     }
 
@@ -532,11 +562,13 @@ pub(crate) fn analyze_parts_with_memo(
                     .then_some(candidate_index)
             })
             .collect::<Vec<_>>();
+
         if conflicts.len() < 2 || conflicts[0] != index {
             continue;
         }
 
         let diagnostic = conflicting_default_diagnostic(decisions[index].descriptor);
+
         for (position, conflict_index) in conflicts.into_iter().enumerate() {
             let decision = &mut decisions[conflict_index];
             decision.evaluation.replace_failure(
@@ -606,6 +638,7 @@ fn has_direct_requirement(
     providers: &[&ProviderDescriptor],
 ) -> bool {
     let output_type_id = descriptor.output_type_id();
+
     providers.iter().any(|provider| {
         provider
             .dependencies()
@@ -632,6 +665,7 @@ fn covered_missing(decisions: &[Decision]) -> Vec<TypeId> {
     outputs.sort_by(|left, right| left.0.cmp(right.0));
 
     let mut seen = HashSet::new();
+
     outputs
         .into_iter()
         .filter_map(|(_, type_id)| seen.insert(type_id).then_some(type_id))

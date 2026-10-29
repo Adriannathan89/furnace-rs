@@ -67,6 +67,7 @@ impl PassportGuardState {
         let binding = preflight
             .binding_for(guard, None)
             .expect("the preflight result must retain its requested guard");
+
         Ok(Self {
             application: application.clone(),
             guard,
@@ -118,7 +119,9 @@ where
     S::Future: Send + 'static,
 {
     type Response = Response;
+
     type Error = S::Error;
+
     type Future = Pin<Box<dyn Future<Output = std::result::Result<Response, S::Error>> + Send>>;
 
     /// Delegates readiness polling to the protected route service.
@@ -131,10 +134,12 @@ where
         let state = self.state.clone();
         let not_ready_inner = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, not_ready_inner);
+
         Box::pin(async move {
             if let Err(error) = state.authorize(&mut request).await {
                 return Ok(super::PassportRejection::from(error).into_response());
             }
+
             inner.call(request).await
         })
     }
@@ -154,14 +159,17 @@ impl PassportGuardState {
             remote_addr,
         )
         .await?;
+
         if !authorizes(self.guard, &authentication) {
             return Err(PassportError::forbidden());
         }
+
         if !authentication.install_extensions(request.extensions_mut()) {
             return Err(PassportError::internal(std::io::Error::other(
                 "guard authentication type binding failed",
             )));
         }
+
         Ok(())
     }
 }
@@ -289,6 +297,7 @@ where
     #[must_use]
     pub const fn strategy(mut self, strategy: &'static str) -> Self {
         self.strategy = Some(strategy);
+
         self
     }
 
@@ -296,6 +305,7 @@ where
     #[must_use]
     pub const fn source(mut self, source: TokenSource) -> Self {
         self.source = source;
+
         self
     }
 
@@ -307,6 +317,7 @@ where
         V: AsRef<str>,
     {
         self.roles = Some(NativePolicyClause::new(PolicyMode::Any, values));
+
         self
     }
 
@@ -318,6 +329,7 @@ where
         V: AsRef<str>,
     {
         self.roles = Some(NativePolicyClause::new(PolicyMode::All, values));
+
         self
     }
 
@@ -329,6 +341,7 @@ where
         V: AsRef<str>,
     {
         self.permissions = Some(NativePolicyClause::new(PolicyMode::Any, values));
+
         self
     }
 
@@ -340,6 +353,7 @@ where
         V: AsRef<str>,
     {
         self.permissions = Some(NativePolicyClause::new(PolicyMode::All, values));
+
         self
     }
 
@@ -347,12 +361,14 @@ where
     #[must_use]
     pub fn predicate(mut self, predicate: fn(&P) -> bool) -> Self {
         self.predicates.push(predicate);
+
         self
     }
 
     /// Selects the internal adapter used by the built-in JWT claims strategy.
     fn with_builtin_adapter(mut self, adapter: BuiltinGuardAdapter) -> Self {
         self.builtin_adapter = Some(adapter);
+
         self
     }
 
@@ -450,7 +466,9 @@ where
     S::Future: Send + 'static,
 {
     type Response = Response;
+
     type Error = S::Error;
+
     type Future = Pin<Box<dyn Future<Output = std::result::Result<Response, S::Error>> + Send>>;
 
     /// Delegates readiness polling to the protected native route service.
@@ -463,10 +481,12 @@ where
         let state = self.state.clone();
         let not_ready_inner = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, not_ready_inner);
+
         Box::pin(async move {
             if let Err(error) = state.authorize(&mut request).await {
                 return Ok(super::PassportRejection::from(error).into_response());
             }
+
             inner.call(request).await
         })
     }
@@ -519,6 +539,7 @@ where
                 "native guard authentication type binding failed",
             )));
         };
+
         if !matches_native_clause(self.roles.as_ref(), |value| principal.has_role(value))
             || !matches_native_clause(self.permissions.as_ref(), |value| {
                 principal.has_permission(value)
@@ -530,11 +551,13 @@ where
         {
             return Err(PassportError::forbidden());
         }
+
         if !authentication.install_extensions(request.extensions_mut()) {
             return Err(PassportError::internal(std::io::Error::other(
                 "native guard authentication type binding failed",
             )));
         }
+
         Ok(())
     }
 }
@@ -587,9 +610,11 @@ async fn authenticate_request(
         #[cfg(feature = "cookies")]
         TokenSource::Cookie(name) => {
             let jar = CookieJar::from_headers(&headers).map_err(|_| PassportError::reject())?;
+
             if jar.occurrences(name) != 1 {
                 return Err(PassportError::reject());
             }
+
             let token = jar
                 .get(name)
                 .map(|cookie| cookie.value().to_owned())
@@ -602,6 +627,7 @@ async fn authenticate_request(
                 &jar,
                 name,
             );
+
             adapter(application, &context, &token).await
         }
     }
@@ -635,6 +661,7 @@ fn matches_native_clause(
     let Some(clause) = clause else {
         return true;
     };
+
     match clause.mode {
         PolicyMode::Any => clause.values.iter().map(String::as_str).any(matches),
         PolicyMode::All => clause.values.iter().map(String::as_str).all(matches),
@@ -646,6 +673,7 @@ fn validate_native_policy(clause: Option<&NativePolicyClause>, label: &str) -> R
     let Some(clause) = clause else {
         return Ok(());
     };
+
     if clause.values.is_empty()
         || clause
             .values
@@ -656,6 +684,7 @@ fn validate_native_policy(clause: Option<&NativePolicyClause>, label: &str) -> R
             "native guard {label} policy must contain non-empty values without control characters"
         )));
     }
+
     Ok(())
 }
 
@@ -702,6 +731,7 @@ where
                 .map_err(PassportError::from)?,
         );
         let principal = ClaimsPrincipal::<C>::new(std::sync::Arc::clone(&verified));
+
         Ok(ErasedAuthentication::with_verified(principal, verified))
     })
 }
@@ -755,6 +785,7 @@ impl fmt::Display for MissingGuardExtension {
 }
 
 impl std::error::Error for MissingGuardExtension {}
+
 /// An Axum rejection produced by Passport extractors and guards.
 #[non_exhaustive]
 pub struct PassportRejection(PassportError);
@@ -807,12 +838,14 @@ impl IntoResponse for PassportRejection {
     /// Maps rejected, forbidden, and internal failures to 401, 403, and redacted 500 responses.
     fn into_response(self) -> Response {
         let Self(error) = self;
+
         match error.kind() {
             PassportErrorKind::Rejected => {
                 let mut response = Unauthorized::new("authentication was rejected").into_response();
                 response
                     .headers_mut()
                     .insert(WWW_AUTHENTICATE, HeaderValue::from_static("Bearer"));
+
                 response
             }
             PassportErrorKind::Forbidden => Forbidden::new("access was denied").into_response(),

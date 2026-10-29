@@ -34,6 +34,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     };
     let helper = quote!(#core::__private::configuration);
     let mut prefix = None;
+
     for attribute in input
         .attrs
         .iter()
@@ -43,12 +44,15 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
             if !meta.path.is_ident("prefix") || prefix.is_some() {
                 return Err(meta.error("expected one configuration prefix"));
             }
+
             let value: LitStr = meta.value()?.parse()?;
             validate_key(&value, true)?;
             prefix = Some(value.value());
+
             Ok(())
         })?;
     }
+
     let fields = match &input.data {
         Data::Struct(data) => match &data.fields {
             Fields::Named(fields) => &fields.named,
@@ -69,6 +73,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     let mut keys = BTreeSet::new();
     let mut reads = Vec::new();
     let mut builds = Vec::new();
+
     for (index, field) in fields.iter().enumerate() {
         let ident = field.ident.as_ref().expect("named fields");
         let attributes = field_attributes(field)?;
@@ -77,6 +82,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
             .as_ref()
             .map(LitStr::value)
             .unwrap_or_else(|| ident.to_string().trim_start_matches("r#").to_owned());
+
         if !keys.insert(key.clone()) {
             return Err(Error::new(
                 attributes
@@ -86,6 +92,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
                 "configuration field key collides with another field",
             ));
         }
+
         let key = match prefix.as_deref() {
             Some(prefix) if !prefix.is_empty() => format!("{prefix}.{key}"),
             _ => key,
@@ -116,8 +123,10 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
         });
         builds.push(quote!(#ident: #local.expect("successful configuration field")));
     }
+
     let name = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
     Ok(quote! {
         impl #impl_generics #core::Configuration for #name #ty_generics #where_clause {
             #[doc = "Reads and validates this type's fields from an already loaded configuration."]
@@ -136,6 +145,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
 /// Parses one field's rename, default, parser, and validator attributes.
 fn field_attributes(field: &syn::Field) -> syn::Result<Attributes> {
     let mut result = Attributes::default();
+
     for attribute in field
         .attrs
         .iter()
@@ -155,21 +165,25 @@ fn field_attributes(field: &syn::Field) -> syn::Result<Attributes> {
             } else {
                 return Err(meta.error("unknown or duplicate configuration field attribute"));
             }
+
             Ok(())
         })?;
     }
+
     Ok(result)
 }
 
 /// Enforces one-segment key syntax, optionally allowing the empty prefix.
 fn validate_key(value: &LitStr, allow_empty: bool) -> syn::Result<()> {
     let key = value.value();
+
     if key.contains('.') || (!allow_empty && key.is_empty()) {
         return Err(Error::new(
             value.span(),
             "configuration keys must be single nonempty segments",
         ));
     }
+
     Ok(())
 }
 
@@ -196,6 +210,7 @@ fn inner_type(ty: &Type) -> syn::Result<&Type> {
     {
         return Ok(inner);
     }
+
     Err(Error::new(
         ty.span(),
         "expected one configuration value type",
@@ -236,6 +251,7 @@ fn field_read(
     key: &str,
 ) -> syn::Result<TokenStream> {
     let name = type_name(ty)?;
+
     if name == "Option" {
         if attributes.default.is_some() {
             return Err(Error::new(
@@ -243,14 +259,18 @@ fn field_read(
                 "optional configuration fields cannot declare defaults",
             ));
         }
+
         let inner = inner_type(ty)?;
+
         if type_name(inner)? == "Option" {
             return Err(Error::new(
                 inner.span(),
                 "nested Option configuration fields are unsupported",
             ));
         }
+
         let read = field_read(inner, attributes, generics, core, helper, key)?;
+
         return Ok(quote! {
             if #helper::present(__furnace_config, #key) {
                 (#read).map(Some)
@@ -259,6 +279,7 @@ fn field_read(
             }
         });
     }
+
     if name == "Secret" {
         if attributes.default.is_some() {
             return Err(Error::new(
@@ -266,17 +287,22 @@ fn field_read(
                 "secret configuration fields cannot declare defaults",
             ));
         }
+
         let inner = inner_type(ty)?;
         let inner_name = type_name(inner)?;
+
         if attributes.parser.is_none() && !is_scalar(&inner_name) && inner_name != "PathBuf" {
             return Err(Error::new(
                 inner.span(),
                 "Secret requires a supported scalar configuration type",
             ));
         }
+
         let read = field_read(inner, attributes, generics, core, helper, key)?;
+
         return Ok(quote!((#read).map(#core::Secret::new)));
     }
+
     let read = if let Some(parser) = &attributes.parser {
         quote_spanned! {parser.span()=> {
             let __furnace_parser: fn(&str) -> ::core::result::Result<#ty, _> = #parser;
@@ -293,6 +319,7 @@ fn field_read(
                 "configuration arrays support only Vec<String>",
             ));
         }
+
         quote!(#helper::string_array(__furnace_config, #key))
     } else {
         if matches!(
@@ -304,6 +331,7 @@ fn field_read(
                 "unsupported configuration field shape",
             ));
         }
+
         if generics
             .type_params()
             .any(|parameter| parameter.ident == name)
@@ -314,6 +342,7 @@ fn field_read(
                 "generic configuration fields require a Configuration bound or parse_with",
             ));
         }
+
         quote_spanned! {ty.span()=> {
             #[doc = "Reads one nested configuration value at the requested dotted prefix."]
             fn __furnace_read_nested_configuration<T: #core::Configuration>(
@@ -325,8 +354,10 @@ fn field_read(
             __furnace_read_nested_configuration::<#ty>(__furnace_config, #key)
         }}
     };
+
     if let Some(default) = &attributes.default {
         let value = default_value(default, &name)?;
+
         return Ok(quote! {
             if #helper::present(__furnace_config, #key) {
                 #read
@@ -335,6 +366,7 @@ fn field_read(
             }
         });
     }
+
     Ok(read)
 }
 
@@ -344,6 +376,7 @@ fn configuration_bound(name: &str, generics: &Generics) -> bool {
         matches!(bound, TypeParamBound::Trait(bound)
             if bound.path.segments.last().is_some_and(|segment| segment.ident == "Configuration"))
     };
+
     generics
         .type_params()
         .any(|parameter| parameter.ident == name && parameter.bounds.iter().any(matches_bound))
@@ -386,20 +419,24 @@ fn default_value(expression: &Expr, name: &str) -> syn::Result<TokenStream> {
         Lit::Float(_) => matches!(name, "f32" | "f64"),
         _ => false,
     };
+
     if !compatible {
         return Err(Error::new(
             expression.span(),
             "configuration default is incompatible with the field type",
         ));
     }
+
     if is_scalar(name) && !matches!(name, "String" | "bool" | "char") {
         validate::check_number(expression, name)?;
     }
+
     if name == "String" {
         Ok(quote!(::std::string::String::from(#expression)))
     } else if matches!(name, "f32" | "f64") {
         let ty: Type = syn::parse_str(name)?;
         let value = validate::numeric(expression)?;
+
         Ok(quote!((#value) as #ty))
     } else {
         Ok(quote!(#expression))

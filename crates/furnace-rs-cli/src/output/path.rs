@@ -26,9 +26,11 @@ fn normalize_separators(path: &Path) -> String {
 /// Returns the path suffix when it is beneath the normalized package root.
 fn relative_to<'path>(package_root: &str, path: &'path str) -> Option<&'path str> {
     let package_root = package_root.trim_end_matches('/');
+
     if package_root.is_empty() || path == package_root {
         return (path == package_root).then_some("");
     }
+
     path.strip_prefix(package_root)
         .and_then(|relative| relative.strip_prefix('/'))
 }

@@ -25,7 +25,9 @@ use crate::{
 };
 
 const DEBOUNCE: Duration = Duration::from_millis(150);
+
 const PROCESS_POLL_INTERVAL: Duration = Duration::from_millis(100);
+
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(3);
 
 struct ChangeBatch {
@@ -48,10 +50,13 @@ type DriverFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, CliError>> + Se
 trait DevDriver {
     /// Starts an application build task for the selected target.
     fn build(&mut self, target: ResolvedApplication) -> Box<dyn BuildTask>;
+
     /// Starts the built application with the original forwarded arguments.
     fn start(&mut self, built: BuiltApplication, arguments: Vec<OsString>) -> DriverFuture<'_, ()>;
+
     /// Requests graceful application shutdown and waits for the child process.
     fn stop(&mut self) -> DriverFuture<'_, StopOutcome>;
+
     /// Reports whether the managed application process has exited.
     fn application_exited(&mut self) -> Result<bool, CliError>;
 }
@@ -59,6 +64,7 @@ trait DevDriver {
 trait BuildTask: Send {
     /// Waits for the build task to produce its selected executable.
     fn wait(&mut self) -> DriverFuture<'_, BuiltApplication>;
+
     /// Cancels the build task and waits for its child cleanup.
     fn cancel_and_wait(&mut self) -> DriverFuture<'_, ()>;
 }
@@ -83,6 +89,7 @@ pub(crate) async fn run_dev(
         let _ = tokio::signal::ctrl_c().await;
     })
     .await?;
+
     Ok(ExitCode::SUCCESS)
 }
 
@@ -95,6 +102,7 @@ async fn next_change(
     let mut batch = loop {
         let event = next_watch_event(events, watch_set, inputs).await?;
         let impact = watch_set.classify_event(&event);
+
         if impact != ChangeImpact::None {
             break ChangeBatch {
                 impact,
@@ -111,6 +119,7 @@ async fn next_change(
                 let event = event?;
                 let next = watch_set.classify_event(&event);
                 batch.reload_project |= watch_set.reloads_project(&event);
+
                 if next != ChangeImpact::None {
                     batch.impact = ChangeImpact::merge([batch.impact, next]);
                     deadline = Instant::now() + DEBOUNCE;
@@ -182,6 +191,7 @@ where
     let watch_task = tokio::spawn(async move {
         let mut events = events;
         let mut watch_set = watch_set;
+
         loop {
             let change = async {
                 let batch =
@@ -194,6 +204,7 @@ where
                         Err(error) => {
                             eprintln!("{error}");
                             eprintln!("furnace dev: metadata reload failed; continuing to watch");
+
                             return Ok(None);
                         }
                     };
@@ -201,16 +212,19 @@ where
                     let next = WatchSet::for_application(&project, &target);
                     events.replace_roots(&watch_set, &next)?;
                     watch_set = next;
+
                     Some(target)
                 } else {
                     None
                 };
+
                 Ok(Some(WatchUpdate {
                     impact: batch.impact,
                     target,
                 }))
             }
             .await;
+
             match change {
                 Ok(Some(change)) => {
                     if changes.send(Ok(change)).is_err() {
@@ -237,6 +251,7 @@ where
     .await;
     watch_task.abort();
     let _ = watch_task.await;
+
     result
 }
 
@@ -273,6 +288,7 @@ where
             Ok(exited) => exited,
             Err(error) => break Err(error),
         };
+
         if exited {
             break Ok(());
         }
@@ -351,6 +367,7 @@ where
         let _ = cancel_active_build(&mut build).await;
         let _ = driver.stop().await;
     }
+
     result
 }
 
@@ -369,6 +386,7 @@ async fn cancel_active_build(build: &mut Option<Box<dyn BuildTask>>) -> Result<(
     let Some(mut build) = build.take() else {
         return Ok(());
     };
+
     build.cancel_and_wait().await
 }
 
@@ -402,6 +420,7 @@ async fn execute_actions<D: DevDriver>(
             }
             DevAction::Exit => {
                 eprintln!("furnace dev: exiting");
+
                 return Ok(true);
             }
         }
@@ -443,7 +462,9 @@ impl DevDriver for ProductionDevDriver {
                     "attempted to start a second application process",
                 ));
             }
+
             self.application = Some(spawn_dev_application(&built, &arguments).await?);
+
             Ok(())
         })
     }
@@ -454,6 +475,7 @@ impl DevDriver for ProductionDevDriver {
             let Some(mut application) = self.application.take() else {
                 return Ok(StopOutcome::Graceful);
             };
+
             application.stop(SHUTDOWN_TIMEOUT).await
         })
     }
@@ -463,8 +485,10 @@ impl DevDriver for ProductionDevDriver {
         let Some(application) = self.application.as_mut() else {
             return Ok(false);
         };
+
         if application.try_wait()?.is_some() {
             self.application = None;
+
             Ok(true)
         } else {
             Ok(false)
@@ -478,6 +502,7 @@ impl BuildTask for FailedBuild {
     /// Waits for the build task to produce its selected executable.
     fn wait(&mut self) -> DriverFuture<'_, BuiltApplication> {
         let error = self.0.take().expect("failed builds are awaited once");
+
         Box::pin(async move { Err(error) })
     }
 
@@ -561,6 +586,7 @@ async fn run_scripted_dev(command: ApplicationCommand) -> Result<Vec<String>, Cl
         .await
         .expect("run_dev_with should await watcher-task cleanup");
     result?;
+
     Ok(operations)
 }
 
@@ -608,11 +634,14 @@ impl DevDriver for ScriptedDevDriver {
             _ => format!("build {version}"),
         };
         self.operations.push(operation);
+
         if result.is_err() {
             self.record_build_failure();
         }
+
         let events = self.events.clone();
         let source = self.package_root.join("src/main.rs");
+
         Box::new(ScriptedBuild {
             events,
             queue_rebuild,
@@ -625,6 +654,7 @@ impl DevDriver for ScriptedDevDriver {
         Box::pin(async move {
             let binary = built.target().binary_name().to_owned();
             let restarted = matches!(self.stopped.as_deref(), Some(stopped) if stopped == binary);
+
             match self.stopped.take() {
                 Some(stopped) if stopped == binary => {
                     self.operations.push(format!("restart {binary}"));
@@ -649,7 +679,9 @@ impl DevDriver for ScriptedDevDriver {
                         .join(",")
                 )),
             }
+
             self.running = Some(binary);
+
             if restarted {
                 let _ = self
                     .events
@@ -665,6 +697,7 @@ impl DevDriver for ScriptedDevDriver {
                     .expect("the scripted application should shut down once")
                     .send(());
             }
+
             Ok(())
         })
     }
@@ -672,6 +705,7 @@ impl DevDriver for ScriptedDevDriver {
     fn stop(&mut self) -> DriverFuture<'_, StopOutcome> {
         Box::pin(async move {
             self.stopped = self.running.take();
+
             Ok(StopOutcome::Graceful)
         })
     }
@@ -699,10 +733,12 @@ impl BuildTask for ScriptedBuild {
         let events = self.events.clone();
         let source = self.source.clone();
         let queue_rebuild = self.queue_rebuild;
+
         Box::pin(async move {
             if queue_rebuild {
                 let _ = events.send(Ok(modified_event(source)));
             }
+
             result
         })
     }
@@ -774,6 +810,7 @@ mod tests {
         let target = project
             .resolve_application(&TargetSelection::default())
             .unwrap();
+
         for _ in 0..32 {
             let mut watch_set = WatchSet::for_application(&project, &target);
             let input = root.join("schema.custom");
@@ -871,6 +908,7 @@ mod tests {
         fn cancel_and_wait(&mut self) -> DriverFuture<'_, ()> {
             Box::pin(async move {
                 self.cleaned.store(true, Ordering::SeqCst);
+
                 Ok(())
             })
         }

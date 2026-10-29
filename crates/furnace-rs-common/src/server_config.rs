@@ -126,6 +126,7 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
             );
         }
     };
+
     if !http.has_routes() {
         return AutoConfigurationEvaluation::skipped(
             AutoConfigurationReasonCode::new("no_managed_routes"),
@@ -168,6 +169,7 @@ fn parse_host(host: &str, source: Option<&str>) -> Result<String> {
             "must not be empty or whitespace-only",
         ));
     }
+
     if host.chars().any(|character| character.is_ascii_control()) {
         return Err(invalid_server_configuration(
             "server.host",
@@ -179,6 +181,7 @@ fn parse_host(host: &str, source: Option<&str>) -> Result<String> {
     if let Ok(address) = host.parse::<IpAddr>() {
         return Ok(address.to_string());
     }
+
     if !is_valid_hostname(host) {
         return Err(invalid_server_configuration(
             "server.host",
@@ -193,6 +196,7 @@ fn parse_host(host: &str, source: Option<&str>) -> Result<String> {
 /// Checks the DNS label rules accepted for an automatic server host.
 pub(crate) fn is_valid_hostname(host: &str) -> bool {
     let hostname = host.strip_suffix('.').unwrap_or(host);
+
     !hostname.is_empty()
         && hostname.len() <= 253
         && hostname.split('.').all(|label| {
@@ -215,6 +219,7 @@ fn parse_port(port: &str, source: Option<&str>) -> Result<u16> {
             "must be an integer in the range 1..=65535",
         ));
     };
+
     if port == 0 {
         return Err(invalid_server_configuration(
             "server.port",

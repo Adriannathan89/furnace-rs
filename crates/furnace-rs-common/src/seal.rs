@@ -44,6 +44,7 @@ impl<C> SealRegistration<C> {
             location: SourceLocation::new(caller.file(), caller.line(), caller.column()),
             descriptor: G::descriptor,
         });
+
         self
     }
 
@@ -133,14 +134,17 @@ impl SealEntry {
     pub const fn guard_type_id(&self) -> TypeId {
         self.guard_type_id
     }
+
     /// Returns the declared guard policy's stable Rust name.
     pub const fn guard_type_name(&self) -> &'static str {
         self.guard_type_name
     }
+
     /// Returns the location of the authored seal call.
     pub const fn location(&self) -> SourceLocation {
         self.location
     }
+
     /// Looks up the static descriptor when selected analysis needs the policy.
     pub fn descriptor(&self) -> &'static GuardDescriptor {
         (self.descriptor)()

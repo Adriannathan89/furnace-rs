@@ -3,6 +3,7 @@ use crate::path::core_path;
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Error, Fields, ItemStruct};
+
 pub(crate) mod contract;
 mod declaration;
 
@@ -11,12 +12,15 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     const FORM: &str = "`#[furnace_rs::cauldron]` supports only non-generic unit structs";
     let declaration = syn::parse2::<declaration::Declaration>(arguments)?;
     let item: ItemStruct = syn::parse2(item)?;
+
     if !item.generics.params.is_empty() || item.generics.where_clause.is_some() {
         return Err(Error::new_spanned(&item.generics, FORM));
     }
+
     if !matches!(item.fields, Fields::Unit) {
         return Err(Error::new_spanned(&item.fields, FORM));
     }
+
     let core = core_path()?;
     let ident = &item.ident;
     let contract = contract::expand(&declaration, &item, &core)?;
@@ -24,6 +28,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
         let d = &declaration;
         let providers = d.providers.iter().map(|p| {
             let output = &p.output;
+
             match &p.injector {
                 Some(injector) => quote!(.provide_with::<#output, #injector>()),
                 None => quote!(.provide::<#output>()),
@@ -45,6 +50,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
                 .into_definition()
         }
     };
+
     Ok(quote! {
         #item
         #contract

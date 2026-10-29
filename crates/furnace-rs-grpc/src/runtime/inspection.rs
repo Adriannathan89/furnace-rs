@@ -3,6 +3,7 @@ use furnace_rs_common::__private::{
     DoctorCheck, GrpcMethodReport, GrpcServiceReport, InspectionTransportDescriptor, SourceReport,
 };
 use furnace_rs_core::{CauldronGraph, Config, Result};
+
 #[allow(clippy::result_large_err)]
 /// Reports selected gRPC services and listener checks without opening a socket.
 fn inspect(
@@ -32,6 +33,7 @@ fn inspect(
         config,
         &adapters.iter().map(|a| a.name).collect::<Vec<_>>(),
     )?;
+
     if selection.grpc {
         crate::GrpcServerConfig::parse(config)?;
         checks.push(DoctorCheck::pass(
@@ -44,7 +46,9 @@ fn inspect(
             "gRPC listener is not selected",
         ));
     }
+
     let mut services = Vec::new();
+
     for service in scope.services() {
         let descriptor = service.descriptor();
         let location = descriptor.location();
@@ -72,13 +76,16 @@ fn inspect(
                 .collect(),
         });
     }
+
     #[cfg(feature = "jwt")]
     checks.push(DoctorCheck::pass(
         "gRPC protection",
         "effective admission policies included in shared Passport preflight",
     ));
+
     Ok((services, checks))
 }
+
 #[cfg(feature = "jwt")]
 /// Converts a selected guard descriptor into the public inspection report.
 fn protection(
@@ -98,6 +105,7 @@ fn protection(
             .map(|value| (*value).to_owned())
             .collect(),
     };
+
     GrpcProtectionReport {
         strategy: guard.strategy().to_owned(),
         principal: guard.principal_type_name().unwrap_or_default().to_owned(),
@@ -110,4 +118,5 @@ fn protection(
             .collect(),
     }
 }
+
 furnace_rs_core::__private::inventory::submit! { InspectionTransportDescriptor { name: "gRPC", inspect } }

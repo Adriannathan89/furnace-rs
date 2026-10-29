@@ -3,6 +3,7 @@ mod adapter;
 mod inspection;
 mod server;
 mod tls;
+
 use crate::SocketServerConfig;
 pub use adapter::{RuntimeSocketExt, build_socket_routes};
 #[doc(hidden)]
@@ -13,6 +14,7 @@ pub use furnace_rs_common::runtime::{
     serve_transports,
 };
 use tokio::sync::watch;
+
 #[derive(Clone)]
 pub(crate) struct SocketRuntime {
     #[cfg(feature = "jwt")]

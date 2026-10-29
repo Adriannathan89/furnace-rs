@@ -3,6 +3,7 @@ use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use std::collections::BTreeSet;
 use syn::{Expr, ImplItem, ItemImpl, Lit, Meta, Token, parse::Parser, punctuated::Punctuated};
+
 pub(crate) fn expand(
     args: TokenStream,
     item: TokenStream,
@@ -10,12 +11,14 @@ pub(crate) fn expand(
 ) -> syn::Result<TokenStream> {
     let socket = crate::path::socket_path()?;
     let mut implementation: ItemImpl = syn::parse2(item)?;
+
     if implementation.trait_.is_some() || !implementation.generics.params.is_empty() {
         return Err(syn::Error::new_spanned(
             &implementation,
             "socket attributes require a non-generic inherent impl",
         ));
     }
+
     let mut path = None;
     let mut mode = "events".to_owned();
     let mut concurrent = false;
@@ -24,21 +27,26 @@ pub(crate) fn expand(
     let mut cookie = "access_token".to_owned();
     let mut query = cookie.clone();
     let mut seen = BTreeSet::new();
+
     for meta in Punctuated::<Meta, Token![,]>::parse_terminated.parse2(args)? {
         let Meta::NameValue(meta) = meta else {
             return Err(syn::Error::new_spanned(meta, "expected name = value"));
         };
         let key = meta.path.to_token_stream().to_string();
+
         if !seen.insert(key.clone()) {
             return Err(syn::Error::new_spanned(meta, "duplicate socket option"));
         }
+
         if key == "guard" {
             guard = Some(meta.value);
             continue;
         }
+
         let Expr::Lit(lit) = &meta.value else {
             return Err(syn::Error::new_spanned(meta, "expected a literal option"));
         };
+
         match (key.as_str(), &lit.lit) {
             ("path", Lit::Str(v)) => path = Some(v.clone()),
             ("mode", Lit::Str(v)) => mode = v.value(),
@@ -63,20 +71,24 @@ pub(crate) fn expand(
             }
         }
     }
+
     let path =
         path.ok_or_else(|| syn::Error::new_spanned(&implementation, "socket path is required"))?;
+
     if !path.value().starts_with('/') || path.value().contains(['{', '}', '*', '?', '#']) {
         return Err(syn::Error::new_spanned(
             path,
             "expected a literal absolute endpoint path",
         ));
     }
+
     if limit == 0 || (!concurrent && seen.contains("max_concurrency")) {
         return Err(syn::Error::new_spanned(
             &implementation,
             "max_concurrency requires concurrent processing and a positive limit",
         ));
     }
+
     let mode_token = if owned || mode == "raw" {
         quote!(#socket::EndpointMode::Raw)
     } else if mode == "events" {
@@ -97,16 +109,19 @@ pub(crate) fn expand(
     let mut arms = Vec::new();
     let mut names = BTreeSet::new();
     let mut owned_method = None;
+
     for item in &mut implementation.items {
         let ImplItem::Fn(method) = item else { continue };
         let mut marker = None;
         let mut attrs = Vec::new();
+
         for attr in std::mem::take(&mut method.attrs) {
             let name = attr
                 .path()
                 .get_ident()
                 .map(ToString::to_string)
                 .unwrap_or_default();
+
             if name.starts_with("on_") {
                 if marker.is_some() {
                     return Err(syn::Error::new_spanned(
@@ -114,6 +129,7 @@ pub(crate) fn expand(
                         "one handler attribute per method",
                     ));
                 }
+
                 let kind = match name.as_str() {
                     "on_event" => "event",
                     "on_text" => "text",
@@ -133,11 +149,15 @@ pub(crate) fn expand(
                 attrs.push(attr);
             }
         }
+
         method.attrs = attrs;
+
         if !owned && marker.is_none() {
             continue;
         }
+
         let receiver = method.sig.receiver();
+
         if method.sig.asyncness.is_none()
             || !method.sig.generics.params.is_empty()
             || receiver.is_none_or(|r| r.reference.is_none() || r.mutability.is_some())
@@ -147,7 +167,9 @@ pub(crate) fn expand(
                 "socket handlers must be async non-generic &self methods",
             ));
         }
+
         let method_name = &method.sig.ident;
+
         if owned {
             if owned_method.is_some() || method.sig.inputs.len() != 3 {
                 return Err(syn::Error::new_spanned(
@@ -155,15 +177,18 @@ pub(crate) fn expand(
                     "owned endpoint requires exactly one method taking handshake and socket",
                 ));
             }
+
             owned_method = Some(method_name.clone());
             continue;
         }
+
         let (kind, event) = marker.unwrap();
         let count = if matches!(kind, "connect" | "disconnect") {
             2
         } else {
             3
         };
+
         if method.sig.inputs.len() != count
             || !names.insert((kind.to_owned(), event.clone()))
             || (kind == "event" && (event.is_empty() || event.starts_with("furnace.")))
@@ -175,6 +200,7 @@ pub(crate) fn expand(
                 "invalid or duplicate handler for this endpoint mode",
             ));
         }
+
         let cfg = conditions(&method.attrs)?;
         records.push(quote!(#(#cfg)* #socket::SocketHandlerDescriptor{name:#event,kind:#kind}));
         let input = match kind {
@@ -192,10 +218,12 @@ pub(crate) fn expand(
         };
         arms.push(quote!(#(#cfg)* #input=>Box::pin(#call),));
     }
+
     let (trait_impl, route) = if owned {
         let method = owned_method.ok_or_else(|| {
             syn::Error::new_spanned(&implementation, "owned endpoint requires a handler")
         })?;
+
         (
             quote!(),
             quote!(#socket::__private::owned_route::<#ty>(application, &DESCRIPTOR, |provider,handshake,socket|Box::pin(async move{provider.#method(handshake,socket).await}))),
@@ -212,6 +240,7 @@ pub(crate) fn expand(
         quote!()
     };
     let attrs = conditions(&implementation.attrs)?;
+
     Ok(quote! {
         #implementation
         #(#attrs)* #trait_impl
@@ -223,6 +252,7 @@ pub(crate) fn expand(
         };
     })
 }
+
 fn conditions(attributes: &[syn::Attribute]) -> syn::Result<Vec<syn::Attribute>> {
     attributes
         .iter()
@@ -230,13 +260,16 @@ fn conditions(attributes: &[syn::Attribute]) -> syn::Result<Vec<syn::Attribute>>
         .map(|result| result.map(|meta| syn::parse_quote!(#[#meta])))
         .collect()
 }
+
 fn condition(meta: &Meta) -> syn::Result<Option<Meta>> {
     if meta.path().is_ident("cfg") {
         return Ok(Some(meta.clone()));
     }
+
     if !meta.path().is_ident("cfg_attr") {
         return Ok(None);
     }
+
     let Meta::List(list) = meta else {
         return Err(syn::Error::new_spanned(meta, "expected cfg_attr arguments"));
     };
@@ -247,6 +280,7 @@ fn condition(meta: &Meta) -> syn::Result<Option<Meta>> {
         .next()
         .ok_or_else(|| syn::Error::new_spanned(meta, "cfg_attr requires a predicate"))?;
     let mut nested = Vec::new();
+
     for argument in arguments {
         if argument
             .path()
@@ -259,10 +293,12 @@ fn condition(meta: &Meta) -> syn::Result<Option<Meta>> {
                 "put handler attributes directly on a conditionally compiled method, not inside cfg_attr",
             ));
         }
+
         if let Some(gate) = condition(&argument)? {
             nested.push(gate);
         }
     }
+
     if nested.is_empty() {
         Ok(None)
     } else {
@@ -274,6 +310,7 @@ fn condition(meta: &Meta) -> syn::Result<Option<Meta>> {
 mod tests {
     use super::*;
     use quote::quote;
+
     #[test]
     fn rejects_invalid_public_declarations() {
         for args in [
@@ -284,6 +321,7 @@ mod tests {
             assert!(expand(args, quote!(impl G{}), false).is_err());
         }
     }
+
     #[test]
     fn rejects_reserved_events() {
         assert!(

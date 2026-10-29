@@ -54,6 +54,7 @@ impl RouteIdentity {
     /// Associates the route with the managed module that provides its Passport context.
     fn with_passport_context_cauldron(mut self, context_cauldron: Option<TypeId>) -> Self {
         self.passport_context_cauldron = context_cauldron;
+
         self
     }
 
@@ -120,15 +121,18 @@ impl ScopedController {
             })
             .flatten()
     }
+
     /// Reports whether Passport guarding is active for the route in this build.
     pub(crate) fn guard_active(&self, route: &RouteDescriptor) -> bool {
         #[cfg(feature = "jwt")]
         {
             self.seal.is_some() && !route.seal_skipped()
         }
+
         #[cfg(not(feature = "jwt"))]
         {
             let _ = route;
+
             false
         }
     }
@@ -187,6 +191,7 @@ impl HttpApplicationScope {
                 .collect(),
             context_cauldron: None,
         }];
+
         Self::finish(controllers, None, true)
     }
 
@@ -205,6 +210,7 @@ impl HttpApplicationScope {
                 context_cauldron: None,
             })
             .collect();
+
         Self::finish(controllers, None, true)
     }
 
@@ -218,12 +224,14 @@ impl HttpApplicationScope {
         let mut guards = Vec::new();
         let _ = (graph, focused);
         let declarations = RouteCatalog::controllers();
+
         for controller in &mut controllers {
             if let Some(declaration) = declarations
                 .iter()
                 .find(|entry| entry.type_id() == controller.descriptor.type_id())
             {
                 let definition = declaration.seals();
+
                 #[cfg(feature = "jwt")]
                 {
                     if definition.entries().len() > 1 {
@@ -237,6 +245,7 @@ impl HttpApplicationScope {
                             .with_location(definition.entries()[1].location()),
                         ));
                     }
+
                     if let Some(entry) = definition.entries().first() {
                         let seal = ControllerSeal {
                             guard: entry.descriptor(),
@@ -244,6 +253,7 @@ impl HttpApplicationScope {
                             policy_type_id: entry.guard_type_id(),
                             policy_type_name: entry.guard_type_name(),
                         };
+
                         for occurrence in controller.selected_routes.iter().filter(|identity| {
                             controller.descriptor.routes().any(|route| {
                                 identity.matches(controller.descriptor, route)
@@ -256,6 +266,7 @@ impl HttpApplicationScope {
                                 context_cauldron: controller.context_cauldron,
                             });
                         }
+
                         controller.seal = Some(seal);
                     }
                 }
@@ -263,6 +274,7 @@ impl HttpApplicationScope {
                 let _ = definition;
             }
         }
+
         Ok(Self {
             controllers,
             #[cfg(feature = "jwt")]
@@ -293,6 +305,7 @@ impl HttpApplicationScope {
                 }
             }
         }
+
         let controllers = match cauldron_graph {
             None => Self::complete_controllers()?,
             Some(graph) => Self::rooted_controllers(graph)?,
@@ -311,6 +324,7 @@ impl HttpApplicationScope {
             Some(graph) => Self::rooted_controllers(graph)?,
             None => Vec::new(),
         };
+
         Self::finish(controllers, cauldron_graph, false)
     }
 
@@ -378,9 +392,11 @@ impl HttpApplicationScope {
                             #[cfg(feature = "jwt")]
                             let identity =
                                 identity.with_passport_context_cauldron(context_cauldron);
+
                             identity
                         })
                         .collect();
+
                     ScopedController {
                         #[cfg(feature = "jwt")]
                         seal: None,

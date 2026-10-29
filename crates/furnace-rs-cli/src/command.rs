@@ -111,6 +111,7 @@ pub(crate) struct ParseFailure {
 }
 
 type CommandParseResult<T> = Result<T, (ParseError, Option<OutputFormat>)>;
+
 type LeadingFormatResult<'arguments> =
     Result<(OutputFormat, bool, &'arguments [OsString]), (ParseError, &'arguments [OsString])>;
 
@@ -160,6 +161,7 @@ pub(crate) fn parse(arguments: &[OsString]) -> Result<Invocation, ParseFailure> 
             .is_some_and(|argument| argument == OsStr::new("--format"))
     {
         let remaining = arguments.get(2..).unwrap_or_default();
+
         return Err(ParseFailure {
             error: ParseError::DuplicateOption("--format"),
             format: Some(format),
@@ -232,11 +234,13 @@ fn parse_leading_format(arguments: &[OsString]) -> LeadingFormatResult<'_> {
     let Some(value) = arguments.get(1) else {
         return Err((ParseError::MissingValue("--format"), &[]));
     };
+
     if value.to_str().is_some_and(|value| value.starts_with('-')) {
         return Err((ParseError::MissingValue("--format"), &arguments[1..]));
     }
 
     let format = parse_format_value(value).map_err(|error| (error, &arguments[2..]))?;
+
     Ok((format, true, &arguments[2..]))
 }
 
@@ -252,6 +256,7 @@ fn parse_non_finite_command(
             Some(OutputFormat::Human),
         ));
     }
+
     if arguments.is_empty() {
         Ok((command, OutputFormat::Human))
     } else {
@@ -273,6 +278,7 @@ fn parse_streaming_command(
             Some(OutputFormat::Human),
         ));
     }
+
     parse_application_command(arguments).map_err(|error| (error, Some(OutputFormat::Human)))
 }
 
@@ -284,6 +290,7 @@ fn parse_finite_inspection(
     global_format: bool,
 ) -> CommandParseResult<(Command, OutputFormat)> {
     let (format, arguments, _) = select_local_format(arguments, format, global_format)?;
+
     parse_inspection_command(kind, &arguments)
         .map(|command| (command, format))
         .map_err(|error| (error, Some(format)))
@@ -306,6 +313,7 @@ fn parse_new_command(
     let name = ProjectName::parse(name)
         .map_err(ParseError::InvalidProjectName)
         .map_err(|error| (error, Some(format)))?;
+
     if let Some(argument) = remaining.first() {
         return Err((ParseError::UnknownArgument(argument.clone()), Some(format)));
     }
@@ -335,6 +343,7 @@ fn parse_inspection_command(
             }
             _ => return Err(ParseError::UnknownArgument(argument.clone())),
         }
+
         index += 1;
     }
 
@@ -363,6 +372,7 @@ fn parse_application_command(arguments: &[OsString]) -> Result<ApplicationComman
             }
             _ => return Err(ParseError::UnknownArgument(argument.clone())),
         }
+
         index += 1;
     }
 
@@ -386,6 +396,7 @@ fn select_local_format(
             Some("--package" | "-p" | "--bin") => {
                 retained.push(argument.clone());
                 index += 1;
+
                 if let Some(value) = arguments.get(index) {
                     retained.push(value.clone());
                 }
@@ -394,18 +405,22 @@ fn select_local_format(
                 if format_seen {
                     return Err((ParseError::DuplicateOption("--format"), Some(format)));
                 }
+
                 format_seen = true;
                 index += 1;
                 let Some(value) = arguments.get(index) else {
                     return Err((ParseError::MissingValue("--format"), None));
                 };
+
                 if value.to_str().is_some_and(|value| value.starts_with('-')) {
                     return Err((ParseError::MissingValue("--format"), None));
                 }
+
                 format = parse_format_value(value).map_err(|error| (error, None))?;
             }
             _ => retained.push(argument.clone()),
         }
+
         index += 1;
     }
 
@@ -436,13 +451,16 @@ fn contains_format_before_separator(arguments: &[OsString]) -> bool {
         if argument == OsStr::new("--") {
             return false;
         }
+
         if matches!(argument.to_str(), Some("--package" | "-p" | "--bin")) {
             index += 2;
             continue;
         }
+
         if argument == OsStr::new("--format") {
             return true;
         }
+
         index += 1;
     }
 
@@ -452,6 +470,7 @@ fn contains_format_before_separator(arguments: &[OsString]) -> bool {
 /// Identifies a finite command from a raw argument list for structured error output.
 fn canonical_command(arguments: &[OsString]) -> Option<CanonicalCommand> {
     let (command, _) = arguments.split_first()?;
+
     match command.to_str()? {
         "new" => Some(CanonicalCommand::New),
         "routes" => Some(CanonicalCommand::Routes),
@@ -479,10 +498,13 @@ fn parse_selector(
         .get(*index)
         .ok_or(ParseError::MissingValue(option))?;
     let value = value.to_str().ok_or(ParseError::NonUnicodeValue(option))?;
+
     if value.starts_with('-') {
         return Err(ParseError::MissingValue(option));
     }
+
     *destination = Some(value.to_owned());
+
     Ok(())
 }
 

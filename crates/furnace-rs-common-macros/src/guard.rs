@@ -66,6 +66,7 @@ impl Parse for GuardSpec {
 
         while !input.is_empty() {
             let key: Ident = input.parse()?;
+
             match key.to_string().as_str() {
                 "strategy" => {
                     set_once(&mut result.strategy, key.span(), "strategy")?;
@@ -111,12 +112,14 @@ impl Parse for GuardSpec {
                     let content;
                     bracketed!(content in input);
                     let predicates = Punctuated::<Path, Token![,]>::parse_terminated(&content)?;
+
                     if predicates.is_empty() {
                         return Err(Error::new(
                             content.span(),
                             "`predicates` must contain at least one path",
                         ));
                     }
+
                     result.predicates = Some(predicates.into_iter().collect());
                 }
                 "skip" => {
@@ -136,7 +139,9 @@ impl Parse for GuardSpec {
             if input.is_empty() {
                 break;
             }
+
             input.parse::<Token![,]>()?;
+
             if input.is_empty() {
                 break;
             }
@@ -154,12 +159,14 @@ fn set_once<T>(slot: &mut Option<T>, span: Span, name: &str) -> syn::Result<()> 
             format!("duplicate `{name}` guard argument"),
         ));
     }
+
     Ok(())
 }
 
 /// Parses Bearer or feature-gated cookie token-source syntax.
 fn parse_source(input: ParseStream<'_>) -> syn::Result<TokenSourceSpec> {
     let source: Ident = input.parse()?;
+
     match source.to_string().as_str() {
         "bearer" => Ok(TokenSourceSpec::Bearer),
         "cookie" => {
@@ -176,10 +183,13 @@ fn parse_source(input: ParseStream<'_>) -> syn::Result<TokenSourceSpec> {
                 let content;
                 parenthesized!(content in input);
                 let name: LitStr = content.parse()?;
+
                 if !content.is_empty() {
                     return Err(content.error("`cookie` accepts exactly one literal cookie name"));
                 }
+
                 validate_cookie_name(&name)?;
+
                 Ok(TokenSourceSpec::Cookie(name))
             }
         }
@@ -209,20 +219,24 @@ fn parse_policy_clause(input: ParseStream<'_>, subject: &str) -> syn::Result<Pol
     let values;
     bracketed!(values in content);
     let values = Punctuated::<LitStr, Token![,]>::parse_terminated(&values)?;
+
     if values.is_empty() {
         return Err(Error::new(
             values.span(),
             format!("`{subject}` policy must contain at least one value"),
         ));
     }
+
     if !content.is_empty() {
         return Err(content.error(format!(
             "`{subject}` accepts exactly one `any = [...]` or `all = [...]` clause"
         )));
     }
+
     for value in &values {
         validate_policy_value(value, subject)?;
     }
+
     Ok(PolicyClauseSpec {
         mode,
         values: values.into_iter().collect(),
@@ -241,6 +255,7 @@ fn validate_strategy_name(value: &LitStr) -> syn::Result<()> {
             "guard strategy names must be non-empty lowercase ASCII `[a-z0-9._-]`",
         ));
     }
+
     Ok(())
 }
 
@@ -274,6 +289,7 @@ fn validate_cookie_name(value: &LitStr) -> syn::Result<()> {
             "guard cookie source must use a non-empty RFC cookie name",
         ));
     }
+
     Ok(())
 }
 
@@ -287,6 +303,7 @@ fn validate_policy_value(value: &LitStr, subject: &str) -> syn::Result<()> {
             ),
         ));
     }
+
     Ok(())
 }
 
@@ -383,6 +400,7 @@ impl EffectiveGuard {
                     handler,
                     index
                 );
+
                 quote!(#common::GuardPredicate::new(stringify!(#predicate), Some(#adapter)))
             });
         let (builtin_function, builtin) = builtin_adapter_tokens(
@@ -433,6 +451,7 @@ impl EffectiveGuard {
             .with_namespace(module_path!());
 
         };
+
         (static_ident, tokens)
     }
 }
@@ -456,6 +475,7 @@ fn clause_tokens(clause: &Option<PolicyClauseSpec>, common: &syn::Path) -> Token
         PolicyModeSpec::All => quote!(#common::PolicyMode::All),
     };
     let values = &clause.values;
+
     quote!(Some(#common::PolicyClause::new(#mode, &[#(#values,)*])))
 }
 
@@ -471,6 +491,7 @@ fn builtin_adapter_tokens(
         return (TokenStream::new(), quote!(None));
     };
     let adapter = format_ident!("__furnace_guard_builtin_jwt_{}_{}", policy_name, handler);
+
     (
         quote! {
             #(#conditional_attributes)*
@@ -513,16 +534,20 @@ fn claims_principal_claims(principal: &Type) -> Option<Type> {
     let Type::Path(path) = principal else {
         return None;
     };
+
     if path.qself.is_some() || path.path.segments.last()?.ident != "ClaimsPrincipal" {
         return None;
     }
+
     let segment = path.path.segments.last()?;
     let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments else {
         return None;
     };
+
     if arguments.args.len() != 1 {
         return None;
     }
+
     match arguments.args.first()? {
         GenericArgument::Type(claims) => Some(claims.clone()),
         _ => None,
@@ -534,6 +559,7 @@ pub(crate) fn outside_contract(arguments: TokenStream, item: TokenStream) -> Tok
     if let Ok(policy) = syn::parse2::<syn::ItemStruct>(item.clone()) {
         return expand_policy(arguments, policy).unwrap_or_else(Error::into_compile_error);
     }
+
     let span = if arguments.is_empty() {
         Span::call_site()
     } else {
@@ -544,6 +570,7 @@ pub(crate) fn outside_contract(arguments: TokenStream, item: TokenStream) -> Tok
         "`#[guard]` requires a unit policy struct; attach it with the controller seal",
     )
     .into_compile_error();
+
     quote!(#item #error)
 }
 
@@ -555,18 +582,21 @@ fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result
             "guard policies require the HTTP and JWT features",
         ));
     }
+
     if !policy.generics.params.is_empty() || policy.generics.where_clause.is_some() {
         return Err(Error::new(
             policy.generics.span(),
             "guard policies must be non-generic unit structs",
         ));
     }
+
     if !matches!(policy.fields, syn::Fields::Unit) {
         return Err(Error::new(
             policy.fields.span(),
             "guard policies must be non-generic unit structs",
         ));
     }
+
     for attribute in &policy.attrs {
         if attribute.path().segments.last().is_some_and(|segment| {
             matches!(
@@ -580,6 +610,7 @@ fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result
             ));
         }
     }
+
     let spec: GuardSpec = syn::parse2(arguments)?;
     let effective = complete_policy(&spec)?;
     let common = crate::path::common_path()?;
@@ -597,6 +628,7 @@ fn expand_policy(arguments: TokenStream, policy: syn::ItemStruct) -> syn::Result
         &conditional_attributes,
     );
     let principal = &effective.principal;
+
     Ok(quote! {
         #policy
         #metadata

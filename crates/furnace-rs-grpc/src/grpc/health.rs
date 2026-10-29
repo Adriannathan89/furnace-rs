@@ -1,12 +1,14 @@
 //! Public native health and optional guarded reflection installation.
 use super::{GrpcApplicationScope, reflection};
 use furnace_rs_core::{Furnace, Result};
+
 /// Shared health state transitioned by the runtime before admission and shutdown.
 #[derive(Clone, Debug)]
 pub struct GrpcHealth {
     reporter: tonic_health::server::HealthReporter,
     services: Vec<String>,
 }
+
 impl GrpcHealth {
     /// Publishes aggregate and selected service readiness to Check and Watch callers.
     pub async fn set_serving(&mut self, serving: bool) {
@@ -16,11 +18,13 @@ impl GrpcHealth {
             tonic_health::ServingStatus::NotServing
         };
         self.reporter.set_service_status("", status).await;
+
         for service in &self.services {
             self.reporter.set_service_status(service, status).await;
         }
     }
 }
+
 /// Installs native infrastructure; the runtime initializes health before opening admission.
 #[allow(clippy::result_large_err)]
 pub fn install_grpc_infrastructure(
@@ -36,6 +40,7 @@ pub fn install_grpc_infrastructure(
         .map(|service| service.name().to_owned())
         .collect();
     services.push(reflection::HEALTH.to_owned());
+
     if reflection::selected_policy(scope, app.context().config())?.is_some() {
         #[cfg(feature = "jwt")]
         {
@@ -63,8 +68,10 @@ pub fn install_grpc_infrastructure(
             services.extend(reflection::NAMES.into_iter().map(str::to_owned));
         }
     }
+
     Ok((routes, GrpcHealth { reporter, services }))
 }
+
 #[cfg(feature = "jwt")]
 /// Creates a fixed diagnostic when native reflection services cannot be built.
 fn reflection_build_error() -> furnace_rs_core::Error {

@@ -378,27 +378,32 @@ impl CliDiagnostic {
     /// Adds a related subject.
     pub fn with_subject(mut self, subject: impl Into<String>) -> Self {
         self.subject = Some(subject.into());
+
         self
     }
 
     /// Adds a source location.
     pub fn with_location(mut self, location: SourceLocation) -> Self {
         self.location = Some(location);
+
         self
     }
 
     /// Adds one ordered remediation suggestion.
     pub fn with_suggestion(mut self, suggestion: impl Into<String>) -> Self {
         self.suggestions.push(suggestion.into());
+
         self
     }
 
     /// Converts a CLI error while normalizing any source path for public output.
     pub(crate) fn from_error(error: &CliError, package_root: Option<&Path>) -> Self {
         let mut diagnostic = Self::error(error.code(), error.title(), error.message());
+
         if let Some(subject) = error.subject() {
             diagnostic = diagnostic.with_subject(subject);
         }
+
         if let Some(location) = error.location() {
             let file = package_root.map_or_else(
                 || location.path().to_string_lossy().replace('\\', "/"),
@@ -410,9 +415,11 @@ impl CliDiagnostic {
                 location.column(),
             ));
         }
+
         for suggestion in error.suggestions() {
             diagnostic = diagnostic.with_suggestion(suggestion);
         }
+
         diagnostic
     }
 
@@ -480,6 +487,7 @@ pub struct GrpcData {
     /// Services ordered by fully qualified protobuf name.
     pub services: Vec<GrpcServiceData>,
 }
+
 /// One protobuf service and managed implementation.
 #[derive(Clone, Debug, Serialize)]
 pub struct GrpcServiceData {
@@ -492,8 +500,10 @@ pub struct GrpcServiceData {
     /// Methods ordered by protobuf name.
     pub methods: Vec<GrpcMethodData>,
 }
+
 /// Static protobuf method shape and effective protection.
 pub type GrpcMethodData = furnace_rs_common::__private::GrpcMethodReport;
+
 /// Authored Passport admission policy without runtime configuration values.
 pub type GrpcProtectionData = furnace_rs_common::__private::GrpcProtectionReport;
 
@@ -503,6 +513,7 @@ pub struct SocketData {
     /// Selected endpoint metadata.
     pub endpoints: Vec<SocketEndpointData>,
 }
+
 /// One inspected gateway or owned-socket handler.
 #[derive(Clone, Debug, Serialize)]
 pub struct SocketEndpointData {

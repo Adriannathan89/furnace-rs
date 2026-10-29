@@ -175,6 +175,7 @@ impl GuardDescriptor {
     #[must_use]
     pub const fn with_requirement_subject(mut self, subject: &'static str) -> Self {
         self.requirement_subject = subject;
+
         self
     }
 
@@ -183,6 +184,7 @@ impl GuardDescriptor {
     #[must_use]
     pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
         self.namespace = Some(namespace);
+
         self
     }
 
@@ -282,6 +284,7 @@ impl GuardCatalog {
         for guard in descriptors {
             validate_guard(guard)?;
         }
+
         Ok(())
     }
 }
@@ -290,11 +293,13 @@ impl GuardCatalog {
 #[doc(hidden)]
 pub fn authorizes(guard: &GuardDescriptor, authentication: &ErasedAuthentication) -> bool {
     let principal = authentication.principal();
+
     if !matches_clause(guard.roles(), |value| principal.has_role(value))
         || !matches_clause(guard.permissions(), |value| principal.has_permission(value))
     {
         return false;
     }
+
     guard.predicates().iter().all(|predicate| {
         predicate
             .adapter()
@@ -307,6 +312,7 @@ fn matches_clause(clause: Option<PolicyClause>, matches: impl FnMut(&str) -> boo
     let Some(clause) = clause else {
         return true;
     };
+
     match clause.mode() {
         PolicyMode::Any => clause.values().iter().copied().any(matches),
         PolicyMode::All => clause.values().iter().copied().all(matches),
@@ -316,6 +322,7 @@ fn matches_clause(clause: Option<PolicyClause>, matches: impl FnMut(&str) -> boo
 /// Rejects incomplete or unsafe static policy metadata before route startup.
 fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
     let subject = guard_subject(guard);
+
     if guard.policy_name().is_empty() || guard.handler().is_empty() {
         return Err(metadata_error(
             subject,
@@ -323,6 +330,7 @@ fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
             guard.location(),
         ));
     }
+
     if !valid_strategy_name(guard.strategy()) {
         return Err(metadata_error(
             subject,
@@ -330,6 +338,7 @@ fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
             guard.location(),
         ));
     }
+
     if guard.principal_type_id().is_none() || guard.principal_type_name().is_none_or(str::is_empty)
     {
         return Err(metadata_error(
@@ -338,6 +347,7 @@ fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
             guard.location(),
         ));
     }
+
     #[cfg(feature = "cookies")]
     if let TokenSource::Cookie(name) = guard.source()
         && !valid_cookie_name(name)
@@ -348,6 +358,7 @@ fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
             guard.location(),
         ));
     }
+
     for (label, clause) in [
         ("roles", guard.roles()),
         ("permissions", guard.permissions()),
@@ -366,6 +377,7 @@ fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
             ));
         }
     }
+
     if guard
         .predicates()
         .iter()
@@ -377,6 +389,7 @@ fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
             guard.location(),
         ));
     }
+
     if guard.location().file.is_empty()
         || guard.location().line == 0
         || guard.location().column == 0
@@ -387,6 +400,7 @@ fn validate_guard(guard: &GuardDescriptor) -> Result<()> {
             guard.location(),
         ));
     }
+
     Ok(())
 }
 

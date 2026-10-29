@@ -17,21 +17,27 @@ use crate::http_scope::HttpApplicationScope;
 #[cfg(feature = "http")]
 use crate::route::validate_scoped_descriptors;
 use crate::runtime::load_standard_config as load_standard_config_from;
+
 /// Version of the private application-inspection transport.
 #[doc(hidden)]
 pub const INSPECTION_PROTOCOL_VERSION: u32 = 3;
+
 /// Environment key carrying the requested private transport version.
 #[doc(hidden)]
 pub const INSPECTION_VERSION_ENV: &str = "FURNACE_INTERNAL_INSPECTION_VERSION";
+
 /// Environment key carrying the requested inspection kind.
 #[doc(hidden)]
 pub const INSPECTION_KIND_ENV: &str = "FURNACE_INTERNAL_INSPECTION_KIND";
+
 /// Environment key carrying the per-request inspection token.
 #[doc(hidden)]
 pub const INSPECTION_TOKEN_ENV: &str = "FURNACE_INTERNAL_INSPECTION_TOKEN";
+
 /// Environment key carrying the acknowledgement file path.
 #[doc(hidden)]
 pub const INSPECTION_ACK_ENV: &str = "FURNACE_INTERNAL_INSPECTION_ACK";
+
 /// Environment key carrying the response file path.
 #[doc(hidden)]
 pub const INSPECTION_RESPONSE_ENV: &str = "FURNACE_INTERNAL_INSPECTION_RESPONSE";
@@ -115,6 +121,7 @@ impl InspectionRequest {
             } else {
                 None
             };
+
             if let Some(slot) = slot {
                 duplicate |= slot.replace(value).is_some();
             }
@@ -127,9 +134,11 @@ impl InspectionRequest {
             ack_path.is_some(),
             response_path.is_some(),
         ];
+
         if !present.into_iter().any(|value| value) {
             return Ok(None);
         }
+
         if duplicate || present.into_iter().any(|value| !value) {
             return Err(inspection_error(
                 "the private inspection request is incomplete or duplicated",
@@ -137,11 +146,13 @@ impl InspectionRequest {
         }
 
         let version = unicode_field(version.unwrap(), "protocol version")?;
+
         if version != INSPECTION_PROTOCOL_VERSION.to_string() {
             return Err(inspection_error(
                 "the private inspection protocol version is unsupported",
             ));
         }
+
         let kind = match unicode_field(kind.unwrap(), "inspection kind")?.as_str() {
             "routes" => InspectionKind::Routes,
             "grpc" => InspectionKind::Grpc,
@@ -151,18 +162,22 @@ impl InspectionRequest {
             _ => return Err(inspection_error("the private inspection kind is invalid")),
         };
         let token = unicode_field(token.unwrap(), "inspection token")?;
+
         if token.is_empty() {
             return Err(inspection_error(
                 "the private inspection token must not be empty",
             ));
         }
+
         let ack_path = PathBuf::from(ack_path.unwrap());
         let response_path = PathBuf::from(response_path.unwrap());
+
         if ack_path.as_os_str().is_empty() || response_path.as_os_str().is_empty() {
             return Err(inspection_error(
                 "private inspection output paths must not be empty",
             ));
         }
+
         if ack_path == response_path {
             return Err(inspection_error(
                 "private inspection acknowledgement and response paths must differ",
@@ -242,6 +257,7 @@ fn rename_noreplace(from: &Path, to: &Path) -> std::io::Result<()> {
             "destination already exists",
         ));
     }
+
     std::fs::rename(from, to)
 }
 
@@ -265,6 +281,7 @@ fn publish_atomic(path: &Path, bytes: &[u8]) -> furnace_rs_core::Result<()> {
         let mut temporary_name = file_name.to_os_string();
         temporary_name.push(format!(".furnace_rs-{}-{sequence}.tmp", std::process::id()));
         let temporary_path = parent.join(temporary_name);
+
         match OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -295,9 +312,11 @@ fn publish_atomic(path: &Path, bytes: &[u8]) -> furnace_rs_core::Result<()> {
                 inspection_error("the private inspection output could not be published")
             }
         })?;
+
         Ok(())
     })();
     let _ = std::fs::remove_file(&temporary_path);
+
     publication
 }
 
@@ -324,6 +343,7 @@ fn run_inspection<M: ModuleContract>(
     let envelope = InspectionEnvelope::new(request.token, report);
     let response = serde_json::to_vec(&envelope)
         .map_err(|_| inspection_error("the private inspection response could not be encoded"))?;
+
     publish_atomic(&response_path, &response)
 }
 
@@ -340,6 +360,7 @@ pub(crate) fn try_run_inspection<M: ModuleContract>(
             )));
         }
     };
+
     Some(
         run_inspection::<M>(root, request)
             .map_err(crate::runtime::ApplicationRuntimeError::Bootstrap),
@@ -636,18 +657,22 @@ pub(crate) fn inspect_standard_application<M: ModuleContract>(
         &config,
         &adapters.iter().map(|a| a.name).collect::<Vec<_>>(),
     );
+
     if let Err(error) = &selection {
         diagnostics.extend(diagnostic_reports(error.diagnostics()));
         configuration_ok = false;
     }
+
     let mut builder = Furnace::builder_with_config(config.clone());
     let root_ok = match builder.root::<M>() {
         Ok(_) => true,
         Err(error) => {
             diagnostics.extend(diagnostic_reports(error.diagnostics()));
+
             false
         }
     };
+
     if let Ok(selection) = selection {
         for adapter in adapters {
             if (adapter.name == "http" && selection.http)
@@ -669,6 +694,7 @@ pub(crate) fn inspect_standard_application<M: ModuleContract>(
             Ok(scope) => inspect_scope(&scope, analysis.cauldron_graph(), &mut diagnostics),
             Err(error) => {
                 diagnostics.extend(diagnostic_reports(error.diagnostics()));
+
                 (Vec::new(), false, false)
             }
         };
@@ -677,6 +703,7 @@ pub(crate) fn inspect_standard_application<M: ModuleContract>(
     let (routes, route_ok, guard_ok) = (Vec::new(), true, true);
     let mut grpc_services = Vec::new();
     let mut transport_checks = Vec::new();
+
     for adapter in furnace_rs_core::__private::inventory::iter::<InspectionTransportDescriptor> {
         match (adapter.inspect)(analysis.cauldron_graph(), &config) {
             Ok((services, checks)) => {
@@ -692,7 +719,9 @@ pub(crate) fn inspect_standard_application<M: ModuleContract>(
             }
         }
     }
+
     let mut socket_endpoints = Vec::new();
+
     for adapter in furnace_rs_core::__private::inventory::iter::<SocketInspectionDescriptor> {
         match (adapter.inspect)(analysis.cauldron_graph(), &config) {
             Ok((endpoints, checks)) => {
@@ -708,6 +737,7 @@ pub(crate) fn inspect_standard_application<M: ModuleContract>(
             }
         }
     }
+
     socket_endpoints.sort_by(|a, b| a.path.cmp(&b.path));
     grpc_services.sort_by(|a, b| a.name.cmp(&b.name));
     diagnostics.sort_by(diagnostic_report_order);
@@ -769,6 +799,7 @@ fn inspect_scope(
         Ok(_) => true,
         Err(error) => {
             diagnostics.extend(diagnostic_reports(error.diagnostics()));
+
             false
         }
     };
@@ -778,11 +809,13 @@ fn inspect_scope(
             Ok(_) => true,
             Err(error) => {
                 diagnostics.extend(diagnostic_reports(error.diagnostics()));
+
                 false
             }
         };
     #[cfg(not(feature = "jwt"))]
     let guard_ok = true;
+
     (routes, route_ok, guard_ok)
 }
 
@@ -876,6 +909,7 @@ fn doctor_checks(
     );
     let (auto_status, auto_summary) =
         auto_configuration_group(auto_configurations, &[], "no auto-configurations evaluated");
+
     vec![
         check_for(
             configuration_ok,
@@ -935,6 +969,7 @@ fn guard_check(_guard_ok: bool) -> DoctorCheck {
             "guard or strategy metadata is invalid",
         )
     }
+
     #[cfg(not(feature = "jwt"))]
     {
         DoctorCheck::skipped("guards/strategies", "JWT support is disabled")
@@ -953,9 +988,11 @@ fn auto_configuration_group(
             identifiers.is_empty() || identifiers.contains(&report.identifier.as_str())
         })
         .collect::<Vec<_>>();
+
     if selected.is_empty() {
         return (DoctorStatus::Skipped, empty_summary.into());
     }
+
     let status = if selected.iter().any(|report| report.status == "failed") {
         DoctorStatus::Failed
     } else if selected.iter().any(|report| report.status == "active") {
@@ -969,6 +1006,7 @@ fn auto_configuration_group(
         "{} auto-configuration decision(s) evaluated",
         selected.len()
     );
+
     (status, summary)
 }
 
@@ -1074,6 +1112,7 @@ pub struct GrpcServiceReport {
     /// Methods sorted by authored protobuf name.
     pub methods: Vec<GrpcMethodReport>,
 }
+
 /// One protobuf RPC and its effective protection policy.
 #[doc(hidden)]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -1089,6 +1128,7 @@ pub struct GrpcMethodReport {
     /// Effective policy; public methods have no protection.
     pub protection: Option<GrpcProtectionReport>,
 }
+
 /// Authored Passport policy metadata without credentials or configuration values.
 #[doc(hidden)]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -1104,6 +1144,7 @@ pub struct GrpcProtectionReport {
     /// Authored predicate function identities.
     pub predicates: Vec<String>,
 }
+
 /// A role or permission matching clause.
 #[doc(hidden)]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -1113,6 +1154,7 @@ pub struct GrpcPolicyReport {
     /// Authored requirement names.
     pub values: Vec<String>,
 }
+
 /// Side-effect-free transport inspection callback.
 #[doc(hidden)]
 pub type TransportInspect =
@@ -1120,6 +1162,7 @@ pub type TransportInspect =
         Option<&CauldronGraph>,
         &Config,
     ) -> furnace_rs_core::Result<(Vec<GrpcServiceReport>, Vec<DoctorCheck>)>;
+
 /// Linked transport metadata adapter, without native protocol dependencies.
 #[doc(hidden)]
 pub struct InspectionTransportDescriptor {
@@ -1128,6 +1171,7 @@ pub struct InspectionTransportDescriptor {
     /// Pure metadata and configuration analysis.
     pub inspect: TransportInspect,
 }
+
 furnace_rs_core::__private::inventory::collect!(InspectionTransportDescriptor);
 
 /// One side-effect-free socket handler declaration.
@@ -1139,6 +1183,7 @@ pub struct SocketHandlerReport {
     /// Wire event or lifecycle name.
     pub name: String,
 }
+
 /// One selected WebSocket endpoint.
 #[doc(hidden)]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -1158,6 +1203,7 @@ pub struct SocketEndpointReport {
     /// Declared operations.
     pub handlers: Vec<SocketHandlerReport>,
 }
+
 /// Socket inspection callback isolated from native protocol crates.
 #[doc(hidden)]
 pub type SocketInspect =
@@ -1165,12 +1211,14 @@ pub type SocketInspect =
         Option<&CauldronGraph>,
         &Config,
     ) -> furnace_rs_core::Result<(Vec<SocketEndpointReport>, Vec<DoctorCheck>)>;
+
 /// Link-time socket metadata adapter.
 #[doc(hidden)]
 pub struct SocketInspectionDescriptor {
     /// Static inspection operation.
     pub inspect: SocketInspect,
 }
+
 furnace_rs_core::__private::inventory::collect!(SocketInspectionDescriptor);
 
 #[cfg(all(test, feature = "http"))]
@@ -1186,19 +1234,25 @@ mod tests {
 
     fn marker_provider() -> Marker {
         CONSTRUCTIONS.fetch_add(1, Ordering::SeqCst);
+
         Marker
     }
+
     #[doc = "Explicit constructor for the fixture's provider output."]
     struct MarkerProviderInjector;
+
     impl furnace_rs_core::Injector<Marker> for MarkerProviderInjector {
         type Dependencies = ();
+
         async fn inject((): Self::Dependencies) -> furnace_rs_core::Result<Marker> {
             Ok(marker_provider())
         }
+
         fn descriptor() -> &'static furnace_rs_core::ProviderDescriptor {
             &__FURNACE_INJECTOR_DESCRIPTOR_MARKER_PROVIDER
         }
     }
+
     const __FURNACE_INJECTOR_DESCRIPTOR_MARKER_PROVIDER: furnace_rs_core::ProviderDescriptor =
         furnace_rs_core::__private::InjectorMetadata::<Marker, MarkerProviderInjector>::DESCRIPTOR
             .with_authored_type_name("Marker")
@@ -1209,6 +1263,7 @@ mod tests {
                 line!(),
                 column!(),
             ));
+
     furnace_rs_core::__private::inventory::submit! { __FURNACE_INJECTOR_DESCRIPTOR_MARKER_PROVIDER }
 
     #[furnace_rs_core::cauldron(providers = [Marker => MarkerProviderInjector], controllers = [InspectionController])]
@@ -1234,40 +1289,51 @@ mod tests {
     #[cfg(feature = "jwt")]
     mod endpoint_seal_reports {
         use super::*;
+
         #[derive(serde::Deserialize)]
         struct Claims;
+
         impl crate::PassportPrincipal for Claims {
             fn has_role(&self, _: &str) -> bool {
                 false
             }
+
             fn has_permission(&self, _: &str) -> bool {
                 false
             }
         }
+
         #[crate::guard(strategy = "jwt", principal = crate::ClaimsPrincipal<Claims>)]
         struct Policy;
+
         #[crate::controller]
         struct Mixed;
+
         impl crate::Sealable for Mixed {
             fn seals() -> crate::SealRegistration<Self> {
                 Self::seal::<Policy>()
             }
         }
+
         #[crate::controller(route = "/mixed")]
         impl Mixed {
             #[crate::get]
             #[crate::seal(skip)]
             fn public(&self) {}
+
             #[crate::post]
             fn protected(&self) {}
         }
+
         #[crate::controller]
         struct Public;
+
         #[crate::controller(route = "/public-default")]
         impl Public {
             #[crate::get]
             fn index(&self) {}
         }
+
         #[furnace_rs_core::cauldron(controllers = [Mixed, Public])]
         struct Root;
 
@@ -1281,6 +1347,7 @@ mod tests {
             .unwrap();
             let report = inspect_standard_application::<Root>(root.path(), InspectionKind::Routes);
             assert!(!report.failed, "{:?}", report.diagnostics);
+
             for (method, path, protected) in [
                 ("GET", "/mixed", false),
                 ("POST", "/mixed", true),

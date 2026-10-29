@@ -44,6 +44,7 @@ pub(crate) fn analyze_parts_with_locations(
     let mut diagnostics = Vec::new();
     let mut unique_descriptors: Vec<&'static ProviderDescriptor> = Vec::new();
     let mut duplicate_identities: Vec<&'static ProviderDescriptor> = Vec::new();
+
     for descriptor in descriptors {
         if let Some(existing) = unique_descriptors
             .iter()
@@ -63,12 +64,14 @@ pub(crate) fn analyze_parts_with_locations(
     }
 
     let mut ambiguous_types = Vec::new();
+
     for descriptor in &unique_descriptors {
         let same_type: Vec<_> = unique_descriptors
             .iter()
             .copied()
             .filter(|candidate| candidate.type_id() == descriptor.type_id())
             .collect();
+
         if same_type.len() > 1
             && !ambiguous_types
                 .iter()
@@ -80,10 +83,12 @@ pub(crate) fn analyze_parts_with_locations(
     }
 
     let mut providers = Vec::new();
+
     for satisfied_provider in &satisfied {
         if ambiguous_types.contains(&satisfied_provider.type_id) {
             continue;
         }
+
         if providers
             .iter()
             .any(|provider: &ProviderNode| provider.type_id == satisfied_provider.type_id)
@@ -118,6 +123,7 @@ pub(crate) fn analyze_parts_with_locations(
 
     for &descriptor in &unique_descriptors {
         let type_id = descriptor.type_id();
+
         if ambiguous_types.contains(&type_id)
             || providers.iter().any(|provider| provider.type_id == type_id)
         {
@@ -139,9 +145,11 @@ pub(crate) fn analyze_parts_with_locations(
             declared_dependencies: descriptor.dependencies(),
         });
     }
+
     providers.sort_by(|left, right| left.type_name.cmp(right.type_name));
 
     let mut dependencies = Vec::new();
+
     for provider in &providers {
         if provider.state != ProviderState::Planned {
             continue;
@@ -149,9 +157,11 @@ pub(crate) fn analyze_parts_with_locations(
 
         for dependency in provider.declared_dependencies {
             let dependency_type_id = dependency.type_id();
+
             if ambiguous_types.contains(&dependency_type_id) {
                 continue;
             }
+
             if providers
                 .iter()
                 .any(|candidate| candidate.type_id == dependency_type_id)
@@ -172,6 +182,7 @@ pub(crate) fn analyze_parts_with_locations(
         providers,
         dependencies,
     };
+
     if diagnostics.is_empty() {
         for cycle in cycle::detect(&graph) {
             diagnostics.push(PendingDiagnostic::cycle(cycle));
@@ -306,6 +317,7 @@ impl PendingDiagnostic {
     fn cycle(cycle: cycle::Cycle) -> Self {
         let subject = cycle.names[0];
         let message = format!("provider dependency cycle: {}", cycle.names.join(" -> "));
+
         Self {
             diagnostic: Diagnostic::new(FURNACE005, "dependency cycle", message)
                 .with_subject(subject)
@@ -347,26 +359,38 @@ mod tests {
 
     #[derive(Default)]
     struct Database;
+
     #[derive(Default)]
     struct FirstMissing;
+
     #[derive(Default)]
     struct SecondMissing;
+
     struct AbsentAlpha;
+
     struct AbsentZeta;
+
     #[derive(Default)]
     struct SelfCycle;
+
     #[derive(Default)]
     struct A;
+
     #[derive(Default)]
     struct B;
+
     #[derive(Default)]
     struct C;
+
     #[derive(Default)]
     struct Alpha;
+
     #[derive(Default)]
     struct PlanDatabase;
+
     #[derive(Default)]
     struct Service;
+
     #[derive(Default)]
     struct Zeta;
 
@@ -433,20 +457,26 @@ mod tests {
         "fixture::AbsentZeta",
         absent_zeta_type_id,
     )];
+
     static SECOND_MISSING_DEPENDENCIES: [DependencyDescriptor; 1] = [DependencyDescriptor::new(
         "fixture::AbsentAlpha",
         absent_alpha_type_id,
     )];
+
     static SELF_DEPENDENCIES: [DependencyDescriptor; 1] = [DependencyDescriptor::new(
         "cycle::SelfCycle",
         self_cycle_type_id,
     )];
+
     static A_DEPENDENCIES: [DependencyDescriptor; 1] =
         [DependencyDescriptor::new("cycle::B", b_type_id)];
+
     static B_DEPENDENCIES: [DependencyDescriptor; 1] =
         [DependencyDescriptor::new("cycle::C", c_type_id)];
+
     static C_DEPENDENCIES: [DependencyDescriptor; 1] =
         [DependencyDescriptor::new("cycle::A", a_type_id)];
+
     static SERVICE_DEPENDENCIES: [DependencyDescriptor; 1] = [DependencyDescriptor::new(
         "plan::Database",
         plan_database_type_id,
@@ -461,6 +491,7 @@ mod tests {
         SourceLocation::new("database.rs", 1, 1),
         constructor::<Database>,
     );
+
     static ALTERNATE_DATABASE_DESCRIPTOR: ProviderDescriptor = ProviderDescriptor::new(
         ProviderKind::Provider,
         "fixture::AlternateDatabase",
@@ -470,6 +501,7 @@ mod tests {
         SourceLocation::new("alternate.rs", 1, 1),
         constructor::<Database>,
     );
+
     static FIRST_MISSING_DESCRIPTOR: ProviderDescriptor = ProviderDescriptor::new(
         ProviderKind::Service,
         "fixture::FirstMissing",
@@ -479,6 +511,7 @@ mod tests {
         SourceLocation::new("first.rs", 1, 1),
         constructor::<FirstMissing>,
     );
+
     static SECOND_MISSING_DESCRIPTOR: ProviderDescriptor = ProviderDescriptor::new(
         ProviderKind::Service,
         "fixture::SecondMissing",
@@ -511,6 +544,7 @@ mod tests {
         &SELF_DEPENDENCIES,
         "cycle_SelfCycle.rs"
     );
+
     test_descriptor!(
         A_DESCRIPTOR,
         A,
@@ -519,6 +553,7 @@ mod tests {
         &A_DEPENDENCIES,
         "cycle_A.rs"
     );
+
     test_descriptor!(
         B_DESCRIPTOR,
         B,
@@ -527,6 +562,7 @@ mod tests {
         &B_DEPENDENCIES,
         "cycle_B.rs"
     );
+
     test_descriptor!(
         C_DESCRIPTOR,
         C,
@@ -535,6 +571,7 @@ mod tests {
         &C_DEPENDENCIES,
         "cycle_C.rs"
     );
+
     test_descriptor!(
         ALPHA_DESCRIPTOR,
         Alpha,
@@ -543,6 +580,7 @@ mod tests {
         &[],
         "plan_Alpha.rs"
     );
+
     test_descriptor!(
         PLAN_DATABASE_DESCRIPTOR,
         PlanDatabase,
@@ -551,6 +589,7 @@ mod tests {
         &[],
         "plan_Database.rs"
     );
+
     test_descriptor!(
         SERVICE_DESCRIPTOR,
         Service,
@@ -559,6 +598,7 @@ mod tests {
         &SERVICE_DEPENDENCIES,
         "plan_Service.rs"
     );
+
     test_descriptor!(
         ZETA_DESCRIPTOR,
         Zeta,

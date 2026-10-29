@@ -196,6 +196,7 @@ impl IntoResponse for CookieRejection {
     /// Maps malformed request cookies to 400 and invalid response cookies to 500.
     fn into_response(self) -> Response {
         let Self(error) = self;
+
         match error.kind() {
             CookieErrorKind::MalformedRequest => {
                 BadRequest::new("cookie request is malformed").into_response()
@@ -251,6 +252,7 @@ impl CookieJar {
 
             for segment in header.split(';') {
                 let segment = segment.trim();
+
                 if segment.is_empty() || !has_valid_percent_escapes(segment) {
                     return Err(CookieError::new(CookieErrorKind::MalformedRequest));
                 }
@@ -258,6 +260,7 @@ impl CookieJar {
                 let parsed = Cookie::parse_encoded(segment.to_owned()).map_err(|source| {
                     CookieError::with_source(CookieErrorKind::MalformedRequest, source)
                 })?;
+
                 if !is_valid_cookie_name(parsed.name()) {
                     return Err(CookieError::new(CookieErrorKind::MalformedRequest));
                 }
@@ -299,6 +302,7 @@ impl CookieJar {
         let cookie = cookie.into();
         self.pending.push(PendingCookie::Add(cookie.clone()));
         self.inner = self.inner.add(cookie);
+
         self
     }
 
@@ -308,6 +312,7 @@ impl CookieJar {
         let cookie = cookie.into();
         self.pending.push(PendingCookie::Remove(cookie.clone()));
         self.inner = self.inner.remove(cookie);
+
         self
     }
 
@@ -315,9 +320,11 @@ impl CookieJar {
     fn validate_pending(&self) -> CookieResult<()> {
         for pending in &self.pending {
             let cookie = pending.cookie();
+
             if !is_valid_cookie_name(cookie.name()) {
                 return Err(CookieError::new(CookieErrorKind::InvalidResponse));
             }
+
             if [cookie.path(), cookie.domain()]
                 .into_iter()
                 .flatten()
@@ -329,6 +336,7 @@ impl CookieJar {
             {
                 return Err(CookieError::new(CookieErrorKind::InvalidResponse));
             }
+
             if cookie.same_site() == Some(SameSite::None) && cookie.secure() == Some(false) {
                 return Err(CookieError::new(CookieErrorKind::InvalidResponse));
             }
@@ -337,6 +345,7 @@ impl CookieJar {
                 CookieError::with_source(CookieErrorKind::InvalidResponse, source)
             })?;
         }
+
         Ok(())
     }
 }
@@ -397,6 +406,7 @@ impl IntoResponse for CookieJar {
 fn has_valid_percent_escapes(value: &str) -> bool {
     let bytes = value.as_bytes();
     let mut index = 0;
+
     while index < bytes.len() {
         if bytes[index] == b'%' {
             if index + 2 >= bytes.len()
@@ -405,11 +415,13 @@ fn has_valid_percent_escapes(value: &str) -> bool {
             {
                 return false;
             }
+
             index += 3;
         } else {
             index += 1;
         }
     }
+
     true
 }
 

@@ -9,6 +9,7 @@ use syn::{Error, FnArg, ImplItem, ItemImpl, LitStr, Meta, Token, spanned::Spanne
 struct Arguments {
     route: LitStr,
 }
+
 impl Parse for Arguments {
     /// Parses an optional controller route prefix.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
@@ -17,18 +18,24 @@ impl Parse for Arguments {
                 route: LitStr::new("", input.span()),
             });
         }
+
         let key: syn::Ident = input.parse()?;
+
         if key != "route" {
             return Err(Error::new(key.span(), "expected `route = \"/...\"`"));
         }
+
         input.parse::<Token![=]>()?;
         let route = input.parse()?;
+
         if input.peek(Token![,]) {
             input.parse::<Token![,]>()?;
         }
+
         if !input.is_empty() {
             return Err(input.error("controller implementations accept only one route prefix"));
         }
+
         Ok(Self { route })
     }
 }
@@ -36,6 +43,7 @@ impl Parse for Arguments {
 /// Validates an inherent endpoint impl and emits its static route catalog and registrar.
 pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<TokenStream> {
     let arguments: Arguments = syn::parse2(arguments)?;
+
     if item.trait_.is_some()
         || !item.generics.params.is_empty()
         || item.generics.where_clause.is_some()
@@ -46,6 +54,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
             "endpoint controllers require a non-generic inherent implementation",
         ));
     }
+
     let common = crate::path::common_path()?;
     let prefix = endpoint::canonical_path(&arguments.route, true)?;
     let controller = &item.self_ty;
@@ -55,6 +64,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
             "controller implementations require a concrete type path",
         ));
     };
+
     if controller_path.qself.is_some()
         || controller_path
             .path
@@ -67,6 +77,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
             "controller implementations require a non-generic concrete type",
         ));
     }
+
     let ident = &controller_path
         .path
         .segments
@@ -76,16 +87,19 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
     let registrar = format_ident!("__furnace_register_endpoints_{ident}");
     let mut descriptors = Vec::new();
     let mut registrations = Vec::new();
+
     for member in &mut item.items {
         let ImplItem::Fn(method) = member else {
             continue;
         };
+
         if method.sig.ident.to_string().trim_start_matches("r#") == "seal" {
             return Err(Error::new(
                 method.sig.ident.span(),
                 "`seal` is reserved for static controller protection",
             ));
         }
+
         let seal_attributes = method
             .attrs
             .iter()
@@ -96,20 +110,24 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                     .is_some_and(|segment| segment.ident == "seal")
             })
             .collect::<Vec<_>>();
+
         if seal_attributes.len() > 1 {
             return Err(Error::new(
                 seal_attributes[1].span(),
                 "an endpoint can declare `#[seal(skip)]` only once",
             ));
         }
+
         let seal_skipped = if let Some(attr) = seal_attributes.first() {
             let value = attr.parse_args::<syn::Ident>()?;
+
             if value != "skip" {
                 return Err(Error::new(
                     value.span(),
                     "endpoint seals accept only `#[seal(skip)]`",
                 ));
             }
+
             true
         } else {
             false
@@ -126,6 +144,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
             .enumerate()
             .filter_map(|(i, attr)| endpoint::route_verb(attr).map(|verb| (i, verb)))
             .collect::<Vec<_>>();
+
         if let Some(attr) = method
             .attrs
             .iter()
@@ -136,6 +155,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                 "endpoint policies must be declared through the controller's Sealable implementation",
             ));
         }
+
         for attr in &method.attrs {
             if attr.path().is_ident("cfg_attr") && endpoint::cfg_attr_contains_route_verb(attr)? {
                 return Err(Error::new(
@@ -144,6 +164,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                 ));
             }
         }
+
         if verbs.is_empty() {
             if seal_skipped {
                 return Err(Error::new(
@@ -151,15 +172,19 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                     "`#[seal(skip)]` requires an HTTP endpoint",
                 ));
             }
+
             continue;
         }
+
         if verbs.len() != 1 {
             return Err(Error::new(
                 method.sig.ident.span(),
                 "each endpoint requires exactly one HTTP verb",
             ));
         }
+
         let sig = &method.sig;
+
         if sig.constness.is_some()
             || sig.unsafety.is_some()
             || sig.abi.is_some()
@@ -172,7 +197,9 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                 "endpoints cannot be const, unsafe, extern, variadic, or generic",
             ));
         }
+
         let receiver = matches!(sig.inputs.first(), Some(FnArg::Receiver(_)));
+
         for argument in &sig.inputs {
             if let FnArg::Receiver(value) = argument
                 && (value.reference.is_none()
@@ -189,6 +216,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                 ));
             }
         }
+
         endpoint::validate_body_extractor_order(&sig.inputs, &common)?;
         let (index, verb) = verbs[0];
         let attr = method.attrs.remove(index);
@@ -231,12 +259,14 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                 _ => None,
             })
             .collect::<Vec<_>>();
+
         for ty in &mut types {
             SelfNormalizer {
                 controller: &controller_path.path,
             }
             .visit_type_mut(ty);
         }
+
         let args = endpoint::argument_names(&types);
         let self_arg = receiver.then(|| quote!(&__furnace_controller,));
         let call = quote!(<#controller>::#name(#self_arg #(#args,)*));
@@ -257,17 +287,20 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
             .tokens(&common),
         );
     }
+
     if descriptors.is_empty() {
         return Err(Error::new(
             item.impl_token.span(),
             "annotated controller implementations require at least one endpoint",
         ));
     }
+
     let conditional: Vec<_> = item
         .attrs
         .iter()
         .filter(|attr| endpoint::is_conditional_attribute(attr))
         .collect();
+
     Ok(quote! {
         #item
         #(#conditional)*
@@ -299,6 +332,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
 struct SelfNormalizer<'a> {
     controller: &'a syn::Path,
 }
+
 impl SelfNormalizer<'_> {
     /// Replaces leading `Self` path segments with the concrete controller path.
     fn normalize(&self, path: &mut syn::Path) {
@@ -313,19 +347,23 @@ impl SelfNormalizer<'_> {
         }
     }
 }
+
 impl VisitMut for SelfNormalizer<'_> {
     /// Normalizes unqualified type paths before recursively visiting their children.
     fn visit_type_path_mut(&mut self, value: &mut syn::TypePath) {
         if value.qself.is_none() {
             self.normalize(&mut value.path);
         }
+
         visit_mut::visit_type_path_mut(self, value);
     }
+
     /// Normalizes unqualified expression paths before recursively visiting their children.
     fn visit_expr_path_mut(&mut self, value: &mut syn::ExprPath) {
         if value.qself.is_none() {
             self.normalize(&mut value.path);
         }
+
         visit_mut::visit_expr_path_mut(self, value);
     }
 }

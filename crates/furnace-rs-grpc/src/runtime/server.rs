@@ -4,8 +4,10 @@ use std::future::Future;
 use tokio::{net::TcpListener, sync::watch};
 use tonic::service::Routes;
 use tower::ServiceExt;
+
 #[derive(Clone)]
 struct Executor(RuntimeTasks);
+
 impl<F> hyper::rt::Executor<F> for Executor
 where
     F: Future + Send + 'static,
@@ -18,10 +20,13 @@ where
         });
     }
 }
+
 #[cfg(feature = "tls")]
 pub(super) type Tls = Option<tokio_rustls::TlsAcceptor>;
+
 #[cfg(not(feature = "tls"))]
 pub(super) type Tls = ();
+
 /// Loads and validates server TLS identity before accepting connections.
 pub(super) async fn prepare_tls(config: &crate::GrpcServerConfig) -> furnace_rs_core::Result<Tls> {
     #[cfg(feature = "tls")]
@@ -52,16 +57,20 @@ pub(super) async fn prepare_tls(config: &crate::GrpcServerConfig) -> furnace_rs_
         .with_single_cert(certificates, key)
         .map_err(|_| tls_error())?;
         tls.alpn_protocols = vec![b"h2".to_vec()];
+
         Ok(Some(tokio_rustls::TlsAcceptor::from(std::sync::Arc::new(
             tls,
         ))))
     }
+
     #[cfg(not(feature = "tls"))]
     {
         let _ = config;
+
         Ok(())
     }
 }
+
 #[cfg(feature = "tls")]
 /// Creates a fixed diagnostic for invalid server TLS material.
 fn tls_error() -> furnace_rs_core::Error {
@@ -71,6 +80,7 @@ fn tls_error() -> furnace_rs_core::Error {
         "configured certificate material could not establish verified TLS",
     ))
 }
+
 /// Accepts connections, updates health, and drains active calls on shutdown.
 pub(super) async fn serve(
     listener: TcpListener,
@@ -84,6 +94,7 @@ pub(super) async fn serve(
         if *shutdown.borrow_and_update() {
             break;
         }
+
         tokio::select! {
             biased;
             _ = shutdown.changed() => break,
@@ -114,8 +125,10 @@ pub(super) async fn serve(
             }
         }
     }
+
     Ok(())
 }
+
 /// Serves one accepted connection with its peer information and routes.
 async fn connection<IO>(
     stream: IO,
@@ -136,6 +149,7 @@ async fn connection<IO>(
                 .and_then(|value| value.to_str().ok())
                 .and_then(crate::grpc::parse_timeout);
             let dispatch = routes.clone().oneshot(request);
+
             async move {
                 match timeout {
                     Some(timeout) => match tokio::time::timeout(timeout, dispatch).await {
@@ -152,11 +166,14 @@ async fn connection<IO>(
     builder.timer(hyper_util::rt::TokioTimer::new());
     let connection = builder.serve_connection(hyper_util::rt::TokioIo::new(stream), service);
     tokio::pin!(connection);
+
     if *shutdown.borrow_and_update() {
         connection.as_mut().graceful_shutdown();
         let _ = connection.await;
+
         return;
     }
+
     tokio::select! {
         _ = &mut connection => {},
         _ = shutdown.changed() => { connection.as_mut().graceful_shutdown(); let _ = connection.await; }

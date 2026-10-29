@@ -17,6 +17,7 @@ use super::{FURNACE121, JwtService, PassportConfig};
 pub(super) const JWT_AUTO_CONFIGURATION_ID: &str = "furnace.common.passport.jwt";
 
 const JWT_SERVICE_TYPE_NAME: &str = "furnace_rs_common::jwt::service::JwtService";
+
 const PASSPORT_CONFIGURATION_KEYS: [&str; 7] = [
     "passport.secret",
     "passport.algorithms",
@@ -70,6 +71,7 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
     }
 
     let configuration = configuration_evidence(context);
+
     match PassportConfig::from_config(context.config()) {
         Ok(_) => AutoConfigurationEvaluation::active(
             AutoConfigurationReasonCode::new("conditions_matched"),
@@ -84,6 +86,7 @@ fn evaluate(context: &AutoConfigurationContext<'_>) -> AutoConfigurationEvaluati
             } else {
                 "invalid_configuration"
             };
+
             AutoConfigurationEvaluation::failed(
                 AutoConfigurationReasonCode::new(reason),
                 "Passport JWT auto-configuration could not read its configuration",
@@ -115,11 +118,13 @@ fn guard_requirements(
             .iter()
             .cloned(),
     );
+
     for integration in furnace_rs_core::__private::inventory::iter::<
         crate::passport::__private::PassportScopeDescriptor,
     > {
         guards.extend((integration.select)(context)?);
     }
+
     let preflight = if context.focus_type_id().is_some() {
         crate::PassportStrategyCatalog::preflight_for_test(&guards, |id| {
             context.has_provider_type_id(id)
@@ -127,15 +132,18 @@ fn guard_requirements(
     } else {
         crate::PassportStrategyCatalog::preflight_scoped(context.cauldron_graph(), &guards)?
     };
+
     Ok(preflight
         .bindings()
         .iter()
         .map(|binding| {
             let guard = binding.guard();
+
             AutoConfigurationRequirement::new(guard.requirement_subject(), Some(guard.location()))
         })
         .collect())
 }
+
 #[cfg(not(any(feature = "http", feature = "passport")))]
 /// Returns no guard requirements when Passport integration features are disabled.
 fn guard_requirements(
@@ -215,6 +223,7 @@ fn configuration_error(missing: bool, requirements: &[AutoConfigurationRequireme
 fn apply(context: &AutoConfigurationApplyContext<'_>) -> Result<AutoConfigurationContribution> {
     let config = PassportConfig::from_config(context.config()).map_err(provisioning_error)?;
     let service = JwtService::from_passport_config(config).map_err(provisioning_error)?;
+
     Ok(AutoConfigurationContribution::new(service))
 }
 
@@ -243,6 +252,7 @@ fn configuration_evidence(
                 .config()
                 .source_of(key)
                 .or_else(|| context.config().source_of_string_array(key));
+
             source.map(|source| AutoConfigurationConfigEvidence::new(key, Some(source)))
         })
         .collect()

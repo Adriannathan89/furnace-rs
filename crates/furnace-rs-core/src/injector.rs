@@ -70,6 +70,7 @@ pub trait InjectionDependencies: sealed::Dependencies + Sized + Send + Sync + 's
 
 mod sealed {
     use crate::DependencyDescriptor;
+
     pub trait Dependencies {
         const DESCRIPTORS: &'static [DependencyDescriptor];
     }
@@ -78,6 +79,7 @@ mod sealed {
 impl sealed::Dependencies for () {
     const DESCRIPTORS: &'static [DependencyDescriptor] = &[];
 }
+
 impl InjectionDependencies for () {
     /// Resolves the empty dependency tuple without consulting the application context.
     fn resolve(_: &ConstructionContext<'_>) -> Result<Self> {
@@ -102,21 +104,37 @@ macro_rules! dependency_tuple {
         }
     };
 }
+
 dependency_tuple!(A);
+
 dependency_tuple!(A, B);
+
 dependency_tuple!(A, B, C);
+
 dependency_tuple!(A, B, C, D);
+
 dependency_tuple!(A, B, C, D, E);
+
 dependency_tuple!(A, B, C, D, E, F);
+
 dependency_tuple!(A, B, C, D, E, F, G);
+
 dependency_tuple!(A, B, C, D, E, F, G, H);
+
 dependency_tuple!(A, B, C, D, E, F, G, H, J);
+
 dependency_tuple!(A, B, C, D, E, F, G, H, J, K);
+
 dependency_tuple!(A, B, C, D, E, F, G, H, J, K, L);
+
 dependency_tuple!(A, B, C, D, E, F, G, H, J, K, L, M);
+
 dependency_tuple!(A, B, C, D, E, F, G, H, J, K, L, M, N);
+
 dependency_tuple!(A, B, C, D, E, F, G, H, J, K, L, M, N, O);
+
 dependency_tuple!(A, B, C, D, E, F, G, H, J, K, L, M, N, O, P);
+
 dependency_tuple!(A, B, C, D, E, F, G, H, J, K, L, M, N, O, P, Q);
 
 /// Constructs an injector output and erases the value for ordinary provider storage.
@@ -127,6 +145,7 @@ where
 {
     Box::pin(async move {
         let value = I::inject(I::Dependencies::resolve(context)?).await?;
+
         Ok(Arc::new(value) as crate::ErasedProvider)
     })
 }
@@ -139,6 +158,7 @@ where
 {
     Box::pin(async move {
         let value = I::inject(I::Dependencies::resolve(context)?).await?;
+
         Ok(ProviderContribution::from_resource(I::lifecycle(value)))
     })
 }
@@ -146,8 +166,10 @@ where
 /// Static descriptor bridge for deliberately discoverable native integrations.
 #[doc(hidden)]
 pub struct InjectorMetadata<T, I>(PhantomData<fn() -> (T, I)>);
+
 pub(crate) const DEFAULT_INJECTOR_LOCATION: SourceLocation =
     SourceLocation::new(file!(), line!(), column!());
+
 impl<T: Send + Sync + 'static, I: Injector<T>> InjectorMetadata<T, I> {
     /// Constructor metadata suitable for an inventory submission.
     pub const DESCRIPTOR: ProviderDescriptor = ProviderDescriptor::new(
