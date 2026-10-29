@@ -33,7 +33,7 @@ impl Server {
         let app = b.build().await.unwrap();
         let router = furnace_rs_socket::build_socket_routes(&app).unwrap();
         let (stop, stopped) = tokio::sync::oneshot::channel();
-        let task = tokio::spawn(serve_transports(
+        let mut task = tokio::spawn(serve_transports(
             app,
             RuntimeRoutes::new().with_socket(router),
             RuntimeBindings::new()
@@ -42,16 +42,19 @@ impl Server {
                 let _ = stopped.await;
             },
         ));
-        tokio::time::timeout(Duration::from_secs(5), async {
-            loop {
-                if tokio::net::TcpStream::connect(address).await.is_ok() {
-                    break;
-                }
-                tokio::task::yield_now().await;
+        tokio::select! {
+            result = &mut task => {
+                panic!("socket server exited before listener readiness: {result:?}");
             }
-        })
-        .await
-        .unwrap();
+            ready = tokio::time::timeout(Duration::from_secs(5), async {
+                loop {
+                    if tokio::net::TcpStream::connect(address).await.is_ok() {
+                        break;
+                    }
+                    tokio::task::yield_now().await;
+                }
+            }) => ready.expect("socket listener did not become ready within five seconds"),
+        }
         Self {
             address,
             stop: Some(stop),

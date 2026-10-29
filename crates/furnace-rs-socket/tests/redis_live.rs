@@ -39,8 +39,6 @@ async fn distributed_delete_requires_empty_membership_and_recreation_recovers() 
     let extra = [
         ("socket.redis.url", redis.url.as_str()),
         ("socket.namespace", "delete-test"),
-        ("socket.lease_refresh_ms", "30"),
-        ("socket.lease_expiry_ms", "200"),
     ];
     let a = support::Server::configured::<App>(&extra).await;
     let b = support::Server::configured::<App>(&extra).await;
@@ -71,8 +69,6 @@ async fn redis_outage_keeps_direct_sends_and_rejects_room_sends() {
     let extra = [
         ("socket.redis.url", url.as_str()),
         ("socket.namespace", "outage-test"),
-        ("socket.lease_refresh_ms", "30"),
-        ("socket.lease_expiry_ms", "200"),
     ];
     let s = support::Server::configured::<App>(&extra).await;
     let mut c = s.connect("/chat").await;
@@ -129,4 +125,18 @@ async fn expired_instance_membership_does_not_prevent_room_deletion_forever() {
     drop(cb);
     ca.close(None).await.unwrap();
     a.stop().await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "socket server exited before listener readiness")]
+async fn startup_reports_backend_failure_without_waiting_for_readiness_timeout() {
+    let redis = redis_fixture::Redis::start().await;
+    let url = redis.url.clone();
+    drop(redis);
+
+    support::Server::configured::<App>(&[
+        ("socket.redis.url", url.as_str()),
+        ("socket.namespace", "startup-failure-test"),
+    ])
+    .await;
 }
