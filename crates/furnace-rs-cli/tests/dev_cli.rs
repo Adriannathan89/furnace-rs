@@ -71,7 +71,12 @@ fn real_dev_loop() {
         .expect("fixture configuration should write");
 
     let mut dev = fixture.start_dev().expect("furnace dev should start");
-    let initial_start = wait_for_start(&fixture.start_log, 1, "initial application start");
+    let initial_start = wait_for_start_with_timeout(
+        &fixture.start_log,
+        1,
+        "initial application start",
+        INITIAL_BUILD_TIMEOUT,
+    );
     dev.track_application(initial_start.pid);
     wait_for_health(address, "initial application health");
     assert_eq!(log_lines(&fixture.build_log).len(), 1);
@@ -134,6 +139,9 @@ fn real_dev_loop() {
     dev.disarm();
 }
 
+// Each fixture has a fresh target directory, so the first start includes a cold
+// dependency build. Later restarts should still meet the shorter phase deadline.
+const INITIAL_BUILD_TIMEOUT: Duration = Duration::from_secs(300);
 const PHASE_TIMEOUT: Duration = Duration::from_secs(60);
 const POLL_INTERVAL: Duration = Duration::from_millis(25);
 
@@ -255,6 +263,14 @@ impl DevProcess {
 
 impl Drop for DevProcess {
     fn drop(&mut self) {
+        if thread::panicking() {
+            eprintln!(
+                "furnace dev output before failure:\n{}",
+                fs::read_to_string(&self.output).unwrap_or_else(|error| {
+                    format!("could not read {}: {error}", self.output.display())
+                })
+            );
+        }
         self.force_cleanup();
     }
 }
@@ -266,7 +282,16 @@ struct StartRecord {
 }
 
 fn wait_for_start(path: &Path, count: usize, phase: &str) -> StartRecord {
-    wait_until(phase, || {
+    wait_for_start_with_timeout(path, count, phase, PHASE_TIMEOUT)
+}
+
+fn wait_for_start_with_timeout(
+    path: &Path,
+    count: usize,
+    phase: &str,
+    timeout: Duration,
+) -> StartRecord {
+    wait_until_with_timeout(phase, timeout, || {
         let lines = log_lines(path);
         (lines.len() >= count).then(|| parse_start(&lines[count - 1]))
     })
@@ -300,8 +325,16 @@ fn wait_for_output(path: &Path, needle: &str, phase: &str) {
     });
 }
 
-fn wait_until<T>(phase: &str, mut check: impl FnMut() -> Option<T>) -> T {
-    let deadline = Instant::now() + PHASE_TIMEOUT;
+fn wait_until<T>(phase: &str, check: impl FnMut() -> Option<T>) -> T {
+    wait_until_with_timeout(phase, PHASE_TIMEOUT, check)
+}
+
+fn wait_until_with_timeout<T>(
+    phase: &str,
+    timeout: Duration,
+    mut check: impl FnMut() -> Option<T>,
+) -> T {
+    let deadline = Instant::now() + timeout;
     loop {
         if let Some(value) = check() {
             return value;
@@ -309,7 +342,7 @@ fn wait_until<T>(phase: &str, mut check: impl FnMut() -> Option<T>) -> T {
         assert!(
             Instant::now() < deadline,
             "timed out after {} seconds waiting for {phase}",
-            PHASE_TIMEOUT.as_secs()
+            timeout.as_secs()
         );
         thread::sleep(POLL_INTERVAL);
     }
