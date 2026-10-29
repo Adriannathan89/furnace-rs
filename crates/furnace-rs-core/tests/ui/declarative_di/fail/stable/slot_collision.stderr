@@ -12,6 +12,7 @@ help: `()` implements trait `furnace_rs_core::__private::SameWhen<MATCH, A, B>`
    |
    | impl<A, B> SameWhen<false, A, B> for () {}
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::SameWhen<false, A, B>`
+   |
    | impl<A> SameWhen<true, A, A> for () {}
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `furnace_rs_core::__private::SameWhen<true, A, A>`
 note: required by a bound in `furnace_rs_core::__private::assert_identity`

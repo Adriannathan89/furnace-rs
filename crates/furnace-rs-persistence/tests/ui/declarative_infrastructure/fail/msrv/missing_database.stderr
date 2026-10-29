@@ -18,6 +18,7 @@ help: the following other types implement trait `Lookup<T, Proof>`
   |
   | impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Left<P>>`
+  |
   | impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Right<P>>`
   = note: required for `(DatabaseConnection, Logger)` to implement `CheckDependencies<Branch<Branch<Leaf<Enabled<true, ConfigSlot>>, Leaf<Enabled<true, __FurnaceAppSlot0>>>, Branch<Leaf<Enabled<false, __FurnaceLoggerCauldronSlot0>>, Leaf<Enabled<true, __FurnaceLoggerCauldronSlot1>>>>, (_, furnace_rs_core::__private::Right<furnace_rs_core::__private::Right<Here>>)>`

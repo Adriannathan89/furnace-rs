@@ -10,6 +10,7 @@ help: the following other types implement trait `Lookup<T, Proof>`
   |
   | impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Left<P>>`
+  |
   | impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Right<P>>`
   = note: required for `(DatabaseFactory, SeaOrmPostgres)` to implement `CheckDependencies<Branch<Branch<Leaf<Enabled<true, ConfigSlot>>, Branch<Leaf<Enabled<true, __FurnaceAppSlot0>>, Leaf<Enabled<false, __FurnaceDatabaseCauldronSlot0>>>>, Branch<Leaf<Enabled<false, __FurnaceDatabaseCauldronSlot1>>, Branch<Leaf<Enabled<false, __FurnaceDatabaseCauldronSlot2>>, Leaf<Enabled<true, __FurnaceDatabaseCauldronSlot3>>>>>, (_, _)>`
@@ -42,6 +43,7 @@ help: the following other types implement trait `Lookup<T, Proof>`
   |
   | impl<T, L, R, P> Lookup<T, Left<P>> for Branch<L, R> where L: Lookup<T, P> {}
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Left<P>>`
+  |
   | impl<T, L, R, P> Lookup<T, Right<P>> for Branch<L, R> where R: Lookup<T, P> {}
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Branch<L, R>` implements `Lookup<T, furnace_rs_core::__private::Right<P>>`
   = note: required for `(DatabaseFactory, SeaOrmPostgres)` to implement `CheckDependencies<Branch<Branch<Leaf<Enabled<true, ConfigSlot>>, Branch<Leaf<Enabled<true, __FurnaceAppSlot0>>, Leaf<Enabled<false, __FurnaceDatabaseCauldronSlot0>>>>, Branch<Leaf<Enabled<false, __FurnaceDatabaseCauldronSlot1>>, Branch<Leaf<Enabled<false, __FurnaceDatabaseCauldronSlot2>>, Leaf<Enabled<true, __FurnaceDatabaseCauldronSlot3>>>>>, (_, _)>`
