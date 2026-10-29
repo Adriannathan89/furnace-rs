@@ -14,6 +14,7 @@ use std::{
     time::Duration,
 };
 use tokio::{task::JoinSet, time::Instant};
+
 /// Input delivered by generated gateway adapters.
 #[doc(hidden)]
 pub enum SocketInput {
@@ -24,17 +25,21 @@ pub enum SocketInput {
     Disconnect,
     Join(String),
 }
+
 /// Typed gateway adapter emitted by the registration macro.
 #[doc(hidden)]
 pub trait SocketGateway: Send + Sync + 'static {
     fn call(&self, context: SocketContext, input: SocketInput) -> BoxFuture<'_, SocketResult<()>>;
 }
+
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+
 struct Cleanup {
     hub: crate::SocketGatewayHub,
     id: ConnectionId,
     tasks: furnace_rs_common::runtime::RuntimeTasks,
 }
+
 impl Drop for Cleanup {
     fn drop(&mut self) {
         let (rooms, backend) = {
@@ -43,14 +48,17 @@ impl Drop for Cleanup {
                 .connections
                 .remove(&(self.hub.path.clone(), self.id.clone()));
             let mut rooms = Vec::new();
+
             for ((path, name), room) in &mut state.rooms {
                 if path == &self.hub.path && room.members.remove(&self.id) {
                     rooms.push(name.clone());
                 }
             }
+
             state.readers.retain(|(_, _, id), stop| {
                 if id == &self.id {
                     stop.send_replace(true);
+
                     false
                 } else {
                     true
@@ -60,23 +68,28 @@ impl Drop for Cleanup {
             let backend = state.backend.clone();
             #[cfg(not(feature = "redis"))]
             let backend: Option<()> = None;
+
             (rooms, backend)
         };
+
         #[cfg(feature = "redis")]
         if let Some(backend) = backend {
             let path = self.hub.path.clone();
             let id = self.id.clone();
             self.tasks.spawn(async move {
                 let _membership = backend.membership.lock().await;
+
                 for room in rooms {
                     let _ = backend.leave(&path, &room, &id).await;
                 }
             });
         }
+
         #[cfg(not(feature = "redis"))]
         let _ = (rooms, backend, &self.tasks);
     }
 }
+
 pub(crate) async fn run(
     gateway: Arc<dyn SocketGateway>,
     endpoint: &'static SocketEndpointDescriptor,
@@ -148,6 +161,7 @@ pub(crate) async fn run(
     let mut jobs = JoinSet::new();
     let mut next_ping = Instant::now() + runtime.config.heartbeat_interval;
     let mut awaiting: Option<(Vec<u8>, Instant)> = None;
+
     loop {
         while connecting.is_none() && jobs.len() < limit {
             if let Some((ctx, input, size)) = pending.pop_front() {
@@ -155,6 +169,7 @@ pub(crate) async fn run(
                 let gateway = gateway.clone();
                 jobs.spawn(async move {
                     let result = handle(gateway, ctx.clone(), input).await;
+
                     if let Err(error) = result {
                         let _ = send_error(&ctx, error).await;
                     }
@@ -163,9 +178,11 @@ pub(crate) async fn run(
                 break;
             }
         }
+
         if *runtime.shutdown.borrow() || *closed.borrow() {
             break;
         }
+
         let pong_deadline = awaiting
             .as_ref()
             .map(|(_, at)| *at)
@@ -201,15 +218,20 @@ pub(crate) async fn run(
             }
         }
     }
+
     drop(connecting);
     jobs.abort_all();
+
     while jobs.join_next().await.is_some() {}
+
     sender.close.send_replace(true);
     let _ = gateway.call(context, SocketInput::Disconnect).await;
 }
+
 async fn send_error(context: &SocketContext, error: SocketError) -> SocketResult<()> {
     send_room_error(context, error, None).await
 }
+
 pub(crate) async fn send_room_error(
     context: &SocketContext,
     error: SocketError,
@@ -220,11 +242,14 @@ pub(crate) async fn send_room_error(
         serde_json::json!({"code":error.code(),"message":if error.code()=="internal_error"{"internal server error"}else{error.code()}}),
     );
     envelope.id = context.request_id.clone();
+
     if let Some(room) = room {
         envelope.room = Some(room.to_owned());
         envelope.data["room"] = serde_json::Value::String(room.to_owned());
     }
+
     let state = context.hub.hub.state.lock().expect("socket hub poisoned");
+
     state
         .connections
         .get(&(context.hub.path.clone(), context.id.clone()))
@@ -245,6 +270,7 @@ async fn handle(
             .and_then(serde_json::Value::as_str)
             .filter(|r| !r.is_empty())
             .ok_or_else(|| SocketError::new("invalid_message"))?;
+
         match name.as_str() {
             "furnace.join" => {
                 let after = match data.get("after") {
@@ -254,14 +280,17 @@ async fn handle(
                 };
                 let mut context = context.clone();
                 context.acknowledge_join = true;
+
                 return context.join(room, after).await;
             }
             "furnace.leave" => context.leave(room).await?,
             _ => return Err(SocketError::new("unknown_event")),
         }
+
         return context
             .emit("furnace.ok", serde_json::json!({"room":room}))
             .await;
     }
+
     gateway.call(context, input).await
 }

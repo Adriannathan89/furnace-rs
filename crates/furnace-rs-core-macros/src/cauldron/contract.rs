@@ -68,6 +68,7 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
         .map(|p| {
             let output = &p.output;
             let injector = p.injector.as_ref().unwrap_or(output);
+
             quote!(<#injector as #core::Injector<#output>>::Dependencies)
         })
         .chain(
@@ -96,6 +97,7 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
     };
     let provider_leaves = (0..d.providers.len() + (d.grpc_services.len() + d.socket_gateways.len() + d.socket_endpoints.len())).map(|i| {
         let index = Index::from(i);
+
         quote!(#private::Leaf<#private::Enabled<true, <#meta as #private::SlotAt<#index>>::Slot>>)
     }).collect::<Vec<_>>();
     let provider_scope = balanced(&provider_leaves, &private);
@@ -122,6 +124,7 @@ pub(super) fn expand(d: &Declaration, item: &ItemStruct, core: &Path) -> syn::Re
         records: vec![],
     }
     .advance();
+
     Ok(quote! {
         #[doc(hidden)] pub struct #meta;
         impl #private::ModuleMetadata for #meta { const KEY: &'static str = #uid; }
@@ -147,16 +150,19 @@ struct Bootstrap {
     pending: Vec<Path>,
     records: Vec<Record>,
 }
+
 /// Parses one parenthesized sequence of tuple-index values.
 fn indices(input: ParseStream) -> syn::Result<Vec<usize>> {
     let list;
     parenthesized!(list in input);
+
     Ok(list
         .parse_terminated(Index::parse, Token![,])?
         .iter()
         .map(|i| i.index as usize)
         .collect())
 }
+
 impl Parse for Bootstrap {
     /// Parses one import-collection state carried between declarative macro expansions.
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -177,6 +183,7 @@ impl Parse for Bootstrap {
             .into_iter()
             .collect();
         let records = records(input)?;
+
         Ok(Self {
             core,
             ident,
@@ -191,6 +198,7 @@ impl Parse for Bootstrap {
         })
     }
 }
+
 impl Bootstrap {
     /// Serializes this state into the private token protocol.
     fn tokens(&self) -> TokenStream {
@@ -208,13 +216,16 @@ impl Bootstrap {
         let members = self.members.iter().map(|i| Index::from(*i));
         let exports = self.exports.iter().map(|i| Index::from(*i));
         let records = records.iter().map(Record::tokens);
+
         quote!(#core; #ident; #uid #callback (#(#members),*) (#(#exports),*) #global #root [#(#pending),*] [#(#records)*])
     }
+
     /// Requests metadata for the next direct import or emits the completed callback.
     fn advance(mut self) -> TokenStream {
         if self.pending.is_empty() {
             return self.finish();
         }
+
         // The original import position is retained even when a child's graph
         // contains several records. Each child reply advances exactly one import.
         let index = self.records.iter().filter(|r| r.direct).count();
@@ -222,8 +233,10 @@ impl Bootstrap {
         let next = self.pending.remove(0);
         let core = &self.core;
         let state = self.tokens();
+
         quote!(#next!(@describe #core::__di_bootstrap, [__FurnaceContract], <__FurnaceModule as __FurnaceContract::ImportAt<#index>>::Metadata, [#state]);)
     }
+
     /// Emits the callback and root checks after all imported records are collected.
     fn finish(self) -> TokenStream {
         let Self {
@@ -247,6 +260,7 @@ impl Bootstrap {
         let imports = substitute(quote!(#((#imports))*), ident);
         let mut dedup_guards = TokenStream::new();
         let mut unique: Vec<&Record> = vec![];
+
         for record in &self.records {
             if let Some(previous) = unique.iter().find(|p| p.uid.value() == record.uid.value()) {
                 let a = &previous.module;
@@ -261,11 +275,13 @@ impl Bootstrap {
                 unique.push(record);
             }
         }
+
         let children = unique
             .iter()
             .map(|r| {
                 let mut t = r.tokens();
                 t = substitute(t, ident);
+
                 t
             })
             .collect::<Vec<_>>();
@@ -311,16 +327,20 @@ fn callback_name(manifest: &str, source: &str, line: usize, column: usize, ident
             .zip(&manifest_parts)
             .take_while(|(a, b)| a == b)
             .count();
+
         if common == 0 {
             source_path.to_path_buf()
         } else {
             let mut relative = std::path::PathBuf::new();
+
             for _ in common..manifest_parts.len() {
                 relative.push("..");
             }
+
             for component in &source_parts[common..] {
                 relative.push(component.as_os_str());
             }
+
             relative
         }
     } else {
@@ -331,6 +351,7 @@ fn callback_name(manifest: &str, source: &str, line: usize, column: usize, ident
     let hash = key.bytes().fold(0xcbf29ce484222325u64, |h, b| {
         (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
     });
+
     format_ident!("__furnace_di_{hash:016x}", span = ident.span())
 }
 
@@ -344,6 +365,7 @@ fn substitute(tokens: TokenStream, ident: &Ident) -> TokenStream {
         &quote_spanned!(ident.span()=> $($contract)*),
     )
 }
+
 /// Rewrites reserved placeholder identifiers recursively while retaining group spans.
 fn replace_placeholders(
     tokens: TokenStream,
@@ -351,6 +373,7 @@ fn replace_placeholders(
     contract: &TokenStream,
 ) -> TokenStream {
     use proc_macro2::{Group, TokenTree};
+
     tokens
         .into_iter()
         .flat_map(|token| match token {
@@ -366,34 +389,41 @@ fn replace_placeholders(
                     replace_placeholders(g.stream(), module, contract),
                 );
                 group.set_span(g.span());
+
                 vec![TokenTree::Group(group)]
             }
             other => vec![other],
         })
         .collect()
 }
+
 struct BootstrapReply {
     state: Bootstrap,
     records: Vec<Record>,
 }
+
 impl Parse for BootstrapReply {
     /// Parses a child's returned state and its reachable module records.
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let state;
         bracketed!(state in input);
+
         Ok(Self {
             state: state.parse()?,
             records: records(input)?,
         })
     }
 }
+
 /// Marks the first returned child record as direct and advances the parent state.
 pub(crate) fn bootstrap(input: TokenStream) -> syn::Result<TokenStream> {
     let mut reply: BootstrapReply = syn::parse2(input)?;
+
     for (i, mut record) in reply.records.into_iter().enumerate() {
         record.direct = i == 0;
         reply.state.records.push(record);
     }
+
     Ok(reply.state.advance())
 }
 
@@ -407,6 +437,7 @@ struct Record {
     direct: bool,
     imports: Vec<Type>,
 }
+
 impl Parse for Record {
     /// Parses one module's opaque metadata record from the recursive token protocol.
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -438,11 +469,13 @@ impl Parse for Record {
         let list;
         parenthesized!(list in input);
         let mut imports = vec![];
+
         while !list.is_empty() {
             let t;
             parenthesized!(t in list);
             imports.push(t.parse()?);
         }
+
         Ok(Self {
             uid,
             module,
@@ -455,6 +488,7 @@ impl Parse for Record {
         })
     }
 }
+
 impl Record {
     /// Serializes the record for transfer to an importing cauldron expansion.
     fn tokens(&self) -> TokenStream {
@@ -469,37 +503,46 @@ impl Record {
         let members = self.members.iter().map(|i| Index::from(*i));
         let exports = self.exports.iter().map(|i| Index::from(*i));
         let imports = &self.imports;
+
         quote!(uid(#uid) module(#module) members(#(#members),*) exports(#(#exports),*) global(#global) root(#root) direct(#direct) imports(#((#imports))*))
     }
 }
+
 /// Parses the bracketed record sequence returned by an imported cauldron.
 fn records(input: ParseStream) -> syn::Result<Vec<Record>> {
     let list;
     bracketed!(list in input);
     let mut records = vec![];
+
     while !list.is_empty() {
         records.push(list.parse()?);
     }
+
     Ok(records)
 }
+
 struct Collection {
     core: Path,
     records: Vec<Record>,
 }
+
 impl Parse for Collection {
     /// Parses the core path and accumulated module records for root validation.
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let core;
         bracketed!(core in input);
+
         Ok(Self {
             core: core.parse()?,
             records: records(input)?,
         })
     }
 }
+
 /// Checks root uniqueness and emits static module/provider scope assertions.
 pub(crate) fn collect(input: TokenStream) -> syn::Result<TokenStream> {
     let state: Collection = syn::parse2(input)?;
+
     for record in state.records.iter().skip(1) {
         if record.root {
             // Point to the importing root's collector invocation. Reusing a
@@ -511,6 +554,7 @@ pub(crate) fn collect(input: TokenStream) -> syn::Result<TokenStream> {
             ));
         }
     }
+
     Ok(emit_checks(state))
 }
 
@@ -518,16 +562,21 @@ pub(crate) fn collect(input: TokenStream) -> syn::Result<TokenStream> {
 fn emit_checks(state: Collection) -> TokenStream {
     let core = &state.core;
     let mut checks = TokenStream::new();
+
     for (i, a) in state.records.iter().enumerate() {
         let am = &a.module;
+
         for b in state.records.iter().take(i) {
             let bm = &b.module;
+
             if a.uid.value() == b.uid.value() {
                 checks.extend(quote!(#core::assert_identity::<true, #am, #bm>();));
             }
+
             checks.extend(quote!(#core::assert_identity::<{#core::same(<#am as #core::ModuleMetadata>::KEY, <#bm as #core::ModuleMetadata>::KEY)}, #am, #bm>();));
         }
     }
+
     for (scope_index, owner) in state.records.iter().enumerate() {
         let owner_type = &owner.module;
         let imports = owner
@@ -535,18 +584,22 @@ fn emit_checks(state: Collection) -> TokenStream {
             .iter()
             .map(|r| {
                 let m = r;
+
                 quote!(<#m as #core::ModuleMetadata>::KEY)
             })
             .collect::<Vec<_>>();
         let mut slots = vec![quote!(#core::ConfigSlot)];
         let mut visible = vec![quote!(true)];
+
         for record in &state.records {
             let m = &record.module;
+
             for index in &record.members {
                 let i = Index::from(*index);
                 slots.push(quote!(<#m as #core::SlotAt<#i>>::Slot));
                 visible.push(quote!(#core::same(<#owner_type as #core::ModuleMetadata>::KEY, <#m as #core::ModuleMetadata>::KEY)));
             }
+
             for index in &record.exports {
                 let i = Index::from(*index);
                 let global = record.global;
@@ -554,6 +607,7 @@ fn emit_checks(state: Collection) -> TokenStream {
                 visible.push(quote!(!#core::same(<#owner_type as #core::ModuleMetadata>::KEY, <#m as #core::ModuleMetadata>::KEY) && (#global || #core::direct_import(<#m as #core::ModuleMetadata>::KEY, &[#(#imports),*]))));
             }
         }
+
         let k = format_ident!("__FURNACE_KEYS_{scope_index}");
         let v = format_ident!("__FURNACE_VISIBLE_{scope_index}");
         let keys = slots.iter().map(|t| quote!(<#t as #core::SlotKey>::KEY));
@@ -562,19 +616,23 @@ fn emit_checks(state: Collection) -> TokenStream {
             else { quote!((&&#core::config_filter::<{#core::first_visible(#k, #v, #i)}, #slot>()).filter_config()) }
         }).collect::<Vec<_>>();
         let tree = balanced_value(&leaves, core);
+
         for (i, a) in slots.iter().enumerate() {
             for b in slots.iter().take(i) {
                 checks.extend(quote!(#core::assert_identity::<{#core::same(<#a as #core::SlotKey>::KEY, <#b as #core::SlotKey>::KEY)}, #a, #b>();));
             }
         }
+
         checks.extend(quote! {
             const #k: &[&str] = &[#(#keys),*];
             const #v: &[bool] = &[#(#visible),*];
             #core::assert_module_scope::<#owner_type, _, _>(#tree);
         });
     }
+
     quote!(const _: fn() = || { use #core::FilterConfig as _; #checks };)
 }
+
 /// Builds a balanced type-level tree to avoid deeply nested scope types.
 fn balanced(items: &[TokenStream], core: &Path) -> TokenStream {
     match items.len() {
@@ -584,6 +642,7 @@ fn balanced(items: &[TokenStream], core: &Path) -> TokenStream {
             let middle = items.len() / 2;
             let l = balanced(&items[..middle], core);
             let r = balanced(&items[middle..], core);
+
             quote!(#core::Branch<#l, #r>)
         }
     }
@@ -598,6 +657,7 @@ fn balanced_value(items: &[TokenStream], core: &Path) -> TokenStream {
             let middle = items.len() / 2;
             let l = balanced_value(&items[..middle], core);
             let r = balanced_value(&items[middle..], core);
+
             quote!(#core::branch(#l, #r))
         }
     }

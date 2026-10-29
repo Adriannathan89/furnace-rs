@@ -2,6 +2,7 @@
 use crate::ConnectionId;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, time::Duration};
+
 /// Delivery semantics fixed for the lifetime of a room.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RoomMode {
@@ -15,12 +16,14 @@ pub enum RoomMode {
         max_messages: usize,
     },
 }
+
 pub(crate) struct Room {
     pub mode: RoomMode,
     pub members: BTreeSet<ConnectionId>,
     #[cfg_attr(not(feature = "redis"), allow(dead_code))]
     pub generation: Option<String>,
 }
+
 #[cfg(feature = "redis")]
 pub(crate) mod redis;
 #[cfg(feature = "redis")]

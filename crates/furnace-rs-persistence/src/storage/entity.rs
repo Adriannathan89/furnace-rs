@@ -17,6 +17,7 @@ impl<'db, E: EntityTrait> EntityStore<'db, E> {
     pub fn query(&self) -> super::EntityQuery<'db, E> {
         super::EntityQuery::new(self.database)
     }
+
     /// Borrows a connection without opening, cloning, or executing anything.
     pub fn new(database: &'db DatabaseConnection) -> Self {
         Self {

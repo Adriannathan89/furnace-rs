@@ -40,6 +40,7 @@ impl KeyRing {
                     .algorithms()
                     .first()
                     .ok_or_else(|| JwtError::new(JwtErrorKind::UnavailableSigningKey))?;
+
                 KeyRingMode::Simple {
                     algorithm,
                     encoding_key: EncodingKey::from_secret(secret),
@@ -48,15 +49,18 @@ impl KeyRing {
             }
             PassportKeyMode::Named { active_key, keys } => {
                 let mut cached = BTreeMap::new();
+
                 for (key_id, key) in keys {
                     cached.insert(key_id.clone(), CachedKey::from_configured(key)?);
                 }
+
                 KeyRingMode::Named {
                     active_key: active_key.clone(),
                     keys: cached,
                 }
             }
         };
+
         Ok(Self { mode })
     }
 
@@ -76,6 +80,7 @@ impl KeyRing {
                     .encoding_key
                     .as_ref()
                     .ok_or_else(|| JwtError::new(JwtErrorKind::UnavailableSigningKey))?;
+
                 Ok((encoding_key, key.algorithm, Some(active_key)))
             }
         }
@@ -94,6 +99,7 @@ impl KeyRing {
                 let key = keys
                     .get(key_id)
                     .ok_or_else(|| JwtError::new(JwtErrorKind::UnknownKeyId))?;
+
                 Ok((&key.decoding_key, key.algorithm))
             }
         }
@@ -125,6 +131,7 @@ impl CachedKey {
                             .and_then(|bytes| encoding_key(configured.algorithm, &bytes))
                     })
                     .transpose()?;
+
                 Ok(Self {
                     algorithm: configured.algorithm,
                     encoding_key,

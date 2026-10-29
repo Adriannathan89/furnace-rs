@@ -37,6 +37,7 @@ impl ManagedKind {
     /// Formats the shared declaration-shape diagnostic for this role.
     fn supported_form(&self) -> String {
         let attribute = self.attribute_name();
+
         format!(
             "`#[furnace_rs::{attribute}]` supports only non-generic named-field or unit structs, such as `#[furnace_rs::{attribute}] struct Managed {{ #[inject] dependency: Dependency }}` or `#[furnace_rs::{attribute}] struct Managed;`"
         )
@@ -54,6 +55,7 @@ pub(crate) fn expand(
     }
 
     let item: ItemStruct = syn::parse2(item)?;
+
     expand_managed(kind, item)
 }
 
@@ -94,9 +96,11 @@ fn expand_managed(kind: ManagedKind, mut item: ItemStruct) -> syn::Result<TokenS
                 "managed injectors support at most sixteen dependencies",
             ));
         }
+
         for field in &mut fields.named {
             let span = field.span();
             consume_inject(&mut field.attrs, span)?;
+
             if let Some(attribute) = field.attrs.iter().find(|attribute| !is_doc(attribute)) {
                 return Err(Error::new(
                     attribute.span(),
@@ -110,6 +114,7 @@ fn expand_managed(kind: ManagedKind, mut item: ItemStruct) -> syn::Result<TokenS
     }
 
     let core = core_path()?;
+
     expand_managed_with_core(kind, item, core)
 }
 
@@ -144,6 +149,7 @@ fn expand_managed_with_core(
                     .map(|mut field| {
                         let dependency_span = field.ty.span();
                         normalize_self_type(&mut field.ty, &ident);
+
                         (field, dependency_span)
                     })
                     .collect();
@@ -154,6 +160,7 @@ fn expand_managed_with_core(
                     let vis = &field.vis;
                     let ident = &field.ident;
                     let ty = &field.ty;
+
                     quote!(#(#attrs)* #vis #ident: #ty)
                 });
                 let resolutions = normalized_fields.iter().map(|(field, dependency_span)| {
@@ -171,6 +178,7 @@ fn expand_managed_with_core(
                         )
                     }
                 });
+
                 (
                     quote!({ #(#declarations,)* }),
                     quote!({ #(#resolutions,)* }),
@@ -334,22 +342,28 @@ impl VisitMut for SelfTypeNormalizer<'_> {
 /// Validates and consumes exactly one argument-free `#[inject]` marker.
 fn consume_inject(attributes: &mut Vec<Attribute>, span: proc_macro2::Span) -> syn::Result<()> {
     let mut seen = false;
+
     for attribute in attributes.iter().filter(|a| a.path().is_ident("inject")) {
         if seen {
             return Err(Error::new_spanned(attribute, "duplicate #[inject] marker"));
         }
+
         if !matches!(attribute.meta, syn::Meta::Path(_)) {
             return Err(Error::new_spanned(
                 attribute,
                 "#[inject] takes no arguments",
             ));
         }
+
         seen = true;
     }
+
     if !seen {
         return Err(Error::new(span, "dependency fields require #[inject]"));
     }
+
     attributes.retain(|a| !a.path().is_ident("inject"));
+
     Ok(())
 }
 

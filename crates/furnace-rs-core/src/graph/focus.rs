@@ -17,22 +17,28 @@ pub(crate) fn select_focused_providers(
     let mut pending = vec![target];
     let mut visited = Vec::new();
     let mut selected = Vec::new();
+
     while let Some(type_id) = pending.pop() {
         if visited.contains(&type_id) {
             continue;
         }
+
         visited.push(type_id);
         let supplied = supplied.iter().any(|value| value.type_id == type_id);
+
         if required.contains(&type_id) {
             continue;
         }
+
         for descriptor in providers.iter().filter(|p| p.type_id() == type_id) {
             selected.push(*descriptor);
+
             if !supplied {
                 pending.extend(descriptor.dependencies().iter().map(|dep| dep.type_id()));
             }
         }
     }
+
     let supplied = supplied
         .iter()
         .filter(|value| {
@@ -41,6 +47,7 @@ pub(crate) fn select_focused_providers(
         .cloned()
         .collect::<Vec<_>>();
     let mut analysis = analyze_descriptors(&selected, &supplied, covered_missing);
+
     // A supplied subject still has to name a registered declaration.
     if !selected.iter().any(|p| p.type_id() == target) {
         analysis.append_diagnostics(vec![
@@ -52,5 +59,6 @@ pub(crate) fn select_focused_providers(
             .with_subject(target_name),
         ]);
     }
+
     analysis
 }

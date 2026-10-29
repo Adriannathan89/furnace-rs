@@ -32,6 +32,7 @@ impl SeaOrmConfig {
     /// Parses typed SeaORM settings and validates deadline ranges and pool relationships.
     pub(super) fn parse(config: &Config) -> Result<Self, ConfigurationErrors> {
         let parsed = config.parse::<PersistenceConfig>()?.seaorm;
+
         for (field, seconds) in [
             ("connect_timeout_seconds", parsed.connect_timeout_seconds),
             ("acquire_timeout_seconds", parsed.acquire_timeout_seconds),
@@ -47,12 +48,15 @@ impl SeaOrmConfig {
                     "out_of_range",
                     "duration exceeds the supported deadline range",
                 );
+
                 if let Some(source) = config.source_of(&key) {
                     issue = issue.with_source(source);
                 }
+
                 return Err(ConfigurationErrors::from_issue(issue));
             }
         }
+
         if let (Some(min), Some(max)) = (parsed.min_connections, parsed.max_connections)
             && min > max
         {
@@ -61,11 +65,14 @@ impl SeaOrmConfig {
                 "invalid_relationship",
                 "minimum connections must not exceed maximum connections",
             );
+
             if let Some(source) = config.source_of("persistence.seaorm.min_connections") {
                 issue = issue.with_source(source);
             }
+
             return Err(ConfigurationErrors::from_issue(issue));
         }
+
         Ok(parsed)
     }
 
@@ -74,21 +81,27 @@ impl SeaOrmConfig {
         if let Some(value) = self.min_connections {
             options.min_connections(value);
         }
+
         if let Some(value) = self.max_connections {
             options.max_connections(value);
         }
+
         if let Some(value) = self.connect_timeout_seconds {
             options.connect_timeout(Duration::from_secs(value));
         }
+
         if let Some(value) = self.acquire_timeout_seconds {
             options.acquire_timeout(Duration::from_secs(value));
         }
+
         if let Some(value) = self.idle_timeout_seconds {
             options.idle_timeout(Duration::from_secs(value));
         }
+
         if let Some(value) = self.max_lifetime_seconds {
             options.max_lifetime(Duration::from_secs(value));
         }
+
         if let Some(value) = self.sqlx_logging {
             options.sqlx_logging(value);
         }

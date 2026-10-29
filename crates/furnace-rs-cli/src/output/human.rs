@@ -28,8 +28,10 @@ pub(crate) fn write(output: &HumanOutput) -> io::Result<()> {
     if !output.stdout.is_empty() {
         io::stdout().lock().write_all(output.stdout.as_bytes())?;
     }
+
     if !output.stderr.is_empty() {
         io::stderr().lock().write_all(output.stderr.as_bytes())?;
     }
+
     Ok(())
 }

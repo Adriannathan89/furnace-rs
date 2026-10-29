@@ -51,6 +51,7 @@ impl fmt::Display for TestError {
         }
     }
 }
+
 impl Error for TestError {
     /// Returns the underlying diagnostic or transport cause when one exists.
     fn source(&self) -> Option<&(dyn Error + 'static)> {

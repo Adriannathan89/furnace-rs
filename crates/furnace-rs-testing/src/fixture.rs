@@ -19,11 +19,13 @@ pub struct TestFixtureBuilder {
     supplied: HashSet<TypeId>,
     error: Option<TestError>,
 }
+
 impl TestFixtureBuilder {
     /// Creates a focused application builder that requires explicit database mocks.
     pub(crate) fn new() -> Self {
         let mut builder = Furnace::builder();
         builder.__test_require_provided::<DatabaseConnection>();
+
         Self {
             builder,
             supplied: HashSet::new(),
@@ -36,7 +38,9 @@ impl TestFixtureBuilder {
         if self.error.is_some() {
             return self;
         }
+
         let backend = mock.get_database_backend();
+
         if backend != DbBackend::Sqlite {
             self.error = Some(TestError::UnsupportedMockBackend(backend));
         } else if !self.supplied.insert(TypeId::of::<DatabaseConnection>()) {
@@ -46,6 +50,7 @@ impl TestFixtureBuilder {
         } else if let Err(error) = self.builder.provide(mock.into_connection()) {
             self.error = Some(error.into());
         }
+
         self
     }
 
@@ -54,6 +59,7 @@ impl TestFixtureBuilder {
         if self.error.is_some() {
             return self;
         }
+
         if TypeId::of::<T>() == TypeId::of::<DatabaseConnection>() {
             self.error = Some(TestError::DirectDatabaseSupply);
         } else if !self.supplied.insert(TypeId::of::<T>()) {
@@ -61,6 +67,7 @@ impl TestFixtureBuilder {
         } else if let Err(error) = self.builder.provide(value) {
             self.error = Some(error.into());
         }
+
         self
     }
 
@@ -85,8 +92,10 @@ impl TestFixtureBuilder {
         if let Some(error) = self.error {
             return Err(error);
         }
+
         self.builder.__test_focus::<T>()?;
         let analysis = self.builder.analyze();
+
         if !self.supplied.contains(&TypeId::of::<DatabaseConnection>())
             && (TypeId::of::<T>() == TypeId::of::<DatabaseConnection>()
                 || analysis.graph().providers().iter().any(|provider| {
@@ -97,6 +106,7 @@ impl TestFixtureBuilder {
         {
             return Err(TestError::MissingMockDatabase);
         }
+
         Ok(self.builder.build().await?)
     }
 }
@@ -107,6 +117,7 @@ pub struct SubjectFixture<T> {
     setup: TestFixtureBuilder,
     subject: PhantomData<fn() -> T>,
 }
+
 impl<T: Send + Sync + 'static> SubjectFixture<T> {
     /// Builds and starts the chain, runs the body, and awaits shutdown.
     ///
@@ -119,6 +130,7 @@ impl<T: Send + Sync + 'static> SubjectFixture<T> {
     {
         let app = self.setup.build::<T>().await?;
         let context = TestContext::new(app.context().clone());
+
         run_scoped(app, context, body).await
     }
 }
@@ -129,6 +141,7 @@ pub struct ControllerFixture<T> {
     setup: TestFixtureBuilder,
     subject: PhantomData<fn() -> T>,
 }
+
 impl<T: Send + Sync + 'static> ControllerFixture<T> {
     /// Builds the selected router, starts the chain, runs the body, and shuts down.
     ///
@@ -142,6 +155,7 @@ impl<T: Send + Sync + 'static> ControllerFixture<T> {
         let app = self.setup.build::<T>().await?;
         let router = furnace_rs_common::__private::build_test_router_for::<T>(&app)?;
         let client = crate::TestClient::new(TestContext::new(app.context().clone()), router);
+
         run_scoped(app, client, body).await
     }
 }
@@ -151,11 +165,13 @@ impl<T: Send + Sync + 'static> ControllerFixture<T> {
 pub struct TestContext {
     context: ApplicationContext,
 }
+
 impl TestContext {
     /// Stores the immutable application context shared by fixture clients.
     pub(crate) fn new(context: ApplicationContext) -> Self {
         Self { context }
     }
+
     /// Resolves a selected or explicitly supplied concrete provider.
     #[allow(clippy::result_large_err)]
     pub fn resolve<T: Send + Sync + 'static>(&self) -> furnace_rs_core::Result<Arc<T>> {
@@ -175,17 +191,20 @@ where
         .catch_unwind()
         .await;
     let shutdown = app.shutdown().await;
+
     match outcome {
         Ok(()) => shutdown.map_err(Into::into),
         Err(panic) => {
             if let Err(error) = shutdown {
                 eprintln!("fixture shutdown failed after test panic: {error}");
                 let mut source = std::error::Error::source(&error);
+
                 while let Some(cause) = source {
                     eprintln!("caused by: {cause}");
                     source = cause.source();
                 }
             }
+
             std::panic::resume_unwind(panic)
         }
     }

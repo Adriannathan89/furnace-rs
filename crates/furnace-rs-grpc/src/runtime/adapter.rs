@@ -3,32 +3,42 @@ use crate::{GrpcApplicationScope, GrpcServerConfig};
 use furnace_rs_common::runtime::*;
 use furnace_rs_core::{CauldronGraph, Config, Furnace, FurnaceBuilder};
 use futures_util::future::BoxFuture;
+
 /// Adds native gRPC values to shared runtime composition builders.
 pub trait RuntimeGrpcExt: Sized {
     /// Native route set or listener configuration accepted by this builder.
     type Grpc;
+
     /// Selects this builder's gRPC routes or listener configuration.
     fn with_grpc(self, grpc: Self::Grpc) -> Self;
 }
+
 impl RuntimeGrpcExt for RuntimeRoutes {
     type Grpc = tonic::service::Routes;
+
     /// Adds native gRPC routes or listener settings to the runtime builder.
     fn with_grpc(mut self, grpc: Self::Grpc) -> Self {
         self.insert("grpc", grpc);
+
         self
     }
 }
+
 impl RuntimeGrpcExt for RuntimeBindings {
     type Grpc = GrpcServerConfig;
+
     /// Adds native gRPC routes or listener settings to the runtime builder.
     fn with_grpc(mut self, grpc: Self::Grpc) -> Self {
         self.insert("grpc", grpc);
+
         self
     }
 }
+
 /// Validates listener configuration and requires a selected service.
 fn validate(graph: &CauldronGraph, config: &Config) -> furnace_rs_core::Result<()> {
     GrpcServerConfig::parse(config)?;
+
     if GrpcApplicationScope::for_cauldron_graph(Some(graph))?
         .services()
         .is_empty()
@@ -41,10 +51,13 @@ fn validate(graph: &CauldronGraph, config: &Config) -> furnace_rs_core::Result<(
             ),
         ));
     }
+
     Ok(())
 }
+
 /// Registers gRPC runtime integration with the application builder.
 fn configure(_: &mut FurnaceBuilder) {}
+
 /// Builds the selected routes and server bindings before runtime startup.
 fn prepare<'a>(
     app: &'a Furnace,
@@ -93,6 +106,7 @@ fn prepare<'a>(
             .unwrap_or(0)
             .max("SERVICE".len());
         let mut summary = format!("Methods  {}", methods.len());
+
         if !methods.is_empty() {
             let rows = methods
                 .iter()
@@ -105,6 +119,7 @@ fn prepare<'a>(
                 "\n\n{service_header}  METHOD\n{service_rule}  ──────\n{rows}"
             ));
         }
+
         Ok(PreparedTransport {
             name: "grpc",
             address: config.address().to_string(),
@@ -112,6 +127,7 @@ fn prepare<'a>(
             drain_timeout: Some(config.shutdown_timeout()),
             transition: Some(Box::new(move |serving| {
                 let mut health = health.clone();
+
                 Box::pin(async move {
                     health.set_serving(serving).await;
                 })
@@ -129,4 +145,5 @@ fn prepare<'a>(
         })
     })
 }
+
 furnace_rs_core::__private::inventory::submit! { RuntimeTransportDescriptor { name: "grpc", validate, configure, prepare } }

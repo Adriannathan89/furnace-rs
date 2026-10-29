@@ -35,7 +35,9 @@ use crate::{
 pub(crate) const FURNACE203: &str = "FURNACE203";
 
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(2);
+
 const REPORT_TIMEOUT: Duration = Duration::from_secs(10);
+
 const POLL_INTERVAL: Duration = Duration::from_millis(25);
 
 #[derive(Clone, Copy)]
@@ -250,15 +252,19 @@ fn inspection_diagnostics(report: &InspectionReport, package_root: &Path) -> Vec
         .map(|diagnostic| {
             let mut output =
                 CliDiagnostic::error(&diagnostic.code, &diagnostic.title, &diagnostic.message);
+
             if let Some(subject) = &diagnostic.subject {
                 output = output.with_subject(subject);
             }
+
             if let Some(location) = &diagnostic.location {
                 output = output.with_location(source_location(location, package_root));
             }
+
             for suggestion in &diagnostic.suggestions {
                 output = output.with_suggestion(suggestion);
             }
+
             output
         })
         .collect()
@@ -335,9 +341,11 @@ async fn inspect_application_with_timeouts_and_streams(
         timeouts,
     )
     .await;
+
     if result.is_err() {
         terminate_child(&mut child).await;
     }
+
     result
 }
 
@@ -346,6 +354,7 @@ fn ensure_supported_furnace_version(built: &BuiltApplication) -> Result<(), CliE
     let version = built.target().furnace_version();
     let current = semver::Version::parse(furnace::FRAMEWORK_VERSION)
         .expect("framework package version should be valid semver");
+
     if matches!(version, Some(version) if version.major == current.major && version.minor == current.minor)
     {
         return Ok(());
@@ -355,6 +364,7 @@ fn ensure_supported_furnace_version(built: &BuiltApplication) -> Result<(), CliE
         .map(ToString::to_string)
         .unwrap_or_else(|| "no direct furnace dependency".into());
     let supported = format!("{}.{}", current.major, current.minor);
+
     Err(inspection_error(format!(
         "the selected application uses {found}; private inspection requires a direct FURNACE {supported} dependency"
     ))
@@ -369,6 +379,7 @@ fn inspection_token() -> Result<String, CliError> {
             inspection_error("could not create an inspection correlation token").with_source(error)
         })?
         .as_nanos();
+
     Ok(format!("{}-{nanoseconds}", std::process::id()))
 }
 
@@ -394,6 +405,7 @@ fn inspection_command(
         .env(INSPECTION_ACK_ENV, acknowledgement)
         .env(INSPECTION_RESPONSE_ENV, response);
     built.configure_runtime(&mut command);
+
     match streams {
         InspectionStreams::Inherit => {
             command
@@ -408,6 +420,7 @@ fn inspection_command(
                 .stderr(Stdio::null());
         }
     }
+
     command
 }
 
@@ -432,11 +445,13 @@ async fn supervise(
     timeouts: InspectionTimeouts,
 ) -> Result<InspectionReport, CliError> {
     let handshake_deadline = Instant::now() + timeouts.handshake;
+
     loop {
         if acknowledgement.exists() {
             let value = read_json::<serde_json::Value>(acknowledgement)?;
             ensure_private_protocol_version(&value)?;
             let acknowledgement: InspectionAcknowledgement = decode_json(value)?;
+
             if acknowledgement.protocol_version != INSPECTION_PROTOCOL_VERSION
                 || acknowledgement.token != token
             {
@@ -444,16 +459,20 @@ async fn supervise(
                     "the application returned an invalid inspection acknowledgement",
                 ));
             }
+
             break;
         }
+
         if output_published_on_exit(child, acknowledgement)? {
             continue;
         }
+
         if Instant::now() >= handshake_deadline {
             return Err(inspection_error(format!(
                 "the application did not acknowledge the inspection request in time; private inspection requires protocol version {INSPECTION_PROTOCOL_VERSION} and the standard Furnace::burn::<AppCauldron>() entry point",
             )));
         }
+
         tokio::time::sleep(timeouts.poll).await;
     }
 
@@ -463,6 +482,7 @@ async fn supervise(
             let value = read_json::<serde_json::Value>(response)?;
             ensure_private_protocol_version(&value)?;
             let envelope: InspectionEnvelope = decode_json(value)?;
+
             if envelope.protocol_version() != INSPECTION_PROTOCOL_VERSION
                 || envelope.token() != token
                 || envelope.report().kind != kind
@@ -471,20 +491,25 @@ async fn supervise(
                     "the application returned an invalid inspection report",
                 ));
             }
+
             break envelope;
         }
+
         if output_published_on_exit(child, response)? {
             continue;
         }
+
         if Instant::now() >= report_deadline {
             return Err(inspection_error(
                 "the application did not return an inspection report in time",
             ));
         }
+
         tokio::time::sleep(timeouts.poll).await;
     };
 
     wait_for_successful_exit(child, report_deadline, timeouts.poll).await?;
+
     Ok(envelope.into_report())
 }
 
@@ -540,8 +565,10 @@ fn ensure_private_protocol_version(value: &serde_json::Value) -> Result<(), CliE
             "unsupported private inspection protocol: application returned version {version}; CLI requires version {INSPECTION_PROTOCOL_VERSION}"
         )));
     }
+
     Ok(())
 }
+
 /// Deserializes a parsed protocol value into its expected message type.
 fn decode_json<T: for<'de> Deserialize<'de>>(value: serde_json::Value) -> Result<T, CliError> {
     serde_json::from_value(value).map_err(|error| {
@@ -558,6 +585,7 @@ where
     let bytes = fs::read(path).map_err(|error| {
         inspection_error("could not read private inspection output").with_source(error)
     })?;
+
     serde_json::from_slice(&bytes).map_err(|error| {
         inspection_error("the application returned malformed private inspection output")
             .with_source(error)
@@ -574,6 +602,7 @@ async fn terminate_child(child: &mut Child) {
     if matches!(child.try_wait(), Ok(None)) {
         let _ = child.kill().await;
     }
+
     let _ = child.wait().await;
 }
 
@@ -696,11 +725,13 @@ mod tests {
     async fn assert_protocol_failure(binary: &str, expected_message: &str) {
         let application = fixture_application(binary).await;
         let mut timeouts = InspectionTimeouts::for_test();
+
         if binary == "timeout" {
             // This fixture intentionally withholds a report; only its report
             // deadline should be short, not the child startup deadline.
             timeouts.report = std::time::Duration::from_millis(100);
         }
+
         let error =
             inspect_application_with_timeouts(&application, InspectionKind::Doctor, timeouts)
                 .await
@@ -722,6 +753,7 @@ mod tests {
                 binary: Some(binary.into()),
             })
             .expect("fixture binary should resolve");
+
         build_application(&target)
             .await
             .expect("fixture binary should build")

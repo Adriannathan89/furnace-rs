@@ -1,8 +1,10 @@
 //! Server identity validation before listener readiness.
 #[cfg(feature = "tls")]
 pub(super) type Tls = Option<tokio_rustls::TlsAcceptor>;
+
 #[cfg(not(feature = "tls"))]
 pub(super) type Tls = ();
+
 #[allow(clippy::result_large_err)]
 pub(super) async fn prepare(config: &crate::SocketServerConfig) -> furnace_rs_core::Result<Tls> {
     #[cfg(feature = "tls")]
@@ -29,13 +31,16 @@ pub(super) async fn prepare(config: &crate::SocketServerConfig) -> furnace_rs_co
         .with_single_cert(chain, key)
         .map_err(|_| fail())?;
         server.alpn_protocols = vec![b"http/1.1".to_vec()];
+
         Ok(Some(tokio_rustls::TlsAcceptor::from(std::sync::Arc::new(
             server,
         ))))
     }
+
     #[cfg(not(feature = "tls"))]
     {
         let _ = (&config.certificate, &config.private_key);
+
         Ok(())
     }
 }

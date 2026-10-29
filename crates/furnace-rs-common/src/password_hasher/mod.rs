@@ -29,6 +29,7 @@ pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Er
     let password_hash = argon2
         .hash_password(password.as_bytes(), &salt)?
         .to_string();
+
     Ok(password_hash)
 }
 
@@ -46,6 +47,7 @@ pub fn validate_password(
 ) -> Result<bool, argon2::password_hash::Error> {
     let parsed_hash = PasswordHash::new(hashed)?;
     let argon2 = Argon2::default();
+
     Ok(argon2
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok())
@@ -65,6 +67,7 @@ mod tests {
         assert_eq!(parsed.version, Some(19));
         assert!(parsed.salt.is_some());
         assert!(parsed.hash.is_some());
+
         for parameter in ["m", "t", "p"] {
             assert!(parsed.params.get_decimal(parameter).is_some());
         }

@@ -88,6 +88,7 @@ impl<T> LifecycleResource<T> {
                 owner,
                 hook: Box::new(hook),
             });
+
         self
     }
 
@@ -100,6 +101,7 @@ impl<T> LifecycleResource<T> {
         self.registrations.push(LifecycleRegistration::Application {
             hook: Box::new(hook),
         });
+
         self
     }
 
@@ -140,6 +142,7 @@ impl LifecycleManager {
         self.add_registration(LifecycleRegistration::Application {
             hook: Box::new(hook),
         });
+
         self
     }
 
@@ -153,6 +156,7 @@ impl LifecycleManager {
             owner,
             hook: Box::new(hook),
         });
+
         self
     }
 
@@ -212,17 +216,22 @@ impl LifecycleManager {
                     left.sequence.cmp(&right.sequence)
                 }
             });
+
         for index in 0..self.hooks.len() {
             let hook = self.hooks[index].hook.as_ref();
+
             if let Err(error) = hook.start(context).await {
                 self.rollback_failure =
                     Some((hook_failure_diagnostic(hook.name(), "startup"), error));
+
                 return self.shutdown(context).await;
             }
+
             self.started.push(index);
         }
 
         self.state = LifecycleState::Running;
+
         Ok(())
     }
 
@@ -241,8 +250,10 @@ impl LifecycleManager {
         }
 
         self.state = LifecycleState::Stopping;
+
         while let Some(&index) = self.started.last() {
             let hook = self.hooks[index].hook.as_ref();
+
             if let Err(error) = hook.stop(context).await {
                 if let Some((diagnostic, _)) = &mut self.rollback_failure {
                     *diagnostic = diagnostic
@@ -252,14 +263,17 @@ impl LifecycleManager {
                     self.shutdown_failure = Some(hook_failure(hook.name(), "shutdown", error));
                 }
             }
+
             // Keep the pending hook reachable until its stop future completes.
             self.started.pop();
         }
 
         self.state = LifecycleState::Stopped;
+
         if let Some((diagnostic, error)) = self.rollback_failure.take() {
             return Err(Error::with_source(diagnostic, error));
         }
+
         self.shutdown_failure.take().map_or(Ok(()), Err)
     }
 }

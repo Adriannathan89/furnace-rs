@@ -43,6 +43,7 @@ pub(crate) fn analyze_catalog(
     covered_missing: &[std::any::TypeId],
 ) -> GraphAnalysis {
     let descriptors = Catalog::providers();
+
     analyze_descriptors(&descriptors, satisfied, covered_missing)
 }
 

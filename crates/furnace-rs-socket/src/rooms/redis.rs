@@ -12,7 +12,9 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use tokio::sync::watch;
+
 static INSTANCE: AtomicU64 = AtomicU64::new(1);
+
 pub(crate) struct RedisBackend {
     #[cfg(test)]
     pub(super) pause: Mutex<Option<super::tests::Pause>>,
@@ -27,6 +29,7 @@ pub(crate) struct RedisBackend {
     deadline: Mutex<Instant>,
     config: SocketServerConfig,
 }
+
 fn encode(value: &str) -> String {
     value
         .as_bytes()
@@ -34,9 +37,11 @@ fn encode(value: &str) -> String {
         .map(|b| format!("{b:02x}"))
         .collect()
 }
+
 pub(crate) fn unavailable<T>(_: T) -> SocketError {
     SocketError::new("backend_unavailable")
 }
+
 impl RedisBackend {
     pub async fn prepare(config: &SocketServerConfig, hub: &SocketHub) -> SocketResult<Arc<Self>> {
         if config
@@ -46,6 +51,7 @@ impl RedisBackend {
         {
             ensure_crypto_provider();
         }
+
         let client = redis::Client::open(
             config
                 .redis_url
@@ -88,34 +94,43 @@ impl RedisBackend {
         backend.renew().await?;
         *backend.subscription.lock().unwrap() = Some(subscription);
         backend.ready.store(true, Ordering::Release);
+
         Ok(backend)
     }
+
     #[cfg(test)]
     pub(super) async fn checkpoint(&self, name: &str) {
         let pause = {
             let mut slot = self.pause.lock().unwrap();
+
             if slot.as_ref().is_some_and(|p| p.name == name) {
                 slot.take()
             } else {
                 None
             }
         };
+
         if let Some(pause) = pause {
             pause.entered.notify_one();
             pause.release.notified().await;
         }
     }
+
     pub fn healthy(&self) -> bool {
         self.ready.load(Ordering::Acquire) && Instant::now() < *self.deadline.lock().unwrap()
     }
+
     fn channel(&self) -> String {
         format!("{}:live", self.prefix)
     }
+
     fn lease(&self) -> String {
         format!("{}:lease:{}", self.prefix, self.instance)
     }
+
     pub fn keys(&self, path: &str, room: &str) -> Vec<String> {
         let key = format!("{}:{}:{}", self.prefix, encode(path), encode(room));
+
         vec![
             format!("{key}:meta"),
             format!("{key}:members"),
@@ -124,6 +139,7 @@ impl RedisBackend {
             self.channel(),
         ]
     }
+
     async fn subscribe(&self) -> SocketResult<redis::aio::PubSub> {
         let mut subscription =
             tokio::time::timeout(self.config.lease_refresh, self.client.get_async_pubsub())
@@ -134,8 +150,10 @@ impl RedisBackend {
             .subscribe(self.channel())
             .await
             .map_err(unavailable)?;
+
         Ok(subscription)
     }
+
     async fn renew(&self) -> SocketResult<()> {
         let sent = Instant::now();
         let mut connection = self.connection.lock().unwrap().clone();
@@ -152,8 +170,10 @@ impl RedisBackend {
         .map_err(unavailable)?
         .map_err(unavailable)?;
         *self.deadline.lock().unwrap() = sent + self.config.lease_expiry;
+
         Ok(())
     }
+
     pub async fn command(
         &self,
         path: &str,
@@ -164,8 +184,10 @@ impl RedisBackend {
         if !self.healthy() {
             return Err(SocketError::new("backend_unavailable"));
         }
+
         self.execute(path, room, op, args).await
     }
+
     async fn execute(
         &self,
         path: &str,
@@ -189,12 +211,15 @@ impl RedisBackend {
         .await
         .map_err(|_| {
             self.ready.store(false, Ordering::Release);
+
             SocketError::new("backend_unavailable")
         })?
         .map_err(|_| {
             self.ready.store(false, Ordering::Release);
+
             SocketError::new("backend_unavailable")
         })?;
+
         if let redis::Value::Array(values) = &value
             && values
                 .first()
@@ -206,6 +231,7 @@ impl RedisBackend {
                 .get(1)
                 .and_then(|v| redis::from_redis_value::<String>(v).ok())
                 .unwrap_or_default();
+
             return Err(SocketError::new(match code.as_str() {
                 "room_not_found" => "room_not_found",
                 "room_conflict" => "room_conflict",
@@ -216,8 +242,10 @@ impl RedisBackend {
                 _ => "backend_unavailable",
             }));
         }
+
         Ok(value)
     }
+
     pub async fn create(&self, path: &str, room: &str, mode: &RoomMode) -> SocketResult<()> {
         let (age, count, replay) = match mode {
             RoomMode::Live => (0, 0, 0),
@@ -248,21 +276,27 @@ impl RedisBackend {
             ],
         )
         .await?;
+
         Ok(())
     }
+
     pub async fn info(&self, path: &str, room: &str) -> SocketResult<RoomInfo> {
         let value = self.command(path, room, "info", &[]).await?;
         let fields: Vec<String> = redis::from_redis_value(&value).map_err(unavailable)?;
+
         Ok(RoomInfo {
             mode: serde_json::from_str(&fields[0])?,
             generation: fields[1].clone(),
             high: fields[2].clone(),
         })
     }
+
     pub async fn delete(&self, path: &str, room: &str) -> SocketResult<()> {
         self.command(path, room, "delete", &[]).await?;
+
         Ok(())
     }
+
     pub async fn join(
         &self,
         path: &str,
@@ -273,6 +307,7 @@ impl RedisBackend {
         if let Some(cursor) = after {
             super::replay::parse_id(cursor)?;
         }
+
         let value = self
             .command(
                 path,
@@ -282,16 +317,20 @@ impl RedisBackend {
             )
             .await?;
         let fields: Vec<String> = redis::from_redis_value(&value).map_err(unavailable)?;
+
         Ok(RoomInfo {
             mode: serde_json::from_str(&fields[0])?,
             generation: fields[1].clone(),
             high: fields[2].clone(),
         })
     }
+
     pub async fn leave(&self, path: &str, room: &str, id: &ConnectionId) -> SocketResult<()> {
         self.command(path, room, "leave", &[id.to_string()]).await?;
+
         Ok(())
     }
+
     pub async fn publish(
         &self,
         path: &str,
@@ -310,8 +349,10 @@ impl RedisBackend {
             &[serde_json::to_string(&packet)?],
         )
         .await?;
+
         Ok(())
     }
+
     pub async fn append(
         &self,
         path: &str,
@@ -321,14 +362,18 @@ impl RedisBackend {
         let value = self
             .command(path, room, "append", &[envelope.to_text()?])
             .await?;
+
         redis::from_redis_value(&value).map_err(unavailable)
     }
+
     pub fn start(self: Arc<Self>, mut shutdown: watch::Receiver<bool>, tasks: &RuntimeTasks) {
         tasks.spawn(async move{
             let mut subscription=self.subscription.lock().unwrap().take();
             let mut interval=tokio::time::interval(self.config.lease_refresh);
+
             loop {
                 if *shutdown.borrow(){break;}
+
                 if subscription.is_none()||!self.healthy(){
                     self.ready.store(false,Ordering::Release);
                     let reconnect=async {
@@ -338,6 +383,7 @@ impl RedisBackend {
                     };
                     tokio::select!{biased;_=shutdown.changed()=>break,result=tokio::time::timeout(self.config.lease_refresh,reconnect)=>match result{Ok(Ok(sub))=>subscription=Some(sub),_=>{self.ready.store(false,Ordering::Release);tokio::select!{_=shutdown.changed()=>break,_=tokio::time::sleep(Duration::from_millis(200))=>{}}continue;}}}
                 }
+
                 let sub=subscription.as_mut().unwrap();let mut messages=sub.on_message();
                 tokio::select!{biased;
                     _=shutdown.changed()=>break,
@@ -345,9 +391,11 @@ impl RedisBackend {
                     message=messages.next()=>match message{Some(message)=>{if self.healthy()&& let Ok(packet)=message.get_payload::<String>().and_then(|s|serde_json::from_str::<Packet>(&s).map_err(|_|redis::RedisError::from((redis::ErrorKind::TypeError,"invalid packet")))){self.deliver(packet);}},None=>{self.ready.store(false,Ordering::Release);}}
                 }
             }
+
             self.ready.store(false,Ordering::Release);
         });
     }
+
     pub(super) async fn restore(&self) -> SocketResult<()> {
         let _membership = self.membership.lock().await;
         let Some(shared) = self.state.upgrade() else {
@@ -355,6 +403,7 @@ impl RedisBackend {
         };
         let rooms = {
             let state = shared.lock().unwrap();
+
             state
                 .rooms
                 .iter()
@@ -368,10 +417,12 @@ impl RedisBackend {
                 })
                 .collect::<Vec<_>>()
         };
+
         for (path, room, members, generation) in rooms {
             let info = async {
                 let value = self.execute(&path, &room, "info", &[]).await?;
                 let fields: Vec<String> = redis::from_redis_value(&value).map_err(unavailable)?;
+
                 Ok::<_, SocketError>(RoomInfo {
                     mode: serde_json::from_str(&fields[0])?,
                     generation: fields[1].clone(),
@@ -386,6 +437,7 @@ impl RedisBackend {
                 Err(error) if error.code() == "room_not_found" => false,
                 Err(_) => return info.map(|_| ()),
             };
+
             if !valid {
                 shared
                     .lock()
@@ -393,6 +445,7 @@ impl RedisBackend {
                     .retire_generation(&path, &room, generation.as_deref());
                 continue;
             }
+
             for member in members {
                 match self
                     .execute(
@@ -416,8 +469,10 @@ impl RedisBackend {
                 }
             }
         }
+
         Ok(())
     }
+
     fn deliver(&self, packet: Packet) {
         let Some(state) = self.state.upgrade() else {
             return;
@@ -448,16 +503,19 @@ impl RedisBackend {
                 .map(|(_, s)| s.clone())
                 .collect(),
         };
+
         for sender in senders {
             let _ = sender.send(message.clone());
         }
     }
 }
+
 pub(crate) struct RoomInfo {
     pub mode: RoomMode,
     pub generation: String,
     pub high: String,
 }
+
 #[derive(serde::Serialize, serde::Deserialize)]
 struct Packet {
     #[serde(default)]
@@ -468,6 +526,7 @@ struct Packet {
     text: Option<String>,
     binary: Option<Vec<u8>>,
 }
+
 impl Packet {
     fn new(path: &str, room: Option<&str>, message: Message) -> SocketResult<Self> {
         let (kind, text, binary) = match message {
@@ -475,6 +534,7 @@ impl Packet {
             Message::Binary(v) => ("binary", None, Some(v.to_vec())),
             _ => return Err(SocketError::new("invalid_message")),
         };
+
         Ok(Self {
             generation: None,
             path: path.to_owned(),
@@ -491,6 +551,7 @@ fn ensure_crypto_provider() {
         let _ = rustls::crypto::ring::default_provider().install_default();
     }
 }
+
 #[cfg(test)]
 mod tests {
     #[test]

@@ -5,16 +5,20 @@ use super::{
 use furnace_rs_core::{Config, Diagnostic, Error, Result};
 use prost::Message;
 use std::collections::{BTreeMap, BTreeSet};
+
 pub(crate) const NAMES: [&str; 2] = [
     "grpc.reflection.v1.ServerReflection",
     "grpc.reflection.v1alpha.ServerReflection",
 ];
+
 pub(crate) const HEALTH: &str = "grpc.health.v1.Health";
+
 #[cfg(feature = "jwt")]
 /// Builds the fully qualified gRPC method path for a service and method.
 pub(crate) fn path(name: &str) -> String {
     format!("/{name}/ServerReflectionInfo")
 }
+
 /// Builds the descriptor set used by enabled reflection for selected services and infrastructure.
 #[allow(clippy::result_large_err)]
 pub fn reflection_descriptors(
@@ -28,6 +32,7 @@ pub fn reflection_descriptors(
         .collect();
     selected.insert(HEALTH);
     selected.extend(NAMES);
+
     for bytes in [
         tonic_health::pb::FILE_DESCRIPTOR_SET,
         tonic_reflection::pb::v1::FILE_DESCRIPTOR_SET,
@@ -35,6 +40,7 @@ pub fn reflection_descriptors(
     ] {
         merge_files(&mut files, bytes)?;
     }
+
     for file in files.values_mut() {
         let package = file.package.as_deref().unwrap_or("");
         file.service.retain(|service| {
@@ -44,23 +50,28 @@ pub fn reflection_descriptors(
             } else {
                 format!("{package}.{name}")
             };
+
             selected.contains(qualified.as_str())
         });
         file.source_code_info = None;
     }
+
     Ok(prost_types::FileDescriptorSet {
         file: files.into_values().collect(),
     })
 }
+
 /// Merges selected descriptor sets and rejects conflicting file definitions.
 fn merge_files(
     files: &mut BTreeMap<String, prost_types::FileDescriptorProto>,
     bytes: &[u8],
 ) -> Result<()> {
     let fds = prost_types::FileDescriptorSet::decode(bytes).map_err(|_| metadata_error())?;
+
     for mut file in fds.file {
         file.source_code_info = None;
         let name = file.name.clone().ok_or_else(metadata_error)?;
+
         if let Some(existing) = files.get(&name) {
             if existing != &file {
                 return Err(metadata_error());
@@ -69,8 +80,10 @@ fn merge_files(
             files.insert(name, file);
         }
     }
+
     Ok(())
 }
+
 /// Attaches service source information to a registration diagnostic.
 fn metadata_error() -> Error {
     Error::new(Diagnostic::new(
@@ -79,6 +92,7 @@ fn metadata_error() -> Error {
         "descriptor files must have matching definitions for every shared file name",
     ))
 }
+
 /// Selects the configured reflection guard, if reflection is enabled.
 pub(crate) fn selected_policy(
     scope: &GrpcApplicationScope,
@@ -87,11 +101,14 @@ pub(crate) fn selected_policy(
     if !GrpcServerConfig::parse(config)?.reflection_enabled() {
         return Ok(None);
     }
+
     #[cfg(not(feature = "jwt"))]
     {
         let _ = scope;
+
         Err(policy_error("enabled reflection requires the jwt feature"))
     }
+
     #[cfg(feature = "jwt")]
     {
         let root = scope
@@ -109,15 +126,19 @@ pub(crate) fn selected_policy(
             ));
         };
         crate::GuardCatalog::validate_descriptors(&[policy.guard().descriptor()])?;
+
         if policy.guard().descriptor().source() != crate::TokenSource::Bearer {
             return Err(policy_error(
                 "gRPC reflection supports authorization bearer metadata only",
             ));
         }
+
         reflection_descriptors(scope)?;
+
         Ok(Some(*policy))
     }
 }
+
 /// Builds a diagnostic for invalid reflection protection metadata.
 fn policy_error(message: &'static str) -> Error {
     Error::new(Diagnostic::new(
@@ -126,6 +147,7 @@ fn policy_error(message: &'static str) -> Error {
         message,
     ))
 }
+
 #[cfg(feature = "jwt")]
 /// Collects and validates guards for the selected application scope.
 pub(crate) fn guards(
@@ -133,6 +155,7 @@ pub(crate) fn guards(
     config: &Config,
 ) -> Result<Vec<crate::common::passport::__private::ScopedGuard>> {
     let mut guards = scope.guards();
+
     if let Some(policy) = selected_policy(scope, config)? {
         for name in NAMES {
             guards.push(crate::common::passport::__private::ScopedGuard {
@@ -145,8 +168,10 @@ pub(crate) fn guards(
             });
         }
     }
+
     Ok(guards)
 }
+
 #[cfg(feature = "jwt")]
 /// Builds per-method Passport bindings for a native reflection service.
 pub(crate) fn bindings(
@@ -168,5 +193,6 @@ pub(crate) fn bindings(
         .binding_for_occurrence(&occurrence, Some(policy.root()))
         .expect("reflection guard was preflighted")
         .clone();
+
     Ok(BTreeMap::from([(path, Some(binding))]))
 }

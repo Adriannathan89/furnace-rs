@@ -8,6 +8,7 @@ use furnace_rs_core::{
 /// Analysis-local scope shared with other integration evaluators.
 #[derive(Clone)]
 pub(crate) struct SelectedGrpcMetadata(pub(crate) Result<GrpcApplicationScope, Vec<Diagnostic>>);
+
 impl SelectedGrpcMetadata {
     /// Memoizes the selected application or focused-test service scope.
     pub(crate) fn select(
@@ -23,10 +24,12 @@ impl SelectedGrpcMetadata {
                 .map_err(|error| error.diagnostics().to_vec()),
         )
     }
+
     /// Returns the selected scope or reconstructs its diagnostics as a core error.
     pub(crate) fn scope(self) -> furnace_rs_core::Result<GrpcApplicationScope> {
         self.0.map_err(|diagnostics| {
             let mut diagnostics = diagnostics.into_iter();
+
             furnace_rs_core::Error::from_diagnostics(
                 diagnostics.next().expect("metadata error diagnostic"),
                 diagnostics,
@@ -34,6 +37,7 @@ impl SelectedGrpcMetadata {
         })
     }
 }
+
 /// Validates selected protobuf metadata before provider construction.
 #[doc(hidden)]
 pub fn preflight_grpc(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
@@ -42,6 +46,7 @@ pub fn preflight_grpc(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
         .scope()
         .and_then(|scope| {
             super::reflection::selected_policy(&scope, context.config())?;
+
             #[cfg(feature = "jwt")]
             {
                 let guards = super::reflection::guards(&scope, context.config())?;
@@ -55,6 +60,7 @@ pub fn preflight_grpc(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
                         &guards,
                     )?
                 };
+
                 for binding in strategies.bindings() {
                     if binding
                         .provider_type_id()
@@ -71,6 +77,7 @@ pub fn preflight_grpc(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
                         ));
                     }
                 }
+
                 if !guards.is_empty()
                     && !context.has_output::<crate::JwtService>()
                     && !context
@@ -87,13 +94,16 @@ pub fn preflight_grpc(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
             }
             #[cfg(not(feature = "jwt"))]
             let _ = scope;
+
             Ok(())
         });
+
     result
         .err()
         .map(|error| error.diagnostics().to_vec())
         .unwrap_or_default()
 }
+
 furnace_rs_core::__private::inventory::submit! {
     PreflightDescriptor::new("furnace.common.grpc.preflight", SourceLocation::new(file!(), line!(), column!()), preflight_grpc)
 }
@@ -108,10 +118,12 @@ fn preflight_clients(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
             .map(|registration| registration.descriptor)
             .collect();
     clients.sort_by_key(|client| (client.name(), client.output_type_name()));
+
     for client in clients {
         if !context.has_output_type_id(client.output_type_id()) {
             continue;
         }
+
         if !super::config::valid_client_name(client.name()) || !names.insert(client.name()) {
             diagnostics.push(
                 Diagnostic::new(
@@ -123,12 +135,15 @@ fn preflight_clients(context: &PreflightContext<'_>) -> Vec<Diagnostic> {
                 .with_location(client.location()),
             );
         }
+
         if let Err(error) = super::GrpcClientConfig::parse(context.config(), client.name()) {
             diagnostics.extend(error.diagnostics().iter().cloned());
         }
     }
+
     diagnostics
 }
+
 furnace_rs_core::__private::inventory::submit! {
     PreflightDescriptor::new("furnace.common.grpc.clients.preflight", SourceLocation::new(file!(), line!(), column!()), preflight_clients)
 }
@@ -141,8 +156,10 @@ fn passport_scope(
     let scope = context
         .memoize(|| SelectedGrpcMetadata::select(context.cauldron_graph(), context.focus_type_id()))
         .scope()?;
+
     super::reflection::guards(&scope, context.config())
 }
+
 #[cfg(feature = "jwt")]
 furnace_rs_core::__private::inventory::submit! {
     crate::common::passport::__private::PassportScopeDescriptor { select: passport_scope }

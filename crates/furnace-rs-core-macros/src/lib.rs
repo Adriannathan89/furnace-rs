@@ -30,11 +30,13 @@ pub fn configuration(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn main(arguments: TokenStream, item: TokenStream) -> TokenStream {
     let original = item.clone();
+
     match main_attribute::expand(arguments.into(), item.into()) {
         Ok(expanded) => expanded.into(),
         Err(error) => {
             let mut output = original;
             output.extend(TokenStream::from(error.into_compile_error()));
+
             output
         }
     }

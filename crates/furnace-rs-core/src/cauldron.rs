@@ -46,6 +46,7 @@ pub(crate) struct CauldronImport {
 /// Captures the declaration call site for stable registration diagnostics.
 fn location() -> SourceLocation {
     let caller = std::panic::Location::caller();
+
     SourceLocation::new(caller.file(), caller.line(), caller.column())
 }
 
@@ -66,6 +67,7 @@ impl CauldronDefinitionBuilder {
             location: location(),
             descriptor: Some(T::descriptor()),
         });
+
         self
     }
 
@@ -80,6 +82,7 @@ impl CauldronDefinitionBuilder {
             .last_mut()
             .expect("a provider was just registered")
             .transport = Some(T::TRANSPORT);
+
         registration
     }
 
@@ -101,6 +104,7 @@ impl CauldronDefinitionBuilder {
             location: location(),
             descriptor: Some(I::descriptor()),
         });
+
         self
     }
 
@@ -115,6 +119,7 @@ impl CauldronDefinitionBuilder {
             location: location(),
             descriptor: None,
         });
+
         self
     }
 
@@ -126,6 +131,7 @@ impl CauldronDefinitionBuilder {
             type_name: std::any::type_name::<I>(),
             location: location(),
         });
+
         self
     }
 
@@ -140,12 +146,14 @@ impl CauldronDefinitionBuilder {
             location: location(),
             descriptor: None,
         });
+
         self
     }
 
     /// Makes explicit exports available throughout the reachable application.
     pub fn global(mut self) -> Self {
         self.definition.global = true;
+
         self
     }
 

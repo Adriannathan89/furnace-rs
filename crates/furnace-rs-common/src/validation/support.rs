@@ -38,6 +38,7 @@ pub fn issue(kind: IssueKind) -> ValidationIssue {
             "value is not a multiple of the required number",
         ),
     };
+
     ValidationIssue::custom(code, message)
 }
 

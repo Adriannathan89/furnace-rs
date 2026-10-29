@@ -48,6 +48,7 @@ impl SeaOrmPostgres {
         })?;
         let mut connector = Self::new(config.url.expose().clone());
         config.apply(connector.options_mut());
+
         Ok(connector)
     }
 }
@@ -68,6 +69,7 @@ impl DatabaseConnector for SeaOrmPostgres {
     /// Validates native options and opens the PostgreSQL connection with credential tracing suppressed.
     async fn connect(self) -> PersistenceResult<Self::Database> {
         validate_postgres_scheme(self.options.get_url())?;
+
         // SQLx allocates an ArrayQueue whose capacity must be nonzero.
         // Validate native options as well as the typed configuration path.
         if self.options.get_max_connections() == Some(0) {
@@ -76,6 +78,7 @@ impl DatabaseConnector for SeaOrmPostgres {
                 "configure",
             ));
         }
+
         // A zero reaping interval continuously reschedules SQLx maintenance.
         // Native callers can disable these policies with None instead.
         if [
@@ -91,6 +94,7 @@ impl DatabaseConnector for SeaOrmPostgres {
                 "configure",
             ));
         }
+
         // SQLx adds pool timeouts to an Instant without checking overflow.
         // Validate native options too, including options changed after parsing.
         for duration in [
@@ -109,6 +113,7 @@ impl DatabaseConnector for SeaOrmPostgres {
                 ));
             }
         }
+
         SqlxPostgresConnector::connect(self.options)
             // SeaORM's connection span records the full URL in ConnectOptions.
             // Scope the dispatcher to each poll of this future, never globally.
@@ -141,6 +146,7 @@ mod tests {
         for accepted in ["postgres://localhost/db", "postgresql://localhost/db"] {
             assert!(validate_postgres_scheme(accepted).is_ok());
         }
+
         for rejected in [
             "mysql://localhost/db",
             "sqlite://db.sqlite",

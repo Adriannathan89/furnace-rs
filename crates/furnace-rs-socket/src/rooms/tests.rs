@@ -5,13 +5,16 @@ use furnace_rs_common::runtime::RuntimeTasks;
 use furnace_rs_core::{ConfigBuilder, Furnace, MapSource, cauldron};
 use std::sync::Arc;
 use tokio::sync::Notify;
+
 #[path = "../../tests/support/redis.rs"]
 mod redis_fixture;
+
 pub(super) struct Pause {
     pub name: &'static str,
     pub entered: Arc<Notify>,
     pub release: Arc<Notify>,
 }
+
 fn pause(backend: &RedisBackend, name: &'static str) -> (Arc<Notify>, Arc<Notify>) {
     let entered = Arc::new(Notify::new());
     let release = Arc::new(Notify::new());
@@ -20,11 +23,15 @@ fn pause(backend: &RedisBackend, name: &'static str) -> (Arc<Notify>, Arc<Notify
         entered: entered.clone(),
         release: release.clone(),
     });
+
     (entered, release)
 }
+
 #[cauldron(root)]
 struct App;
+
 struct Allow;
+
 impl crate::dispatch::SocketGateway for Allow {
     fn call(
         &self,
@@ -34,6 +41,7 @@ impl crate::dispatch::SocketGateway for Allow {
         Box::pin(async { Ok(()) })
     }
 }
+
 struct Fixture {
     _redis: redis_fixture::Redis,
     _shutdown: tokio::sync::watch::Sender<bool>,
@@ -41,6 +49,7 @@ struct Fixture {
     context: SocketContext,
     output: tokio::sync::mpsc::Receiver<crate::hub::Queued>,
 }
+
 impl Fixture {
     async fn new(replay: bool) -> Self {
         let redis = redis_fixture::Redis::start().await;
@@ -103,6 +112,7 @@ impl Fixture {
             )
             .await
             .unwrap();
+
         Self {
             _redis: redis,
             _shutdown: shutdown,
@@ -111,16 +121,19 @@ impl Fixture {
             output,
         }
     }
+
     async fn next(&mut self) -> serde_json::Value {
         let queued = tokio::time::timeout(std::time::Duration::from_secs(2), self.output.recv())
             .await
             .unwrap()
             .unwrap();
+
         match queued.message {
             Message::Text(s) => serde_json::from_str(&s).unwrap(),
             other => panic!("{other:?}"),
         }
     }
+
     async fn reset_generation(&self) {
         let mut connection = self
             .backend
@@ -141,6 +154,7 @@ impl Fixture {
             .unwrap();
     }
 }
+
 #[tokio::test]
 async fn leave_waits_for_inflight_replay_join_and_stops_its_reader() {
     let mut f = Fixture::new(true).await;
@@ -155,9 +169,11 @@ async fn leave_waits_for_inflight_replay_join_and_stops_its_reader() {
         .is_ok();
     release.notify_one();
     join.await.unwrap().unwrap();
+
     if !completed_early {
         leave.await.unwrap().unwrap();
     }
+
     assert!(
         !completed_early,
         "leave completed before replay join could install its reader"
@@ -175,6 +191,7 @@ async fn leave_waits_for_inflight_replay_join_and_stops_its_reader() {
     );
     f.context.tasks.abort_and_wait().await;
 }
+
 #[tokio::test]
 async fn replay_rejoin_stops_old_reader_before_catchup() {
     let mut f = Fixture::new(true).await;
@@ -214,6 +231,7 @@ async fn replay_rejoin_stops_old_reader_before_catchup() {
     assert_eq!(f.next().await["data"], 2);
     f.context.tasks.abort_and_wait().await;
 }
+
 #[tokio::test]
 async fn restoration_retires_generation_lost_between_info_and_renewal() {
     let f = Fixture::new(false).await;
@@ -237,6 +255,7 @@ async fn restoration_retires_generation_lost_between_info_and_renewal() {
         "stale local generation survived failed renewal"
     );
 }
+
 #[tokio::test]
 async fn new_generation_join_does_not_inherit_stale_members() {
     let f = Fixture::new(false).await;
@@ -267,6 +286,7 @@ async fn raw_generation_retirement_never_injects_json() {
             .get_mut(&("/test".into(), f.context.id().clone()))
             .unwrap();
         sender.mode = EndpointMode::Raw;
+
         sender.close.subscribe()
     };
     f.reset_generation().await;

@@ -37,6 +37,7 @@ impl ConfigurationIssue {
     /// Attaches the winning source label, or `default` for a rejected default.
     pub fn with_source(mut self, source: impl Into<String>) -> Self {
         self.source = Some(source.into());
+
         self
     }
 
@@ -99,6 +100,7 @@ impl ConfigurationErrors {
         if prefix.is_empty() {
             return;
         }
+
         for issue in &mut self.issues {
             issue.key = if issue.key.is_empty() {
                 prefix.to_owned()
@@ -116,15 +118,18 @@ impl fmt::Display for ConfigurationErrors {
             if index > 0 {
                 formatter.write_str("\n")?;
             }
+
             write!(
                 formatter,
                 "{} [{}]: {}",
                 issue.key, issue.code, issue.message
             )?;
+
             if let Some(source) = &issue.source {
                 write!(formatter, " (source: {source})")?;
             }
         }
+
         Ok(())
     }
 }
@@ -136,15 +141,18 @@ impl From<ConfigurationErrors> for Error {
     fn from(errors: ConfigurationErrors) -> Self {
         let mut diagnostics = errors.issues.into_iter().map(|issue| {
             let mut message = format!("[{}]: {}", issue.code, issue.message);
+
             if let Some(source) = issue.source {
                 message.push_str(&format!(" (source: {source})"));
             }
+
             Diagnostic::new(FURNACE020, "typed configuration is invalid", message)
                 .with_subject(issue.key)
         });
         let primary = diagnostics
             .next()
             .expect("configuration errors are non-empty");
+
         Self::from_diagnostics(primary, diagnostics)
     }
 }

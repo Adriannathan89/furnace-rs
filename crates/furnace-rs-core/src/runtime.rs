@@ -13,5 +13,6 @@ where
         .enable_all()
         .build()
         .unwrap_or_else(|_| panic!("FURNACE failed to construct the Tokio runtime"));
+
     runtime.block_on(future)
 }

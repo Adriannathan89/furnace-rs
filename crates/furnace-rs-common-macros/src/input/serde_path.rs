@@ -18,6 +18,7 @@ impl Naming {
     /// Reads Serde rename and representation settings that affect validation paths.
     pub fn parse(attributes: &[Attribute]) -> syn::Result<Self> {
         let mut naming = Self::default();
+
         for attr in attributes
             .iter()
             .filter(|attr| attr.path().is_ident("serde"))
@@ -25,8 +26,10 @@ impl Naming {
             // Parse all metadata structurally, ignoring deserialization behavior
             // such as defaults and aliases: Serde owns those semantics.
             let items = attr.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
+
             for item in items {
                 let path = item.path();
+
                 if path.is_ident("flatten") {
                     naming.flatten = true;
                 } else if path.is_ident("transparent") {
@@ -46,6 +49,7 @@ impl Naming {
                 }
             }
         }
+
         Ok(naming)
     }
 }
@@ -56,17 +60,21 @@ fn deserialize_name(meta: &Meta) -> syn::Result<Option<String>> {
         Meta::NameValue(value) => {
             let expression = &value.value;
             let literal: LitStr = syn::parse2(quote::quote!(#expression))?;
+
             Ok(Some(literal.value()))
         }
         Meta::List(list) => {
             let mut result = None;
             list.parse_nested_meta(|meta| {
                 let value: LitStr = meta.value()?.parse()?;
+
                 if meta.path.is_ident("deserialize") {
                     result = Some(value.value());
                 }
+
                 Ok(())
             })?;
+
             Ok(result)
         }
         _ => Err(Error::new_spanned(meta, "expected a Serde name")),
@@ -83,21 +91,27 @@ pub(super) fn rename(name: &str, rule: Option<&str>, variant: bool) -> syn::Resu
         if !variant {
             return name.to_owned();
         }
+
         let mut output = String::new();
+
         for (index, character) in name.char_indices() {
             if index > 0 && character.is_uppercase() {
                 output.push('_');
             }
+
             output.push(character.to_ascii_lowercase());
         }
+
         output
     };
     let pascal = || {
         if variant {
             return name.to_owned();
         }
+
         let mut upper = true;
         let mut output = String::new();
+
         for character in name.chars() {
             if character == '_' {
                 upper = true;
@@ -110,8 +124,10 @@ pub(super) fn rename(name: &str, rule: Option<&str>, variant: bool) -> syn::Resu
                 upper = false;
             }
         }
+
         output
     };
+
     Ok(match rule {
         "lowercase" => {
             if variant {
@@ -125,6 +141,7 @@ pub(super) fn rename(name: &str, rule: Option<&str>, variant: bool) -> syn::Resu
         "camelCase" => {
             let value = pascal();
             let mut chars = value.chars();
+
             chars.next().map_or(String::new(), |first| {
                 format!("{}{}", first.to_ascii_lowercase(), chars.as_str())
             })

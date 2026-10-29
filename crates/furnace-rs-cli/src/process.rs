@@ -61,9 +61,11 @@ async fn spawn_dev_application_from_parts(
     // Windows locks a running executable, so Cargo cannot replace the build
     // artifact during the next dev-loop rebuild. Run an owned shadow copy.
     let mut shadow_executable = control_directory.path().join("application");
+
     if let Some(extension) = executable.extension() {
         shadow_executable.set_extension(extension);
     }
+
     tokio::fs::copy(executable, &shadow_executable)
         .await
         .map_err(|error| {
@@ -81,9 +83,11 @@ async fn spawn_dev_application_from_parts(
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .kill_on_drop(true);
+
     if let Some(built) = built {
         built.configure_runtime(&mut command);
     }
+
     let child = spawn_dev_child(&mut command)
         .await
         .map_err(|error| process_error("could not start the selected application", error))?;
@@ -100,6 +104,7 @@ async fn spawn_dev_child(command: &mut Command) -> std::io::Result<tokio::proces
     // A concurrent fork can briefly inherit a writable descriptor for the
     // shadow executable even after the copy closes its own descriptor.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+
     loop {
         match command.spawn() {
             Err(error)
@@ -142,6 +147,7 @@ impl ApplicationProcess {
                 result.map_err(|error| {
                     process_error("could not wait for the selected application", error)
                 })?;
+
                 Ok(StopOutcome::Graceful)
             }
             Err(_) => {
@@ -151,6 +157,7 @@ impl ApplicationProcess {
                 self.child.wait().await.map_err(|error| {
                     process_error("could not reap the selected application", error)
                 })?;
+
                 Ok(StopOutcome::Forced)
             }
         }
@@ -173,6 +180,7 @@ pub(crate) fn application_command(built: &BuiltApplication, arguments: &[OsStrin
         .stderr(Stdio::inherit())
         .kill_on_drop(true);
     built.configure_runtime(&mut command);
+
     command
 }
 
@@ -216,6 +224,7 @@ mod tests {
     use super::{StopOutcome, spawn_dev_application_from_parts};
 
     const GRACEFUL_FIXTURE: &str = "process::tests::graceful_fixture_child";
+
     const FORCED_FIXTURE: &str = "process::tests::forced_fixture_child";
 
     #[cfg(target_os = "linux")]
@@ -314,9 +323,11 @@ mod tests {
         };
         let control = shutdown.parent().unwrap();
         fs::write(control.join("ready"), std::process::id().to_string()).unwrap();
+
         while !shutdown.is_file() {
             std::thread::sleep(Duration::from_millis(10));
         }
+
         fs::write(control.join("completion"), "graceful").unwrap();
     }
 
@@ -330,6 +341,7 @@ mod tests {
             std::process::id().to_string(),
         )
         .unwrap();
+
         loop {
             std::thread::sleep(Duration::from_secs(1));
         }

@@ -209,6 +209,7 @@ pub mod __private {
     pub use crate::router::build_test_router_for;
     #[cfg(feature = "http")]
     pub use crate::validation::support as input_validation;
+
     /// Environment variable used by the development supervisor for graceful shutdown.
     #[doc(hidden)]
     pub const DEV_SHUTDOWN_ENV: &str = "FURNACE_INTERNAL_DEV_SHUTDOWN_PATH";
@@ -250,11 +251,13 @@ pub mod __private {
             .context()
             .resolve::<crate::server_config::ServerBinding>()?;
         let (host, port) = binding.address();
+
         Ok((host.to_owned(), port))
     }
 
     #[cfg(all(feature = "http", feature = "jwt"))]
     pub use crate::passport::{PassportGuardLayer, PassportGuardState};
+
     #[cfg(all(feature = "http", feature = "jwt"))]
     #[allow(clippy::result_large_err)]
     /// Resolves strategy bindings for Passport guards selected by an analyzed module graph.
@@ -262,8 +265,10 @@ pub mod __private {
         cauldron_graph: Option<&furnace_rs_core::CauldronGraph>,
     ) -> furnace_rs_core::Result<crate::passport::PassportStrategyPreflight<'static>> {
         let scope = crate::http_scope::HttpApplicationScope::for_cauldron_graph(cauldron_graph)?;
+
         crate::passport::PassportStrategyCatalog::preflight_scoped(cauldron_graph, scope.guards())
     }
+
     #[cfg(feature = "http")]
     pub use crate::route::{RouterBuildContext, ValidatedRouteIter, validate_descriptors};
     #[cfg(feature = "http")]

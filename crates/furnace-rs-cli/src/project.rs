@@ -109,6 +109,7 @@ impl CargoProject {
             .filter(|package| package.source.is_none() && reachable.contains(&package.id))
             .map(|package| (package.id.clone(), package_root(package)))
             .collect();
+
         Ok(ResolvedApplication {
             local_packages,
             furnace_version: self.direct_furnace_version(selected),
@@ -132,8 +133,10 @@ impl CargoProject {
         if !roots.contains(&selected_root) {
             roots.push(selected_root);
         }
+
         roots.sort();
         roots.dedup();
+
         roots
     }
 
@@ -148,12 +151,14 @@ impl CargoProject {
             .collect::<Vec<_>>();
         roots.sort();
         roots.dedup();
+
         roots
     }
 
     /// Requires exactly one Cargo default member when the workspace root is virtual.
     fn resolve_default_package(&self) -> Result<&Package, CliError> {
         let candidates = self.metadata.workspace_default_packages();
+
         match candidates.as_slice() {
             [package] => Ok(*package),
             [] => Err(CliError::new(
@@ -165,6 +170,7 @@ impl CargoProject {
             .with_suggestion("pass --package <package>")),
             _ => {
                 let names = sorted_package_names(candidates);
+
                 Err(CliError::new(
                     FURNACE200,
                     "Cargo application target is ambiguous",
@@ -239,8 +245,10 @@ impl CargoProject {
         };
 
         let mut index = 0;
+
         while index < reachable.len() {
             let package_id = reachable[index].clone();
+
             if let Some(node) = resolve.nodes.iter().find(|node| node.id == package_id) {
                 for dependency in &node.deps {
                     if !reachable.contains(&dependency.pkg) {
@@ -248,8 +256,10 @@ impl CargoProject {
                     }
                 }
             }
+
             index += 1;
         }
+
         reachable
     }
 }
@@ -346,10 +356,12 @@ fn parse_metadata_output(
             stderr: String::from_utf8(output.stderr)?,
         });
     }
+
     let stdout = std::str::from_utf8(&output.stdout)?
         .lines()
         .find(|line| line.starts_with('{'))
         .ok_or(cargo_metadata::Error::NoJson)?;
+
     MetadataCommand::parse(stdout)
 }
 
@@ -441,6 +453,7 @@ fn resolve_binary(package: &Package, binary: Option<&str>) -> Result<String, Cli
                 .map(|target| target.name.clone())
                 .collect::<Vec<_>>();
             names.sort();
+
             Err(CliError::new(
                 FURNACE200,
                 "Cargo application target is ambiguous",
@@ -463,6 +476,7 @@ fn sorted_package_names(packages: Vec<&Package>) -> Vec<String> {
         .map(|package| package.name.clone())
         .collect::<Vec<_>>();
     names.sort();
+
     names
 }
 
@@ -472,6 +486,7 @@ fn package_root(package: &Package) -> PathBuf {
     let root = manifest
         .parent()
         .expect("Cargo manifests always have a parent directory");
+
     canonical_path(root)
 }
 
@@ -565,6 +580,7 @@ mod tests {
             std::fs::create_dir_all(package.join("src")).unwrap();
             std::fs::write(package.join("src/lib.rs"), "").unwrap();
         }
+
         std::fs::write(
             root.join("Cargo.toml"),
             "[workspace]\nmembers = [\"app\", \"unrelated\"]\nresolver = \"3\"\n",

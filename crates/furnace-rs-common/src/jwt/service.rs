@@ -68,6 +68,7 @@ impl JwtService {
             max_token_bytes: config.max_token_bytes(),
         };
         let key_ring = KeyRing::from_config(&config)?;
+
         Ok(Self {
             inner: Arc::new(JwtServiceInner { key_ring, policy }),
         })
@@ -79,6 +80,7 @@ impl JwtService {
         C: serde::Serialize,
     {
         let lifetime = options.lifetime().as_secs();
+
         if lifetime == 0 {
             return Err(JwtError::new(JwtErrorKind::Serialization));
         }
@@ -107,6 +109,7 @@ impl JwtService {
         let mut header = jsonwebtoken::Header::new(algorithm.as_jsonwebtoken());
         header.typ = Some(options.kind().header_type().to_owned());
         header.kid = key_id.map(str::to_owned);
+
         crypto::encode(&header, &claims, key).map_err(map_signing_error)
     }
 
@@ -120,6 +123,7 @@ impl JwtService {
     pub fn decode_header(&self, token: &str) -> JwtResult<JwtHeader> {
         self.ensure_token_size(token)?;
         let (header, _, _) = jwt_parts(token)?;
+
         decode_jwt_header(header)
     }
 
@@ -139,6 +143,7 @@ impl JwtService {
         // Require a syntactically valid supported JWT header while deliberately
         // not treating its value as trusted.
         let _ = decode_jwt_header(header)?;
+
         decode_claims(payload)
     }
 
@@ -172,6 +177,7 @@ impl JwtService {
         let (encoded_header, encoded_payload, _) = jwt_parts(token)?;
         let header = decode_jwt_header(encoded_header)?;
         let (key, key_algorithm) = self.inner.key_ring.verifier(header.key_id.as_deref())?;
+
         if header.algorithm != key_algorithm {
             return Err(JwtError::new(JwtErrorKind::AlgorithmMismatch));
         }
@@ -179,6 +185,7 @@ impl JwtService {
         verify_signature(token, key, key_algorithm)?;
         let claims = decode_claims(encoded_payload)?;
         self.validate_claims(&header, &claims.registered, &validation, now()?)?;
+
         Ok(VerifiedJwt { header, claims })
     }
 
@@ -187,6 +194,7 @@ impl JwtService {
         if token.len() > self.inner.policy.max_token_bytes {
             return Err(JwtError::new(JwtErrorKind::TokenTooLarge));
         }
+
         Ok(())
     }
 
@@ -207,6 +215,7 @@ impl JwtService {
         if claims.expires_at <= now.saturating_sub(self.inner.policy.clock_skew_seconds) {
             return Err(JwtError::new(JwtErrorKind::Expired));
         }
+
         if let Some(not_before) = claims.not_before
             && not_before > now.saturating_add(self.inner.policy.clock_skew_seconds)
         {
@@ -218,6 +227,7 @@ impl JwtService {
         {
             return Err(JwtError::new(JwtErrorKind::IssuerMismatch));
         }
+
         if let Some(expected) = validation.issuer_value()
             && claims.issuer.as_deref() != Some(expected)
         {
@@ -235,6 +245,7 @@ impl JwtService {
         {
             return Err(JwtError::new(JwtErrorKind::AudienceMismatch));
         }
+
         if let Some(expected) = validation.audience_value()
             && !claims.audiences.iter().any(|audience| audience == expected)
         {
@@ -244,19 +255,23 @@ impl JwtService {
         if validation.subject_required() && claims.subject.is_none() {
             return Err(JwtError::new(JwtErrorKind::SubjectMismatch));
         }
+
         if let Some(expected) = validation.subject_value()
             && claims.subject.as_deref() != Some(expected)
         {
             return Err(JwtError::new(JwtErrorKind::SubjectMismatch));
         }
+
         if validation.jwt_id_required() && claims.jwt_id.is_none() {
             return Err(JwtError::new(JwtErrorKind::JwtIdMismatch));
         }
+
         if let Some(expected) = validation.jwt_id_value()
             && claims.jwt_id.as_deref() != Some(expected)
         {
             return Err(JwtError::new(JwtErrorKind::JwtIdMismatch));
         }
+
         Ok(())
     }
 }
@@ -298,12 +313,14 @@ where
         Value::Object(object) => object,
         _ => return Err(JwtError::new(JwtErrorKind::Serialization)),
     };
+
     if object
         .keys()
         .any(|key| RESERVED_CLAIMS.contains(&key.as_str()))
     {
         return Err(JwtError::new(JwtErrorKind::Serialization));
     }
+
     Ok(object)
 }
 
@@ -312,9 +329,11 @@ fn insert_registered_claims(claims: &mut Map<String, Value>, registered: Registe
     if let Some(issuer) = registered.issuer {
         claims.insert("iss".to_owned(), Value::String(issuer));
     }
+
     if let Some(subject) = registered.subject {
         claims.insert("sub".to_owned(), Value::String(subject));
     }
+
     if !registered.audiences.is_empty() {
         claims.insert(
             "aud".to_owned(),
@@ -327,20 +346,25 @@ fn insert_registered_claims(claims: &mut Map<String, Value>, registered: Registe
             ),
         );
     }
+
     claims.insert(
         "exp".to_owned(),
         Value::Number(Number::from(registered.expires_at)),
     );
+
     if let Some(not_before) = registered.not_before {
         claims.insert("nbf".to_owned(), Value::Number(Number::from(not_before)));
     }
+
     claims.insert(
         "iat".to_owned(),
         Value::Number(Number::from(registered.issued_at)),
     );
+
     if let Some(jwt_id) = registered.jwt_id {
         claims.insert("jti".to_owned(), Value::String(jwt_id));
     }
+
     claims.insert(
         "token_use".to_owned(),
         Value::String(registered.token_kind.claim_value().to_owned()),
@@ -355,21 +379,25 @@ fn jwt_parts(token: &str) -> JwtResult<(&str, &str, &str)> {
     else {
         return Err(JwtError::new(JwtErrorKind::MalformedToken));
     };
+
     if header.is_empty() || payload.is_empty() || signature.is_empty() {
         return Err(JwtError::new(JwtErrorKind::MalformedToken));
     }
+
     Ok((header, payload, signature))
 }
 
 /// Decodes the supported JWT header fields and rejects unknown members.
 fn decode_jwt_header(encoded_header: &str) -> JwtResult<JwtHeader> {
     let mut object = decode_json_object(encoded_header)?;
+
     if object
         .keys()
         .any(|key| !matches!(key.as_str(), "alg" | "kid" | "typ"))
     {
         return Err(JwtError::new(JwtErrorKind::MalformedToken));
     }
+
     let algorithm = match take_string(&mut object, "alg")? {
         Some(value) => value
             .parse()
@@ -378,6 +406,7 @@ fn decode_jwt_header(encoded_header: &str) -> JwtResult<JwtHeader> {
     };
     let key_id = take_string(&mut object, "kid")?;
     let token_type = take_string(&mut object, "typ")?;
+
     Ok(JwtHeader {
         algorithm,
         key_id,
@@ -401,6 +430,7 @@ fn verify_signature(
         algorithm.as_jsonwebtoken(),
     )
     .map_err(map_verification_error)?;
+
     if valid {
         Ok(())
     } else {
@@ -419,6 +449,7 @@ fn map_signing_error(error: jsonwebtoken::errors::Error) -> JwtError {
         ErrorKind::Json(_) => JwtErrorKind::Serialization,
         _ => JwtErrorKind::Serialization,
     };
+
     JwtError::new(kind)
 }
 
@@ -437,6 +468,7 @@ fn map_verification_error(error: jsonwebtoken::errors::Error) -> JwtError {
         | ErrorKind::InvalidToken => JwtErrorKind::MalformedToken,
         _ => JwtErrorKind::MalformedToken,
     };
+
     JwtError::new(kind)
 }
 
@@ -460,6 +492,7 @@ where
     };
     let custom = serde_json::from_value(Value::Object(claims))
         .map_err(|_| JwtError::new(JwtErrorKind::Deserialization))?;
+
     Ok(JwtClaims {
         registered: RegisteredJwtClaims {
             issuer,
@@ -482,6 +515,7 @@ fn take_required_u64(
     missing: JwtErrorKind,
 ) -> JwtResult<u64> {
     let value = object.remove(name).ok_or_else(|| JwtError::new(missing))?;
+
     value
         .as_u64()
         .ok_or_else(|| JwtError::new(JwtErrorKind::MalformedToken))
@@ -515,6 +549,7 @@ fn take_audiences(object: &mut Map<String, Value>) -> JwtResult<Vec<String>> {
     let Some(value) = object.remove("aud") else {
         return Ok(Vec::new());
     };
+
     match value {
         Value::String(audience) => Ok(vec![audience]),
         Value::Array(audiences) => audiences
@@ -535,6 +570,7 @@ fn decode_json_object(encoded: &str) -> JwtResult<Map<String, Value>> {
         .map_err(|_| JwtError::new(JwtErrorKind::MalformedToken))?;
     let value = serde_json::from_slice::<StrictJsonValue>(&bytes)
         .map_err(|_| JwtError::new(JwtErrorKind::MalformedToken))?;
+
     match value.into_value() {
         Value::Object(object) => Ok(object),
         _ => Err(JwtError::new(JwtErrorKind::MalformedToken)),
@@ -661,9 +697,11 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         A: SeqAccess<'de>,
     {
         let mut values = Vec::new();
+
         while let Some(value) = sequence.next_element()? {
             values.push(value);
         }
+
         Ok(StrictJsonValue::Array(values))
     }
 
@@ -673,11 +711,13 @@ impl<'de> Visitor<'de> for StrictJsonVisitor {
         A: MapAccess<'de>,
     {
         let mut values = BTreeMap::new();
+
         while let Some((key, value)) = map.next_entry::<String, StrictJsonValue>()? {
             if values.insert(key, value).is_some() {
                 return Err(serde::de::Error::custom("duplicate JSON object key"));
             }
         }
+
         Ok(StrictJsonValue::Object(values))
     }
 }
@@ -704,6 +744,7 @@ mod tests {
             ))
             .build()
             .unwrap();
+
         JwtService::from_config(&config).unwrap()
     }
 

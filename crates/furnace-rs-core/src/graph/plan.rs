@@ -27,6 +27,7 @@ pub(crate) fn create(
             .iter()
             .position(|node| node.type_id == edge.dependency_type_id)
             .expect("dependency edges reference graph dependencies");
+
         if graph.providers[provider].state == ProviderState::Planned
             && graph.providers[dependency].state == ProviderState::Planned
         {
@@ -41,6 +42,7 @@ pub(crate) fn create(
         .filter(|provider| provider.state == ProviderState::Planned)
         .count();
     let mut ready = BTreeSet::new();
+
     for (index, provider) in graph.providers.iter().enumerate() {
         if provider.state == ProviderState::Planned && remaining_dependencies[index] == 0 {
             ready.insert(ReadyNode::new(index, provider));
@@ -48,6 +50,7 @@ pub(crate) fn create(
     }
 
     let mut steps = Vec::with_capacity(planned_count);
+
     while let Some(ready_node) = ready.pop_first() {
         let provider = &graph.providers[ready_node.index];
         let descriptor = descriptors
@@ -65,6 +68,7 @@ pub(crate) fn create(
 
         for consumer in &consumers[ready_node.index] {
             remaining_dependencies[*consumer] -= 1;
+
             if remaining_dependencies[*consumer] == 0 {
                 ready.insert(ReadyNode::new(*consumer, &graph.providers[*consumer]));
             }
@@ -76,6 +80,7 @@ pub(crate) fn create(
         planned_count,
         "cycle validation must precede planning"
     );
+
     ConstructionPlan { steps }
 }
 
@@ -96,6 +101,7 @@ impl ReadyNode {
             Some(location) => (location.file, location.line, location.column),
             None => ("", 0, 0),
         };
+
         Self {
             type_name: provider.type_name,
             origin: provider.origin,

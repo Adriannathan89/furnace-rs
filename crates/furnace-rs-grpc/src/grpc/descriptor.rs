@@ -11,6 +11,7 @@ pub struct GrpcGuard {
     #[cfg(feature = "jwt")]
     descriptor: fn() -> &'static crate::GuardDescriptor,
 }
+
 impl GrpcGuard {
     /// Captures the existing typed guard contract.
     #[cfg(feature = "jwt")]
@@ -19,12 +20,14 @@ impl GrpcGuard {
             descriptor: G::descriptor,
         }
     }
+
     /// Returns the underlying static Passport policy.
     #[cfg(feature = "jwt")]
     pub fn descriptor(self) -> &'static crate::GuardDescriptor {
         (self.descriptor)()
     }
 }
+
 impl fmt::Debug for GrpcGuard {
     /// Formats the registration identity without exposing function pointers.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -57,6 +60,7 @@ pub struct GrpcServiceDescriptor {
     location: SourceLocation,
     registrar: Option<super::GrpcServiceRegistrar>,
 }
+
 impl GrpcServiceDescriptor {
     /// Creates immutable registration data without resolving a service.
     #[allow(clippy::too_many_arguments)]
@@ -81,54 +85,68 @@ impl GrpcServiceDescriptor {
             rust_methods: None,
         }
     }
+
     /// Captures all authored generated-trait methods for descriptor coverage validation.
     #[doc(hidden)]
     pub const fn with_rust_methods(mut self, methods: &'static [&'static str]) -> Self {
         self.rust_methods = Some(methods);
+
         self
     }
+
     /// Returns the authored Rust trait methods used for descriptor coverage checks.
     pub(crate) const fn rust_methods(&self) -> Option<&'static [&'static str]> {
         self.rust_methods
     }
+
     /// Returns the selected DI output identity.
     pub fn provider_type_id(&self) -> TypeId {
         (self.provider)()
     }
+
     /// Returns the Rust implementation's identity.
     pub fn implementation(&self) -> &'static str {
         (self.implementation)()
     }
+
     /// Returns the generated fully qualified protobuf service name.
     pub fn name(&self) -> &'static str {
         (self.wire_name)()
     }
+
     /// Returns encoded protobuf file descriptors for this registration.
     pub const fn descriptor_set(&self) -> &'static [u8] {
         self.descriptor_set
     }
+
     /// Returns the inherited service-wide protection.
     pub const fn guard(&self) -> Option<GrpcGuard> {
         self.guard
     }
+
     /// Returns explicit method-level policy overrides.
     pub const fn overrides(&self) -> &'static [GrpcMethodOverride] {
         self.overrides
     }
+
     /// Returns the authored declaration location.
     pub const fn location(&self) -> SourceLocation {
         self.location
     }
+
     /// Attaches a typed generated server adapter.
     pub const fn with_registrar(mut self, registrar: super::GrpcServiceRegistrar) -> Self {
         self.registrar = Some(registrar);
+
         self
     }
+
     /// Returns the typed generated server adapter.
     pub const fn registrar(&self) -> Option<super::GrpcServiceRegistrar> {
         self.registrar
     }
 }
+
 impl fmt::Debug for GrpcServiceDescriptor {
     /// Formats the registration identity without exposing function pointers.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -145,6 +163,7 @@ pub struct GrpcServiceRegistration {
     /// Registered descriptor, with no application instance attached.
     pub descriptor: &'static GrpcServiceDescriptor,
 }
+
 furnace_rs_core::__private::inventory::collect!(GrpcServiceRegistration);
 
 /// Static identity of one DI-managed named remote client.
@@ -155,6 +174,7 @@ pub struct GrpcClientDescriptor {
     output_type_name: fn() -> &'static str,
     location: SourceLocation,
 }
+
 impl GrpcClientDescriptor {
     /// Creates named-client metadata without constructing the wrapper.
     pub const fn new(
@@ -170,29 +190,35 @@ impl GrpcClientDescriptor {
             location,
         }
     }
+
     /// Returns the configuration name.
     pub const fn name(&self) -> &'static str {
         self.name
     }
+
     /// Returns the wrapper's exact native output identity.
     pub fn output_type_id(&self) -> TypeId {
         (self.output_type_id)()
     }
+
     /// Returns the wrapper's Rust type name.
     pub fn output_type_name(&self) -> &'static str {
         (self.output_type_name)()
     }
+
     /// Returns the declaration source.
     pub const fn location(&self) -> SourceLocation {
         self.location
     }
 }
+
 /// Links one named client for side-effect-free preflight and inspection.
 #[doc(hidden)]
 pub struct GrpcClientRegistration {
     /// Named client metadata.
     pub descriptor: &'static GrpcClientDescriptor,
 }
+
 furnace_rs_core::__private::inventory::collect!(GrpcClientRegistration);
 
 /// One typed policy belonging to a cauldron root's optional reflection service.
@@ -202,6 +228,7 @@ pub struct GrpcReflectionDescriptor {
     guard: GrpcGuard,
     location: SourceLocation,
 }
+
 impl GrpcReflectionDescriptor {
     /// Creates a root policy without constructing a provider.
     pub const fn new(root: fn() -> TypeId, guard: GrpcGuard, location: SourceLocation) -> Self {
@@ -211,23 +238,28 @@ impl GrpcReflectionDescriptor {
             location,
         }
     }
+
     /// Returns the root identity.
     pub fn root(&self) -> TypeId {
         (self.root)()
     }
+
     /// Returns the typed policy.
     pub const fn guard(&self) -> GrpcGuard {
         self.guard
     }
+
     /// Returns the declaration source.
     pub const fn location(&self) -> SourceLocation {
         self.location
     }
 }
+
 /// Linked root reflection metadata.
 #[doc(hidden)]
 pub struct GrpcReflectionRegistration {
     /// Static policy declaration.
     pub descriptor: &'static GrpcReflectionDescriptor,
 }
+
 furnace_rs_core::__private::inventory::collect!(GrpcReflectionRegistration);

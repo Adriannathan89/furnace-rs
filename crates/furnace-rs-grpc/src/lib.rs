@@ -7,14 +7,18 @@ pub use furnace_rs_common as common;
 pub use furnace_rs_core as core;
 /// Generated service, client, and root reflection registration attributes.
 pub use furnace_rs_grpc_macros::{grpc_client, grpc_reflection, grpc_service};
+
 /// Native transport implementation and protobuf registration contracts.
 pub mod grpc;
+
 pub use grpc::*;
+
 #[cfg(test)]
 #[path = "grpc/config_tests.rs"]
 mod grpc_config_tests;
 /// Conventional transport selection configuration.
 pub mod runtime;
+
 /// Shared Passport and JWT contracts for optional gRPC admission protection.
 #[cfg(feature = "jwt")]
 pub use furnace_rs_common::{

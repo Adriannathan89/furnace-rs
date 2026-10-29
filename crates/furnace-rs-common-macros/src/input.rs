@@ -12,9 +12,11 @@ use syn::{Data, DeriveInput, Error, Fields, Generics, Path, Type, parse_quote, s
 /// Expands `Input` by generating representation-aware field checks and custom validators.
 pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     let mut common = crate::path::common_path()?;
+
     if common.is_ident("crate") {
         common = parse_quote!(::furnace_rs_common);
     }
+
     let naming = Naming::parse(&input.attrs)?;
     let whole = attributes::parse(&input.attrs, true)?;
     let mut generics = input.generics.clone();
@@ -22,6 +24,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
         Data::Struct(data) => fields(&data.fields, &naming, &[], &common, &mut generics, false)?.1,
         Data::Enum(data) => {
             let mut arms = Vec::new();
+
             for variant in &data.variants {
                 if variant
                     .attrs
@@ -33,6 +36,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
                         "put validators on enum fields or the complete enum",
                     ));
                 }
+
                 let mut variant_naming = Naming::parse(&variant.attrs)?;
                 let name = variant_naming.rename.clone().unwrap_or(serde_path::rename(
                     &variant.ident.to_string(),
@@ -48,9 +52,11 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
                 } else {
                     vec![quote!(#common::ValidationPathSegment::Field(#name.into()))]
                 };
+
                 if variant_naming.rename_all.is_none() {
                     variant_naming.rename_all = naming.rename_all_fields.clone();
                 }
+
                 let (pattern, body) = fields(
                     &variant.fields,
                     &variant_naming,
@@ -62,6 +68,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
                 let ident = &variant.ident;
                 arms.push(quote!(Self::#ident #pattern => { #body }));
             }
+
             quote!(match self { #(#arms),* })
         }
         Data::Union(_) => {
@@ -86,6 +93,7 @@ pub(crate) fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
     });
     let ident = &input.ident;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
     Ok(quote! {
         impl #impl_generics #common::Input for #ident #ty_generics #where_clause {
             #[doc = "Validates this value and returns ordered issues relative to its representation."]
@@ -114,12 +122,14 @@ fn fields(
     // Enum tagging contributes only the prefix surrounding that representation.
     let unwrap_field = naming.transparent
         || matches!(fields, Fields::Unnamed(fields) if fields.unnamed.len() == 1);
+
     for (index, field) in fields.iter().enumerate() {
         let binding = format_ident!("__furnace_field_{index}");
         let field_naming = Naming::parse(&field.attrs)?;
         let mut path = prefix.to_vec();
         let access = if let Some(ident) = &field.ident {
             patterns.push(quote!(#ident: #binding));
+
             if !field_naming.flatten && !unwrap_field {
                 let name = field_naming.rename.unwrap_or(serde_path::rename(
                     &ident.to_string(),
@@ -128,13 +138,17 @@ fn fields(
                 )?);
                 path.push(quote!(#common::ValidationPathSegment::Field(#name.into())));
             }
+
             quote!(&self.#ident)
         } else {
             patterns.push(quote!(#binding));
+
             if !field_naming.flatten && !unwrap_field {
                 path.push(quote!(#common::ValidationPathSegment::Index(#index)));
             }
+
             let index = syn::Index::from(index);
+
             quote!(&self.#index)
         };
         let validators = attributes::parse(&field.attrs, false)?;
@@ -148,11 +162,13 @@ fn fields(
             }
         });
     }
+
     let pattern = match fields {
         Fields::Named(_) => quote!({#(#patterns),*}),
         Fields::Unnamed(_) => quote!((#(#patterns),*)),
         Fields::Unit => quote!(),
     };
+
     Ok((pattern, quote!(#(#bodies)*)))
 }
 
@@ -187,6 +203,7 @@ fn arguments(ty: &Type) -> Vec<&Type> {
             })
             .collect();
     }
+
     Vec::new()
 }
 

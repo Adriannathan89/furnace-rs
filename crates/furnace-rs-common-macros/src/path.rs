@@ -27,15 +27,18 @@ pub(crate) fn common_path() -> syn::Result<Path> {
             FoundCrate::Itself => Ok(parse_quote!(crate::common)),
             FoundCrate::Name(name) => {
                 let name = syn::Ident::new(&name.replace('-', "_"), Span::call_site());
+
                 Ok(parse_quote!(::#name::common))
             }
         };
     }
+
     if let Ok(found) = crate_name("furnace-rs-grpc") {
         return match found {
             FoundCrate::Itself => Ok(parse_quote!(crate::common)),
             FoundCrate::Name(name) => {
                 let name = syn::Ident::new(&name.replace('-', "_"), Span::call_site());
+
                 Ok(parse_quote!(::#name::common))
             }
         };
@@ -60,11 +63,13 @@ fn found_path(found: FoundCrate, facade: bool) -> syn::Result<Path> {
 /// Converts a dependency name to a Rust path, applying the facade module when requested.
 fn named_path(name: &str, facade: bool) -> syn::Result<Path> {
     let ident = syn::Ident::new(&name.replace('-', "_"), Span::call_site());
+
     if facade {
         Ok(parse_quote!(::#ident::common))
     } else {
         Ok(parse_quote!(::#ident))
     }
 }
+
 #[cfg(test)]
 include!("../tests/support/path.rs");

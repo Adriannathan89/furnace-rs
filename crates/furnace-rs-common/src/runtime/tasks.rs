@@ -4,33 +4,41 @@ use std::{
     future::Future,
     sync::{Arc, Mutex},
 };
+
 #[derive(Clone)]
 struct Task {
     abort: tokio::task::AbortHandle,
     completed: Shared<BoxFuture<'static, ()>>,
 }
+
 #[derive(Default)]
 struct State {
     closed: bool,
     tasks: Vec<Task>,
 }
+
 /// Supervises runtime-owned connection and protocol futures across transport backends.
 #[doc(hidden)]
 #[derive(Clone, Default)]
 pub struct RuntimeTasks(Arc<Mutex<State>>);
+
 impl RuntimeTasks {
     /// Starts an empty task scope.
     pub fn new() -> Self {
         Self::default()
     }
+
     /// Retains ownership of a spawned future until it completes or shutdown cancels it.
     pub fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
         let mut state = self.0.lock().expect("runtime task scope poisoned");
+
         if state.closed {
             drop(state);
             drop(future);
+
             return;
         }
+
         state.tasks.retain(|task| !task.abort.is_finished());
         let handle = tokio::spawn(future);
         let abort = handle.abort_handle();
@@ -41,24 +49,30 @@ impl RuntimeTasks {
         .shared();
         state.tasks.push(Task { abort, completed });
     }
+
     /// Prevents new tasks from being admitted and snapshots the pending task handles.
     fn close(&self) -> Vec<Task> {
         let mut state = self.0.lock().expect("runtime task scope poisoned");
         state.closed = true;
+
         state.tasks.clone()
     }
+
     /// Closes the task scope and awaits natural completion without surrendering ownership.
     pub async fn wait(&self) {
         for task in self.close() {
             task.completed.await;
         }
     }
+
     /// Closes admission to the task scope, cancels owned futures, and joins them all.
     pub async fn abort_and_wait(&self) {
         let tasks = self.close();
+
         for task in &tasks {
             task.abort.abort();
         }
+
         for task in tasks {
             task.completed.await;
         }
@@ -72,12 +86,15 @@ mod tests {
         Arc,
         atomic::{AtomicUsize, Ordering},
     };
+
     struct Probe(Arc<AtomicUsize>);
+
     impl Drop for Probe {
         fn drop(&mut self) {
             self.0.fetch_add(1, Ordering::SeqCst);
         }
     }
+
     #[tokio::test]
     async fn cancellation_joins_owned_tasks_before_returning() {
         let tasks = RuntimeTasks::new();
@@ -94,6 +111,7 @@ mod tests {
         tasks.abort_and_wait().await;
         assert_eq!(drops.load(Ordering::SeqCst), 1);
     }
+
     #[tokio::test(start_paused = true)]
     async fn interrupted_drain_keeps_tasks_owned_for_forced_cancellation() {
         let tasks = RuntimeTasks::new();
@@ -114,6 +132,7 @@ mod tests {
         tasks.abort_and_wait().await;
         assert_eq!(drops.load(Ordering::SeqCst), 1);
     }
+
     #[tokio::test]
     async fn closed_supervisor_drops_late_tasks_without_running_them() {
         let tasks = RuntimeTasks::new();
@@ -135,6 +154,7 @@ mod tests {
 #[doc(hidden)]
 #[derive(Clone)]
 pub struct RuntimeExecutor(pub RuntimeTasks);
+
 #[cfg(feature = "http")]
 impl<F> hyper::rt::Executor<F> for RuntimeExecutor
 where

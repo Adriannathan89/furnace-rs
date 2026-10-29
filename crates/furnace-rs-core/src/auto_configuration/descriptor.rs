@@ -62,8 +62,10 @@ impl AutoConfigurationDescriptor {
     /// Allows this integration to discover requirements in focused metadata without a DI edge.
     pub const fn with_focused_requirements(mut self) -> Self {
         self.focused_requirements = true;
+
         self
     }
+
     /// Reports whether focused analysis may use this integration's metadata requirement.
     pub(crate) const fn focused_requirements(&self) -> bool {
         self.focused_requirements
@@ -151,12 +153,15 @@ impl<'a> AutoConfigurationContext<'a> {
     ) -> Self {
         self.memo = Some(memo);
         self.focus = focus;
+
         self
     }
+
     /// Returns the exact focused fixture target, when one was selected.
     pub const fn focus_type_id(&self) -> Option<TypeId> {
         self.focus
     }
+
     /// Shares immutable integration metadata within this analysis only.
     pub fn memoize<T: Clone + 'static>(&self, build: impl FnOnce() -> T) -> T {
         match self.memo {
@@ -185,6 +190,7 @@ impl<'a> AutoConfigurationContext<'a> {
     {
         let type_id = TypeId::of::<T>();
         let type_name = std::any::type_name::<T>();
+
         self.satisfied
             .iter()
             .any(|provider| provider.type_id == type_id)
@@ -225,6 +231,7 @@ impl<'a> AutoConfigurationContext<'a> {
             })
             .collect::<Vec<_>>();
         requirements.sort_by(requirement_order);
+
         requirements
     }
 
@@ -467,6 +474,7 @@ impl AutoConfigurationContribution {
         H: LifecycleHook + 'static,
     {
         self.hooks.push(Box::new(hook));
+
         self
     }
 
@@ -488,10 +496,13 @@ impl AutoConfigurationInputs {
         T: Send + Sync + 'static,
     {
         let key = (identifier, TypeId::of::<T>());
+
         if self.values.contains_key(&key) {
             return false;
         }
+
         self.values.insert(key, Box::new(value));
+
         true
     }
 

@@ -3,6 +3,7 @@ use furnace_rs_common::__private::{
     DoctorCheck, SocketEndpointReport, SocketHandlerReport, SocketInspectionDescriptor,
     SourceReport,
 };
+
 fn inspect(
     graph: Option<&furnace_rs_core::CauldronGraph>,
     config: &furnace_rs_core::Config,
@@ -19,9 +20,11 @@ fn inspect(
         .collect::<Vec<_>>();
     let selection =
         furnace_rs_common::runtime::RuntimeSelection::parse_registered(config, &adapters)?;
+
     if selection.socket {
         crate::SocketServerConfig::parse(config)?;
     }
+
     #[cfg(feature = "jwt")]
     furnace_rs_common::PassportStrategyCatalog::preflight_scoped(
         Some(graph),
@@ -63,6 +66,7 @@ fn inspect(
                 .collect(),
         })
         .collect();
+
     Ok((
         endpoints,
         vec![DoctorCheck::pass(
@@ -71,7 +75,9 @@ fn inspect(
         )],
     ))
 }
+
 furnace_rs_core::__private::inventory::submit! {SocketInspectionDescriptor{inspect}}
+
 #[cfg(feature = "jwt")]
 /// Converts a selected guard descriptor into the public inspection report.
 fn protection(
@@ -91,6 +97,7 @@ fn protection(
             .map(|value| (*value).to_owned())
             .collect(),
     };
+
     GrpcProtectionReport {
         strategy: guard.strategy().to_owned(),
         principal: guard.principal_type_name().unwrap_or_default().to_owned(),

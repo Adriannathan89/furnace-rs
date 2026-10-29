@@ -29,7 +29,9 @@ const TEMPLATES: [&str; 6] = [
 ];
 
 const PROJECT_NAME_TOKEN: &str = "{{project_name}}";
+
 const FURNACE_VERSION_TOKEN: &str = "{{furnace_version}}";
+
 const FURNACE_FRAMEWORK_VERSION: &str = furnace::FRAMEWORK_VERSION;
 
 /// One rendered starter file that has not yet been published to disk.
@@ -96,6 +98,7 @@ pub fn render_project(name: &ProjectName) -> Result<RenderedProject, TemplateErr
         .zip(TEMPLATES)
         .map(|(path, template)| {
             let path = PathBuf::from(path);
+
             if !is_safe_relative_path(&path) {
                 return Err(TemplateError);
             }

@@ -25,6 +25,7 @@ pub(crate) fn detect(graph: &ApplicationGraph) -> Vec<Cycle> {
 
     cycles.sort_by(|left, right| left.names.cmp(&right.names));
     cycles.dedup_by(|left, right| left.names == right.names);
+
     cycles
 }
 
@@ -82,6 +83,7 @@ fn outgoing(graph: &ApplicationGraph, provider: usize) -> Vec<usize> {
         })
         .collect::<Vec<_>>();
     dependencies.sort_by(|left, right| node_order(graph, *left, *right));
+
     dependencies
 }
 
@@ -93,6 +95,7 @@ fn canonicalize(graph: &ApplicationGraph, open_cycle: &[usize]) -> Vec<usize> {
         .min_by(|(_, left), (_, right)| node_order(graph, **left, **right))
         .expect("cycles are non-empty")
         .0;
+
     open_cycle[start..]
         .iter()
         .chain(&open_cycle[..start])
@@ -104,6 +107,7 @@ fn canonicalize(graph: &ApplicationGraph, open_cycle: &[usize]) -> Vec<usize> {
 fn node_order(graph: &ApplicationGraph, left: usize, right: usize) -> Ordering {
     let left = &graph.providers[left];
     let right = &graph.providers[right];
+
     left.type_name
         .cmp(right.type_name)
         .then_with(|| left.origin.cmp(&right.origin))

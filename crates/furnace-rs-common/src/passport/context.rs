@@ -198,6 +198,7 @@ fn safe_headers(headers: &HeaderMap) -> HeaderMap {
     safe.remove(AUTHORIZATION);
     safe.remove(PROXY_AUTHORIZATION);
     safe.remove(COOKIE);
+
     safe
 }
 
@@ -211,6 +212,7 @@ impl fmt::Debug for PassportContext<'_> {
             .field("has_remote_addr", &self.remote_addr.is_some());
         #[cfg(feature = "cookies")]
         debug.field("has_cookies", &self.cookies.is_some());
+
         debug.finish_non_exhaustive()
     }
 }
@@ -244,6 +246,7 @@ mod tests {
 
     impl PassportStrategy for BearerContextProbe {
         type Claims = ();
+
         type Principal = ContextProbePrincipal;
 
         const TOKEN_KIND: JwtTokenKind = JwtTokenKind::Access;
@@ -263,6 +266,7 @@ mod tests {
             assert!(context.headers().get(AUTHORIZATION).is_none());
             assert!(context.headers().get(COOKIE).is_none());
             assert!(context.headers().get("proxy-authorization").is_none());
+
             Ok(ContextProbePrincipal)
         }
     }
@@ -320,6 +324,7 @@ mod tests {
     #[cfg(feature = "cookies")]
     impl PassportStrategy for CookieContextProbe {
         type Claims = ();
+
         type Principal = ContextProbePrincipal;
 
         const TOKEN_KIND: JwtTokenKind = JwtTokenKind::Access;
@@ -347,6 +352,7 @@ mod tests {
                     .collect::<Vec<_>>(),
                 ["theme"],
             );
+
             Ok(ContextProbePrincipal)
         }
     }

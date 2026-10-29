@@ -1,5 +1,6 @@
 //! Shared lifecycle and transport failures.
 use std::{error::Error as StdError, fmt};
+
 /// An error produced while preparing, running, or stopping the selected application transports.
 #[derive(Debug)]
 #[non_exhaustive]

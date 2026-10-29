@@ -51,6 +51,7 @@ pub fn build_router(
         application.cauldron_graph(),
         http_scope.guards(),
     )?;
+
     register_scope(
         application,
         http_scope,
@@ -70,6 +71,7 @@ pub fn build_test_router_for<T: Send + Sync + 'static>(
     let passport = PassportStrategyCatalog::preflight_for_test(scope.guards(), |type_id| {
         application.context().has_output_type_id(type_id)
     })?;
+
     register_scope(
         application,
         scope,
@@ -91,6 +93,7 @@ fn register_scope(
     );
     let controllers = validate_scoped_descriptors(http_scope.controllers())?;
     let mut router = axum::Router::new();
+
     for controller in controllers {
         let mut routes = controller.routes();
         let controller_router =
@@ -98,6 +101,7 @@ fn register_scope(
         routes.finish()?;
         router = router.merge(controller_router);
     }
+
     Ok(router)
 }
 

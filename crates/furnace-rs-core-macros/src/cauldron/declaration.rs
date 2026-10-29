@@ -17,10 +17,12 @@ impl Parse for Provider {
         let output = input.parse()?;
         let injector = if input.peek(Token![=>]) {
             input.parse::<Token![=>]>()?;
+
             Some(input.parse()?)
         } else {
             None
         };
+
         Ok(Self { output, injector })
     }
 }
@@ -41,11 +43,13 @@ pub(super) struct Declaration {
 /// Rejects repeated declaration entries at the repeated token span.
 fn unique<T: ToTokens>(items: &[T]) -> syn::Result<()> {
     let mut seen = HashSet::new();
+
     for item in items {
         if !seen.insert(item.to_token_stream().to_string()) {
             return Err(Error::new_spanned(item, "duplicate declaration entry"));
         }
     }
+
     Ok(())
 }
 
@@ -54,12 +58,15 @@ impl Parse for Declaration {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let mut declaration = Self::default();
         let mut seen = HashSet::new();
+
         while !input.is_empty() {
             let name: Ident = input.parse()?;
             let option = name.to_string();
+
             if !seen.insert(option.clone()) {
                 return Err(Error::new_spanned(name, "duplicate cauldron option"));
             }
+
             match option.as_str() {
                 "root" => declaration.root = true,
                 "global" => declaration.global = true,
@@ -68,6 +75,7 @@ impl Parse for Declaration {
                     input.parse::<Token![=]>()?;
                     let list;
                     bracketed!(list in input);
+
                     match option.as_str() {
                         "providers" => {
                             declaration.providers = list
@@ -102,6 +110,7 @@ impl Parse for Declaration {
                                 .into_iter()
                                 .collect();
                             unique(&values)?;
+
                             if option == "socket_gateways" {
                                 declaration.socket_gateways = values;
                             } else {
@@ -132,11 +141,14 @@ impl Parse for Declaration {
                     ));
                 }
             }
+
             if input.is_empty() {
                 break;
             }
+
             input.parse::<Token![,]>()?;
         }
+
         Ok(declaration)
     }
 }

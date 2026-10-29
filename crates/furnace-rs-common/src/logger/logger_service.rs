@@ -103,9 +103,11 @@ impl Logger {
     /// Records a trace message with optional trace and context details.
     pub fn trace(&self, message: &str, trace: Option<&str>, context: Option<&str>) {
         let mut full_message = message.to_string();
+
         if let Some(trace) = trace {
             full_message.push_str(&format!("\nTrace: {trace}"));
         }
+
         if let Some(context) = context {
             full_message.push_str(&format!("\nContext: {context}"));
         }
@@ -116,9 +118,11 @@ impl Logger {
     /// Records a fatal message with optional context details.
     pub fn fatal(&self, message: &str, context: Option<&str>) {
         let mut full_message = message.to_string();
+
         if let Some(context) = context {
             full_message.push_str(&format!("\nContext: {context}"));
         }
+
         self.inner.fatal(&full_message, None);
     }
 }

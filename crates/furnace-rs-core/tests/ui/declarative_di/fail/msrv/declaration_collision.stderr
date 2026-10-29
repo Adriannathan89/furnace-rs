@@ -12,6 +12,7 @@ help: the following other types implement trait `SameWhen<MATCH, A, B>`
    |
    | impl<A, B> SameWhen<false, A, B> for () {}
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `()` implements `SameWhen<false, A, B>`
+   |
    | impl<A> SameWhen<true, A, A> for () {}
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `()` implements `SameWhen<true, A, A>`
 note: required by a bound in `assert_identity`

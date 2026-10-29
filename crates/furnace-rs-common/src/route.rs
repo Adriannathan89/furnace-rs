@@ -124,6 +124,7 @@ impl RouteDescriptor {
     #[must_use]
     pub const fn with_seal_skipped(mut self, skipped: bool) -> Self {
         self.seal_skipped = skipped;
+
         self
     }
 
@@ -137,6 +138,7 @@ impl RouteDescriptor {
     #[must_use]
     pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
         self.namespace = Some(namespace);
+
         self
     }
 
@@ -185,6 +187,7 @@ pub struct ControllerDescriptor {
     namespace: Option<&'static str>,
     seals: fn() -> crate::SealDefinition,
 }
+
 impl ControllerDescriptor {
     /// Records a controller declaration without invoking its seal callback.
     pub const fn new(
@@ -201,28 +204,35 @@ impl ControllerDescriptor {
             seals,
         }
     }
+
     /// Attaches the source namespace for inspection.
     #[doc(hidden)]
     pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
         self.namespace = Some(namespace);
+
         self
     }
+
     /// Returns the declared controller's stable Rust name.
     pub const fn type_name(&self) -> &'static str {
         self.type_name
     }
+
     /// Returns the controller's concrete identity.
     pub fn type_id(&self) -> TypeId {
         (self.type_id)()
     }
+
     /// Returns the controller declaration location.
     pub const fn location(&self) -> SourceLocation {
         self.location
     }
+
     /// Returns the source namespace when supplied.
     pub const fn namespace(&self) -> Option<&'static str> {
         self.namespace
     }
+
     /// Evaluates the static seal declaration during selected analysis.
     #[doc(hidden)]
     pub fn seals(&self) -> crate::SealDefinition {
@@ -240,6 +250,7 @@ pub struct ControllerEndpointDescriptor {
     endpoints: &'static [RouteDescriptor],
     registrar: ControllerRegistrar,
 }
+
 impl ControllerEndpointDescriptor {
     /// Records endpoints and their typed registrar without constructing a controller.
     pub const fn new(
@@ -259,43 +270,54 @@ impl ControllerEndpointDescriptor {
             registrar,
         }
     }
+
     /// Attaches the implementation's source namespace for inspection.
     #[doc(hidden)]
     pub const fn with_namespace(mut self, namespace: &'static str) -> Self {
         self.namespace = Some(namespace);
+
         self
     }
+
     /// Attaches the concrete Rust name for qualified implementation paths.
     #[doc(hidden)]
     pub const fn with_runtime_type_name(mut self, name: fn() -> &'static str) -> Self {
         self.runtime_type_name = Some(name);
+
         self
     }
+
     /// Returns the controller's Rust name.
     pub fn type_name(&self) -> &'static str {
         self.runtime_type_name.map_or(self.type_name, |name| name())
     }
+
     /// Returns the concrete controller identity.
     pub fn type_id(&self) -> TypeId {
         (self.type_id)()
     }
+
     /// Returns the implementation's source location.
     pub const fn location(&self) -> SourceLocation {
         self.location
     }
+
     /// Returns the declared endpoint metadata.
     pub const fn endpoints(&self) -> &'static [RouteDescriptor] {
         self.endpoints
     }
+
     /// Iterates the static route descriptors recorded for this endpoint set.
     pub(crate) fn routes(&self) -> impl Iterator<Item = &RouteDescriptor> {
         self.endpoints.iter()
     }
+
     /// Returns the typed controller registrar.
     #[doc(hidden)]
     pub const fn registrar(&self) -> ControllerRegistrar {
         self.registrar
     }
+
     /// Returns the source namespace when supplied.
     pub const fn namespace(&self) -> Option<&'static str> {
         self.namespace
@@ -316,6 +338,7 @@ fn direct_metadata_error(controller: &ControllerDescriptor, message: &'static st
 }
 
 furnace_rs_core::__private::inventory::collect!(ControllerDescriptor);
+
 furnace_rs_core::__private::inventory::collect!(ControllerEndpointDescriptor);
 
 /// Runtime state shared by generated controller and route registrars.
@@ -343,8 +366,10 @@ impl<'a> RouterBuildContext<'a> {
                     "the selected sealed endpoint has no context-specific strategy binding",
                 ))
             })?;
+
         Ok(PassportGuardState::from_binding(self.application, binding))
     }
+
     /// Captures the application context and optional Passport preflight result.
     pub(crate) const fn new(
         application: &'a furnace_rs_core::ApplicationContext,
@@ -376,6 +401,7 @@ impl<'a> RouterBuildContext<'a> {
             .passport
             .binding_for(guard, context_cauldron)
             .ok_or_else(|| missing_scoped_binding_error(guard))?;
+
         Ok(PassportGuardState::from_binding(self.application, binding))
     }
 }
@@ -476,6 +502,7 @@ impl<'a> ValidatedRouteIter<'a> {
                 None,
             ));
         };
+
         if route.method != method || route.handler != handler {
             return Err(metadata_error(
                 "route registration",
@@ -488,6 +515,7 @@ impl<'a> ValidatedRouteIter<'a> {
                 None,
             ));
         }
+
         #[cfg(feature = "jwt")]
         {
             self.guard_occurrence = route.selected.then_some(route.guard_occurrence).flatten();
@@ -496,6 +524,7 @@ impl<'a> ValidatedRouteIter<'a> {
                 .then_some(route.passport_context_cauldron)
                 .flatten();
         }
+
         Ok(route.selected.then(|| {
             route
                 .axum_path
@@ -520,7 +549,9 @@ impl<'a> ValidatedRouteIter<'a> {
                 )),
             );
         }
+
         let _ = runtime;
+
         Ok(handler)
     }
 
@@ -546,6 +577,7 @@ impl<'a> ValidatedRouteIter<'a> {
                 None,
             ));
         }
+
         Ok(())
     }
 }
@@ -567,6 +599,7 @@ impl RouteCatalog {
                 .into_iter()
                 .collect();
         entries.sort_by_key(|descriptor| descriptor.type_name());
+
         entries
     }
 
@@ -577,6 +610,7 @@ impl RouteCatalog {
                 .into_iter()
                 .collect();
         entries.sort_by_key(|descriptor| descriptor.type_name());
+
         entries
     }
 
@@ -587,6 +621,7 @@ impl RouteCatalog {
         let mut result = Vec::new();
         let endpoints = Self::endpoint_sets();
         let mut seen = Vec::new();
+
         for controller in Self::controllers()
             .into_iter()
             .filter(|descriptor| select(descriptor.type_id()))
@@ -597,6 +632,7 @@ impl RouteCatalog {
                     "controller declarations have duplicate type identity",
                 ));
             }
+
             seen.push(controller.type_id());
             let matched: Vec<_> = endpoints
                 .iter()
@@ -610,7 +646,9 @@ impl RouteCatalog {
             };
             result.push(**endpoint);
         }
+
         result.sort_by_key(|descriptor| descriptor.type_name());
+
         Ok(result)
     }
 
@@ -697,6 +735,7 @@ impl RouteCatalog {
     #[allow(clippy::result_large_err)]
     pub fn validate() -> Result<()> {
         let _ = Self::validated()?;
+
         Ok(())
     }
 
@@ -708,6 +747,7 @@ impl RouteCatalog {
     #[doc(hidden)]
     pub fn validated() -> Result<Vec<ValidatedController>> {
         let controllers = Self::route_controllers(|_| true)?;
+
         validate_descriptors(&controllers)
     }
 
@@ -718,6 +758,7 @@ impl RouteCatalog {
         application: &furnace_rs_core::Furnace,
     ) -> Result<Vec<ValidatedController>> {
         let scope = crate::http_scope::HttpApplicationScope::for_application(application)?;
+
         validate_scoped_descriptors(scope.controllers())
     }
 }
@@ -783,6 +824,7 @@ pub(crate) fn validate_scoped_descriptors(
             return RouteSelection::none();
         };
         let selected = scoped.selects(route);
+
         RouteSelection {
             selected,
             #[cfg(feature = "jwt")]
@@ -793,6 +835,7 @@ pub(crate) fn validate_scoped_descriptors(
                 .flatten(),
         }
     })?;
+
     Ok(validated)
 }
 
@@ -808,6 +851,7 @@ fn validate_with_selection(
     let mut capture_routes = BTreeMap::new();
     let mut seen_routes: BTreeMap<(HttpMethod, String), (&str, RouteDescriptor)> = BTreeMap::new();
     let mut validated = Vec::with_capacity(controllers.len());
+
     for controller in &controllers {
         validate_controller_identity(controller, &identities)?;
         identities.push(controller);
@@ -817,9 +861,11 @@ fn validate_with_selection(
         let registrar = controller.registrar();
 
         let mut routes = Vec::new();
+
         for route in controller.routes() {
             let selection = selection_for(controller, route);
             let selected = selection.selected;
+
             if selected {
                 validate_route(route)?;
                 validate_capture_names(
@@ -829,6 +875,7 @@ fn validate_with_selection(
                     "application",
                 )?;
                 let key = (route.method(), canonical_pattern(route.full_path()));
+
                 if let Some((previous_controller, previous_route)) =
                     seen_routes.insert(key, (controller.type_name(), *route))
                 {
@@ -841,6 +888,7 @@ fn validate_with_selection(
                     ));
                 }
             }
+
             routes.push(ValidatedRoute {
                 method: route.method(),
                 handler: route.handler(),
@@ -887,6 +935,7 @@ fn validate_controller_identity(
                 earlier,
             ));
         }
+
         if earlier.type_name() == controller.type_name() {
             return Err(duplicate_controller_identity(
                 "controller type name",
@@ -895,6 +944,7 @@ fn validate_controller_identity(
             ));
         }
     }
+
     Ok(())
 }
 
@@ -908,6 +958,7 @@ fn validate_route(route: &RouteDescriptor) -> Result<()> {
         "route full path",
         route.location(),
     )?;
+
     if canonical_join(route.prefix(), route.path()) != route.full_path() {
         return Err(metadata_error(
             format!("{} {}", route.method().as_str(), route.full_path()),
@@ -915,6 +966,7 @@ fn validate_route(route: &RouteDescriptor) -> Result<()> {
             Some(route.location()),
         ));
     }
+
     validate_source_location(route.location())
 }
 
@@ -937,24 +989,30 @@ fn validate_path(
     location: SourceLocation,
 ) -> Result<()> {
     let error = |message| metadata_error(subject, message, Some(location));
+
     if is_prefix && value.is_empty() {
         return Ok(());
     }
+
     if !value.starts_with('/')
         || value.contains(['?', '#', '\\', '%'])
         || value.chars().any(|c| c.is_control() || c.is_whitespace())
     {
         return Err(error("invalid canonical endpoint path"));
     }
+
     if value == "/" {
         return Ok(());
     }
+
     let segments: Vec<_> = value.split('/').skip(1).collect();
     let mut names = BTreeMap::new();
+
     for (index, segment) in segments.iter().enumerate() {
         if segment.is_empty() || matches!(*segment, "." | "..") {
             return Err(error("endpoint path contains an empty or relative segment"));
         }
+
         if let Some(capture) = segment
             .strip_prefix('{')
             .and_then(|name| name.strip_suffix('}'))
@@ -963,6 +1021,7 @@ fn validate_path(
                 .strip_prefix('*')
                 .map_or((capture, false), |name| (name, true));
             let mut chars = name.chars();
+
             if is_prefix
                 || !chars
                     .next()
@@ -971,9 +1030,11 @@ fn validate_path(
             {
                 return Err(error("invalid canonical capture name"));
             }
+
             if names.insert(name, ()).is_some() {
                 return Err(error("endpoint path repeats a capture name"));
             }
+
             if wildcard && index + 1 != segments.len() {
                 return Err(error("wildcards must be final path segments"));
             }
@@ -981,6 +1042,7 @@ fn validate_path(
             return Err(error("captures must occupy an entire path segment"));
         }
     }
+
     Ok(())
 }
 
@@ -993,6 +1055,7 @@ fn validate_source_location(location: SourceLocation) -> Result<()> {
             None,
         ));
     }
+
     Ok(())
 }
 
@@ -1003,9 +1066,11 @@ fn validate_routes(
 ) -> Result<()> {
     let mut seen = BTreeMap::new();
     let mut capture_routes = BTreeMap::new();
+
     for (controller, route) in routes {
         validate_capture_names(&mut capture_routes, controller, route, scope)?;
         let key = (route.method(), canonical_pattern(route.full_path()));
+
         if let Some((previous_controller, previous_route)) = seen.insert(key, (controller, route)) {
             return Err(conflicting_routes(
                 controller,
@@ -1016,6 +1081,7 @@ fn validate_routes(
             ));
         }
     }
+
     Ok(())
 }
 
@@ -1032,10 +1098,12 @@ fn validate_capture_names(
         let left: Vec<_> = previous.full_path().split('/').collect();
         let right: Vec<_> = route.full_path().split('/').collect();
         let mut different_capture_names = false;
+
         for (left, right) in left.iter().zip(&right) {
             if left == right {
                 continue;
             }
+
             if left.starts_with('{') && right.starts_with('{') {
                 if left.starts_with("{*") || right.starts_with("{*") {
                     return Err(conflicting_routes(
@@ -1046,13 +1114,16 @@ fn validate_capture_names(
                         scope,
                     ));
                 }
+
                 different_capture_names = true;
                 continue;
             }
+
             // Different static branches or a static/capture pair can coexist.
             different_capture_names = false;
             break;
         }
+
         if different_capture_names && left.len() == right.len() {
             return Err(conflicting_routes(
                 controller,
@@ -1063,7 +1134,9 @@ fn validate_capture_names(
             ));
         }
     }
+
     seen.insert(route.full_path().to_owned(), (controller, route));
+
     Ok(())
 }
 
@@ -1088,6 +1161,7 @@ fn controller_sort_key(
     controller: &ControllerEndpointDescriptor,
 ) -> (&'static str, Option<&'static str>, &'static str, u32, u32) {
     let location = controller_location(controller).unwrap_or(SourceLocation::new("", 0, 0));
+
     (
         controller.type_name(),
         controller.namespace(),
@@ -1122,6 +1196,7 @@ fn duplicate_controller_identity(
         "the conflicting controller was first declared here",
         controller_location(previous),
     );
+
     Error::from_diagnostics(primary, [related])
 }
 
@@ -1152,6 +1227,7 @@ fn conflicting_routes(
     )
     .with_subject(previous_controller)
     .with_location(previous_route.location());
+
     Error::from_diagnostics(primary, [related])
 }
 
@@ -1173,6 +1249,7 @@ fn metadata_diagnostic(
     let diagnostic = Diagnostic::new(FURNACE030, "invalid route metadata", message)
         .with_subject(subject)
         .with_suggestion("correct the route metadata before starting the HTTP runtime");
+
     if let Some(location) = location {
         diagnostic.with_location(location)
     } else {
@@ -1201,7 +1278,9 @@ mod tests {
     };
 
     static FIRST_STRATEGY_CALLS: AtomicUsize = AtomicUsize::new(0);
+
     static SECOND_STRATEGY_CALLS: AtomicUsize = AtomicUsize::new(0);
+
     static FOREIGN_STRATEGY_CALLS: AtomicUsize = AtomicUsize::new(0);
 
     #[derive(serde::Deserialize, serde::Serialize)]
@@ -1230,6 +1309,7 @@ mod tests {
         #[crate::passport_strategy(name = "jwt")]
         impl PassportStrategy for FirstStrategy {
             type Claims = SharedClaims;
+
             type Principal = SharedPrincipal;
 
             const TOKEN_KIND: JwtTokenKind = JwtTokenKind::Access;
@@ -1240,6 +1320,7 @@ mod tests {
                 claims: &JwtClaims<Self::Claims>,
             ) -> PassportResult<Self::Principal> {
                 FIRST_STRATEGY_CALLS.fetch_add(1, Ordering::SeqCst);
+
                 if claims.custom.marker == 1 {
                     Ok(SharedPrincipal)
                 } else {
@@ -1281,6 +1362,7 @@ mod tests {
         #[crate::passport_strategy(name = "jwt")]
         impl PassportStrategy for SecondStrategy {
             type Claims = SharedClaims;
+
             type Principal = SharedPrincipal;
 
             const TOKEN_KIND: JwtTokenKind = JwtTokenKind::Access;
@@ -1291,6 +1373,7 @@ mod tests {
                 claims: &JwtClaims<Self::Claims>,
             ) -> PassportResult<Self::Principal> {
                 SECOND_STRATEGY_CALLS.fetch_add(1, Ordering::SeqCst);
+
                 if claims.custom.marker == 2 {
                     Ok(SharedPrincipal)
                 } else {
@@ -1332,6 +1415,7 @@ mod tests {
         #[crate::passport_strategy(name = "jwt")]
         impl PassportStrategy for ForeignStrategy {
             type Claims = SharedClaims;
+
             type Principal = SharedPrincipal;
 
             const TOKEN_KIND: JwtTokenKind = JwtTokenKind::Access;
@@ -1342,6 +1426,7 @@ mod tests {
                 _: &JwtClaims<Self::Claims>,
             ) -> PassportResult<Self::Principal> {
                 FOREIGN_STRATEGY_CALLS.fetch_add(1, Ordering::SeqCst);
+
                 Err(PassportError::reject())
             }
         }
@@ -1383,6 +1468,7 @@ mod tests {
         let mut builder = Furnace::builder_with_config(config);
         builder.provide(jwt).unwrap();
         builder.root::<M>().unwrap();
+
         builder.build().await.unwrap()
     }
 
@@ -1390,6 +1476,7 @@ mod tests {
         let scope = HttpApplicationScope::for_application(application).unwrap();
         let mut controllers = validate_scoped_descriptors(scope.controllers()).unwrap();
         assert_eq!(controllers.len(), 1);
+
         controllers.pop().unwrap()
     }
 
@@ -1402,6 +1489,7 @@ mod tests {
         let mut routes = controller.routes();
         let router = (controller.registrar())(axum::Router::new(), &runtime, &mut routes).unwrap();
         routes.finish().unwrap();
+
         router
     }
 

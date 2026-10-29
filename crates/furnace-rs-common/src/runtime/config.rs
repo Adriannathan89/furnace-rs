@@ -17,14 +17,18 @@ impl RuntimeSelection {
     #[allow(clippy::result_large_err)]
     pub fn parse(config: &Config, compiled_http: bool, compiled_grpc: bool) -> Result<Self> {
         let mut compiled = Vec::new();
+
         if compiled_http {
             compiled.push("http");
         }
+
         if compiled_grpc {
             compiled.push("grpc");
         }
+
         Self::parse_registered(config, &compiled)
     }
+
     /// Parses selection using the linked transport registry.
     #[allow(clippy::result_large_err)]
     pub fn parse_registered(config: &Config, compiled: &[&str]) -> Result<Self> {
@@ -43,10 +47,12 @@ impl RuntimeSelection {
             grpc: false,
             socket: false,
         };
+
         if let Some(values) = config.get_string_array("furnace.transports") {
             if values.is_empty() {
                 return Err(invalid());
             }
+
             for value in values {
                 let enabled = match value.as_str() {
                     "http" if compiled.contains(&"http") => &mut selected.http,
@@ -54,6 +60,7 @@ impl RuntimeSelection {
                     "socket" if compiled.contains(&"socket") => &mut selected.socket,
                     _ => return Err(invalid()),
                 };
+
                 if std::mem::replace(enabled, true) {
                     return Err(invalid());
                 }
@@ -64,8 +71,10 @@ impl RuntimeSelection {
             {
                 return Err(invalid());
             }
+
             selected.http = true;
         }
+
         Ok(selected)
     }
 }

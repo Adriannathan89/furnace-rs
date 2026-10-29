@@ -259,18 +259,21 @@ impl JwtSignOptions {
     /// Sets the optional not-before timestamp in Unix seconds.
     pub const fn not_before(mut self, timestamp: u64) -> Self {
         self.not_before = Some(timestamp);
+
         self
     }
 
     /// Sets the optional subject.
     pub fn subject(mut self, subject: impl Into<String>) -> Self {
         self.subject = Some(subject.into());
+
         self
     }
 
     /// Sets the optional JWT identifier.
     pub fn jwt_id(mut self, jwt_id: impl Into<String>) -> Self {
         self.jwt_id = Some(jwt_id.into());
+
         self
     }
 
@@ -355,6 +358,7 @@ impl JwtValidation {
     /// Requires a subject claim without constraining its value.
     pub const fn require_subject(mut self) -> Self {
         self.require_subject = true;
+
         self
     }
 
@@ -362,24 +366,28 @@ impl JwtValidation {
     pub fn subject(mut self, expected: impl Into<String>) -> Self {
         self.require_subject = true;
         self.subject = Some(expected.into());
+
         self
     }
 
     /// Requires the supplied issuer value.
     pub fn issuer(mut self, expected: impl Into<String>) -> Self {
         self.issuer = Some(expected.into());
+
         self
     }
 
     /// Requires the supplied audience value.
     pub fn audience(mut self, expected: impl Into<String>) -> Self {
         self.audience = Some(expected.into());
+
         self
     }
 
     /// Requires a JWT identifier without constraining its value.
     pub const fn require_jwt_id(mut self) -> Self {
         self.require_jwt_id = true;
+
         self
     }
 
@@ -387,6 +395,7 @@ impl JwtValidation {
     pub fn jwt_id(mut self, expected: impl Into<String>) -> Self {
         self.require_jwt_id = true;
         self.jwt_id = Some(expected.into());
+
         self
     }
 

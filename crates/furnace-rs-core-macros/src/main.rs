@@ -39,43 +39,51 @@ fn validate_signature(item: &ItemFn) -> syn::Result<()> {
             "`#[furnace_rs::main]` can only be applied to a function named `main`",
         ));
     }
+
     if item.sig.asyncness.is_none() {
         return Err(Error::new(
             item.sig.fn_token.span(),
             "`#[furnace_rs::main]` requires an asynchronous function",
         ));
     }
+
     if !item.sig.inputs.is_empty() {
         return Err(Error::new(
             item.sig.inputs.span(),
             "`#[furnace_rs::main]` does not support function arguments",
         ));
     }
+
     if !item.sig.generics.params.is_empty() || item.sig.generics.where_clause.is_some() {
         return Err(Error::new(
             item.sig.generics.span(),
             "`#[furnace_rs::main]` does not support generic parameters or where clauses",
         ));
     }
+
     if let Some(constness) = &item.sig.constness {
         return Err(Error::new(
             constness.span(),
             "`#[furnace_rs::main]` does not support const functions",
         ));
     }
+
     if let Some(unsafety) = &item.sig.unsafety {
         return Err(Error::new(
             unsafety.span(),
             "`#[furnace_rs::main]` does not support unsafe functions",
         ));
     }
+
     if let Some(abi) = &item.sig.abi {
         return Err(Error::new(
             abi.span(),
             "`#[furnace_rs::main]` does not support extern functions",
         ));
     }
+
     Ok(())
 }
+
 #[cfg(test)]
 include!("../tests/support/main_fixture.rs");

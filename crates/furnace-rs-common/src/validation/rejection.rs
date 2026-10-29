@@ -21,7 +21,9 @@ use super::{ValidationIssue, ValidationSource, support};
 use crate::{BadRequest, InternalError, ValidationError};
 
 const BODY_READ_MESSAGE: &str = "request body could not be read";
+
 const CONTENT_TYPE_MESSAGE: &str = "content type must be application/json";
+
 const PAYLOAD_TOO_LARGE_MESSAGE: &str = "request body is too large";
 
 #[derive(Serialize)]
@@ -46,6 +48,7 @@ pub(super) fn json_rejection_response(rejection: JsonRejection) -> Response {
         }
         rejection => {
             let status = rejection.status();
+
             transport_error_response(status, rejection)
         }
     }
@@ -57,6 +60,7 @@ pub(super) fn query_rejection_response(rejection: QueryRejection) -> Response {
         QueryRejection::FailedToDeserializeQueryString(error) => query_issue(&error),
         _ => support::issue(support::IssueKind::InvalidType),
     };
+
     schema_error_response(issue, ValidationSource::Query)
 }
 
@@ -68,6 +72,7 @@ pub(super) fn path_rejection_response(rejection: PathRejection) -> Response {
         }
         rejection => {
             let status = rejection.status();
+
             transport_error_response(status, rejection)
         }
     }
@@ -92,12 +97,14 @@ fn data_issue(error: &JsonDataError) -> ValidationIssue {
     if let Some(error) = path_error {
         issue = apply_path(issue, error.path());
     }
+
     issue
 }
 
 /// Classifies JSON syntax failures and extracts a structured path when available.
 fn syntax_issue(error: &JsonSyntaxError) -> ValidationIssue {
     let issue = support::issue(support::IssueKind::InvalidSyntax);
+
     if let Some(error) = find_source::<PathError<serde_json::Error>>(error) {
         apply_path(issue, error.path())
     } else {
@@ -115,6 +122,7 @@ fn query_issue(error: &FailedToDeserializeQueryString) -> ValidationIssue {
     } else {
         support::IssueKind::InvalidType
     };
+
     apply_path(support::issue(kind), error.path())
 }
 
@@ -137,6 +145,7 @@ fn path_issue(error: &FailedToDeserializePathParams) -> ValidationIssue {
             } else {
                 support::IssueKind::InvalidType
             };
+
             support::issue(kind)
         }
         _ => support::issue(support::IssueKind::InvalidType),
@@ -152,6 +161,7 @@ fn apply_path(mut issue: ValidationIssue, path: &serde_path_to_error::Path) -> V
             Segment::Unknown => issue,
         };
     }
+
     issue
 }
 
@@ -170,6 +180,7 @@ fn is_missing_field(error: &serde_json::Error) -> bool {
     let Some((line, column)) = location.split_once(" column ") else {
         return false;
     };
+
     !field.is_empty()
         && !line.is_empty()
         && !column.is_empty()
@@ -194,6 +205,7 @@ where
         if let Some(error) = error.downcast_ref::<T>() {
             return Some(error);
         }
+
         error = error.source()?;
     }
 }
@@ -213,6 +225,7 @@ fn transport_error_response(
             response
                 .headers_mut()
                 .insert(CONNECTION, HeaderValue::from_static("close"));
+
             response
         }
         status if status.is_client_error() => BadRequest::new(BODY_READ_MESSAGE).into_response(),

@@ -68,6 +68,7 @@ impl ProviderRegistry {
         }
 
         self.values.insert(type_id, value);
+
         Ok(())
     }
 

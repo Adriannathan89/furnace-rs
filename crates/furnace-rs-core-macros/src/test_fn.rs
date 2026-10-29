@@ -12,30 +12,35 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             "`#[furnace_rs::test]` does not accept arguments",
         ));
     }
+
     let function: ItemFn = syn::parse2(item).map_err(|error| {
         Error::new(
             error.span(),
             "`#[furnace_rs::test]` requires an async function",
         )
     })?;
+
     if function.sig.asyncness.is_none() {
         return Err(Error::new(
             function.sig.fn_token.span(),
             "`#[furnace_rs::test]` requires an asynchronous function",
         ));
     }
+
     if !function.sig.inputs.is_empty() {
         return Err(Error::new(
             function.sig.inputs.span(),
             "`#[furnace_rs::test]` does not support function arguments",
         ));
     }
+
     if !function.sig.generics.params.is_empty() || function.sig.generics.where_clause.is_some() {
         return Err(Error::new(
             function.sig.generics.span(),
             "`#[furnace_rs::test]` does not support generic parameters or where clauses",
         ));
     }
+
     if function.sig.constness.is_some()
         || function.sig.unsafety.is_some()
         || function.sig.abi.is_some()
@@ -45,6 +50,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             "`#[furnace_rs::test]` requires a safe, non-const Rust function",
         ));
     }
+
     Ok(expand_with_path(function, crate::path::testing_path()?))
 }
 

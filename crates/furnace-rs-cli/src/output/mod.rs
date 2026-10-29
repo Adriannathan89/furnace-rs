@@ -47,6 +47,7 @@ pub(crate) fn write(format: OutputFormat, outcome: &Outcome) -> Result<(), CliEr
             Err(json::OutputError::Serialize(_)) => {
                 let fallback = renderer_failure_outcome(outcome.envelope.command());
                 json::write(&fallback.envelope).map_err(output_error)?;
+
                 Err(renderer_failure_error())
             }
             Err(error) => Err(output_error(error)),
@@ -87,6 +88,7 @@ fn output_error(error: impl std::error::Error + Send + Sync + 'static) -> CliErr
 /// Builds the fallback machine-readable outcome for serialization failure.
 fn renderer_failure_outcome(command: Option<&str>) -> Outcome {
     let error = renderer_failure_error();
+
     Outcome::new(
         Envelope::failure(
             command.map(str::to_owned),

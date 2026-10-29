@@ -7,10 +7,12 @@ pub(crate) fn create() -> std::io::Result<tempfile::TempDir> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
+
         tempfile::Builder::new()
             .permissions(std::fs::Permissions::from_mode(0o700))
             .tempdir()
     }
+
     #[cfg(not(unix))]
     {
         tempfile::tempdir()
@@ -25,7 +27,9 @@ mod tests {
     };
 
     const CHILD_ENV: &str = "FURNACE_PRIVATE_DIRECTORY_TEST_CHILD";
+
     const CHILD_TEST: &str = "private_temp_dir::tests::private_directory_child";
+
     const CHILD_COMPLETE: &str = "FURNACE_PRIVATE_DIRECTORY_CHECK_COMPLETE";
 
     fn child_completed(output: &Output) -> bool {
@@ -61,6 +65,7 @@ mod tests {
         assert!((1..=10_000).contains(&rounds));
         let executable = std::env::current_exe().unwrap();
         let mut failures = 0;
+
         for _ in 0..rounds {
             for umask in ["000", "002", "022", "077"] {
                 // The umask changes only in this child, never in the parallel
@@ -77,6 +82,7 @@ mod tests {
                     .env(CHILD_ENV, "1")
                     .output()
                     .unwrap();
+
                 if !child_completed(&output) {
                     failures += 1;
                     eprintln!(
@@ -87,6 +93,7 @@ mod tests {
                 }
             }
         }
+
         println!(
             "FURNACE_CLI_SECURITY_RESULT {{\"rounds\":{rounds},\"checks\":{},\"failures\":{failures},\"passed\":{}}}",
             rounds * 4,
@@ -103,6 +110,7 @@ mod tests {
         if std::env::var_os(CHILD_ENV).is_none() {
             return;
         }
+
         let directory = super::create().unwrap();
         let mode = directory.path().metadata().unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o700, "control directory mode was {mode:o}");

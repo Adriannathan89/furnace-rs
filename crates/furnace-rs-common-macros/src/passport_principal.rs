@@ -45,15 +45,18 @@ pub(crate) fn expand(input: DeriveInput) -> Result<TokenStream> {
 
     let mut roles = None;
     let mut permissions = None;
+
     for field in fields {
         let field_roles = marker_count(field.attrs.iter(), "roles");
         let field_permissions = marker_count(field.attrs.iter(), "permissions");
+
         if field_roles > 1 || field_permissions > 1 {
             return Err(Error::new(
                 field.span(),
                 "Passport principal policy marker may appear only once per field",
             ));
         }
+
         if field_roles == 1 && field_permissions == 1 {
             return Err(Error::new(
                 field.span(),
@@ -65,6 +68,7 @@ pub(crate) fn expand(input: DeriveInput) -> Result<TokenStream> {
             set_unique(&mut roles, field, "roles")?;
             reject_known_invalid_policy_field(&field.ty)?;
         }
+
         if field_permissions == 1 {
             set_unique(&mut permissions, field, "permissions")?;
             reject_known_invalid_policy_field(&field.ty)?;
@@ -97,6 +101,7 @@ fn reject_item_markers(input: &DeriveInput) -> Result<()> {
             "Passport principal policy markers are valid only on named fields",
         ));
     }
+
     Ok(())
 }
 
@@ -112,6 +117,7 @@ fn reject_known_invalid_policy_field(ty: &Type) -> Result<()> {
     if is_scalar_primitive(ty) || is_known_collection_with_primitive_item(ty) {
         return Err(Error::new(ty.span(), POLICY_FIELD_TYPE_ERROR));
     }
+
     Ok(())
 }
 
@@ -120,15 +126,19 @@ fn is_scalar_primitive(ty: &Type) -> bool {
     let Type::Path(type_path) = ty else {
         return false;
     };
+
     if type_path.qself.is_some() {
         return false;
     }
+
     let Some(segment) = type_path.path.segments.last() else {
         return false;
     };
+
     if !matches!(segment.arguments, syn::PathArguments::None) {
         return false;
     }
+
     matches!(
         segment.ident.to_string().as_str(),
         "bool"
@@ -155,15 +165,19 @@ fn is_known_collection_with_primitive_item(ty: &Type) -> bool {
     let Type::Path(type_path) = ty else {
         return false;
     };
+
     if type_path.qself.is_some() {
         return false;
     }
+
     let Some(segment) = type_path.path.segments.last() else {
         return false;
     };
+
     if !is_known_standard_collection_path(&type_path.path) {
         return false;
     }
+
     let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments else {
         return false;
     };
@@ -174,6 +188,7 @@ fn is_known_collection_with_primitive_item(ty: &Type) -> bool {
     let Some(item) = types.next() else {
         return false;
     };
+
     types.next().is_none() && is_scalar_primitive(item)
 }
 
@@ -221,15 +236,18 @@ struct PolicyField {
 fn set_unique(slot: &mut Option<PolicyField>, field: &Field, marker: &str) -> Result<()> {
     if slot.is_some() {
         let ident = field.ident.as_ref().expect("named fields have identifiers");
+
         return Err(Error::new(
             ident.span(),
             format!("duplicate `#[{marker}]` Passport principal field"),
         ));
     }
+
     *slot = Some(PolicyField {
         ident: field.ident.clone().expect("named fields have identifiers"),
         ty: field.ty.clone(),
     });
+
     Ok(())
 }
 

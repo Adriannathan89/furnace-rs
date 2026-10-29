@@ -14,10 +14,12 @@ struct Arguments {
     descriptor: Path,
     guard: Option<Path>,
 }
+
 impl Parse for Arguments {
     /// Parses service or method arguments according to the accepted attribute grammar.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let (mut server, mut descriptor, mut guard) = (None, None, None);
+
         while !input.is_empty() {
             let key: Ident = input.parse()?;
             input.parse::<Token![=]>()?;
@@ -32,22 +34,28 @@ impl Parse for Arguments {
                     ));
                 }
             };
+
             if target.is_some() {
                 return Err(Error::new(key.span(), "duplicate grpc_service option"));
             }
+
             *target = Some(input.parse::<Path>()?);
+
             if !input.is_empty() {
                 input.parse::<Token![,]>()?;
             }
         }
+
         let server =
             server.ok_or_else(|| input.error("grpc_service requires server = GeneratedServer"))?;
+
         if server.segments.iter().any(|s| !s.arguments.is_empty()) {
             return Err(Error::new(
                 server.span(),
                 "server must be a generated constructor path without generic arguments",
             ));
         }
+
         Ok(Self {
             server,
             descriptor: descriptor.ok_or_else(|| {
@@ -62,17 +70,21 @@ struct MethodArguments {
     name: LitStr,
     guard: Option<Path>,
 }
+
 impl Parse for MethodArguments {
     /// Parses service or method arguments according to the accepted attribute grammar.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let (mut name, mut guard, mut public) = (None, None, false);
+
         while !input.is_empty() {
             let key: Ident = input.parse()?;
+
             match key.to_string().as_str() {
                 "name" => {
                     if name.is_some() {
                         return Err(input.error("duplicate grpc_method name"));
                     }
+
                     input.parse::<Token![=]>()?;
                     name = Some(input.parse::<LitStr>()?);
                 }
@@ -80,6 +92,7 @@ impl Parse for MethodArguments {
                     if guard.is_some() {
                         return Err(input.error("duplicate grpc_method guard"));
                     }
+
                     input.parse::<Token![=]>()?;
                     guard = Some(input.parse::<Path>()?);
                 }
@@ -87,6 +100,7 @@ impl Parse for MethodArguments {
                     if public {
                         return Err(input.error("duplicate grpc_method public option"));
                     }
+
                     public = true;
                 }
                 _ => {
@@ -96,21 +110,26 @@ impl Parse for MethodArguments {
                     ));
                 }
             }
+
             if !input.is_empty() {
                 input.parse::<Token![,]>()?;
             }
         }
+
         if public == guard.is_some() {
             return Err(input.error("grpc_method requires exactly one of public or guard"));
         }
+
         let name: LitStr =
             name.ok_or_else(|| input.error("grpc_method requires the protobuf method name"))?;
+
         if name.value().is_empty() {
             return Err(Error::new(
                 name.span(),
                 "protobuf method name must not be empty",
             ));
         }
+
         Ok(Self { name, guard })
     }
 }
@@ -119,6 +138,7 @@ impl Parse for MethodArguments {
 pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     let args: Arguments = syn::parse2(arguments)?;
     let mut implementation: ItemImpl = syn::parse2(item)?;
+
     if implementation.trait_.is_none()
         || !implementation.generics.params.is_empty()
         || implementation.generics.where_clause.is_some()
@@ -130,18 +150,21 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             "grpc_service requires a non-generic generated Tonic trait implementation",
         ));
     }
+
     let Type::Path(self_path) = implementation.self_ty.as_ref() else {
         return Err(Error::new_spanned(
             &implementation.self_ty,
             "grpc_service requires a concrete implementation type",
         ));
     };
+
     if self_path.qself.is_some() {
         return Err(Error::new_spanned(
             self_path,
             "grpc_service requires a concrete implementation type",
         ));
     }
+
     let common = crate::path::grpc_path()?;
     let ty = &implementation.self_ty;
     let ident = &self_path.path.segments.last().unwrap().ident;
@@ -153,6 +176,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     };
     let mut overrides = Vec::new();
     let mut rust_methods = Vec::new();
+
     for item in &mut implementation.items {
         let ImplItem::Fn(method) = item else {
             continue;
@@ -170,12 +194,14 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
                     .is_some_and(|s| s.ident == "grpc_method")
             })
             .collect();
+
         if attrs.len() > 1 {
             return Err(Error::new(
                 attrs[1].span(),
                 "one grpc_method override is allowed per Rust method",
             ));
         }
+
         if let Some(attr) = attrs.first() {
             let args: MethodArguments = attr.parse_args()?;
             let name = &args.name;
@@ -186,6 +212,7 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
             // the same wire operation without sharing its active policy.
             overrides.push(quote!(#(#[#method_cfg])* #common::GrpcMethodOverride { wire_name: #name, rust_name: #rust_name, guard: #guard }));
         }
+
         method.attrs.retain(|a| {
             a.path()
                 .segments
@@ -193,10 +220,12 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
                 .is_none_or(|s| s.ident != "grpc_method")
         });
     }
+
     let server = &args.server;
     let descriptor = &args.descriptor;
     let guard = guard_value(&args.guard);
     let cfg = conditions(&implementation.attrs)?;
+
     Ok(quote! {
         #implementation
         #(#[#cfg])*
@@ -248,9 +277,11 @@ fn condition(meta: &Meta) -> syn::Result<Option<Meta>> {
     if meta.path().is_ident("cfg") {
         return Ok(Some(meta.clone()));
     }
+
     if !meta.path().is_ident("cfg_attr") {
         return Ok(None);
     }
+
     let Meta::List(list) = meta else {
         return Err(Error::new_spanned(meta, "expected cfg_attr arguments"));
     };
@@ -261,6 +292,7 @@ fn condition(meta: &Meta) -> syn::Result<Option<Meta>> {
         .next()
         .ok_or_else(|| Error::new_spanned(meta, "cfg_attr requires a predicate"))?;
     let mut nested = Vec::new();
+
     for argument in arguments {
         if argument
             .path()
@@ -273,10 +305,12 @@ fn condition(meta: &Meta) -> syn::Result<Option<Meta>> {
                 "put grpc_method directly on a conditionally compiled method, not inside cfg_attr",
             ));
         }
+
         if let Some(gate) = condition(&argument)? {
             nested.push(gate);
         }
     }
+
     if nested.is_empty() {
         Ok(None)
     } else {

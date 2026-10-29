@@ -80,12 +80,14 @@ impl ValidationIssue {
     /// Appends an external field or map key to the relative path.
     pub fn at_field(mut self, field: impl Into<String>) -> Self {
         self.path.push(ValidationPathSegment::Field(field.into()));
+
         self
     }
 
     /// Appends a zero-based sequence or tuple index to the relative path.
     pub fn at_index(mut self, index: usize) -> Self {
         self.path.push(ValidationPathSegment::Index(index));
+
         self
     }
 
@@ -147,6 +149,7 @@ impl ValidationErrors {
             path.append(&mut issue.path);
             issue.path = path;
         }
+
         self
     }
 }
@@ -158,12 +161,14 @@ impl fmt::Display for ValidationErrors {
             if index != 0 {
                 formatter.write_str("\n")?;
             }
+
             write!(
                 formatter,
                 "{:?} [{}]: {}",
                 issue.path, issue.code, issue.message
             )?;
         }
+
         Ok(())
     }
 }

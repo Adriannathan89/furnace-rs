@@ -109,18 +109,21 @@ impl Diagnostic {
     /// Adds the subject associated with this diagnostic.
     pub fn with_subject(mut self, subject: impl Into<String>) -> Self {
         self.subject = Some(subject.into());
+
         self
     }
 
     /// Adds the source location associated with this diagnostic.
     pub fn with_location(mut self, location: SourceLocation) -> Self {
         self.location = Some(location);
+
         self
     }
 
     /// Adds a remediation suggestion to this diagnostic.
     pub fn with_suggestion(mut self, suggestion: impl Into<String>) -> Self {
         self.suggestions.push(suggestion.into());
+
         self
     }
 
@@ -159,6 +162,7 @@ impl fmt::Display for Diagnostic {
     /// Renders the code, title, source, subject, message, and help in stable order.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "error[{}]: {}", self.code, self.title)?;
+
         if let Some(location) = self.location {
             write!(
                 formatter,
@@ -166,13 +170,17 @@ impl fmt::Display for Diagnostic {
                 location.file, location.line, location.column
             )?;
         }
+
         if let Some(subject) = &self.subject {
             write!(formatter, "\n  = subject: {subject}")?;
         }
+
         write!(formatter, "\n  = {}", self.message)?;
+
         for suggestion in &self.suggestions {
             write!(formatter, "\n  help: {suggestion}")?;
         }
+
         Ok(())
     }
 }
@@ -214,6 +222,7 @@ impl Error {
     ) -> Self {
         let mut diagnostics = vec![primary];
         diagnostics.extend(related);
+
         Self {
             diagnostics,
             source: None,
@@ -226,6 +235,7 @@ impl Error {
         related: impl IntoIterator<Item = Diagnostic>,
     ) -> Self {
         self.diagnostics.extend(related);
+
         self
     }
 
@@ -263,8 +273,10 @@ impl fmt::Display for Error {
             if index > 0 {
                 formatter.write_str("\n\n")?;
             }
+
             diagnostic.fmt(formatter)?;
         }
+
         Ok(())
     }
 }

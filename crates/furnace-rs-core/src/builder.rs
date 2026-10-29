@@ -59,13 +59,16 @@ impl FurnaceBuilder {
                 std::any::type_name::<M>(),
             ));
         }
+
         if let Some(root) = &self.root {
             return Err(root_already_selected_error(
                 root.type_name,
                 std::any::type_name::<M>(),
             ));
         }
+
         self.root = Some(CauldronRoot::of::<M>());
+
         Ok(self)
     }
 
@@ -79,13 +82,16 @@ impl FurnaceBuilder {
                 std::any::type_name::<T>(),
             ));
         }
+
         if let Some((_, name)) = self.focus {
             return Err(root_already_selected_error(
                 name,
                 std::any::type_name::<T>(),
             ));
         }
+
         self.focus = Some((TypeId::of::<T>(), std::any::type_name::<T>()));
+
         Ok(self)
     }
 
@@ -93,6 +99,7 @@ impl FurnaceBuilder {
     #[doc(hidden)]
     pub fn __test_require_provided<T: Send + Sync + 'static>(&mut self) -> &mut Self {
         self.required_supplies.push(TypeId::of::<T>());
+
         self
     }
 
@@ -104,6 +111,7 @@ impl FurnaceBuilder {
     {
         self.registry.insert(value)?;
         self.satisfied.push(SatisfiedProvider::provided::<T>());
+
         Ok(self)
     }
 
@@ -115,6 +123,7 @@ impl FurnaceBuilder {
     {
         let explicit = if let Some(root) = &self.root {
             let graph = build_cauldron_graph(root.type_id, &Catalog::cauldrons())?;
+
             graph.members().find_map(|(_, member)| {
                 (member.type_id == TypeId::of::<T>())
                     .then_some(member.descriptor)
@@ -131,6 +140,7 @@ impl FurnaceBuilder {
         self.apply_provider_contribution(descriptor, contribution)?;
         self.satisfied
             .push(SatisfiedProvider::preconstructed::<T>());
+
         Ok(self)
     }
 
@@ -155,6 +165,7 @@ impl FurnaceBuilder {
         H: LifecycleHook + 'static,
     {
         self.lifecycle.add_hook(hook);
+
         self
     }
 
@@ -165,6 +176,7 @@ impl FurnaceBuilder {
         H: LifecycleHook + 'static,
     {
         self.lifecycle.add_infrastructure_hook(owner, hook);
+
         self
     }
 
@@ -176,9 +188,11 @@ impl FurnaceBuilder {
             selected,
             failure,
         } = self.analyze_builder();
+
         if !public.is_valid() {
             return Err(build_analysis_error(public, failure));
         }
+
         let (graph, construction_plan, auto_configurations, cauldron_graph) =
             public.into_valid_parts()?;
 
@@ -196,6 +210,7 @@ impl FurnaceBuilder {
                 descriptor.output_type_name(),
                 provider,
             )?;
+
             for hook in hooks {
                 self.lifecycle
                     .add_boxed_infrastructure_hook(descriptor.identifier(), hook);
@@ -225,10 +240,12 @@ impl FurnaceBuilder {
     fn analyze_builder(&self) -> BuilderAnalysis {
         let memo = crate::preflight::AnalysisMemo::default();
         let mut analysis = self.analyze_builder_parts(&memo);
+
         // A failed rooted selection has no virtual scope for integrations to inspect.
         if self.root.is_some() && analysis.public.cauldron_graph().is_none() {
             return analysis;
         }
+
         let context = crate::preflight::PreflightContext::new(
             &self.config,
             &analysis.public,
@@ -238,15 +255,18 @@ impl FurnaceBuilder {
         );
         let diagnostics = crate::preflight::validate(&context);
         analysis.public.append_diagnostics(diagnostics);
+
         analysis
     }
 
     /// Selects rooted, focused, or complete-catalog inputs for graph analysis.
     fn analyze_builder_parts(&self, memo: &crate::preflight::AnalysisMemo) -> BuilderAnalysis {
         let providers = Catalog::providers();
+
         if let Some((target, name)) = self.focus {
             return self.analyze_focused(target, name, &providers, memo);
         }
+
         let Some(root) = &self.root else {
             return self.analyze_complete_catalog(&providers, memo);
         };
@@ -278,11 +298,13 @@ impl FurnaceBuilder {
 
         let scoped = select_scoped_providers(&cauldron_graph, &providers, &satisfied);
         let mut covered_missing = auto_configuration.covered_missing;
+
         for type_id in &scoped.covered_missing {
             if !covered_missing.contains(type_id) {
                 covered_missing.push(*type_id);
             }
         }
+
         let mut public = crate::graph::analyze_descriptors_with_locations(
             &scoped.descriptors,
             &satisfied,
@@ -333,6 +355,7 @@ impl FurnaceBuilder {
             .into_iter()
             .filter(|descriptor| {
                 let output = descriptor.output_type_id();
+
                 !self.required_supplies.contains(&output)
                     && (descriptor.focused_requirements()
                         || initial.graph().providers.iter().any(|node| {
@@ -366,6 +389,7 @@ impl FurnaceBuilder {
         );
         public.append_diagnostics(automatic.diagnostics);
         public.auto_configurations = automatic.reports;
+
         BuilderAnalysis {
             public,
             selected: automatic.selected,
@@ -379,6 +403,7 @@ impl FurnaceBuilder {
         descriptor: &'static ProviderDescriptor,
     ) -> Result<ProviderContribution> {
         let context = ConstructionContext::new(&self.registry, &self.config);
+
         if let Some(constructor) = descriptor.lifecycle_constructor() {
             constructor(&context).await
         } else {
@@ -397,9 +422,11 @@ impl FurnaceBuilder {
         let (provider, registrations) = contribution.into_parts();
         self.registry
             .insert_erased(descriptor.type_id(), descriptor.type_name(), provider)?;
+
         for registration in registrations {
             self.lifecycle.add_registration(registration);
         }
+
         Ok(())
     }
 
@@ -541,17 +568,20 @@ fn root_already_selected_error(existing: &'static str, attempted: &'static str) 
 /// Chooses the primary preflight error and attaches remaining diagnostics.
 fn build_analysis_error(public: GraphAnalysis, failure: Option<Error>) -> Error {
     let GraphAnalysis { diagnostics, .. } = public;
+
     if let Some(failure) = failure {
         let primary = failure.diagnostic().clone();
         let mut primary_removed = false;
         let related = diagnostics.into_iter().filter(|diagnostic| {
             if !primary_removed && *diagnostic == primary {
                 primary_removed = true;
+
                 false
             } else {
                 true
             }
         });
+
         return failure.with_related_diagnostics(related);
     }
 
@@ -559,6 +589,7 @@ fn build_analysis_error(public: GraphAnalysis, failure: Option<Error>) -> Error 
     let primary = diagnostics
         .next()
         .expect("invalid analysis has diagnostics");
+
     Error::from_diagnostics(primary, diagnostics)
 }
 
@@ -575,9 +606,11 @@ fn provider_construction_error(
     )
     .with_subject(step.type_name())
     .with_location(step.location());
+
     if let Some(path) = consumer_path(graph, step) {
         diagnostic = diagnostic.with_suggestion(format!("construction path: {path}"));
     }
+
     Error::with_source(diagnostic, source)
 }
 
@@ -607,6 +640,7 @@ fn consumer_path(graph: &ApplicationGraph, failing_step: &ConstructionStep) -> O
 
     let mut visited = vec![false; graph.providers.len()];
     let mut queue = VecDeque::new();
+
     for root in roots {
         visited[root] = true;
         queue.push_back(vec![root]);
@@ -614,6 +648,7 @@ fn consumer_path(graph: &ApplicationGraph, failing_step: &ConstructionStep) -> O
 
     while let Some(path) = queue.pop_front() {
         let provider = *path.last().expect("paths are never empty");
+
         if graph.providers[provider].type_id == failing_step.type_id() {
             return Some(
                 path.iter()
@@ -635,6 +670,7 @@ fn consumer_path(graph: &ApplicationGraph, failing_step: &ConstructionStep) -> O
             })
             .collect::<Vec<_>>();
         dependencies.sort_by(|left, right| provider_order(graph, *left, *right));
+
         for dependency in dependencies {
             if !visited[dependency] {
                 visited[dependency] = true;
@@ -652,6 +688,7 @@ fn consumer_path(graph: &ApplicationGraph, failing_step: &ConstructionStep) -> O
 fn provider_order(graph: &ApplicationGraph, left: usize, right: usize) -> std::cmp::Ordering {
     let left = &graph.providers[left];
     let right = &graph.providers[right];
+
     left.type_name
         .cmp(right.type_name)
         .then_with(|| left.origin.cmp(&right.origin))

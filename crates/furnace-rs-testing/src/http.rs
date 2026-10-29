@@ -14,6 +14,7 @@ pub struct TestClient {
     context: TestContext,
     router: axum::Router,
 }
+
 impl TestClient {
     /// Binds the fixture context and router into an in-process test client.
     pub(crate) fn new(context: TestContext, router: axum::Router) -> Self {
@@ -34,22 +35,27 @@ impl TestClient {
             body: Body::empty(),
         }
     }
+
     /// Creates a GET request.
     pub fn get(&self, uri: &str) -> TestRequest {
         self.request(Method::GET, uri)
     }
+
     /// Creates a POST request.
     pub fn post(&self, uri: &str) -> TestRequest {
         self.request(Method::POST, uri)
     }
+
     /// Creates a PUT request.
     pub fn put(&self, uri: &str) -> TestRequest {
         self.request(Method::PUT, uri)
     }
+
     /// Creates a PATCH request.
     pub fn patch(&self, uri: &str) -> TestRequest {
         self.request(Method::PATCH, uri)
     }
+
     /// Creates a DELETE request.
     pub fn delete(&self, uri: &str) -> TestRequest {
         self.request(Method::DELETE, uri)
@@ -63,24 +69,31 @@ pub struct TestRequest {
     builder: http::request::Builder,
     body: Body,
 }
+
 impl TestRequest {
     /// Adds a native HTTP header to the request.
     pub fn header(mut self, name: HeaderName, value: HeaderValue) -> Self {
         self.builder = self.builder.header(name, value);
+
         self
     }
+
     /// Serializes a JSON body and sets the JSON content type.
     pub fn json<S: serde::Serialize>(mut self, body: &S) -> TestResult<Self> {
         let bytes = serde_json::to_vec(body).map_err(TestError::Serialization)?;
+
         if let Some(headers) = self.builder.headers_mut() {
             headers.insert(
                 http::header::CONTENT_TYPE,
                 HeaderValue::from_static("application/json"),
             );
         }
+
         self.body = Body::from(bytes);
+
         Ok(self)
     }
+
     /// Dispatches the request and buffers the response body once.
     pub async fn send(self) -> TestResult<TestResponse> {
         let request = self.builder.body(self.body).map_err(TestError::Request)?;
@@ -89,6 +102,7 @@ impl TestRequest {
             .oneshot(request)
             .await
             .map_err(|error| TestError::Service(Box::new(error)))?;
+
         TestResponse::buffer(response).await
     }
 }

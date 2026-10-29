@@ -1,6 +1,7 @@
 //! Dispatch controller declarations to managed structs or inherent endpoints.
 use proc_macro2::TokenStream;
 use syn::{Error, Item};
+
 mod endpoints;
 mod managed;
 

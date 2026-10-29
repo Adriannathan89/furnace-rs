@@ -18,6 +18,7 @@ use crate::diagnostic::CliError;
 use super::{ProjectName, RenderedProject};
 
 static NEXT_STAGING_COUNTER: AtomicU64 = AtomicU64::new(0);
+
 const MAX_STAGING_COLLISIONS: usize = 128;
 
 /// An operational FURNACE230 failure while staging or publishing a project.
@@ -134,12 +135,14 @@ where
         publish(&staging_directory, &destination).map_err(|error| {
             scaffolding_error("the completed project could not be published", error)
         })?;
+
         Ok(destination)
     })();
 
     if result.is_ok() {
         guard.disarm();
     }
+
     result
 }
 
@@ -174,12 +177,14 @@ fn create_staging_directory(
         let mut directory = fs::DirBuilder::new();
         #[cfg(not(unix))]
         let directory = fs::DirBuilder::new();
+
         #[cfg(unix)]
         {
             use std::os::unix::fs::DirBuilderExt;
             // Set privacy on mkdir itself, before generated files are written.
             directory.mode(0o700);
         }
+
         match directory.create(&staging_directory) {
             Ok(()) => return Ok(staging_directory),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
@@ -206,6 +211,7 @@ fn write_new_file(path: &Path, contents: &[u8]) -> io::Result<()> {
     let mut file = OpenOptions::new().write(true).create_new(true).open(path)?;
     file.write_all(contents)?;
     file.flush()?;
+
     file.sync_all()
 }
 
@@ -320,6 +326,7 @@ mod tests {
         const CHILD: &str = "scaffold::publish::tests::private_scaffold_child";
         const COMPLETE: &str = "FURNACE_PRIVATE_SCAFFOLD_COMPLETE";
         let executable = std::env::current_exe().unwrap();
+
         for umask in ["000", "002", "022", "077"] {
             let output = std::process::Command::new("sh")
                 .args([
@@ -355,6 +362,7 @@ mod tests {
         if std::env::var_os("FURNACE_PRIVATE_SCAFFOLD_TEST_CHILD").is_none() {
             return;
         }
+
         let invocation = tempdir().unwrap();
         let name = ProjectName::parse("private-app").unwrap();
         let rendered = render_project(&name).unwrap();
@@ -367,6 +375,7 @@ mod tests {
                 let staging = fs::read_dir(invocation.path())?.next().unwrap()?.path();
                 let mode = fs::metadata(&staging)?.permissions().mode() & 0o777;
                 assert_eq!(mode, 0o700, "staging mode was {mode:o}");
+
                 write_new_file(path, contents)
             },
             |_| Ok(()),
@@ -376,12 +385,14 @@ mod tests {
         .unwrap();
         let mode = fs::metadata(&destination).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o700, "published mode was {mode:o}");
+
         for file in rendered.files() {
             assert_eq!(
                 fs::read_to_string(destination.join(file.path())).unwrap(),
                 file.contents(),
             );
         }
+
         println!("FURNACE_PRIVATE_SCAFFOLD_COMPLETE");
     }
 
@@ -404,6 +415,7 @@ mod tests {
                 {
                     return Err(io::Error::other("simulated generated-file write failure"));
                 }
+
                 write_new_file(path, contents)
             },
             |_| Ok(()),
@@ -490,6 +502,7 @@ mod tests {
             write_new_file,
             |path| {
                 fs::create_dir(path)?;
+
                 fs::write(path.join("sentinel"), "preserved")
             },
             sync_directory,

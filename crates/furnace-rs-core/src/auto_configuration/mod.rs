@@ -33,6 +33,7 @@ pub(crate) fn descriptors() -> Vec<&'static AutoConfigurationDescriptor> {
         .into_iter()
         .collect();
     descriptors.sort_by(descriptor_order);
+
     descriptors
 }
 

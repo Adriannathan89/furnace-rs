@@ -17,18 +17,23 @@ impl Parse for StrategyArguments {
     /// Parses the required `name = "..."` strategy declaration argument.
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let key: Ident = input.parse()?;
+
         if key != "name" {
             return Err(Error::new(
                 key.span(),
                 "expected `name = \"strategy-name\"`",
             ));
         }
+
         input.parse::<Token![=]>()?;
         let name: LitStr = input.parse()?;
+
         if !input.is_empty() {
             return Err(input.error("`#[passport_strategy]` accepts only `name = \"...\"`"));
         }
+
         validate_name(&name)?;
+
         Ok(Self { name })
     }
 }
@@ -39,12 +44,14 @@ pub(crate) fn expand(arguments: TokenStream, item: TokenStream) -> syn::Result<T
     let implementation = syn::parse2::<ItemImpl>(item)?;
     let common = common_path()?;
     validate_implementation(&implementation)?;
+
     expand_strategy(arguments, implementation, &common)
 }
 
 /// Enforces the runtime catalog's lowercase ASCII strategy-name syntax.
 fn validate_name(name: &LitStr) -> syn::Result<()> {
     let value = name.value();
+
     if value.is_empty()
         || !value.bytes().all(|byte| {
             byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'_' | b'-')
@@ -55,6 +62,7 @@ fn validate_name(name: &LitStr) -> syn::Result<()> {
             "Passport strategy names must be non-empty lowercase ASCII `[a-z0-9._-]`",
         ));
     }
+
     Ok(())
 }
 
@@ -67,6 +75,7 @@ fn validate_implementation(implementation: &ItemImpl) -> syn::Result<()> {
             "`#[passport_strategy]` requires a non-generic `impl PassportStrategy for ConcreteType`",
         ));
     }
+
     if implementation.defaultness.is_some() || implementation.unsafety.is_some() {
         return Err(Error::new(
             implementation.impl_token.span,
@@ -80,12 +89,14 @@ fn validate_implementation(implementation: &ItemImpl) -> syn::Result<()> {
             "`#[passport_strategy]` requires `impl PassportStrategy for ConcreteType`",
         ));
     };
+
     if bang.is_some() || !is_passport_strategy_path(trait_path) {
         return Err(Error::new(
             trait_path.span(),
             "`#[passport_strategy]` requires `impl PassportStrategy for ConcreteType`",
         ));
     }
+
     if !matches!(implementation.self_ty.as_ref(), Type::Path(path) if path.qself.is_none()) {
         return Err(Error::new(
             implementation.self_ty.span(),
@@ -97,6 +108,7 @@ fn validate_implementation(implementation: &ItemImpl) -> syn::Result<()> {
     let mut principal = false;
     let mut token_kind = false;
     let mut validate = None;
+
     for item in &implementation.items {
         match item {
             ImplItem::Type(item) if item.ident == "Claims" => claims = true,
@@ -106,36 +118,42 @@ fn validate_implementation(implementation: &ItemImpl) -> syn::Result<()> {
             _ => {}
         }
     }
+
     if !claims {
         return Err(Error::new(
             implementation.impl_token.span,
             "`PassportStrategy` implementations require `type Claims = ...;`",
         ));
     }
+
     if !principal {
         return Err(Error::new(
             implementation.impl_token.span,
             "`PassportStrategy` implementations require `type Principal = ...;`",
         ));
     }
+
     if !token_kind {
         return Err(Error::new(
             implementation.impl_token.span,
             "`PassportStrategy` implementations require `const TOKEN_KIND: JwtTokenKind = ...;`",
         ));
     }
+
     let Some(validate) = validate else {
         return Err(Error::new(
             implementation.impl_token.span,
             "`PassportStrategy` implementations require `async fn validate(...)`",
         ));
     };
+
     if validate.sig.asyncness.is_none() {
         return Err(Error::new(
             validate.sig.fn_token.span,
             "`PassportStrategy::validate` must be async",
         ));
     }
+
     Ok(())
 }
 
@@ -273,6 +291,7 @@ fn generated_suffix(implementation: &ItemImpl) -> String {
         .to_token_stream()
         .to_string()
         .hash(&mut hasher);
+
     format!("{:016x}", hasher.finish())
 }
 

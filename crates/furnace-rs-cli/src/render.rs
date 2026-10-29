@@ -16,8 +16,10 @@ pub(crate) fn render_routes(report: &InspectionReport) -> String {
 
     let mut output =
         String::from("METHOD  PATH        HANDLER                  CONTROLLER       GUARD  SOURCE");
+
     if routes.is_empty() {
         output.push_str("\n(none)");
+
         return output;
     }
 
@@ -37,6 +39,7 @@ pub(crate) fn render_routes(report: &InspectionReport) -> String {
         )
         .expect("writing to a String cannot fail");
     }
+
     output
 }
 
@@ -47,6 +50,7 @@ pub(crate) fn render_graph(report: &InspectionReport) -> String {
 
     output.push_str("\n\nProviders\n");
     let providers = ordered_providers(report);
+
     if providers.is_empty() {
         output.push_str("(none)");
     } else {
@@ -55,10 +59,12 @@ pub(crate) fn render_graph(report: &InspectionReport) -> String {
             .map(|provider| provider.type_name.len())
             .max()
             .unwrap_or(0);
+
         for (index, provider) in providers.into_iter().enumerate() {
             if index > 0 {
                 output.push('\n');
             }
+
             let owner = provider.owner.as_deref().unwrap_or("(none)");
             write!(
                 output,
@@ -71,6 +77,7 @@ pub(crate) fn render_graph(report: &InspectionReport) -> String {
 
     output.push_str("\n\nDependencies\n");
     let dependencies = ordered_dependencies(report);
+
     if dependencies.is_empty() {
         output.push_str("(none)");
     } else {
@@ -78,6 +85,7 @@ pub(crate) fn render_graph(report: &InspectionReport) -> String {
             if index > 0 {
                 output.push('\n');
             }
+
             write!(
                 output,
                 "{} -> {}",
@@ -88,18 +96,21 @@ pub(crate) fn render_graph(report: &InspectionReport) -> String {
     }
 
     output.push_str("\n\nConstruction order\n");
+
     match &report.graph.construction_order {
         Some(order) if !order.is_empty() => {
             for (index, provider) in order.iter().enumerate() {
                 if index > 0 {
                     output.push('\n');
                 }
+
                 write!(output, "{}. {provider}", index + 1)
                     .expect("writing to a String cannot fail");
             }
         }
         _ => output.push_str("(none)"),
     }
+
     output
 }
 
@@ -114,23 +125,28 @@ fn render_modules(report: &InspectionReport, output: &mut String) {
             .collect::<Vec<_>>();
         cauldrons.sort_unstable();
         cauldrons.dedup();
+
         if cauldrons.is_empty() {
             output.push_str("(none)");
         } else {
             output.push_str(&cauldrons.join("\n"));
         }
+
         return;
     };
 
     output.push_str(root);
     let mut imports = BTreeMap::<&str, Vec<&str>>::new();
+
     for CauldronImportReport { importer, imported } in &report.graph.imports {
         imports.entry(importer).or_default().push(imported);
     }
+
     for children in imports.values_mut() {
         children.sort_unstable();
         children.dedup();
     }
+
     let mut visited = BTreeSet::from([root]);
     render_imports(root, "", &imports, &mut visited, output);
 
@@ -143,6 +159,7 @@ fn render_modules(report: &InspectionReport, output: &mut String) {
         .collect::<Vec<_>>();
     remaining.sort_unstable();
     remaining.dedup();
+
     for module in remaining {
         write!(output, "\n{module}").expect("writing to a String cannot fail");
     }
@@ -159,10 +176,12 @@ fn render_imports<'a>(
     let Some(children) = imports.get(module) else {
         return;
     };
+
     for (index, child) in children.iter().enumerate() {
         let last = index + 1 == children.len();
         let connector = if last { "└──" } else { "├──" };
         write!(output, "\n{prefix}{connector} {child}").expect("writing to a String cannot fail");
+
         if visited.insert(child) {
             let child_prefix = format!("{prefix}{}", if last { "    " } else { "│   " });
             render_imports(child, &child_prefix, imports, visited, output);
@@ -173,6 +192,7 @@ fn render_imports<'a>(
 /// Renders doctor checks grouped and sorted by stable status order.
 pub(crate) fn render_doctor(report: &InspectionReport) -> String {
     let checks = ordered_checks(report);
+
     if checks.is_empty() {
         return "(none)".into();
     }
@@ -237,6 +257,7 @@ const fn doctor_status(status: DoctorStatus) -> &'static str {
 /// Renders ordered diagnostics separated by a blank line.
 pub(crate) fn render_diagnostics(report: &InspectionReport) -> String {
     let diagnostics = ordered_diagnostics(report);
+
     diagnostics
         .into_iter()
         .map(render_diagnostic)
@@ -254,6 +275,7 @@ pub(crate) fn ordered_routes(report: &InspectionReport) -> Vec<&RouteReport> {
             .then_with(|| left.controller.cmp(&right.controller))
             .then_with(|| left.handler.cmp(&right.handler))
     });
+
     routes
 }
 
@@ -268,6 +290,7 @@ pub(crate) fn ordered_modules(report: &InspectionReport) -> Vec<&CauldronReport>
             .then_with(|| left.location.line.cmp(&right.location.line))
             .then_with(|| left.location.column.cmp(&right.location.column))
     });
+
     cauldrons
 }
 
@@ -279,6 +302,7 @@ pub(crate) fn ordered_imports(report: &InspectionReport) -> Vec<&CauldronImportR
             .cmp(&right.importer)
             .then_with(|| left.imported.cmp(&right.imported))
     });
+
     imports
 }
 
@@ -294,6 +318,7 @@ pub(crate) fn ordered_providers(report: &InspectionReport) -> Vec<&ProviderRepor
             .then_with(|| left.state.cmp(&right.state))
             .then_with(|| provider_location(left).cmp(&provider_location(right)))
     });
+
     providers
 }
 
@@ -305,6 +330,7 @@ pub(crate) fn ordered_dependencies(report: &InspectionReport) -> Vec<&Dependency
             .cmp(&right.provider)
             .then_with(|| left.dependency.cmp(&right.dependency))
     });
+
     dependencies
 }
 
@@ -317,6 +343,7 @@ pub(crate) fn ordered_checks(report: &InspectionReport) -> Vec<&DoctorCheck> {
             .then_with(|| left.summary.cmp(&right.summary))
             .then_with(|| doctor_status_rank(left.status).cmp(&doctor_status_rank(right.status)))
     });
+
     checks
 }
 
@@ -332,6 +359,7 @@ pub(crate) fn ordered_diagnostics(report: &InspectionReport) -> Vec<&DiagnosticR
             .then_with(|| left.message.cmp(&right.message))
             .then_with(|| left.suggestions.cmp(&right.suggestions))
     });
+
     diagnostics
 }
 
@@ -354,6 +382,7 @@ fn diagnostic_location(diagnostic: &DiagnosticReport) -> Option<(&str, u32, u32)
 /// Renders one structured diagnostic in the CLI human format.
 pub(crate) fn render_diagnostic(diagnostic: &DiagnosticReport) -> String {
     let mut output = format!("error[{}]: {}", diagnostic.code, diagnostic.title);
+
     if let Some(location) = &diagnostic.location {
         write!(
             output,
@@ -362,22 +391,28 @@ pub(crate) fn render_diagnostic(diagnostic: &DiagnosticReport) -> String {
         )
         .expect("writing to a String cannot fail");
     }
+
     if let Some(subject) = &diagnostic.subject {
         write!(output, "\n  = subject: {subject}").expect("writing to a String cannot fail");
     }
+
     write!(output, "\n  = {}", diagnostic.message).expect("writing to a String cannot fail");
+
     for suggestion in &diagnostic.suggestions {
         write!(output, "\n  help: {suggestion}").expect("writing to a String cannot fail");
     }
+
     output
 }
 
 /// Renders protobuf methods with streaming shape and admission protection.
 pub(crate) fn render_grpc(report: &InspectionReport) -> String {
     let mut output = String::from("SERVICE  METHOD  SHAPE  PROTECTION");
+
     if report.grpc_services.is_empty() {
         output.push_str("\n(none)");
     }
+
     for service in &report.grpc_services {
         for method in &service.methods {
             let shape = match (method.client_streaming, method.server_streaming) {
@@ -404,12 +439,14 @@ pub(crate) fn render_grpc(report: &InspectionReport) -> String {
             .expect("writing to a String cannot fail");
         }
     }
+
     output
 }
 
 /// Renders selected WebSocket paths and event methods without runtime state.
 pub(crate) fn render_socket(report: &InspectionReport) -> String {
     let mut rows = vec!["WebSocket endpoints".to_owned()];
+
     for endpoint in &report.socket_endpoints {
         rows.push(format!(
             "{}  {}  {}  {}",
@@ -421,10 +458,12 @@ pub(crate) fn render_socket(report: &InspectionReport) -> String {
                 .as_ref()
                 .map_or("public", |p| p.strategy.as_str())
         ));
+
         for handler in &endpoint.handlers {
             rows.push(format!("  {}  {}", handler.kind, handler.name));
         }
     }
+
     rows.join("\n")
 }
 
