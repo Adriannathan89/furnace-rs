@@ -6,6 +6,16 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### Added
+
+- Add the optional `password-hasher` feature to `furnace-rs-common` and forward
+  it through `furnace-rs`, with private Argon2 helpers for independently salted
+  PHC hashes and password verification. Document feature selection, helper
+  visibility, and error behavior in the [password hasher guide](docs/password-hasher.md).
+- Add seven password hasher unit tests covering PHC output, matching and incorrect
+  passwords, independent salts, malformed hashes, unsupported algorithms, and
+  empty and Unicode passwords.
+
 ## [2.0.0] - 2026-10-17
 
 Consolidates all changes from 2.0.0-beta.1, beta.2, beta.3, and Unreleased.
