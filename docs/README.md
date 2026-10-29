@@ -14,6 +14,7 @@ verification for their named versions.
 | [Implementation guide](IMPLEMENTATION.md) | Source-linked walkthrough of compile-time and runtime flows |
 | [CLI](CLI.md) | Scaffolding, run/dev, inspection, target selection, and JSON schema 2 |
 | [Declarative DI](declarative-di.md) | Compile-time roots, module API, visibility, and migration |
+| [Password hasher](password-hasher.md) | Argon2 hashing, verification results, feature selection, and unit tests |
 | [gRPC transport](grpc.md) | Protobuf services, named clients, Passport/JWT, shared runtime, TLS, and static inspection |
 | [Entity-bound storage](storage.md) | SeaORM CRUD, relation loading, ordering, pagination, and error mapping |
 | [Persistence](furnace-rs-persistence.md) | Native SeaORM PostgreSQL setup, configuration, and errors |

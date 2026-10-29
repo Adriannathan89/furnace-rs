@@ -28,6 +28,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 
 [workspace.dependencies]
+argon2 = { version = "0.5", features = ["std"] }
 axum = { version = "0.8.9", features = ["http1", "json", "tokio"] }
 axum-extra = { version = "0.12.6", default-features = false, features = ["typed-header"] }
 base64 = "0.22"

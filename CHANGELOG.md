@@ -6,6 +6,25 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### Security
+
+- Update affected committed lockfiles to patched `ctutils` 0.4.4,
+  `pulldown-cmark` 0.13.5, `rustls-webpki` 0.103.16, and `webpki-roots` 1.0.10
+  to resolve RUSTSEC-2026-0385, RUSTSEC-2026-0414, RUSTSEC-2026-0382, and
+  RUSTSEC-2026-0381. Update affected Tokio dependencies to 1.53.3 to address
+  the RUSTSEC-2026-0386 I/O safety warning.
+
+### Added
+
+- Add the optional `password-hasher` feature to `furnace-rs-common` and forward
+  it through `furnace-rs`, with public `hash_password` and `validate_password`
+  helpers for independently salted PHC hashes and password verification.
+  Re-export the helpers from both crate roots and the facade prelude. Document
+  feature selection, usage, and error behavior in the [password hasher guide](docs/password-hasher.md).
+- Add seven password hasher unit tests covering PHC output, matching and incorrect
+  passwords, independent salts, malformed hashes, unsupported algorithms, and
+  empty and Unicode passwords.
+
 ## [2.0.0] - 2026-10-17
 
 Consolidates all changes from 2.0.0-beta.1, beta.2, beta.3, and Unreleased.

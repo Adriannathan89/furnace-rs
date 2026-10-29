@@ -41,10 +41,12 @@ jwt = [
 ]
 cookies = ["http", "dep:cookie", "axum-extra/cookie", "furnace-rs-common-macros?/cookies"]
 logger = ["dep:chrono"]
+password-hasher = ["dep:argon2"]
 sea-orm = ["http", "dep:sea-orm"]
 sea-orm-storage = ["sea-orm", "dep:furnace-rs-persistence-types"]
 
 [dependencies]
+argon2 = { workspace = true, optional = true }
 futures-util = { workspace = true, optional = true }
 http = { workspace = true, optional = true }
 axum = { workspace = true, optional = true }
