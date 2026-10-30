@@ -40,9 +40,12 @@ mod validation;
 #[cfg(feature = "password-hasher")]
 pub mod password_hasher;
 
-/// Re-exports Argon2 password hashing and verification helpers.
+/// Re-exports password hashing services, the default backend, and helpers.
 #[cfg(feature = "password-hasher")]
-pub use password_hasher::{hash_password, validate_password};
+pub use password_hasher::{
+    DefaultPassowrdHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherError,
+    PasswordHasherResult, PasswordHasherService, hash_password, validate_password,
+};
 
 /// Application logging contracts and the default console logger.
 #[cfg(feature = "logger")]

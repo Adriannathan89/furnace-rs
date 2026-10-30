@@ -81,3 +81,82 @@ cargo test -p furnace-rs-common --no-default-features --features password-hasher
 The tests cover the generated PHC format, matching and incorrect passwords,
 independent salts, malformed strings, unsupported algorithms, empty passwords,
 and exact UTF-8 matching.
+
+## Reusable instances and custom backends
+
+`PasswordHasher` is a clonable service facade, following the `Logger` pattern.
+Clones share their backend through an `Arc`. The default backend is
+`DefaultPassowrdHasher`, which owns one Argon2 instance:
+
+```rust
+use furnace_rs_common::PasswordHasher;
+
+let hasher = PasswordHasher::default();
+let hashed = hasher.hash_password("my password")?;
+assert!(hasher.validate_password("my password", &hashed)?);
+# Ok::<(), furnace_rs_common::PasswordHasherError>(())
+```
+
+To customize the Argon2 algorithm, version, or cost settings, pass a configured
+instance. Add `argon2 = "0.5"` to your application's dependencies to construct it:
+
+```rust
+use argon2::{Algorithm, Argon2, Params, Version};
+use furnace_rs_common::{DefaultPassowrdHasher, PasswordHasher};
+
+let params = Params::new(19_456, 2, 1, None)?;
+let backend = DefaultPassowrdHasher::new(Argon2::new(
+    Algorithm::Argon2id,
+    Version::V0x13,
+    params,
+));
+let hasher = PasswordHasher::new(backend);
+# Ok::<(), argon2::Error>(())
+```
+
+The backend reads cost settings from the Argon2 instance when hashing, and from
+the stored PHC string when validating. Every hash still gets a fresh salt.
+
+Applications can implement `PasswordHasherService: Send + Sync` and pass their
+backend to `PasswordHasher::new`. Both methods are synchronous:
+
+```rust
+fn hash_password(&self, password: &str) -> PasswordHasherResult<String>;
+fn validate_password(&self, password: &str, hashed: &str) -> PasswordHasherResult<bool>;
+```
+
+`PasswordHasherResult<T>` uses `PasswordHasherError`, a public alias for the
+existing `argon2::password_hash::Error`. The facade forwards backend results
+unchanged. Custom backends define their own validation failure behavior.
+
+All these contracts are exported by `furnace_rs_common`, `furnace_rs`, and
+`furnace_rs::prelude` with the `password-hasher` feature enabled.
+
+## Dependency injection
+
+Import the global `PasswordHasherCauldron` to inject the default hasher into
+services, including services declared in other imported cauldrons:
+
+```rust
+use furnace_rs_common::{PasswordHasher, PasswordHasherCauldron};
+
+#[furnace_rs_common::core::burner]
+struct AuthService {
+    #[inject]
+    hasher: PasswordHasher,
+}
+
+#[furnace_rs_common::core::cauldron(
+    imports = [PasswordHasherCauldron],
+    providers = [AuthService],
+)]
+struct AppCauldron;
+```
+
+For an application-wide custom backend, call
+`builder.provide(PasswordHasher::new(backend))` before building. Keep the hasher
+registered and exported through `PasswordHasherCauldron` so the framework can
+resolve its ownership. The supplied value takes precedence over the default.
+
+The free `hash_password` and `validate_password` helpers always use the default
+backend. Inject or retain a `PasswordHasher` instance when using a custom backend.

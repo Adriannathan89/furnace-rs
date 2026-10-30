@@ -1,18 +1,110 @@
-//! Password hashing and verification using Argon2 defaults.
+//! Replaceable password hashing services with an Argon2 default backend.
 //!
 //! Enabled by the `password-hasher` feature. The helpers are also re-exported
 //! from the crate root. Each hash uses a fresh OS-generated salt and is serialized
 //! as a PHC string containing the algorithm, version, parameters, salt, and hash.
 //! Store the complete string so verification can recover those settings.
 //!
-//! Validation returns an error for malformed PHC strings. Once parsing succeeds,
-//! every verification failure (including a password mismatch or unsupported
-//! algorithm) becomes `Ok(false)`.
+//! The default backend and free helpers return an error for malformed PHC
+//! strings. Once parsing succeeds, every verification failure (including a
+//! password mismatch or unsupported algorithm) becomes `Ok(false)`.
+//!
+//! # Direct use without a cauldron
+//!
+//! Importing [`PasswordHasherCauldron`] is optional. Create a [`PasswordHasher`]
+//! directly when passing it to functions yourself. It stores its backend in an
+//! [`Arc`](std::sync::Arc); cloning the hasher shares the same backend rather
+//! than copying it. Each separate call to [`PasswordHasher::default`] creates a
+//! new backend.
+//!
+//! ```
+//! use furnace_rs_common::{PasswordHasher, PasswordHasherResult};
+//!
+//! fn create_hash(hasher: PasswordHasher, password: &str) -> PasswordHasherResult<String> {
+//!     hasher.hash_password(password)
+//! }
+//!
+//! fn check_password(
+//!     hasher: PasswordHasher,
+//!     password: &str,
+//!     hashed: &str,
+//! ) -> PasswordHasherResult<bool> {
+//!     hasher.validate_password(password, hashed)
+//! }
+//!
+//! let hasher = PasswordHasher::default();
+//! let hashed = create_hash(hasher.clone(), "secret")?;
+//! assert!(check_password(hasher.clone(), "secret", &hashed)?);
+//! # Ok::<(), furnace_rs_common::PasswordHasherError>(())
+//! ```
+//!
+//! Import [`PasswordHasherCauldron`] into your application's cauldron when you
+//! want Furnace to inject the default hasher into services instead of passing
+//! the instance manually.
 
-use argon2::{
-    Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, rand_core::OsRng},
-};
+mod default;
+mod password_hasher_service;
+
+pub use default::DefaultPassowrdHasher;
+pub use password_hasher_service::{PasswordHasher, PasswordHasherService};
+
+/// Error returned by password hashing and validation backends.
+pub use argon2::password_hash::Error as PasswordHasherError;
+
+/// Result returned by password hashing and validation backends.
+pub type PasswordHasherResult<T> = Result<T, PasswordHasherError>;
+
+/// Global module providing the default application [`PasswordHasher`].
+///
+/// This cauldron is optional for direct use through [`PasswordHasher::default`]
+/// or [`PasswordHasher::new`].
+///
+/// Import this cauldron into the application root to make the hasher available
+/// to consumers. To replace the backend, supply [`PasswordHasher::new`] through
+/// the application builder while keeping the provider registered and exported.
+///
+/// ```
+/// use furnace_rs_common::{PasswordHasher, PasswordHasherCauldron};
+///
+/// #[furnace_rs_common::core::burner]
+/// struct AuthService {
+///     #[inject]
+///     hasher: PasswordHasher,
+/// }
+///
+/// #[furnace_rs_common::core::cauldron(
+///     imports = [PasswordHasherCauldron],
+///     providers = [AuthService],
+/// )]
+/// struct AppCauldron;
+/// ```
+#[crate::core::cauldron(providers = [PasswordHasher], exports = [PasswordHasher], global)]
+pub struct PasswordHasherCauldron;
+
+impl crate::core::Injector for PasswordHasher {
+    type Dependencies = ();
+
+    async fn inject((): ()) -> crate::core::Result<Self> {
+        Ok(Self::default())
+    }
+
+    fn descriptor() -> &'static crate::core::ProviderDescriptor {
+        &PASSWORD_HASHER_DESCRIPTOR
+    }
+}
+
+const PASSWORD_HASHER_DESCRIPTOR: crate::core::ProviderDescriptor =
+    crate::core::__private::InjectorMetadata::<PasswordHasher, PasswordHasher>::DESCRIPTOR
+        .with_authored_type_name("PasswordHasher")
+        .with_visibility(crate::core::ProviderVisibility::Public)
+        .with_namespace(module_path!())
+        .with_location(crate::core::SourceLocation::new(
+            file!(),
+            line!(),
+            column!(),
+        ));
+
+crate::core::__private::inventory::submit! { PASSWORD_HASHER_DESCRIPTOR }
 
 /// Hashes the password's UTF-8 bytes with Argon2 defaults and a fresh random salt.
 ///
@@ -24,13 +116,7 @@ use argon2::{
 /// Returns the underlying error if Argon2 cannot hash or encode the password.
 /// Salt generation uses OS randomness and can panic if that source fails.
 pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
-    let salt = argon2::password_hash::SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
-    let password_hash = argon2
-        .hash_password(password.as_bytes(), &salt)?
-        .to_string();
-
-    Ok(password_hash)
+    DefaultPassowrdHasher::default().hash_password(password)
 }
 
 /// Checks a password against a stored PHC string using its encoded settings.
@@ -45,12 +131,7 @@ pub fn validate_password(
     password: &str,
     hashed: &str,
 ) -> Result<bool, argon2::password_hash::Error> {
-    let parsed_hash = PasswordHash::new(hashed)?;
-    let argon2 = Argon2::default();
-
-    Ok(argon2
-        .verify_password(password.as_bytes(), &parsed_hash)
-        .is_ok())
+    DefaultPassowrdHasher::default().validate_password(password, hashed)
 }
 
 #[cfg(test)]
