@@ -97,11 +97,8 @@ impl TestRequest {
     /// Dispatches the request and buffers the response body once.
     pub async fn send(self) -> TestResult<TestResponse> {
         let request = self.builder.body(self.body).map_err(TestError::Request)?;
-        let response = self
-            .router
-            .oneshot(request)
-            .await
-            .map_err(|error| TestError::Service(Box::new(error)))?;
+        // The router's error type is `Infallible`, so this pattern is irrefutable.
+        let Ok(response) = self.router.oneshot(request).await;
 
         TestResponse::buffer(response).await
     }
