@@ -112,15 +112,14 @@ fn credential(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    if let Some(auth) = auth.first() {
-        let auth = auth.to_str().map_err(|_| StatusCode::UNAUTHORIZED)?.trim();
-        let (space, token) = auth.split_once(' ').ok_or(StatusCode::UNAUTHORIZED)?;
+    if !auth.is_empty() {
+        // Use the grammar shared with HTTP and gRPC. A lenient local parser
+        // would normalize credentials those transports reject, such as
+        // `Bearer <TAB>token`, into an accepted token.
+        let token = furnace_rs_common::__transport::parse_bearer(headers)
+            .ok_or(StatusCode::UNAUTHORIZED)?;
 
-        if !space.eq_ignore_ascii_case("bearer") || token.trim().is_empty() {
-            return Err(StatusCode::UNAUTHORIZED);
-        }
-
-        tokens.push(token.trim().to_owned());
+        tokens.push(token.to_owned());
     }
 
     for header in headers.get_all(http::header::COOKIE) {
