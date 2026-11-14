@@ -6,7 +6,7 @@ use argon2::{
     password_hash::{Error, PasswordHash},
 };
 use furnace_rs_common::{
-    DefaultPassowrdHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherService,
+    DefaultPasswordHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherService,
 };
 use furnace_rs_core::Furnace;
 use std::sync::{
@@ -132,7 +132,7 @@ fn custom_backend_errors_are_not_suppressed() {
 fn configured_backend_encodes_its_settings_and_default_verifies_them() {
     let params = Params::new(32, 1, 1, Some(24)).unwrap();
     let backend =
-        DefaultPassowrdHasher::new(Argon2::new(Algorithm::Argon2i, Version::V0x13, params));
+        DefaultPasswordHasher::new(Argon2::new(Algorithm::Argon2i, Version::V0x13, params));
     let hasher = PasswordHasher::new(backend);
     let hashed = hasher.hash_password("secret").unwrap();
     let second = hasher.hash_password("secret").unwrap();
@@ -159,30 +159,102 @@ fn verification_cost_limits_cover_configured_settings_and_reject_heavier_hashes(
     use argon2::password_hash::errors::InvalidValue;
 
     // A time cost just above the default ceiling, kept cheap by minimal memory.
-    let heavy_t_cost = DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_T_COST + 1;
+    let heavy_t_cost = DefaultPasswordHasher::DEFAULT_MAX_VERIFY_T_COST + 1;
     let params = Params::new(32, heavy_t_cost, 1, None).unwrap();
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
     let too_costly = Err(Error::ParamValueInvalid(InvalidValue::TooLong));
 
-    let configured = DefaultPassowrdHasher::new(argon2.clone());
+    let configured = DefaultPasswordHasher::new(argon2.clone());
     let hashed = configured.hash_password("secret").unwrap();
     assert_eq!(configured.validate_password("secret", &hashed), Ok(true));
 
     // The default backend refuses the heavier hash for right and wrong passwords.
-    let default = DefaultPassowrdHasher::default();
+    let default = DefaultPasswordHasher::default();
     assert_eq!(default.validate_password("secret", &hashed), too_costly);
     assert_eq!(default.validate_password("wrong", &hashed), too_costly);
 
-    let raised = DefaultPassowrdHasher::default().with_verification_limits(
-        DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_M_COST,
+    let raised = DefaultPasswordHasher::default().with_verification_limits(
+        DefaultPasswordHasher::DEFAULT_MAX_VERIFY_M_COST,
         heavy_t_cost,
-        DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_P_COST,
+        DefaultPasswordHasher::DEFAULT_MAX_VERIFY_P_COST,
     );
     assert_eq!(raised.validate_password("secret", &hashed), Ok(true));
     assert_eq!(raised.validate_password("wrong", &hashed), Ok(false));
 
-    let lowered = DefaultPassowrdHasher::new(argon2).with_verification_limits(32, 1, 1);
+    let lowered = DefaultPasswordHasher::new(argon2).with_verification_limits(32, 1, 1);
     assert_eq!(lowered.validate_password("secret", &hashed), too_costly);
+}
+
+#[test]
+fn optional_validation_spends_one_verification_on_unknown_accounts() {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let hasher = PasswordHasher::new(CountingHasher(calls.clone()));
+
+    // A stored hash behaves exactly like `validate_password`.
+    assert_eq!(
+        hasher.validate_optional_password("secret", Some("custom:secret")),
+        Ok(true)
+    );
+    assert_eq!(
+        hasher.validate_optional_password("wrong", Some("custom:secret")),
+        Ok(false)
+    );
+    assert_eq!(
+        hasher.validate_optional_password("secret", Some("malformed")),
+        Err(Error::PhcStringField)
+    );
+    assert_eq!(calls.load(Ordering::SeqCst), 3);
+
+    // An unknown account costs one decoy hash, once, plus one verification.
+    assert_eq!(hasher.validate_optional_password("secret", None), Ok(false));
+    assert_eq!(calls.load(Ordering::SeqCst), 5);
+
+    // Clones reuse the decoy, and no password can match it.
+    let cloned = hasher.clone();
+    assert_eq!(cloned.validate_optional_password("", None), Ok(false));
+    assert_eq!(calls.load(Ordering::SeqCst), 6);
+
+    let failing = PasswordHasher::new(FailingHasher);
+    assert_eq!(
+        failing.validate_optional_password("secret", None),
+        Err(Error::Password)
+    );
+}
+
+#[test]
+fn default_backend_rejects_every_password_for_an_unknown_account() {
+    let hasher = PasswordHasher::new(DefaultPasswordHasher::with_costs(32, 1, 1).unwrap());
+
+    for password in ["", "secret", "furnace-rs"] {
+        assert_eq!(hasher.validate_optional_password(password, None), Ok(false));
+    }
+}
+
+#[test]
+fn cost_constructor_and_reexported_argon2_need_no_extra_dependency() {
+    use furnace_rs_common::password_hasher::argon2 as reexported;
+
+    let hashed = DefaultPasswordHasher::with_costs(32, 3, 1)
+        .unwrap()
+        .hash_password("secret")
+        .unwrap();
+    let parsed = PasswordHash::new(&hashed).unwrap();
+    assert_eq!(parsed.algorithm.as_str(), "argon2id");
+    assert_eq!(parsed.version, Some(19));
+    assert_eq!(parsed.params.get_decimal("m"), Some(32));
+    assert_eq!(parsed.params.get_decimal("t"), Some(3));
+    assert_eq!(parsed.params.get_decimal("p"), Some(1));
+    assert_eq!(
+        PasswordHasher::default().validate_password("secret", &hashed),
+        Ok(true)
+    );
+
+    // Costs Argon2 cannot run with are reported instead of panicking later.
+    assert!(DefaultPasswordHasher::with_costs(1, 1, 1).is_err());
+    assert!(DefaultPasswordHasher::with_costs(32, 0, 1).is_err());
+
+    let params = reexported::Params::new(32, 1, 1, None).unwrap();
+    let _backend = DefaultPasswordHasher::new(reexported::Argon2::from(params));
 }
 
 #[test]

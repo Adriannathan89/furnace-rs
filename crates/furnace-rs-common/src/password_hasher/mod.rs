@@ -7,7 +7,7 @@
 //!
 //! The default backend and free helpers return an error for malformed PHC
 //! strings, and for stored hashes whose Argon2 costs exceed the backend's
-//! verification limits (see [`DefaultPassowrdHasher`]); such hashes are rejected
+//! verification limits (see [`DefaultPasswordHasher`]); such hashes are rejected
 //! before any hashing work is done. Otherwise, every verification failure
 //! (including a password mismatch or unsupported algorithm) becomes `Ok(false)`.
 //!
@@ -47,8 +47,15 @@
 mod default;
 mod password_hasher_service;
 
-pub use default::DefaultPassowrdHasher;
+pub use default::DefaultPasswordHasher;
 pub use password_hasher_service::{PasswordHasher, PasswordHasherService};
+
+/// The Argon2 implementation behind [`DefaultPasswordHasher`].
+///
+/// Use this re-export to build a custom [`argon2::Argon2`] for
+/// [`DefaultPasswordHasher::new`] without adding a separately versioned
+/// `argon2` dependency to the application.
+pub use argon2;
 
 /// Error returned by password hashing and validation backends.
 pub use argon2::password_hash::Error as PasswordHasherError;
@@ -118,7 +125,7 @@ crate::core::__private::inventory::submit! { PASSWORD_HASHER_DESCRIPTOR }
 /// Returns the underlying error if Argon2 cannot hash or encode the password.
 /// Salt generation uses OS randomness and can panic if that source fails.
 pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
-    DefaultPassowrdHasher::default().hash_password(password)
+    DefaultPasswordHasher::default().hash_password(password)
 }
 
 /// Checks a password against a stored PHC string using its encoded settings.
@@ -130,12 +137,12 @@ pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Er
 ///
 /// Returns the parsing error when `hashed` is not a valid PHC string, or a
 /// parameter error when its Argon2 costs exceed the default verification limits
-/// of [`DefaultPassowrdHasher`].
+/// of [`DefaultPasswordHasher`].
 pub fn validate_password(
     password: &str,
     hashed: &str,
 ) -> Result<bool, argon2::password_hash::Error> {
-    DefaultPassowrdHasher::default().validate_password(password, hashed)
+    DefaultPasswordHasher::default().validate_password(password, hashed)
 }
 
 #[cfg(test)]

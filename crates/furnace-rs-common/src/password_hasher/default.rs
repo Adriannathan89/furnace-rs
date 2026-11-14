@@ -1,5 +1,5 @@
 use argon2::{
-    Argon2, Params,
+    Algorithm, Argon2, Params, Version,
     password_hash::{
         PasswordHash, PasswordHasher, PasswordVerifier, SaltString, errors::InvalidValue,
         rand_core::OsRng,
@@ -27,14 +27,14 @@ use super::{PasswordHasherError, PasswordHasherResult, PasswordHasherService};
 /// always verify. Use [`with_verification_limits`](Self::with_verification_limits)
 /// when migrating from stored hashes with heavier settings.
 #[derive(Clone)]
-pub struct DefaultPassowrdHasher {
+pub struct DefaultPasswordHasher {
     instance: Argon2<'static>,
     max_m_cost: u32,
     max_t_cost: u32,
     max_p_cost: u32,
 }
 
-impl DefaultPassowrdHasher {
+impl DefaultPasswordHasher {
     /// Default ceiling for a stored hash's memory cost, in KiB (256 MiB).
     pub const DEFAULT_MAX_VERIFY_M_COST: u32 = 256 * 1024;
 
@@ -61,6 +61,33 @@ impl DefaultPassowrdHasher {
             max_t_cost,
             max_p_cost,
         }
+    }
+
+    /// Creates an Argon2id (version 19) backend with the supplied costs.
+    ///
+    /// `m_cost` is the memory in KiB, `t_cost` the number of iterations, and
+    /// `p_cost` the number of lanes. Use [`new`](Self::new) with a configured
+    /// [`Argon2`] for another algorithm, output length, or a secret key.
+    ///
+    /// ```
+    /// use furnace_rs_common::{DefaultPasswordHasher, PasswordHasher};
+    ///
+    /// let hasher = PasswordHasher::new(DefaultPasswordHasher::with_costs(19_456, 2, 1)?);
+    /// # let _ = hasher;
+    /// # Ok::<(), furnace_rs_common::PasswordHasherError>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a parameter error when Argon2 does not accept the costs.
+    pub fn with_costs(m_cost: u32, t_cost: u32, p_cost: u32) -> PasswordHasherResult<Self> {
+        let params = Params::new(m_cost, t_cost, p_cost, None)?;
+
+        Ok(Self::new(Argon2::new(
+            Algorithm::Argon2id,
+            Version::V0x13,
+            params,
+        )))
     }
 
     /// Replaces the largest costs a stored hash may request during verification.
@@ -103,13 +130,13 @@ impl DefaultPassowrdHasher {
     }
 }
 
-impl Default for DefaultPassowrdHasher {
+impl Default for DefaultPasswordHasher {
     fn default() -> Self {
         Self::new(Argon2::default())
     }
 }
 
-impl PasswordHasherService for DefaultPassowrdHasher {
+impl PasswordHasherService for DefaultPasswordHasher {
     fn hash_password(&self, password: &str) -> PasswordHasherResult<String> {
         let salt = SaltString::generate(&mut OsRng);
         Ok(self

@@ -25,12 +25,12 @@ fn password_helpers_are_available_through_public_exports() {
 #[test]
 fn password_hasher_instances_are_available_through_public_exports() {
     use furnace_rs::{
-        DefaultPassowrdHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherError,
+        DefaultPasswordHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherError,
         PasswordHasherResult, PasswordHasherService,
     };
 
     fn assert_service<T: PasswordHasherService>() {}
-    assert_service::<DefaultPassowrdHasher>();
+    assert_service::<DefaultPasswordHasher>();
     let _module = PasswordHasherCauldron;
     let hasher = PasswordHasher::default();
     let hashed: PasswordHasherResult<String> = hasher.hash_password("facade instance");
@@ -43,10 +43,10 @@ fn password_hasher_instances_are_available_through_public_exports() {
     let _: furnace_rs::prelude::PasswordHasher = hasher.clone();
     let _: furnace_rs::common::PasswordHasher = hasher.clone();
     let _: furnace_rs::password_hasher::PasswordHasher = hasher;
-    let _ = furnace_rs::prelude::DefaultPassowrdHasher::default();
+    let _ = furnace_rs::prelude::DefaultPasswordHasher::default();
     let _ = furnace_rs::prelude::PasswordHasherCauldron;
     let _: furnace_rs::prelude::PasswordHasherResult<()> = Ok(());
     let _: Option<furnace_rs::prelude::PasswordHasherError> = None;
     fn assert_prelude_service<T: furnace_rs::prelude::PasswordHasherService>() {}
-    assert_prelude_service::<DefaultPassowrdHasher>();
+    assert_prelude_service::<DefaultPasswordHasher>();
 }

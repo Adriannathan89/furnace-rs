@@ -239,7 +239,7 @@ pub use furnace_rs_common as common;
 /// Re-exports password hashing services, the default backend, and helpers.
 #[cfg(feature = "password-hasher")]
 pub use furnace_rs_common::{
-    DefaultPassowrdHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherError,
+    DefaultPasswordHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherError,
     PasswordHasherResult, PasswordHasherService, hash_password, password_hasher, validate_password,
 };
 
@@ -356,7 +356,7 @@ pub use furnace_rs_extra as extra;
 pub mod prelude {
     #[cfg(feature = "password-hasher")]
     pub use furnace_rs_common::{
-        DefaultPassowrdHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherError,
+        DefaultPasswordHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherError,
         PasswordHasherResult, PasswordHasherService, hash_password, validate_password,
     };
 

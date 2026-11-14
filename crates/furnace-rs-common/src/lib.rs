@@ -43,7 +43,7 @@ pub mod password_hasher;
 /// Re-exports password hashing services, the default backend, and helpers.
 #[cfg(feature = "password-hasher")]
 pub use password_hasher::{
-    DefaultPassowrdHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherError,
+    DefaultPasswordHasher, PasswordHasher, PasswordHasherCauldron, PasswordHasherError,
     PasswordHasherResult, PasswordHasherService, hash_password, validate_password,
 };
 

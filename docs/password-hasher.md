@@ -76,20 +76,20 @@ rejects such hashes with `Err(ParamValueInvalid(TooLong))` before hashing.
 
 | Cost | Default ceiling |
 | --- | --- |
-| Memory (`m`) | `DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_M_COST` = 262144 KiB (256 MiB) |
-| Time (`t`) | `DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_T_COST` = 16 |
-| Parallelism (`p`) | `DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_P_COST` = 16 |
+| Memory (`m`) | `DefaultPasswordHasher::DEFAULT_MAX_VERIFY_M_COST` = 262144 KiB (256 MiB) |
+| Time (`t`) | `DefaultPasswordHasher::DEFAULT_MAX_VERIFY_T_COST` = 16 |
+| Parallelism (`p`) | `DefaultPasswordHasher::DEFAULT_MAX_VERIFY_P_COST` = 16 |
 
-A backend built with `DefaultPassowrdHasher::new` raises each ceiling to its own
+A backend built with `DefaultPasswordHasher::new` raises each ceiling to its own
 configured parameter when that is larger, so it always verifies the hashes it
 creates. When stored hashes use heavier settings than the current configuration,
 set the ceilings explicitly:
 
 ```rust
-use furnace_rs_common::{DefaultPassowrdHasher, PasswordHasher};
+use furnace_rs_common::{DefaultPasswordHasher, PasswordHasher};
 
 // m in KiB, then t, then p.
-let backend = DefaultPassowrdHasher::default().with_verification_limits(2 * 1024 * 1024, 4, 8);
+let backend = DefaultPasswordHasher::default().with_verification_limits(2 * 1024 * 1024, 4, 8);
 let hasher = PasswordHasher::new(backend);
 ```
 
@@ -117,7 +117,7 @@ costs, empty passwords, and exact UTF-8 matching.
 
 `PasswordHasher` is a clonable service facade, following the `Logger` pattern.
 Clones share their backend through an `Arc`. The default backend is
-`DefaultPassowrdHasher`, which owns one Argon2 instance:
+`DefaultPasswordHasher`, which owns one Argon2 instance:
 
 ```rust
 use furnace_rs_common::PasswordHasher;
@@ -128,21 +128,32 @@ assert!(hasher.validate_password("my password", &hashed)?);
 # Ok::<(), furnace_rs_common::PasswordHasherError>(())
 ```
 
-To customize the Argon2 algorithm, version, or cost settings, pass a configured
-instance. Add `argon2 = "0.5"` to your application's dependencies to construct it:
+To change only the Argon2id cost settings, pass the memory in KiB, the number of
+iterations, and the number of lanes:
 
 ```rust
-use argon2::{Algorithm, Argon2, Params, Version};
-use furnace_rs_common::{DefaultPassowrdHasher, PasswordHasher};
+use furnace_rs_common::{DefaultPasswordHasher, PasswordHasher};
 
-let params = Params::new(19_456, 2, 1, None)?;
-let backend = DefaultPassowrdHasher::new(Argon2::new(
-    Algorithm::Argon2id,
+let hasher = PasswordHasher::new(DefaultPasswordHasher::with_costs(19_456, 2, 1)?);
+# Ok::<(), furnace_rs_common::PasswordHasherError>(())
+```
+
+For another algorithm, version, output length, or a secret key, pass a
+configured instance. The `argon2` crate is re-exported from the `password_hasher`
+module, so the application needs no separately versioned dependency:
+
+```rust
+use furnace_rs_common::password_hasher::argon2::{Algorithm, Argon2, Params, Version};
+use furnace_rs_common::{DefaultPasswordHasher, PasswordHasher};
+
+let params = Params::new(19_456, 2, 1, Some(48))?;
+let backend = DefaultPasswordHasher::new(Argon2::new(
+    Algorithm::Argon2i,
     Version::V0x13,
     params,
 ));
 let hasher = PasswordHasher::new(backend);
-# Ok::<(), argon2::Error>(())
+# Ok::<(), furnace_rs_common::password_hasher::argon2::Error>(())
 ```
 
 The backend reads cost settings from the Argon2 instance when hashing, and from
@@ -162,6 +173,31 @@ unchanged. Custom backends define their own validation failure behavior.
 
 All these contracts are exported by `furnace_rs_common`, `furnace_rs`, and
 `furnace_rs::prelude` with the `password-hasher` feature enabled.
+
+## Logins for accounts that may not exist
+
+A login handler that returns as soon as the account lookup fails answers
+unknown usernames much faster than known ones, which lets a caller enumerate
+accounts by timing. Pass the lookup result straight to
+`validate_optional_password` instead of branching on it:
+
+```rust
+use furnace_rs_common::{PasswordHasher, PasswordHasherResult};
+
+fn login(
+    hasher: &PasswordHasher,
+    stored_hash: Option<&str>,
+    password: &str,
+) -> PasswordHasherResult<bool> {
+    hasher.validate_optional_password(password, stored_hash)
+}
+```
+
+With `Some(hash)` this is `validate_password`. With `None` it verifies the
+password against a decoy hash created by the same backend, then returns
+`Ok(false)`. The decoy is hashed on first use and shared by all clones of the
+hasher. Its cost is that of the backend's current settings, so accounts whose
+stored hashes use different costs can still be told apart.
 
 ## Dependency injection
 

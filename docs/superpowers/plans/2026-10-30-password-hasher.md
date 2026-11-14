@@ -4,7 +4,7 @@
 
 **Goal:** Provide a replaceable, clonable password hasher using the existing Logger pattern.
 
-**Architecture:** `PasswordHasherService: Send + Sync` defines synchronous `hash_password(&str)` and `validate_password(&str, &str)` methods returning the existing Argon2 error type. `PasswordHasher` shares an `Arc<dyn PasswordHasherService>`. `DefaultPassowrdHasher` wraps one configured Argon2 instance. A global `PasswordHasherCauldron` supplies the default and supports application builder overrides.
+**Architecture:** `PasswordHasherService: Send + Sync` defines synchronous `hash_password(&str)` and `validate_password(&str, &str)` methods returning the existing Argon2 error type. `PasswordHasher` shares an `Arc<dyn PasswordHasherService>`. `DefaultPasswordHasher` wraps one configured Argon2 instance. A global `PasswordHasherCauldron` supplies the default and supports application builder overrides.
 
 **Tech Stack:** Rust, existing Argon2 0.5, Furnace injector metadata.
 
