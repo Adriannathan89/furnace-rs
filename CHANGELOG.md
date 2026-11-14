@@ -49,6 +49,13 @@ migration are consolidated into the first 1.0.0 release.
   bound equal to the available parallelism. They are available with `http` or
   `transport-runtime`, or standalone through the new `password-hasher-async`
   feature.
+- Add the runnable `user-accounts` example: registration, Argon2 password
+  hashing off the async runtime, login that does not reveal which usernames
+  exist, a JWT-guarded profile route, and in-process tests.
+- Add a five-step [learning path](docs/tutorial/README.md) from a first
+  controller to tested, JWT-protected accounts, and reorganize the
+  [documentation index](docs/README.md) by reader goal. Remove completed
+  planning records from `docs/superpowers`.
 - Add seven password hasher unit tests covering PHC output, matching and incorrect
   passwords, independent salts, malformed hashes, unsupported algorithms, and
   empty and Unicode passwords.

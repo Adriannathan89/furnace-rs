@@ -48,6 +48,10 @@ evidence, prior real PostgreSQL validation, and the limits of the review.
 
 ## What is furnace-rs?
 
+New here? The [learning path](docs/tutorial/README.md) builds a tested
+application with registration and JWT login in five short steps. The sections
+below are the reference.
+
 The furnace metaphor describes startup: a `Cauldron` groups explicitly registered
 components, and `Furnace::burn` starts the selected application. Services use
 `#[burner]` and repositories use `#[storage]`; both generate `Injector` constructors.
@@ -104,6 +108,7 @@ Run commands from each example directory so configuration loads there.
 | [Posts CRUD with entity storage](example/posts-crud-storage/) | Opt-in `sea-orm-storage` feature, controller calls generated entity CRUD and pagination directly | Same CRUD routes; `GET /posts?page_number=1&page_size=20` | 3004 |
 | [Posts CRUD with service](example/post-crud-with-service/) | The same CRUD routes with an optional service layer | `POST /posts`, `GET /posts`, `GET /posts/{id}`, `PUT /posts/{id}`, `DELETE /posts/{id}` | 3001 |
 | [Protected route](example/protected-route/) | Trait bindings, in-memory repository, validated login, JWT strategy, `reader` guard, application logger | `POST /auth/login`, `GET /auth/me` | 3002 |
+| [User accounts](example/user-accounts/) | Registration, Argon2 password hashing, login without account enumeration, JWT guard, in-process tests | `POST /accounts/register`, `POST /accounts/login`, `GET /accounts/me` | 3005 |
 
 Start the smallest example with:
 
