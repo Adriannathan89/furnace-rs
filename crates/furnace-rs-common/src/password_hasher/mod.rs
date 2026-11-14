@@ -6,8 +6,10 @@
 //! Store the complete string so verification can recover those settings.
 //!
 //! The default backend and free helpers return an error for malformed PHC
-//! strings. Once parsing succeeds, every verification failure (including a
-//! password mismatch or unsupported algorithm) becomes `Ok(false)`.
+//! strings, and for stored hashes whose Argon2 costs exceed the backend's
+//! verification limits (see [`DefaultPassowrdHasher`]); such hashes are rejected
+//! before any hashing work is done. Otherwise, every verification failure
+//! (including a password mismatch or unsupported algorithm) becomes `Ok(false)`.
 //!
 //! # Direct use without a cauldron
 //!
@@ -126,7 +128,9 @@ pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Er
 ///
 /// # Errors
 ///
-/// Returns the parsing error when `hashed` is not a valid PHC string.
+/// Returns the parsing error when `hashed` is not a valid PHC string, or a
+/// parameter error when its Argon2 costs exceed the default verification limits
+/// of [`DefaultPassowrdHasher`].
 pub fn validate_password(
     password: &str,
     hashed: &str,
@@ -197,6 +201,26 @@ mod tests {
         PasswordHash::new(unsupported).expect("syntactically valid PHC string");
 
         assert_eq!(validate_password("password", unsupported), Ok(false));
+    }
+
+    #[test]
+    fn rejects_stored_hashes_with_excessive_costs_before_hashing() {
+        use argon2::password_hash::{Error, errors::InvalidValue};
+
+        // Each of these would allocate terabytes or run for hours if computed.
+        for params in [
+            "m=4294967295,t=2,p=1",
+            "m=19456,t=4294967295,p=1",
+            "m=16777208,t=2,p=2097151",
+        ] {
+            let hostile = format!("$argon2id$v=19${params}$c29tZXNhbHQ$YWJjZGVmZ2hpamtsbW5vcA");
+            PasswordHash::new(&hostile).expect("syntactically valid PHC string");
+
+            assert_eq!(
+                validate_password("password", &hostile),
+                Err(Error::ParamValueInvalid(InvalidValue::TooLong))
+            );
+        }
     }
 
     #[test]

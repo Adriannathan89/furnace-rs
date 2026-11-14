@@ -155,6 +155,37 @@ fn configured_backend_encodes_its_settings_and_default_verifies_them() {
 }
 
 #[test]
+fn verification_cost_limits_cover_configured_settings_and_reject_heavier_hashes() {
+    use argon2::password_hash::errors::InvalidValue;
+
+    // A time cost just above the default ceiling, kept cheap by minimal memory.
+    let heavy_t_cost = DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_T_COST + 1;
+    let params = Params::new(32, heavy_t_cost, 1, None).unwrap();
+    let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
+    let too_costly = Err(Error::ParamValueInvalid(InvalidValue::TooLong));
+
+    let configured = DefaultPassowrdHasher::new(argon2.clone());
+    let hashed = configured.hash_password("secret").unwrap();
+    assert_eq!(configured.validate_password("secret", &hashed), Ok(true));
+
+    // The default backend refuses the heavier hash for right and wrong passwords.
+    let default = DefaultPassowrdHasher::default();
+    assert_eq!(default.validate_password("secret", &hashed), too_costly);
+    assert_eq!(default.validate_password("wrong", &hashed), too_costly);
+
+    let raised = DefaultPassowrdHasher::default().with_verification_limits(
+        DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_M_COST,
+        heavy_t_cost,
+        DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_P_COST,
+    );
+    assert_eq!(raised.validate_password("secret", &hashed), Ok(true));
+    assert_eq!(raised.validate_password("wrong", &hashed), Ok(false));
+
+    let lowered = DefaultPassowrdHasher::new(argon2).with_verification_limits(32, 1, 1);
+    assert_eq!(lowered.validate_password("secret", &hashed), too_costly);
+}
+
+#[test]
 fn default_instance_preserves_helper_semantics() {
     let hasher = PasswordHasher::default();
     let hashed = hasher.hash_password("密碼🔐").unwrap();

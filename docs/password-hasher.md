@@ -60,11 +60,42 @@ settings.
 | --- | --- |
 | `Ok(true)` | The password matches. |
 | `Ok(false)` | Verification failed, including a mismatch or unsupported algorithm. |
-| `Err(error)` | The stored string could not be parsed as a PHC string. |
+| `Err(error)` | The stored string could not be parsed as a PHC string, or its Argon2 costs exceed the verification limits. |
 
-Every verification error after parsing is converted to `false`. A syntactically
-valid PHC string with missing or unsupported settings therefore need not return
-an error.
+Every other verification error after parsing is converted to `false`. A
+syntactically valid PHC string with missing or unsupported settings therefore
+need not return an error.
+
+### Verification cost limits
+
+A stored PHC string chooses the memory, time, and parallelism of its own
+verification. An unbounded verifier lets one forged or corrupted record (for
+example `m=4294967295`) turn each login attempt against it into a
+multi-terabyte allocation or hours of CPU time. The default backend therefore
+rejects such hashes with `Err(ParamValueInvalid(TooLong))` before hashing.
+
+| Cost | Default ceiling |
+| --- | --- |
+| Memory (`m`) | `DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_M_COST` = 262144 KiB (256 MiB) |
+| Time (`t`) | `DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_T_COST` = 16 |
+| Parallelism (`p`) | `DefaultPassowrdHasher::DEFAULT_MAX_VERIFY_P_COST` = 16 |
+
+A backend built with `DefaultPassowrdHasher::new` raises each ceiling to its own
+configured parameter when that is larger, so it always verifies the hashes it
+creates. When stored hashes use heavier settings than the current configuration,
+set the ceilings explicitly:
+
+```rust
+use furnace_rs_common::{DefaultPassowrdHasher, PasswordHasher};
+
+// m in KiB, then t, then p.
+let backend = DefaultPassowrdHasher::default().with_verification_limits(2 * 1024 * 1024, 4, 8);
+let hasher = PasswordHasher::new(backend);
+```
+
+The free helpers always use the default ceilings. Treat a limit error as a data
+integrity problem, not as a wrong password. Custom `PasswordHasherService`
+backends are responsible for their own bounds.
 
 Both helpers accept empty and Unicode passwords. They operate on the supplied
 bytes without trimming or Unicode normalization; password policy belongs to
@@ -79,8 +110,8 @@ cargo test -p furnace-rs-common --no-default-features --features password-hasher
 ```
 
 The tests cover the generated PHC format, matching and incorrect passwords,
-independent salts, malformed strings, unsupported algorithms, empty passwords,
-and exact UTF-8 matching.
+independent salts, malformed strings, unsupported algorithms, excessive stored
+costs, empty passwords, and exact UTF-8 matching.
 
 ## Reusable instances and custom backends
 

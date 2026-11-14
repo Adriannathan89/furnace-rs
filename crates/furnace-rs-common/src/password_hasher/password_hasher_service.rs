@@ -64,7 +64,8 @@ impl PasswordHasher {
     /// # Errors
     ///
     /// Propagates the backend's validation errors unchanged. The default backend
-    /// returns parsing errors and converts verification failures to `Ok(false)`.
+    /// returns parsing errors, rejects stored hashes whose costs exceed its
+    /// verification limits, and converts verification failures to `Ok(false)`.
     pub fn validate_password(&self, password: &str, hashed: &str) -> PasswordHasherResult<bool> {
         self.inner.validate_password(password, hashed)
     }
