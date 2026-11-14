@@ -13,6 +13,22 @@ migration are consolidated into the first 1.0.0 release.
   to resolve RUSTSEC-2026-0385, RUSTSEC-2026-0414, RUSTSEC-2026-0382, and
   RUSTSEC-2026-0381. Update affected Tokio dependencies to 1.53.3 to address
   the RUSTSEC-2026-0386 I/O safety warning.
+- Raise the workspace `rustix` pin to 1.1.6 and update `pulldown-cmark` to
+  0.13.6 in affected committed lockfiles to resolve RUSTSEC-2026-0486 and
+  RUSTSEC-2026-0433.
+- Bound the Argon2 costs a stored hash may request during password verification.
+  `DefaultPasswordHasher` rejects hashes above its limits (default 256 MiB,
+  `t=16`, `p=16`, raised to the configured parameters) with
+  `ParamValueInvalid(TooLong)` before hashing, and
+  `with_verification_limits` sets them explicitly. Previously a forged or
+  corrupted record such as `m=4294967295` made each verification attempt
+  allocate terabytes or run for hours.
+- Parse the WebSocket handshake `Authorization` header with the strict Bearer
+  grammar shared by HTTP and gRPC. The upgrade previously accepted credentials
+  such as `Bearer <TAB>token` that the other transports reject.
+- Render control characters in `ConsoleLoggerService` output as visible
+  `\u{..}` escapes and indent continuation lines, so logged input cannot emit
+  terminal escape sequences or forge a separate log record.
 
 ### Added
 
@@ -21,6 +37,18 @@ migration are consolidated into the first 1.0.0 release.
   helpers for independently salted PHC hashes and password verification.
   Re-export the helpers from both crate roots and the facade prelude. Document
   feature selection, usage, and error behavior in the [password hasher guide](docs/password-hasher.md).
+- Add the replaceable `PasswordHasher` service facade, the configurable
+  `DefaultPasswordHasher` backend with `with_costs`, the optional
+  `PasswordHasherCauldron`, and a re-export of `argon2` from the
+  `password_hasher` module. `PasswordHasher::validate_optional_password` takes
+  an account lookup result directly and verifies against a decoy hash for
+  unknown accounts, so login timing does not reveal which usernames exist.
+- Add `PasswordHasher::hash_password_async`, `validate_password_async`, and
+  `validate_optional_password_async`, which run Argon2 on Tokio's blocking pool
+  instead of stalling an async runtime worker, with a process-wide concurrency
+  bound equal to the available parallelism. They are available with `http` or
+  `transport-runtime`, or standalone through the new `password-hasher-async`
+  feature.
 - Add seven password hasher unit tests covering PHC output, matching and incorrect
   passwords, independent salts, malformed hashes, unsupported algorithms, and
   empty and Unicode passwords.
