@@ -32,5 +32,5 @@ cargo test -p furnace-rs-grpc --all-features
 cargo test -p furnace-rs --all-features --test grpc_ui
 ```
 
-See the [gRPC guide](../../docs/grpc.md) for the supported attributes and
+See the [gRPC guide](../../docs/guides/grpc.md) for the supported attributes and
 application-facing examples.

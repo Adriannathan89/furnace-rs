@@ -36,7 +36,7 @@ migration are consolidated into the first 1.0.0 release.
   it through `furnace-rs`, with public `hash_password` and `validate_password`
   helpers for independently salted PHC hashes and password verification.
   Re-export the helpers from both crate roots and the facade prelude. Document
-  feature selection, usage, and error behavior in the [password hasher guide](docs/password-hasher.md).
+  feature selection, usage, and error behavior in the [password hasher guide](docs/guides/password-hasher.md).
 - Add the replaceable `PasswordHasher` service facade, the configurable
   `DefaultPasswordHasher` backend with `with_costs`, the optional
   `PasswordHasherCauldron`, and a re-export of `argon2` from the
@@ -54,8 +54,9 @@ migration are consolidated into the first 1.0.0 release.
   exist, a JWT-guarded profile route, and in-process tests.
 - Add a five-step [learning path](docs/tutorial/README.md) from a first
   controller to tested, JWT-protected accounts, and reorganize the
-  [documentation index](docs/README.md) by reader goal. Remove completed
-  planning records from `docs/superpowers`.
+  [documentation index](docs/README.md) by reader goal. Move every topic
+  guide, including the migration guide from `docs/importance`, into
+  `docs/guides/`. Remove completed planning records from `docs/superpowers`.
 - Add seven password hasher unit tests covering PHC output, matching and incorrect
   passwords, independent salts, malformed hashes, unsupported algorithms, and
   empty and Unicode passwords.
@@ -123,7 +124,7 @@ Consolidates all changes from 2.0.0-beta.1, beta.2, beta.3, and Unreleased.
   queues bounded by both message count and bytes. Disconnect slow consumers and
   keep control frames responsive while application handlers run.
 - Add a runnable [WebSocket example](example/socket-transport/README.md), the
-  [transport guide](docs/socket.md), standalone and renamed consumer coverage,
+  [transport guide](docs/guides/socket.md), standalone and renamed consumer coverage,
   real WebSocket/Redis/TLS regressions, Rust 1.94 checks, and package/version/
   publication-order integration for both new crates.
 
@@ -136,7 +137,7 @@ Consolidates all changes from 2.0.0-beta.1, beta.2, beta.3, and Unreleased.
   parent page without lookahead or counts; applications own limits and
   transactions. Unmapped storage failures convert to redacted HTTP 500 responses
   with `?` when `furnace-rs/sea-orm-storage` is enabled; handlers can override
-  individual mappings with `.map_err(...)`. See the [storage guide](docs/storage.md).
+  individual mappings with `.map_err(...)`. See the [storage guide](docs/guides/storage.md).
 
 ### Security
 
@@ -223,7 +224,7 @@ Consolidates all changes from 2.0.0-beta.1, beta.2, beta.3, and Unreleased.
   parent page without lookahead or counts; applications own limits and
   transactions. Unmapped storage failures convert to redacted HTTP 500 responses
   with `?` when `furnace-rs/sea-orm-storage` is enabled; handlers can override
-  individual mappings with `.map_err(...)`. See the [storage guide](docs/storage.md).
+  individual mappings with `.map_err(...)`. See the [storage guide](docs/guides/storage.md).
 
 ### Security
 
@@ -401,7 +402,7 @@ the `v1.0.0` tag, and the GitHub release still require the release workflow.
   Finite CLI reports and private inspection use schema/protocol 2. The offline
   generator creates six direct-controller application files.
 
-See [the migration guide](docs/importance/furnace-rs-migration.md) before
+See [the migration guide](docs/guides/furnace-rs-migration.md) before
 upgrading an application from MADS 0.x.
 
 ### Added

@@ -158,8 +158,8 @@ Reference: [testing crate guide](../../crates/furnace-rs-testing/README.md)
 
 | Goal | Read |
 | --- | --- |
-| Store data in PostgreSQL | [Persistence](../furnace-rs-persistence.md), [Entity-bound storage](../storage.md), [posts-crud](../../example/posts-crud/) |
-| Real-time connections | [WebSocket transport](../socket.md), [socket-transport](../../example/socket-transport/) |
-| Service-to-service calls | [gRPC transport](../grpc.md), [grpc-transport](../../example/grpc-transport/) |
-| Understand the internals | [Architecture](../ARCHITECTURE.md), [Implementation guide](../IMPLEMENTATION.md) |
-| Daily tooling | [CLI](../CLI.md) |
+| Store data in PostgreSQL | [Persistence](../guides/furnace-rs-persistence.md), [Entity-bound storage](../guides/storage.md), [posts-crud](../../example/posts-crud/) |
+| Real-time connections | [WebSocket transport](../guides/socket.md), [socket-transport](../../example/socket-transport/) |
+| Service-to-service calls | [gRPC transport](../guides/grpc.md), [grpc-transport](../../example/grpc-transport/) |
+| Understand the internals | [Architecture](../guides/ARCHITECTURE.md), [Implementation guide](../guides/IMPLEMENTATION.md) |
+| Daily tooling | [CLI](../guides/CLI.md) |

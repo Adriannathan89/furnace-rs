@@ -11,7 +11,7 @@ the current workspace.
 | Learn the framework step by step | [Learning path](tutorial/README.md) |
 | See complete programs | [Runnable examples](../example/README.md) |
 | Install and look up a feature | [Root README](../README.md) |
-| Move from MADS or furnace-rs 0.x | [Migration guide](importance/furnace-rs-migration.md) |
+| Move from MADS or furnace-rs 0.x | [Migration guide](guides/furnace-rs-migration.md) |
 
 ## Learning path
 
@@ -41,20 +41,22 @@ Five steps, each ending in a program you can run.
 
 ## Topic guides
 
+Every topic guide lives in [`guides/`](guides/).
+
 ### Application structure
 
 | Guide | Purpose |
 | --- | --- |
-| [Declarative DI](declarative-di.md) | Compile-time roots, cauldron API, visibility, and migration |
-| [Architecture](ARCHITECTURE.md) | Crate boundaries, graph selection, construction, and lifecycle |
-| [Implementation guide](IMPLEMENTATION.md) | Source-linked walkthrough of compile-time and runtime flows |
-| [CLI](CLI.md) | Scaffolding, run/dev, inspection, target selection, and JSON schema 2 |
+| [Declarative DI](guides/declarative-di.md) | Compile-time roots, cauldron API, visibility, and migration |
+| [Architecture](guides/ARCHITECTURE.md) | Crate boundaries, graph selection, construction, and lifecycle |
+| [Implementation guide](guides/IMPLEMENTATION.md) | Source-linked walkthrough of compile-time and runtime flows |
+| [CLI](guides/CLI.md) | Scaffolding, run/dev, inspection, target selection, and JSON schema 2 |
 
 ### Security and authentication
 
 | Guide | Purpose |
 | --- | --- |
-| [Password hasher](password-hasher.md) | Argon2 hashing, verification limits, async use, custom backends, and injection |
+| [Password hasher](guides/password-hasher.md) | Argon2 hashing, verification limits, async use, custom backends, and injection |
 | [Passport and JWT](../README.md#passport-configuration-and-jwt-profiles) | Key configuration, token profiles, strategies, and guards |
 | [Security policy](SECURITY.md) | Vulnerability reporting and application responsibilities |
 
@@ -62,15 +64,15 @@ Five steps, each ending in a program you can run.
 
 | Guide | Purpose |
 | --- | --- |
-| [Persistence](furnace-rs-persistence.md) | Native SeaORM PostgreSQL setup, configuration, and errors |
-| [Entity-bound storage](storage.md) | SeaORM CRUD, relation loading, ordering, pagination, and error mapping |
+| [Persistence](guides/furnace-rs-persistence.md) | Native SeaORM PostgreSQL setup, configuration, and errors |
+| [Entity-bound storage](guides/storage.md) | SeaORM CRUD, relation loading, ordering, pagination, and error mapping |
 
 ### Transports
 
 | Guide | Purpose |
 | --- | --- |
-| [WebSocket transport](socket.md) | Managed gateways, owned sockets, rooms, Redis, and replay |
-| [gRPC transport](grpc.md) | Protobuf services, named clients, Passport/JWT, shared runtime, TLS, and static inspection |
+| [WebSocket transport](guides/socket.md) | Managed gateways, owned sockets, rooms, Redis, and replay |
+| [gRPC transport](guides/grpc.md) | Protobuf services, named clients, Passport/JWT, shared runtime, TLS, and static inspection |
 
 ### Crate references
 

@@ -17,7 +17,7 @@ afterwards, use the [topic guides](../README.md#topic-guides) as reference.
 
 - Rust 1.94 or newer.
 - A new binary crate (`cargo new my-app`), or the starter from the
-  [CLI](../CLI.md) (`furnace new my-app`).
+  [CLI](../guides/CLI.md) (`furnace new my-app`).
 - This dependency block; later steps say when to add a feature:
 
   ```toml

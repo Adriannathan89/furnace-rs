@@ -5,4 +5,4 @@ Registration attributes re-exported by `furnace-rs-socket` and the Furnace facad
 connection/event methods. `socket_endpoint` registers one owned-socket handler.
 Applications normally depend on the transport or facade, not this crate directly.
 
-See the [WebSocket guide](../../docs/socket.md).
+See the [WebSocket guide](../../docs/guides/socket.md).

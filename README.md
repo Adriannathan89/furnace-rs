@@ -20,8 +20,8 @@ cargo install furnace-rs-cli --version 2.0.0 --locked
 
 This checkout and its local examples target **2.0.0**. See the
 [stable release notes and migration guide](docs/releases/2.0.0.md),
-[declarative DI guide](docs/declarative-di.md), [entity storage guide](docs/storage.md),
-and [WebSocket guide](docs/socket.md). To install directly from this checkout:
+[declarative DI guide](docs/guides/declarative-di.md), [entity storage guide](docs/guides/storage.md),
+and [WebSocket guide](docs/guides/socket.md). To install directly from this checkout:
 
 ```sh
 cargo install --path crates/furnace-rs-cli --locked
@@ -31,12 +31,12 @@ Rust **1.94** or newer is required. Future changes belong under **Unreleased**
 in the changelog; the beta release records remain available as history.
 
 Protobuf gRPC serving and consumption are available through the new
-standalone transport package or opt-in facade features. See the [gRPC guide](docs/grpc.md)
+standalone transport package or opt-in facade features. See the [gRPC guide](docs/guides/grpc.md)
 and [all-shape example](example/grpc-transport/) for shared runtime, Passport/JWT,
 named clients, TLS, and static inspection.
 
 See the [documentation index](docs/README.md), [changelog](CHANGELOG.md),
-[migration from MADS 0.x](docs/importance/furnace-rs-migration.md),
+[migration from MADS 0.x](docs/guides/furnace-rs-migration.md),
 [release notes and verification](docs/releases/2.0.0.md),
 [security policy](docs/SECURITY.md), and [security audit](docs/SECURITY_AUDIT.md).
 Version 1.0.2 includes HTTP header/body deadlines, database maintenance
@@ -83,7 +83,7 @@ one by default. The generated application enables only `http` and
 `runtime-tokio`, and answers `GET /` with `Hello World!`. Database, JWT, cookie,
 migration, and authentication setup remain application-owned.
 The application package starts at `0.1.0`; its FURNACE dependency is pinned to the
-installed CLI version. See [the CLI reference](docs/CLI.md) for its atomic,
+installed CLI version. See [the CLI reference](docs/guides/CLI.md) for its atomic,
 offline generator contract, naming rules, exact JSON output, and non-goals.
 
 From an existing project, inspect or run a selected application:
@@ -94,7 +94,7 @@ furnace routes
 furnace run
 ```
 
-See the [authoritative CLI reference](docs/CLI.md) for target selectors,
+See the [authoritative CLI reference](docs/guides/CLI.md) for target selectors,
 forwarded application arguments, diagnostics, watcher behavior, and inspection
 limits.
 
@@ -178,7 +178,7 @@ Controllers without `impl Sealable` are public. Attach a typed `#[guard]` throug
 `Sealable::seals` to protect a controller. `#[seal(skip)]` explicitly bypasses
 that guard for an endpoint.
 
-See the [breaking-change migration guide](docs/importance/furnace-rs-migration.md)
+See the [breaking-change migration guide](docs/guides/furnace-rs-migration.md)
 for the `cauldron`, `burner`, `storage`, and `Injector` APIs and explicit output bindings.
 
 ## Workspace crates
@@ -232,12 +232,12 @@ furnace-rs-cli
 The approach is type-driven and metadata-driven: macros emit static
 descriptors, core analyzes a selected module graph before construction, and
 common integrations consume the validated application. See
-[Architecture](docs/ARCHITECTURE.md) for invariants and the individual crate
+[Architecture](docs/guides/ARCHITECTURE.md) for invariants and the individual crate
 guides for dependencies, source layout, and change ownership.
 
 For a source-linked walkthrough of how macros, graph analysis, startup,
 transports, persistence, and CLI inspection fit together, see the
-[implementation guide](docs/IMPLEMENTATION.md).
+[implementation guide](docs/guides/IMPLEMENTATION.md).
 
 ## Installation and feature selection
 
@@ -616,7 +616,7 @@ async fn connect(url: String) -> PersistenceResult<DatabaseConnection> {
 The imported module checks the connection before serving and closes it on
 graceful shutdown. SeaORM owns entities, queries, transactions, and migrations;
 FURNACE does not run or generate migrations. See the
-[persistence guide](docs/furnace-rs-persistence.md).
+[persistence guide](docs/guides/furnace-rs-persistence.md).
 
 `serve(application, "127.0.0.1:3000")` remains the explicit generated-router
 escape hatch. Its address overrides automatic server binding; use
@@ -799,7 +799,7 @@ auto-configuration. Before `PassportGuard::build()`, a managed provider must
 directly require `JwtService`, or the builder must explicitly provide a
 concrete `JwtService`; otherwise construction fails with `FURNACE131`.
 
-See the [current migration guide](docs/importance/furnace-rs-migration.md) and the
+See the [current migration guide](docs/guides/furnace-rs-migration.md) and the
 [runnable protected-route example](example/protected-route/).
 
 ## A typed HTTP route
@@ -957,4 +957,4 @@ All participants are expected to follow the [code of conduct](CODE_OF_CONDUCT.md
 furnace-rs is licensed under either the [Apache License 2.0](LICENSE-APACHE) or
 the [MIT License](LICENSE-MIT), at your option.
 
-[WebSocket transport](docs/socket.md) covers managed gateways, owned sockets, rooms, Redis, and replay.
+[WebSocket transport](docs/guides/socket.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

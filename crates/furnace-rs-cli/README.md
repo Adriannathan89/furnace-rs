@@ -119,12 +119,12 @@ output streaming for `run`/`dev`, keep finite JSON stdout machine-clean, and
 preserve exit classes 0 (success), 1 (operational failure), and 2 (usage or
 syntax failure).
 
-See the [CLI reference](../../docs/CLI.md), the
+See the [CLI reference](../../docs/guides/CLI.md), the
 [workspace contribution guide](../../CONTRIBUTING.md), and the
-[inspection architecture](../../docs/ARCHITECTURE.md).
+[inspection architecture](../../docs/guides/ARCHITECTURE.md).
 
 In FURNACE 2.0.0, `furnace grpc` inspects protobuf services, RPC shapes, and effective
 Passport policies. It supports the usual target selectors and `--format json`,
 retains public schema version 2, and uses private application protocol 3.
 Inspection constructs no providers, connects no eager clients, and reads no TLS
-material. `routes` remains HTTP-only. See the [gRPC guide](../../docs/grpc.md).
+material. `routes` remains HTTP-only. See the [gRPC guide](../../docs/guides/grpc.md).

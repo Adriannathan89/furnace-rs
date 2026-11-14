@@ -536,8 +536,9 @@ fn stable_and_beta_publication_require_security_verification() {
 #[test]
 fn current_docs_describe_native_persistence() {
     let root = workspace_root();
-    let cli = fs::read_to_string(root.join("docs/CLI.md")).unwrap();
-    let persistence = fs::read_to_string(root.join("docs/furnace-rs-persistence.md")).unwrap();
+    let cli = fs::read_to_string(root.join("docs/guides/CLI.md")).unwrap();
+    let persistence =
+        fs::read_to_string(root.join("docs/guides/furnace-rs-persistence.md")).unwrap();
     assert!(!cli.contains("furnace db"));
     for required in [
         "sea-orm-postgres",
@@ -605,7 +606,7 @@ fn documentation_points_to_current_examples_and_released_version() {
 fn documentation_describes_validation_and_configuration_boundaries() {
     let root = workspace_root();
     let readme = fs::read_to_string(root.join("README.md")).unwrap();
-    let architecture = fs::read_to_string(root.join("docs/ARCHITECTURE.md")).unwrap();
+    let architecture = fs::read_to_string(root.join("docs/guides/ARCHITECTURE.md")).unwrap();
     for (name, source) in [("README", &readme), ("architecture", &architecture)] {
         for required in ["ValidatedJson", "native `Json`", "Config::parse", "Secret"] {
             assert!(
@@ -902,7 +903,7 @@ fn release_updates_internal_pins_through_the_recommended_facade_alias() {
 #[test]
 fn furnace_migration_guide_documents_the_complete_breaking_surface() {
     let root = workspace_root();
-    let guide = fs::read_to_string(root.join("docs/importance/furnace-rs-migration.md"))
+    let guide = fs::read_to_string(root.join("docs/guides/furnace-rs-migration.md"))
         .expect("the current migration guide must exist");
     for required in [
         "furnace_rs",
@@ -953,7 +954,7 @@ fn furnace_migration_guide_documents_the_complete_breaking_surface() {
 #[test]
 fn furnace_tooling_documents_schema_two_and_six_file_scaffolding() {
     let root = workspace_root();
-    let cli = fs::read_to_string(root.join("docs/CLI.md")).unwrap();
+    let cli = fs::read_to_string(root.join("docs/guides/CLI.md")).unwrap();
     assert!(cli.contains("six files"));
     assert!(cli.contains("Schema version 2"));
     assert!(!cli.contains("route_trait"));

@@ -229,7 +229,7 @@ rate limiting for login attempts, token revocation and refresh, and password
 policy beyond length. See the [security policy](../SECURITY.md) for the full
 list of application responsibilities.
 
-Reference: [Password hasher](../password-hasher.md) ·
+Reference: [Password hasher](../guides/password-hasher.md) ·
 [Passport and JWT](../../README.md#passport-configuration-and-jwt-profiles) ·
 [protected-route example](../../example/protected-route/) for trait-bound
 services

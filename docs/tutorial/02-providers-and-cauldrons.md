@@ -133,9 +133,9 @@ into a passing test.
   `Arc<dyn Greeter> => SpanishGreeter`. Nothing else changes.
 - Remove `GreetingService` from `exports` and read the compiler error.
 - Run `furnace doctor` and `furnace routes` to inspect the application and its
-  route table (see the [CLI guide](../CLI.md)).
+  route table (see the [CLI guide](../guides/CLI.md)).
 
-Reference: [Declarative DI](../declarative-di.md) ·
-[Architecture](../ARCHITECTURE.md)
+Reference: [Declarative DI](../guides/declarative-di.md) ·
+[Architecture](../guides/ARCHITECTURE.md)
 
 Next: [Configuration and validation](03-configuration-and-validation.md)

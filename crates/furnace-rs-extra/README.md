@@ -49,5 +49,5 @@ Because the crate is currently a small boundary, most meaningful verification
 is done through facade feature tests and the full workspace checks.
 
 See the [workspace crate map](../../README.md#workspace-crates),
-[architecture reference](../../docs/ARCHITECTURE.md), and the
+[architecture reference](../../docs/guides/ARCHITECTURE.md), and the
 [contribution guide](../../CONTRIBUTING.md).

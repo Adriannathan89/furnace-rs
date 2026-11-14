@@ -16,7 +16,7 @@ sea-orm = { version = "2.0.0", default-features = false, features = ["macros", "
 ```
 
 The workspace uses Rust edition 2024 and requires Rust 1.94 or newer.
-See the runnable [Posts CRUD example](../example/posts-crud/) for entities,
+See the runnable [Posts CRUD example](../../example/posts-crud/) for entities,
 queries, input validation, and HTTP error handling.
 
 ## Register the database
@@ -106,12 +106,12 @@ Conversion to a core error uses `FURNACE140`.
 
 The opt-in `sea-orm` feature on `furnace-rs` lets HTTP handlers propagate native
 query `DbErr` values with `?` into redacted HTTP 500 responses. The
-[simple CRUD example](../example/posts-crud/) uses this conversion and returns
+[simple CRUD example](../../example/posts-crud/) uses this conversion and returns
 `NotFound` for absent posts. The separate `sea-orm-storage` feature converts
 entity-bound `StorageError` values the same way; handlers can use `.map_err(...)`
 to map selected failures to domain-specific responses. The
-[entity-storage example](../example/posts-crud-storage/) demonstrates that
-feature, and the [service variant](../example/post-crud-with-service/) shows an
+[entity-storage example](../../example/posts-crud-storage/) demonstrates that
+feature, and the [service variant](../../example/post-crud-with-service/) shows an
 optional layer for business logic. Applications own domain-specific query
 policies and client messages. Typed connector `PersistenceError` values remain
 separate from query errors.
@@ -136,5 +136,5 @@ cargo test --locked -p furnace-rs-persistence --all-features \
   --test postgres --test recovery -- --ignored --test-threads=1
 ```
 
-See the [security policy](SECURITY.md), [release verification](releases/1.0.2.md),
-and [migration guide](importance/furnace-rs-migration.md).
+See the [security policy](../SECURITY.md), [release verification](../releases/1.0.2.md),
+and [migration guide](furnace-rs-migration.md).
