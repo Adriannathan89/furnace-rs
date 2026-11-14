@@ -309,3 +309,129 @@ async fn global_default_and_supplied_override_reach_other_modules() {
         assert_eq!(calls.load(Ordering::SeqCst), if custom { 2 } else { 0 });
     }
 }
+
+#[cfg(any(feature = "password-hasher-async", feature = "transport-runtime"))]
+mod non_blocking {
+    use super::*;
+    use std::{sync::mpsc, time::Duration};
+
+    #[tokio::test]
+    async fn async_methods_match_their_synchronous_counterparts() {
+        let hasher = PasswordHasher::new(DefaultPasswordHasher::with_costs(32, 1, 1).unwrap());
+        let hashed = hasher.hash_password_async("secret").await.unwrap();
+
+        assert_eq!(hasher.validate_password("secret", &hashed), Ok(true));
+        assert_eq!(
+            hasher.validate_password_async("secret", &hashed).await,
+            Ok(true)
+        );
+        assert_eq!(
+            hasher.validate_password_async("wrong", &hashed).await,
+            Ok(false)
+        );
+        assert!(
+            hasher
+                .validate_password_async("secret", "invalid")
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            hasher
+                .validate_optional_password_async("secret", Some(&hashed))
+                .await,
+            Ok(true)
+        );
+        assert_eq!(
+            hasher
+                .validate_optional_password_async("secret", None)
+                .await,
+            Ok(false)
+        );
+        assert_eq!(
+            PasswordHasher::new(FailingHasher)
+                .hash_password_async("secret")
+                .await,
+            Err(Error::Password)
+        );
+    }
+
+    /// Hashing completes only after another task on the runtime has run.
+    struct WaitsForRuntime(std::sync::Mutex<mpsc::Receiver<()>>);
+
+    impl PasswordHasherService for WaitsForRuntime {
+        fn hash_password(&self, _: &str) -> Result<String, Error> {
+            self.0
+                .lock()
+                .unwrap()
+                .recv_timeout(Duration::from_secs(10))
+                .map_err(|_| Error::Crypto)?;
+            Ok("released".to_owned())
+        }
+
+        fn validate_password(&self, _: &str, _: &str) -> Result<bool, Error> {
+            Ok(false)
+        }
+    }
+
+    // A single-threaded runtime makes inline hashing starve the releasing task.
+    #[tokio::test(flavor = "current_thread")]
+    async fn hashing_leaves_the_runtime_thread_free_for_other_tasks() {
+        let (release, wait) = mpsc::channel();
+        let hasher = PasswordHasher::new(WaitsForRuntime(std::sync::Mutex::new(wait)));
+
+        let (hashed, ()) = tokio::join!(hasher.hash_password_async("secret"), async move {
+            tokio::task::yield_now().await;
+            release.send(()).unwrap();
+        });
+
+        assert_eq!(hashed.unwrap(), "released");
+    }
+
+    struct TracksConcurrency {
+        active: AtomicUsize,
+        peak: Arc<AtomicUsize>,
+    }
+
+    impl PasswordHasherService for TracksConcurrency {
+        fn hash_password(&self, _: &str) -> Result<String, Error> {
+            let active = self.active.fetch_add(1, Ordering::SeqCst) + 1;
+            self.peak.fetch_max(active, Ordering::SeqCst);
+            std::thread::sleep(Duration::from_millis(20));
+            self.active.fetch_sub(1, Ordering::SeqCst);
+            Ok(String::new())
+        }
+
+        fn validate_password(&self, _: &str, _: &str) -> Result<bool, Error> {
+            Ok(false)
+        }
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn concurrent_hashing_is_bounded_even_when_callers_give_up() {
+        let limit = PasswordHasher::max_concurrent_async_operations();
+        let peak = Arc::new(AtomicUsize::new(0));
+        let hasher = PasswordHasher::new(TracksConcurrency {
+            active: AtomicUsize::new(0),
+            peak: peak.clone(),
+        });
+
+        // Abandoned callers must keep holding their slot until the work ends.
+        for _ in 0..limit * 2 {
+            let hasher = hasher.clone();
+            let abandoned = tokio::spawn(async move { hasher.hash_password_async("secret").await });
+            tokio::task::yield_now().await;
+            abandoned.abort();
+        }
+
+        let attempts = (0..limit * 4).map(|_| {
+            let hasher = hasher.clone();
+            tokio::spawn(async move { hasher.hash_password_async("secret").await })
+        });
+        for attempt in attempts.collect::<Vec<_>>() {
+            attempt.await.unwrap().unwrap();
+        }
+
+        let peak = peak.load(Ordering::SeqCst);
+        assert!((1..=limit).contains(&peak), "peak {peak} exceeded {limit}");
+    }
+}

@@ -42,6 +42,7 @@ sea-orm = ["http", "furnace-rs-common/sea-orm"]
 sea-orm-storage = ["http", "furnace-rs-common/sea-orm-storage"]
 logger = ["dep:furnace-rs-common", "furnace-rs-common/logger"]
 password-hasher = ["dep:furnace-rs-common", "furnace-rs-common/password-hasher"]
+password-hasher-async = ["password-hasher", "furnace-rs-common/password-hasher-async"]
 runtime-tokio = ["furnace-rs-core/runtime-tokio"]
 extra = ["dep:furnace-rs-extra"]
 

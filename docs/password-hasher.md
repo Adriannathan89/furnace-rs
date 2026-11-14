@@ -99,7 +99,8 @@ backends are responsible for their own bounds.
 
 Both helpers accept empty and Unicode passwords. They operate on the supplied
 bytes without trimming or Unicode normalization; password policy belongs to
-the caller. Both functions perform synchronous work.
+the caller. Both functions perform synchronous work; from async code use the
+[non-blocking methods](#async-handlers) instead.
 
 ## Unit tests
 
@@ -198,6 +199,47 @@ password against a decoy hash created by the same backend, then returns
 `Ok(false)`. The decoy is hashed on first use and shared by all clones of the
 hasher. Its cost is that of the backend's current settings, so accounts whose
 stored hashes use different costs can still be told apart.
+
+## Async handlers
+
+Argon2 is deliberately slow and memory-hard. Calling `hash_password` or
+`validate_password` directly inside an async handler stalls a runtime worker for
+the whole computation, so a few concurrent logins can freeze every other
+request. Use the `_async` methods, which run the same work on Tokio's blocking
+pool:
+
+```rust
+use furnace_rs_common::{PasswordHasher, PasswordHasherResult};
+
+async fn login(
+    hasher: &PasswordHasher,
+    stored_hash: Option<&str>,
+    password: &str,
+) -> PasswordHasherResult<bool> {
+    hasher
+        .validate_optional_password_async(password, stored_hash)
+        .await
+}
+```
+
+| Synchronous | Non-blocking |
+| --- | --- |
+| `hash_password` | `hash_password_async` |
+| `validate_password` | `validate_password_async` |
+| `validate_optional_password` | `validate_optional_password_async` |
+
+At most `PasswordHasher::max_concurrent_async_operations()` of these run at
+once across the process, equal to its available parallelism; further callers
+wait. Without the bound, a burst of logins could occupy hundreds of blocking
+threads, each holding a full Argon2 memory allocation. A slot is released only
+when its work finishes, even if the caller stops waiting.
+
+The methods are available whenever Tokio is already linked through the `http`
+or `transport-runtime` feature. To use them without the HTTP stack, enable
+`password-hasher-async` on `furnace-rs-common` or the `furnace-rs` facade. They
+must be awaited inside a Tokio runtime. The free helpers and custom
+`PasswordHasherService` backends stay synchronous; the facade moves any backend
+off the runtime.
 
 ## Dependency injection
 
