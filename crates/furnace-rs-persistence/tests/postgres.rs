@@ -269,17 +269,22 @@ fn conventional_startup_checks_database_before_bind_and_handles_sigterm() {
             "sea-orm-postgres",
             "--example",
             "standard_run",
+            "--message-format=json",
         ])
-        .status()
+        .stderr(Stdio::inherit())
+        .output()
         .unwrap();
-    assert!(build.success());
-    let binary = std::env::current_exe()
+    assert!(build.status.success());
+    // Ask cargo where the example landed instead of deriving it from the test
+    // binary's location, which depends on the target/build-dir layout.
+    let binary = String::from_utf8(build.stdout)
         .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("examples/standard_run");
+        .lines()
+        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+        .filter(|message| message["reason"] == "compiler-artifact")
+        .filter(|message| message["target"]["name"] == "standard_run")
+        .find_map(|message| message["executable"].as_str().map(std::path::PathBuf::from))
+        .expect("cargo did not report the standard_run executable");
 
     let occupied = TcpListener::bind("127.0.0.1:0").unwrap();
     let occupied_port = occupied.local_addr().unwrap().port();
