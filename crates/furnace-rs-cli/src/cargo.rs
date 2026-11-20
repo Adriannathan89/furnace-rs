@@ -366,8 +366,10 @@ impl ArtifactCollector {
             }
             Message::BuildScriptExecuted(script) => {
                 if let Some(root) = target.local_package_root(&script.package_id)
-                    && let Some(output) = script.out_dir.parent().map(|path| path.join("output"))
-                    && let Ok(output) = std::fs::read_to_string(output)
+                    && let Some(dir) = script.out_dir.parent()
+                    // Newer Cargo stores the script's stdout in `run/stdout`; older Cargo in `output`.
+                    && let Ok(output) = std::fs::read_to_string(dir.join("run/stdout"))
+                        .or_else(|_| std::fs::read_to_string(dir.join("output")))
                 {
                     for line in output.lines() {
                         if let Some(path) = line
