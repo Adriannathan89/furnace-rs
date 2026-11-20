@@ -10,6 +10,8 @@ error[E0277]: the trait bound `Dependency: Clone` is not satisfied
 note: required by a bound in `furnace_rs::Injector::Dependencies`
  --> $WORKSPACE/crates/furnace-rs-core/src/injector.rs
   |
+  | pub trait Injector<T = Self>: Sized + Send + Sync + 'static
+...
   |     type Dependencies: InjectionDependencies;
   |                        ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Injector::Dependencies`
 help: consider annotating `Dependency` with `#[derive(Clone)]`

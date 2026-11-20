@@ -27,4 +27,9 @@ help: the following other types implement trait `furnace_rs_core::__private::Mod
   |
   | #[crate::core::cauldron(providers = [Logger], exports = [Logger], global)]
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `LoggerCauldron`
+  |
+ ::: $WORKSPACE/crates/furnace-rs-common/src/password_hasher/mod.rs
+  |
+  | #[crate::core::cauldron(providers = [PasswordHasher], exports = [PasswordHasher], global)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `PasswordHasherCauldron`
   = note: this error originates in the attribute macro `furnace_rs::cauldron` which comes from the expansion of the attribute macro `crate::core::cauldron` (in Nightly builds, run with -Z macro-backtrace for more info)
