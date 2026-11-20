@@ -33,7 +33,6 @@ note: required by a bound in `furnace_rs::furnace_rs_core::__private::assert_mod
    --> /home/ryynn/Desktop/furnace-rs/crates/furnace-rs-core/src/di_contract.rs:237:8
     |
 235 | pub fn assert_module_scope<M, S, P>(_: S)
-    |        ------------------- required by a bound in this function
 236 | where
 237 |     M: CheckModule<S, P>,
     |        ^^^^^^^^^^^^^^^^^ required by this bound in `assert_module_scope`
