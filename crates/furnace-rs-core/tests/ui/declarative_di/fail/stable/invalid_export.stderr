@@ -8,7 +8,6 @@ note: required by a bound in `furnace_rs_core::__private::assert_has`
  --> src/di_contract.rs
   |
   | pub fn assert_has<T, S, P>()
-  |        ---------- required by a bound in this function
   | where
   |     S: Lookup<T, P>,
   |        ^^^^^^^^^^^^ required by this bound in `assert_has`
