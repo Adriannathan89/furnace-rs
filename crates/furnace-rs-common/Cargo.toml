@@ -42,6 +42,9 @@ jwt = [
 cookies = ["http", "dep:cookie", "axum-extra/cookie", "furnace-rs-common-macros?/cookies"]
 logger = ["dep:chrono"]
 password-hasher = ["dep:argon2"]
+# Adds the non-blocking `*_async` hasher methods without the HTTP stack. They are
+# also available whenever `transport-runtime` (and therefore `http`) is enabled.
+password-hasher-async = ["password-hasher", "dep:tokio"]
 sea-orm = ["http", "dep:sea-orm"]
 sea-orm-storage = ["sea-orm", "dep:furnace-rs-persistence-types"]
 

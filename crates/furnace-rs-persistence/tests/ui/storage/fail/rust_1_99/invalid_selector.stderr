@@ -25,8 +25,6 @@ note: required for `user::Entity` to implement `post::EntityLoaderWithParam`
   |
   |     #[sea_orm::model]
   |     ^^^^^^^^^^^^^^^^^ type parameter would need to implement `post::EntityLoaderWithParam`
-  = help: consider manually implementing `post::EntityLoaderWithParam` to avoid undesired bounds caused by "imperfect derives"
-  = note: to learn more, visit <https://github.com/rust-lang/rust/issues/26925>
 note: required by a bound in `post::EntityLoader::with`
  --> tests/ui/storage/fail/rust_1_99/../../../../support/storage_relations.rs
   |

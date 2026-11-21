@@ -60,15 +60,47 @@ settings.
 | --- | --- |
 | `Ok(true)` | The password matches. |
 | `Ok(false)` | Verification failed, including a mismatch or unsupported algorithm. |
-| `Err(error)` | The stored string could not be parsed as a PHC string. |
+| `Err(error)` | The stored string could not be parsed as a PHC string, or its Argon2 costs exceed the verification limits. |
 
-Every verification error after parsing is converted to `false`. A syntactically
-valid PHC string with missing or unsupported settings therefore need not return
-an error.
+Every other verification error after parsing is converted to `false`. A
+syntactically valid PHC string with missing or unsupported settings therefore
+need not return an error.
+
+### Verification cost limits
+
+A stored PHC string chooses the memory, time, and parallelism of its own
+verification. An unbounded verifier lets one forged or corrupted record (for
+example `m=4294967295`) turn each login attempt against it into a
+multi-terabyte allocation or hours of CPU time. The default backend therefore
+rejects such hashes with `Err(ParamValueInvalid(TooLong))` before hashing.
+
+| Cost | Default ceiling |
+| --- | --- |
+| Memory (`m`) | `DefaultPasswordHasher::DEFAULT_MAX_VERIFY_M_COST` = 262144 KiB (256 MiB) |
+| Time (`t`) | `DefaultPasswordHasher::DEFAULT_MAX_VERIFY_T_COST` = 16 |
+| Parallelism (`p`) | `DefaultPasswordHasher::DEFAULT_MAX_VERIFY_P_COST` = 16 |
+
+A backend built with `DefaultPasswordHasher::new` raises each ceiling to its own
+configured parameter when that is larger, so it always verifies the hashes it
+creates. When stored hashes use heavier settings than the current configuration,
+set the ceilings explicitly:
+
+```rust
+use furnace_rs_common::{DefaultPasswordHasher, PasswordHasher};
+
+// m in KiB, then t, then p.
+let backend = DefaultPasswordHasher::default().with_verification_limits(2 * 1024 * 1024, 4, 8);
+let hasher = PasswordHasher::new(backend);
+```
+
+The free helpers always use the default ceilings. Treat a limit error as a data
+integrity problem, not as a wrong password. Custom `PasswordHasherService`
+backends are responsible for their own bounds.
 
 Both helpers accept empty and Unicode passwords. They operate on the supplied
 bytes without trimming or Unicode normalization; password policy belongs to
-the caller. Both functions perform synchronous work.
+the caller. Both functions perform synchronous work; from async code use the
+[non-blocking methods](#async-handlers) instead.
 
 ## Unit tests
 
@@ -79,5 +111,161 @@ cargo test -p furnace-rs-common --no-default-features --features password-hasher
 ```
 
 The tests cover the generated PHC format, matching and incorrect passwords,
-independent salts, malformed strings, unsupported algorithms, empty passwords,
-and exact UTF-8 matching.
+independent salts, malformed strings, unsupported algorithms, excessive stored
+costs, empty passwords, and exact UTF-8 matching.
+
+## Reusable instances and custom backends
+
+`PasswordHasher` is a clonable service facade, following the `Logger` pattern.
+Clones share their backend through an `Arc`. The default backend is
+`DefaultPasswordHasher`, which owns one Argon2 instance:
+
+```rust
+use furnace_rs_common::PasswordHasher;
+
+let hasher = PasswordHasher::default();
+let hashed = hasher.hash_password("my password")?;
+assert!(hasher.validate_password("my password", &hashed)?);
+# Ok::<(), furnace_rs_common::PasswordHasherError>(())
+```
+
+To change only the Argon2id cost settings, pass the memory in KiB, the number of
+iterations, and the number of lanes:
+
+```rust
+use furnace_rs_common::{DefaultPasswordHasher, PasswordHasher};
+
+let hasher = PasswordHasher::new(DefaultPasswordHasher::with_costs(19_456, 2, 1)?);
+# Ok::<(), furnace_rs_common::PasswordHasherError>(())
+```
+
+For another algorithm, version, output length, or a secret key, pass a
+configured instance. The `argon2` crate is re-exported from the `password_hasher`
+module, so the application needs no separately versioned dependency:
+
+```rust
+use furnace_rs_common::password_hasher::argon2::{Algorithm, Argon2, Params, Version};
+use furnace_rs_common::{DefaultPasswordHasher, PasswordHasher};
+
+let params = Params::new(19_456, 2, 1, Some(48))?;
+let backend = DefaultPasswordHasher::new(Argon2::new(
+    Algorithm::Argon2i,
+    Version::V0x13,
+    params,
+));
+let hasher = PasswordHasher::new(backend);
+# Ok::<(), furnace_rs_common::password_hasher::argon2::Error>(())
+```
+
+The backend reads cost settings from the Argon2 instance when hashing, and from
+the stored PHC string when validating. Every hash still gets a fresh salt.
+
+Applications can implement `PasswordHasherService: Send + Sync` and pass their
+backend to `PasswordHasher::new`. Both methods are synchronous:
+
+```rust
+fn hash_password(&self, password: &str) -> PasswordHasherResult<String>;
+fn validate_password(&self, password: &str, hashed: &str) -> PasswordHasherResult<bool>;
+```
+
+`PasswordHasherResult<T>` uses `PasswordHasherError`, a public alias for the
+existing `argon2::password_hash::Error`. The facade forwards backend results
+unchanged. Custom backends define their own validation failure behavior.
+
+All these contracts are exported by `furnace_rs_common`, `furnace_rs`, and
+`furnace_rs::prelude` with the `password-hasher` feature enabled.
+
+## Logins for accounts that may not exist
+
+A login handler that returns as soon as the account lookup fails answers
+unknown usernames much faster than known ones, which lets a caller enumerate
+accounts by timing. Pass the lookup result straight to
+`validate_optional_password` instead of branching on it:
+
+```rust
+use furnace_rs_common::{PasswordHasher, PasswordHasherResult};
+
+fn login(
+    hasher: &PasswordHasher,
+    stored_hash: Option<&str>,
+    password: &str,
+) -> PasswordHasherResult<bool> {
+    hasher.validate_optional_password(password, stored_hash)
+}
+```
+
+With `Some(hash)` this is `validate_password`. With `None` it verifies the
+password against a decoy hash created by the same backend, then returns
+`Ok(false)`. The decoy is hashed on first use and shared by all clones of the
+hasher. Its cost is that of the backend's current settings, so accounts whose
+stored hashes use different costs can still be told apart.
+
+## Async handlers
+
+Argon2 is deliberately slow and memory-hard. Calling `hash_password` or
+`validate_password` directly inside an async handler stalls a runtime worker for
+the whole computation, so a few concurrent logins can freeze every other
+request. Use the `_async` methods, which run the same work on Tokio's blocking
+pool:
+
+```rust
+use furnace_rs_common::{PasswordHasher, PasswordHasherResult};
+
+async fn login(
+    hasher: &PasswordHasher,
+    stored_hash: Option<&str>,
+    password: &str,
+) -> PasswordHasherResult<bool> {
+    hasher
+        .validate_optional_password_async(password, stored_hash)
+        .await
+}
+```
+
+| Synchronous | Non-blocking |
+| --- | --- |
+| `hash_password` | `hash_password_async` |
+| `validate_password` | `validate_password_async` |
+| `validate_optional_password` | `validate_optional_password_async` |
+
+At most `PasswordHasher::max_concurrent_async_operations()` of these run at
+once across the process, equal to its available parallelism; further callers
+wait. Without the bound, a burst of logins could occupy hundreds of blocking
+threads, each holding a full Argon2 memory allocation. A slot is released only
+when its work finishes, even if the caller stops waiting.
+
+The methods are available whenever Tokio is already linked through the `http`
+or `transport-runtime` feature. To use them without the HTTP stack, enable
+`password-hasher-async` on `furnace-rs-common` or the `furnace-rs` facade. They
+must be awaited inside a Tokio runtime. The free helpers and custom
+`PasswordHasherService` backends stay synchronous; the facade moves any backend
+off the runtime.
+
+## Dependency injection
+
+Import the global `PasswordHasherCauldron` to inject the default hasher into
+services, including services declared in other imported cauldrons:
+
+```rust
+use furnace_rs_common::{PasswordHasher, PasswordHasherCauldron};
+
+#[furnace_rs_common::core::burner]
+struct AuthService {
+    #[inject]
+    hasher: PasswordHasher,
+}
+
+#[furnace_rs_common::core::cauldron(
+    imports = [PasswordHasherCauldron],
+    providers = [AuthService],
+)]
+struct AppCauldron;
+```
+
+For an application-wide custom backend, call
+`builder.provide(PasswordHasher::new(backend))` before building. Keep the hasher
+registered and exported through `PasswordHasherCauldron` so the framework can
+resolve its ownership. The supplied value takes precedence over the default.
+
+The free `hash_password` and `validate_password` helpers always use the default
+backend. Inject or retain a `PasswordHasher` instance when using a custom backend.

@@ -20,5 +20,4 @@ note: required by a bound in `__furnace_read_nested_configuration`
 5 | #[derive(Configuration)]
   |          ^^^^^^^^^^^^^ required by this bound in `__furnace_read_nested_configuration`
 6 | struct Parent { child: NotConfiguration }
-  |                        ---------------- required by a bound in this function
   = note: this error originates in the derive macro `Configuration` (in Nightly builds, run with -Z macro-backtrace for more info)
