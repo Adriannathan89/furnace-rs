@@ -8,11 +8,15 @@
 #![forbid(unsafe_code)]
 
 mod backend;
+#[cfg(feature = "cache")]
+mod caching;
 mod identity;
 mod redis_backend;
 mod service;
 
 pub use backend::{Backend, BackendError, BackendFuture, MemoryBackend, WindowHit};
+#[cfg(feature = "cache")]
+pub use caching::{CacheState, cache_middleware};
 pub use service::{RedisExtra, RedisExtraError};
 
 /// Exposes the framework-neutral core boundary to extensions.
