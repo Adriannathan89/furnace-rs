@@ -1,7 +1,10 @@
 //! Redis implementation of [`Backend`]; connects lazily on first use.
 
 use crate::{Backend, BackendError, BackendFuture, WindowHit};
-use redis::{Script, aio::ConnectionManager};
+use redis::{
+    Script,
+    aio::{ConnectionManager, ConnectionManagerConfig},
+};
 use std::{sync::OnceLock, time::Duration};
 use tokio::sync::OnceCell;
 
@@ -31,7 +34,14 @@ impl RedisBackend {
 
     async fn connection(&self) -> Result<ConnectionManager, BackendError> {
         self.connection
-            .get_or_try_init(|| ConnectionManager::new(self.client.clone()))
+            .get_or_try_init(|| {
+                // Short bounds so a dead Redis costs little per request (see `bounded`).
+                let config = ConnectionManagerConfig::new()
+                    .set_connection_timeout(Duration::from_millis(200))
+                    .set_response_timeout(Duration::from_millis(200))
+                    .set_number_of_retries(1);
+                ConnectionManager::new_with_config(self.client.clone(), config)
+            })
             .await
             .cloned()
             .map_err(|e| BackendError::new(e.to_string()))

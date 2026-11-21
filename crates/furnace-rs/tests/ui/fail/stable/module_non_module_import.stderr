@@ -23,6 +23,11 @@ help: the following other types implement trait `furnace_rs_core::__private::Mod
 2 | #[furnace_rs::cauldron(imports = [NotACauldron])]
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `AppCauldron`
   |
+ ::: $WORKSPACE/crates/furnace-rs-extra/src/service.rs
+  |
+  | #[crate::core::cauldron(providers = [RedisExtra], exports = [RedisExtra], global)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `ExtraCauldron`
+  |
  ::: $WORKSPACE/crates/furnace-rs-common/src/logger/mod.rs
   |
   | #[crate::core::cauldron(providers = [Logger], exports = [Logger], global)]

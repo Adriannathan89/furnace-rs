@@ -76,7 +76,12 @@ trait Backend: Send + Sync {
 ```
 
 `RedisBackend` (Lua `INCR` + `EXPIRE` for atomicity) and `MemoryBackend` (used
-by tests). `RedisExtra::new(url)` validates the scheme (`redis://` or `rediss://`,
+by tests). `ExtraCauldron` registers `RedisExtra` as a provider (a rooted builder rejects
+`provide` for unregistered types). Its injector returns a placeholder whose
+every call errors with a "was not provided" message, so apps that merely link
+the crate (including complete-catalog builds) still start, and requests fail
+open with a logged fix. Each backend call is bounded to 250 ms and a
+timeout fails open like any other backend error. `RedisExtra::new(url)` validates the scheme (`redis://` or `rediss://`,
 no `#`, as in `furnace-rs-socket`), holds a shared `Arc<dyn Backend>`, and is
 supplied through `FurnaceBuilder::provide`. Router build resolves it from the
 `ApplicationContext`; if an endpoint uses either attribute and the service is
@@ -101,11 +106,13 @@ Connection is lazy so a down Redis does not block startup.
 ### Rate-limit layer
 
 - Fixed window per `(route, identity)`, via `Backend::incr_window`.
-- Identity: on a *sealed* (guarded) endpoint, the credential fingerprint above;
+- Identity: on a *sealed* (guarded) endpoint, the credential the guard validated,
+  hashed with SHA-256 (the guard installs a `ValidatedCredential` request
+  extension after authentication; header fingerprints are NOT used because the
+  guard ignores e.g. `Cookie` on Bearer routes, so they would mint buckets);
   otherwise the peer IP from `ConnectInfo<SocketAddr>` (already inserted by the
-  server). The credential is only used after the guard has accepted it, so an
-  attacker cannot mint buckets by sending garbage `Authorization` headers to a
-  public endpoint. If no peer address exists (e.g. in-process tests), use a
+  server). An attacker cannot mint buckets with garbage headers on either kind
+  of endpoint. If no peer address exists (e.g. in-process tests), use a
   single `unknown` bucket.
 - Over limit: `429` with JSON error body, `Retry-After`, and
   `X-RateLimit-Limit` / `X-RateLimit-Remaining` on allowed responses.

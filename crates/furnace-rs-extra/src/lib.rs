@@ -21,7 +21,7 @@ pub use backend::{Backend, BackendError, BackendFuture, MemoryBackend, WindowHit
 pub use caching::{CacheState, cache_middleware};
 #[cfg(feature = "rate-limit")]
 pub use limiting::{RateLimitState, rate_limit_middleware};
-pub use service::{RedisExtra, RedisExtraError};
+pub use service::{ExtraCauldron, RedisExtra, RedisExtraError};
 
 /// Endpoint attributes `#[cache(ttl = N)]` and `#[rate_limit(limit = N, per = S)]`.
 pub use furnace_rs_common::{cache, rate_limit};

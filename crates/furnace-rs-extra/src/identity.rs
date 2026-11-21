@@ -15,28 +15,33 @@ pub(crate) fn canonical_query(query: Option<&str>) -> String {
     pairs.join("&")
 }
 
-/// Hex SHA-256 of the `Authorization` and `Cookie` values, or `None` when both are absent.
-///
-/// Raw credentials never leave this function.
+/// Lowercase hex SHA-256 over `parts`, which never leaves a raw credential recoverable.
+pub(crate) fn hex_sha256(parts: &[&[u8]]) -> String {
+    let mut hasher = Sha256::new();
+    for part in parts {
+        hasher.update(part);
+    }
+    hasher
+        .finalize()
+        .iter()
+        .fold(String::with_capacity(64), |mut out, byte| {
+            let _ = write!(out, "{byte:02x}");
+            out
+        })
+}
+
+/// Hash of the `Authorization` and `Cookie` values, or `None` when both are absent.
 pub(crate) fn fingerprint(headers: &HeaderMap) -> Option<String> {
     let auth = headers.get(header::AUTHORIZATION);
     let cookie = headers.get(header::COOKIE);
     if auth.is_none() && cookie.is_none() {
         return None;
     }
-    let mut hasher = Sha256::new();
-    hasher.update(auth.map_or(&[][..], |v| v.as_bytes()));
-    hasher.update([0]);
-    hasher.update(cookie.map_or(&[][..], |v| v.as_bytes()));
-    Some(
-        hasher
-            .finalize()
-            .iter()
-            .fold(String::with_capacity(64), |mut out, byte| {
-                let _ = write!(out, "{byte:02x}");
-                out
-            }),
-    )
+    Some(hex_sha256(&[
+        auth.map_or(&[][..], |v| v.as_bytes()),
+        &[0],
+        cookie.map_or(&[][..], |v| v.as_bytes()),
+    ]))
 }
 
 #[cfg(test)]

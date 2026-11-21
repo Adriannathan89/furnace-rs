@@ -14,6 +14,8 @@
 #[cfg(feature = "http")]
 mod cors;
 #[cfg(feature = "http")]
+mod credential;
+#[cfg(feature = "http")]
 mod extract;
 #[cfg(feature = "http")]
 mod http_preflight;
@@ -63,6 +65,10 @@ pub use furnace_rs_common_macros::Input;
 /// application provides `furnace_rs_extra::RedisExtra`.
 #[cfg(feature = "extra")]
 pub use furnace_rs_common_macros::{cache, rate_limit};
+
+/// The credential a Passport guard accepted, installed in request extensions.
+#[cfg(feature = "http")]
+pub use credential::ValidatedCredential;
 
 /// Re-exports transport-independent input validation contracts.
 #[cfg(feature = "http")]

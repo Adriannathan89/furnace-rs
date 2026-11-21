@@ -170,6 +170,8 @@ impl PassportGuardState {
             )));
         }
 
+        install_validated_credential(self.guard.source(), request);
+
         Ok(())
     }
 }
@@ -558,6 +560,8 @@ where
             )));
         }
 
+        install_validated_credential(self.source, request);
+
         Ok(())
     }
 }
@@ -624,6 +628,31 @@ async fn authenticate_request(
 
             adapter(application, &context, &token).await
         }
+    }
+}
+
+/// Records the credential the guard just accepted for layers behind it.
+///
+/// Re-reads the same source the guard used, so only the validated credential
+/// (not other headers) can identify the client downstream.
+fn install_validated_credential(source: TokenSource, request: &mut Request) {
+    let credential = match source {
+        TokenSource::Bearer => super::authentication::bearer_token(request.headers())
+            .ok()
+            .map(crate::ValidatedCredential::new),
+        #[cfg(feature = "cookies")]
+        TokenSource::Cookie(name) => {
+            CookieJar::from_headers(request.headers())
+                .ok()
+                .and_then(|jar| {
+                    jar.get(name)
+                        .map(|cookie| crate::ValidatedCredential::new(cookie.value()))
+                })
+        }
+    };
+
+    if let Some(credential) = credential {
+        request.extensions_mut().insert(credential);
     }
 }
 

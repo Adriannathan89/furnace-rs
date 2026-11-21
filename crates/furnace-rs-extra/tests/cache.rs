@@ -251,3 +251,29 @@ async fn entry_expires_after_ttl() {
     get_(&app, "/p", None).await;
     assert_eq!(counter.load(SeqCst), 2);
 }
+
+/// Never answers, like a blackholed Redis.
+struct Hang;
+
+impl Backend for Hang {
+    fn get<'a>(&'a self, _: &'a str) -> BackendFuture<'a, Option<Vec<u8>>> {
+        Box::pin(std::future::pending())
+    }
+    fn set_ex<'a>(&'a self, _: &'a str, _: Vec<u8>, _: Duration) -> BackendFuture<'a, ()> {
+        Box::pin(std::future::pending())
+    }
+    fn incr_window<'a>(&'a self, _: &'a str, _: Duration) -> BackendFuture<'a, WindowHit> {
+        Box::pin(std::future::pending())
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn hanging_backend_fails_open_without_hanging() {
+    let counter = Arc::new(AtomicUsize::new(0));
+    let app = app(&RedisExtra::with_backend(Hang), counting(&counter));
+    let response = tokio::time::timeout(Duration::from_secs(5), get_(&app, "/p", None))
+        .await
+        .expect("a stalled backend must not stall the request");
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(counter.load(SeqCst), 1);
+}

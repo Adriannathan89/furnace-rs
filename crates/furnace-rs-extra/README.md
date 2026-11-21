@@ -9,8 +9,9 @@ Optional Redis-backed endpoint caching and rate limiting for furnace-rs.
 async fn list(&self) -> HttpResult<Json<Vec<Post>>> { /* ... */ }
 ~~~
 
-The attributes are applied by `#[controller]` and need a `RedisExtra` service
-supplied to the application builder. See the
+The attributes are applied by `#[controller]` and need a `RedisExtra` service:
+import `ExtraCauldron` into the root cauldron and supply the instance with
+`FurnaceBuilder::provide(RedisExtra::new(url)?)`. See the
 [usage guide](../../docs/guides/extra.md) for registration, keys, limits, and
 failure behavior.
 
@@ -21,7 +22,7 @@ failure behavior.
 | `cache` (default) | `CacheState`, `cache_middleware` |
 | `rate-limit` (default) | `RateLimitState`, `rate_limit_middleware` |
 
-`RedisExtra`, the `Backend` trait, and `MemoryBackend` are always available.
+`RedisExtra`, `ExtraCauldron`, the `Backend` trait, and `MemoryBackend` are always available.
 The facade's `extra` feature enables this crate and `http`.
 
 ## Dependency boundary

@@ -13,6 +13,16 @@ use tokio::time::Instant;
 /// Boxed future returned by [`Backend`] methods.
 pub type BackendFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, BackendError>> + Send + 'a>>;
 
+/// Longest a request waits on the backend before failing open.
+const BACKEND_TIMEOUT: Duration = Duration::from_millis(250);
+
+/// Runs one backend call, turning a stall into an ordinary [`BackendError`].
+pub(crate) async fn bounded<T>(call: BackendFuture<'_, T>) -> Result<T, BackendError> {
+    tokio::time::timeout(BACKEND_TIMEOUT, call)
+        .await
+        .unwrap_or_else(|_| Err(BackendError::new("backend timed out")))
+}
+
 /// A storage failure. Layers log it and fail open.
 #[derive(Debug)]
 pub struct BackendError(String);

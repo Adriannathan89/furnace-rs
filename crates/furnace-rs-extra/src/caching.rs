@@ -2,6 +2,7 @@
 
 use crate::{
     Backend, RedisExtra,
+    backend::bounded,
     identity::{canonical_query, fingerprint},
 };
 use furnace_rs_common::axum::{
@@ -52,7 +53,7 @@ pub async fn cache_middleware(
         fingerprint(request.headers()).unwrap_or_else(|| "anon".into()),
     );
 
-    match state.backend.get(&key).await {
+    match bounded(state.backend.get(&key)).await {
         Ok(Some(bytes)) => {
             if let Some(response) = decode(&bytes) {
                 return response;
@@ -80,7 +81,7 @@ pub async fn cache_middleware(
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
     let encoded = encode(parts.status, parts.headers.get(header::CONTENT_TYPE), &body);
-    if let Err(error) = state.backend.set_ex(&key, encoded, state.ttl).await {
+    if let Err(error) = bounded(state.backend.set_ex(&key, encoded, state.ttl)).await {
         tracing::warn!(%error, "cache write failed");
     }
     Response::from_parts(parts, Body::from(body))

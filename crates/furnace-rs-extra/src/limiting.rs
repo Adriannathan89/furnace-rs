@@ -1,12 +1,15 @@
 //! Redis-backed fixed-window rate limiting for `#[rate_limit(..)]` endpoints.
 
-use crate::{Backend, RedisExtra, identity::fingerprint};
-use furnace_rs_common::axum::{
-    Json,
-    extract::{ConnectInfo, Request, State},
-    http::{HeaderName, HeaderValue, StatusCode, header},
-    middleware::Next,
-    response::{IntoResponse, Response},
+use crate::{Backend, RedisExtra, backend::bounded, identity::hex_sha256};
+use furnace_rs_common::{
+    ValidatedCredential,
+    axum::{
+        Json,
+        extract::{ConnectInfo, Request, State},
+        http::{HeaderName, HeaderValue, StatusCode, header},
+        middleware::Next,
+        response::{IntoResponse, Response},
+    },
 };
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
@@ -40,10 +43,12 @@ impl RateLimitState {
     }
 
     fn identity(&self, request: &Request) -> String {
+        // Behind a guard, only the credential it validated identifies the client;
+        // other headers are attacker-controlled and would mint fresh buckets.
         if self.guarded
-            && let Some(credential) = fingerprint(request.headers())
+            && let Some(credential) = request.extensions().get::<ValidatedCredential>()
         {
-            return credential;
+            return hex_sha256(&[credential.as_str().as_bytes()]);
         }
         request
             .extensions()
@@ -61,7 +66,7 @@ pub async fn rate_limit_middleware(
     next: Next,
 ) -> Response {
     let key = format!("furnace:rl:{}:{}", state.route, state.identity(&request));
-    let hit = match state.backend.incr_window(&key, state.window).await {
+    let hit = match bounded(state.backend.incr_window(&key, state.window)).await {
         Ok(hit) => hit,
         Err(error) => {
             tracing::warn!(%error, "rate limit check failed; allowing request");
