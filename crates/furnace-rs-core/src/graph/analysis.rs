@@ -2,6 +2,7 @@
 
 use std::any::TypeId;
 use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     Diagnostic, FURNACE001, FURNACE002, FURNACE003, FURNACE005, ProviderDescriptor, ProviderOrigin,
@@ -41,63 +42,51 @@ pub(crate) fn analyze_parts_with_locations(
 
     let mut diagnostics = Vec::new();
     let mut unique_descriptors: Vec<&'static ProviderDescriptor> = Vec::new();
-    let mut duplicate_identities: Vec<&'static ProviderDescriptor> = Vec::new();
+    // Indexes into `unique_descriptors` per output type; exact duplicates share a type.
+    let mut by_type: HashMap<TypeId, Vec<usize>> = HashMap::new();
+    let mut reported_duplicates = HashSet::new();
 
     for descriptor in descriptors {
-        if let Some(existing) = unique_descriptors
+        let same_type = by_type.entry(descriptor.type_id()).or_default();
+
+        if let Some(&existing) = same_type
             .iter()
-            .copied()
-            .find(|unique| exact_identity(unique, descriptor))
+            .find(|&&index| exact_identity(unique_descriptors[index], descriptor))
         {
-            if !duplicate_identities
-                .iter()
-                .any(|duplicate| exact_identity(duplicate, existing))
-            {
-                diagnostics.push(PendingDiagnostic::duplicate(existing));
-                duplicate_identities.push(existing);
+            if reported_duplicates.insert(existing) {
+                diagnostics.push(PendingDiagnostic::duplicate(unique_descriptors[existing]));
             }
         } else {
+            same_type.push(unique_descriptors.len());
             unique_descriptors.push(descriptor);
         }
     }
 
-    let mut ambiguous_types = Vec::new();
+    let mut ambiguous_types = HashSet::new();
 
     for descriptor in &unique_descriptors {
-        let same_type: Vec<_> = unique_descriptors
-            .iter()
-            .copied()
-            .filter(|candidate| candidate.type_id() == descriptor.type_id())
-            .collect();
+        let same_type = &by_type[&descriptor.type_id()];
 
-        if same_type.len() > 1
-            && !ambiguous_types
-                .iter()
-                .any(|type_id| *type_id == descriptor.type_id())
-        {
-            diagnostics.push(PendingDiagnostic::ambiguous(same_type[0]));
-            ambiguous_types.push(descriptor.type_id());
+        if same_type.len() > 1 && ambiguous_types.insert(descriptor.type_id()) {
+            diagnostics.push(PendingDiagnostic::ambiguous(
+                unique_descriptors[same_type[0]],
+            ));
         }
     }
 
     let mut providers = Vec::new();
+    let mut provider_ids = HashSet::new();
 
     for satisfied_provider in &satisfied {
-        if ambiguous_types.contains(&satisfied_provider.type_id) {
-            continue;
-        }
-
-        if providers
-            .iter()
-            .any(|provider: &ProviderNode| provider.type_id == satisfied_provider.type_id)
+        if ambiguous_types.contains(&satisfied_provider.type_id)
+            || !provider_ids.insert(satisfied_provider.type_id)
         {
             continue;
         }
 
-        let matching_descriptor = unique_descriptors
-            .iter()
-            .copied()
-            .find(|descriptor| descriptor.type_id() == satisfied_provider.type_id);
+        let matching_descriptor = by_type
+            .get(&satisfied_provider.type_id)
+            .map(|indexes| unique_descriptors[indexes[0]]);
         let origin = match (satisfied_provider.state, matching_descriptor) {
             (ProviderState::AutoConfigured, _) => ProviderOrigin::AutoConfiguration,
             (ProviderState::Provided, _) | (_, None) => ProviderOrigin::Provided,
@@ -119,12 +108,16 @@ pub(crate) fn analyze_parts_with_locations(
         });
     }
 
+    let mut authored_locations = HashMap::new();
+
+    for (id, location) in locations {
+        authored_locations.entry(*id).or_insert(*location);
+    }
+
     for &descriptor in &unique_descriptors {
         let type_id = descriptor.type_id();
 
-        if ambiguous_types.contains(&type_id)
-            || providers.iter().any(|provider| provider.type_id == type_id)
-        {
+        if ambiguous_types.contains(&type_id) || !provider_ids.insert(type_id) {
             continue;
         }
 
@@ -135,10 +128,10 @@ pub(crate) fn analyze_parts_with_locations(
             visibility: descriptor.visibility(),
             state: ProviderState::Planned,
             location: Some(
-                locations
-                    .iter()
-                    .find(|(id, _)| *id == type_id)
-                    .map_or(descriptor.location(), |(_, location)| *location),
+                authored_locations
+                    .get(&type_id)
+                    .copied()
+                    .unwrap_or_else(|| descriptor.location()),
             ),
             declared_dependencies: descriptor.dependencies(),
         });
@@ -146,6 +139,7 @@ pub(crate) fn analyze_parts_with_locations(
 
     providers.sort_by(|left, right| left.type_name.cmp(right.type_name));
 
+    let covered_missing: HashSet<_> = covered_missing.iter().copied().collect();
     let mut dependencies = Vec::new();
 
     for provider in &providers {
@@ -160,10 +154,7 @@ pub(crate) fn analyze_parts_with_locations(
                 continue;
             }
 
-            if providers
-                .iter()
-                .any(|candidate| candidate.type_id == dependency_type_id)
-            {
+            if provider_ids.contains(&dependency_type_id) {
                 dependencies.push(DependencyEdge {
                     provider_type_id: provider.type_id,
                     provider_type_name: provider.type_name,

@@ -1,6 +1,7 @@
 //! Selection of one registered provider and its dependency closure.
 
 use std::any::TypeId;
+use std::collections::{HashMap, HashSet};
 
 use super::{GraphAnalysis, SatisfiedProvider, analyze_descriptors};
 use crate::{Diagnostic, FURNACE003, ProviderDescriptor};
@@ -14,24 +15,34 @@ pub(crate) fn select_focused_providers(
     required: &[TypeId],
     covered_missing: &[TypeId],
 ) -> GraphAnalysis {
+    let mut by_type: HashMap<TypeId, Vec<&'static ProviderDescriptor>> = HashMap::new();
+
+    for &descriptor in providers {
+        by_type
+            .entry(descriptor.type_id())
+            .or_default()
+            .push(descriptor);
+    }
+
+    let supplied_ids: HashSet<_> = supplied.iter().map(|value| value.type_id).collect();
+    let required: HashSet<_> = required.iter().copied().collect();
     let mut pending = vec![target];
-    let mut visited = Vec::new();
+    let mut visited = HashSet::new();
     let mut selected = Vec::new();
 
     while let Some(type_id) = pending.pop() {
-        if visited.contains(&type_id) {
+        if !visited.insert(type_id) {
             continue;
         }
 
-        visited.push(type_id);
-        let supplied = supplied.iter().any(|value| value.type_id == type_id);
+        let supplied = supplied_ids.contains(&type_id);
 
         if required.contains(&type_id) {
             continue;
         }
 
-        for descriptor in providers.iter().filter(|p| p.type_id() == type_id) {
-            selected.push(*descriptor);
+        for &descriptor in by_type.get(&type_id).into_iter().flatten() {
+            selected.push(descriptor);
 
             if !supplied {
                 pending.extend(descriptor.dependencies().iter().map(|dep| dep.type_id()));

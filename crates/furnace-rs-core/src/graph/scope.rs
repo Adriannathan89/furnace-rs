@@ -2,6 +2,7 @@
 use super::{CauldronGraph, ProviderOwnership, SatisfiedProvider};
 use crate::{Diagnostic, FURNACE009, ProviderDescriptor};
 use std::any::TypeId;
+use std::collections::{HashMap, HashSet};
 
 pub(crate) struct ScopedProviderCatalog {
     pub(crate) descriptors: Vec<&'static ProviderDescriptor>,
@@ -22,6 +23,27 @@ pub(crate) fn select_scoped_providers(
     let mut ownership = Vec::new();
     let mut covered_missing = Vec::new();
     let mut locations = Vec::new();
+    let mut by_type: HashMap<TypeId, Vec<&'static ProviderDescriptor>> = HashMap::new();
+
+    for &descriptor in descriptors {
+        by_type
+            .entry(descriptor.type_id())
+            .or_default()
+            .push(descriptor);
+    }
+
+    // The first supplied value wins, matching a front-to-back search.
+    let mut supplied_by_type = HashMap::new();
+
+    for provider in satisfied {
+        supplied_by_type.entry(provider.type_id).or_insert(provider);
+    }
+
+    let auto_configured: HashSet<_> = satisfied
+        .iter()
+        .filter(|provider| provider.state == crate::ProviderState::AutoConfigured)
+        .map(|provider| provider.type_id)
+        .collect();
 
     for supplied in satisfied {
         if supplied.type_id != TypeId::of::<crate::Config>()
@@ -43,11 +65,7 @@ pub(crate) fn select_scoped_providers(
         let matching: Vec<_> = if let Some(descriptor) = member.descriptor {
             vec![descriptor]
         } else {
-            descriptors
-                .iter()
-                .copied()
-                .filter(|descriptor| descriptor.type_id() == member.type_id)
-                .collect()
+            by_type.get(&member.type_id).cloned().unwrap_or_default()
         };
         let known_controller = matching.iter().any(|descriptor| descriptor.is_controller());
 
@@ -59,9 +77,7 @@ pub(crate) fn select_scoped_providers(
                 .with_subject(member.type_name).with_location(member.location));
         }
 
-        let supplied = satisfied
-            .iter()
-            .find(|provider| provider.type_id == member.type_id);
+        let supplied = supplied_by_type.get(&member.type_id);
         let overridden = supplied.is_some();
         ownership.push(ProviderOwnership {
             provider_type_name: supplied
@@ -99,11 +115,7 @@ pub(crate) fn select_scoped_providers(
             for dependency in descriptor.dependencies() {
                 let target = dependency.type_id();
                 let ambient = target == TypeId::of::<crate::Config>()
-                    || graph.owner_of(target).is_none()
-                        && satisfied.iter().any(|provider| {
-                            provider.type_id == target
-                                && provider.state == crate::ProviderState::AutoConfigured
-                        });
+                    || graph.owner_of(target).is_none() && auto_configured.contains(&target);
 
                 if ambient {
                     continue;

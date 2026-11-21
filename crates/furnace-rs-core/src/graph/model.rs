@@ -160,6 +160,15 @@ pub struct ApplicationGraph {
 }
 
 impl ApplicationGraph {
+    /// Maps each provider's type to its position in `providers` for constant-time lookups.
+    pub(crate) fn index_by_type(&self) -> std::collections::HashMap<TypeId, usize> {
+        self.providers
+            .iter()
+            .enumerate()
+            .map(|(index, provider)| (provider.type_id, index))
+            .collect()
+    }
+
     /// Returns providers in deterministic graph order.
     pub fn providers(&self) -> &[ProviderNode] {
         &self.providers

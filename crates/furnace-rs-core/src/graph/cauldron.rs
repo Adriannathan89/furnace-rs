@@ -1,7 +1,7 @@
 //! Immutable module graph records and deterministic rooted traversal.
 
 use std::any::TypeId;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::{CauldronDescriptor, Diagnostic, Error, FURNACE008, Result, SourceLocation};
 
@@ -78,6 +78,47 @@ pub struct CauldronGraph {
     cauldrons: Vec<CauldronNode>,
     imports: Vec<CauldronImportEdge>,
     provider_ownership: Vec<ProviderOwnership>,
+    lookup: Lookup,
+}
+
+/// Constant-time views over the finished module graph.
+#[derive(Default)]
+struct Lookup {
+    nodes: HashMap<TypeId, usize>,
+    owners: HashMap<TypeId, usize>,
+    controllers: HashSet<TypeId>,
+    direct_imports: HashSet<(TypeId, TypeId)>,
+}
+
+impl Lookup {
+    fn build(cauldrons: &[CauldronNode], imports: &[CauldronImportEdge]) -> Self {
+        let mut lookup = Self::default();
+
+        for (index, node) in cauldrons.iter().enumerate() {
+            lookup.nodes.insert(node.type_id, index);
+
+            for member in node
+                .definition
+                .iter()
+                .flat_map(|definition| &definition.members)
+            {
+                lookup.owners.entry(member.type_id).or_insert(index);
+
+                if member.controller {
+                    lookup.controllers.insert(member.type_id);
+                }
+            }
+        }
+
+        for edge in imports {
+            lookup.direct_imports.insert((
+                cauldrons[edge.importer].type_id,
+                cauldrons[edge.imported].type_id,
+            ));
+        }
+
+        lookup
+    }
 }
 
 impl CauldronGraph {
@@ -103,21 +144,15 @@ impl CauldronGraph {
 
     /// Returns the explicit owner of a registered output.
     pub fn owner_of(&self, output: TypeId) -> Option<&CauldronNode> {
-        self.cauldrons.iter().find(|node| {
-            node.definition.as_ref().is_some_and(|definition| {
-                definition
-                    .members
-                    .iter()
-                    .any(|member| member.type_id == output)
-            })
-        })
+        self.lookup
+            .owners
+            .get(&output)
+            .map(|&index| &self.cauldrons[index])
     }
 
     /// Returns whether a cauldron explicitly exports an output.
     pub fn exports(&self, module: TypeId, output: TypeId) -> bool {
-        self.cauldrons
-            .iter()
-            .find(|node| node.type_id == module)
+        self.node(module)
             .and_then(|node| node.definition.as_ref())
             .is_some_and(|definition| {
                 definition
@@ -129,20 +164,14 @@ impl CauldronGraph {
 
     /// Returns whether a reachable cauldron is global.
     pub fn is_global(&self, module: TypeId) -> bool {
-        self.cauldrons
-            .iter()
-            .find(|node| node.type_id == module)
+        self.node(module)
             .and_then(|node| node.definition.as_ref())
             .is_some_and(|definition| definition.global)
     }
 
     /// Returns whether the output was explicitly registered as a controller.
     pub fn is_controller(&self, output: TypeId) -> bool {
-        self.cauldrons
-            .iter()
-            .filter_map(|node| node.definition.as_ref())
-            .flat_map(|definition| &definition.members)
-            .any(|member| member.type_id == output && member.controller)
+        self.lookup.controllers.contains(&output)
     }
 
     /// Returns whether a cauldron can consume a registered output.
@@ -188,9 +217,15 @@ impl CauldronGraph {
     /// Returns whether `importer` directly imports `imported`.
     #[doc(hidden)]
     pub fn directly_imports(&self, importer: TypeId, imported: TypeId) -> bool {
-        self.imports.iter().any(|edge| {
-            edge.importer(self).type_id() == importer && edge.imported(self).type_id() == imported
-        })
+        self.lookup.direct_imports.contains(&(importer, imported))
+    }
+
+    /// Finds a reachable module node by its concrete type.
+    fn node(&self, module: TypeId) -> Option<&CauldronNode> {
+        self.lookup
+            .nodes
+            .get(&module)
+            .map(|&index| &self.cauldrons[index])
     }
 
     /// Replaces ownership records after provider selection has been validated.
@@ -204,8 +239,19 @@ pub(crate) fn build_cauldron_graph(
     root_type_id: TypeId,
     cauldrons: &[&'static CauldronDescriptor],
 ) -> Result<CauldronGraph> {
+    let mut by_type: HashMap<TypeId, Vec<&'static CauldronDescriptor>> = HashMap::new();
+
+    for &descriptor in cauldrons {
+        by_type
+            .entry(descriptor.type_id())
+            .or_default()
+            .push(descriptor);
+    }
+
     let mut state = BuildState {
-        descriptors: cauldrons,
+        by_type,
+        claimed_members: HashSet::new(),
+        node_ids: HashMap::new(),
         visited: HashSet::new(),
         stack: Vec::new(),
         cauldrons: Vec::new(),
@@ -216,16 +262,19 @@ pub(crate) fn build_cauldron_graph(
         .node_index(root_type_id)
         .expect("successful traversal records the root module");
 
+    let lookup = Lookup::build(&state.cauldrons, &state.imports);
+
     Ok(CauldronGraph {
         root,
         cauldrons: state.cauldrons,
         imports: state.imports,
         provider_ownership: Vec::new(),
+        lookup,
     })
 }
 
 /// Visits one module, validates its local declaration, and recursively follows imports.
-fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
+fn visit(module: TypeId, state: &mut BuildState) -> Result<()> {
     if let Some(cycle_start) = state.stack.iter().position(|id| *id == module) {
         return Err(state.module_cycle_error(&state.stack[cycle_start..], module));
     }
@@ -243,16 +292,7 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
         let mut seen = HashSet::new();
 
         for member in &definition.members {
-            if !seen.insert(member.type_id)
-                || state.cauldrons.iter().any(|module| {
-                    module.definition.as_ref().is_some_and(|other| {
-                        other
-                            .members
-                            .iter()
-                            .any(|other| other.type_id == member.type_id)
-                    })
-                })
-            {
+            if !seen.insert(member.type_id) || state.claimed_members.contains(&member.type_id) {
                 return Err(registration_error(
                     "duplicate cauldron member",
                     member.type_name,
@@ -261,6 +301,8 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
                 ));
             }
         }
+
+        state.claimed_members.extend(seen);
 
         let mut exports = HashSet::new();
 
@@ -330,23 +372,22 @@ fn visit(module: TypeId, state: &mut BuildState<'_>) -> Result<()> {
     Ok(())
 }
 
-struct BuildState<'a> {
-    descriptors: &'a [&'static CauldronDescriptor],
+struct BuildState {
+    /// Static declarations grouped by module type, in catalog order.
+    by_type: HashMap<TypeId, Vec<&'static CauldronDescriptor>>,
+    /// Members already registered by earlier modules.
+    claimed_members: HashSet<TypeId>,
+    node_ids: HashMap<TypeId, usize>,
     visited: HashSet<TypeId>,
     stack: Vec<TypeId>,
     cauldrons: Vec<CauldronNode>,
     imports: Vec<CauldronImportEdge>,
 }
 
-impl BuildState<'_> {
+impl BuildState {
     /// Resolves one module type to exactly one static declaration.
     fn require_descriptor(&self, type_id: TypeId) -> Result<&'static CauldronDescriptor> {
-        let mut matches = self
-            .descriptors
-            .iter()
-            .copied()
-            .filter(|descriptor| descriptor.type_id() == type_id)
-            .collect::<Vec<_>>();
+        let mut matches = self.by_type.get(&type_id).cloned().unwrap_or_default();
         matches.sort_by(|left, right| {
             left.type_name()
                 .cmp(right.type_name())
@@ -409,6 +450,7 @@ impl BuildState<'_> {
             ));
         };
         let index = self.cauldrons.len();
+        self.node_ids.insert(descriptor.type_id(), index);
         self.cauldrons.push(CauldronNode {
             type_id: descriptor.type_id(),
             type_name: descriptor.type_name(),
@@ -427,9 +469,7 @@ impl BuildState<'_> {
 
     /// Finds a reachable node by its concrete module type.
     fn node_index(&self, type_id: TypeId) -> Option<usize> {
-        self.cauldrons
-            .iter()
-            .position(|module| module.type_id() == type_id)
+        self.node_ids.get(&type_id).copied()
     }
 
     /// Builds an ordered diagnostic chain for a cycle in module imports.
@@ -477,10 +517,7 @@ impl BuildState<'_> {
 
     /// Finds the declaration metadata for one module currently on the DFS stack.
     fn descriptor_for_stack(&self, type_id: TypeId) -> Option<&'static CauldronDescriptor> {
-        self.descriptors
-            .iter()
-            .copied()
-            .find(|descriptor| descriptor.type_id() == type_id)
+        self.by_type.get(&type_id)?.first().copied()
     }
 }
 

@@ -13,13 +13,21 @@ pub(crate) struct Cycle {
 
 /// Detects every provider cycle and returns each path in canonical name order.
 pub(crate) fn detect(graph: &ApplicationGraph) -> Vec<Cycle> {
+    let adjacency = adjacency(graph);
     let mut colors = vec![Color::White; graph.providers.len()];
     let mut stack = Vec::new();
     let mut cycles = Vec::new();
 
     for index in 0..graph.providers.len() {
         if colors[index] == Color::White {
-            visit(index, graph, &mut colors, &mut stack, &mut cycles);
+            visit(
+                index,
+                graph,
+                &adjacency,
+                &mut colors,
+                &mut stack,
+                &mut cycles,
+            );
         }
     }
 
@@ -33,6 +41,7 @@ pub(crate) fn detect(graph: &ApplicationGraph) -> Vec<Cycle> {
 fn visit(
     index: usize,
     graph: &ApplicationGraph,
+    adjacency: &[Vec<usize>],
     colors: &mut [Color],
     stack: &mut Vec<usize>,
     cycles: &mut Vec<Cycle>,
@@ -40,9 +49,9 @@ fn visit(
     colors[index] = Color::Gray;
     stack.push(index);
 
-    for dependency in outgoing(graph, index) {
+    for &dependency in &adjacency[index] {
         match colors[dependency] {
-            Color::White => visit(dependency, graph, colors, stack, cycles),
+            Color::White => visit(dependency, graph, adjacency, colors, stack, cycles),
             Color::Gray => {
                 let cycle_start = stack
                     .iter()
@@ -68,23 +77,25 @@ fn visit(
     colors[index] = Color::Black;
 }
 
-/// Returns a provider's graph dependencies in deterministic traversal order.
-fn outgoing(graph: &ApplicationGraph, provider: usize) -> Vec<usize> {
-    let provider_type_id = graph.providers[provider].type_id;
-    let mut dependencies = graph
-        .dependencies
-        .iter()
-        .filter(|edge| edge.provider_type_id == provider_type_id)
-        .filter_map(|edge| {
-            graph
-                .providers
-                .iter()
-                .position(|node| node.type_id == edge.dependency_type_id)
-        })
-        .collect::<Vec<_>>();
-    dependencies.sort_by(|left, right| node_order(graph, *left, *right));
+/// Builds every provider's dependencies once, in deterministic traversal order.
+fn adjacency(graph: &ApplicationGraph) -> Vec<Vec<usize>> {
+    let index = graph.index_by_type();
+    let mut adjacency = vec![Vec::new(); graph.providers.len()];
 
-    dependencies
+    for edge in &graph.dependencies {
+        if let (Some(&from), Some(&to)) = (
+            index.get(&edge.provider_type_id),
+            index.get(&edge.dependency_type_id),
+        ) {
+            adjacency[from].push(to);
+        }
+    }
+
+    for dependencies in &mut adjacency {
+        dependencies.sort_by(|left, right| node_order(graph, *left, *right));
+    }
+
+    adjacency
 }
 
 /// Rotates a cycle so equivalent paths share the same least-ordered starting node.
@@ -111,16 +122,7 @@ fn node_order(graph: &ApplicationGraph, left: usize, right: usize) -> Ordering {
     left.type_name
         .cmp(right.type_name)
         .then_with(|| left.origin.cmp(&right.origin))
-        .then_with(|| match (left.location, right.location) {
-            (Some(left), Some(right)) => left
-                .file
-                .cmp(right.file)
-                .then_with(|| left.line.cmp(&right.line))
-                .then_with(|| left.column.cmp(&right.column)),
-            (None, Some(_)) => Ordering::Less,
-            (Some(_), None) => Ordering::Greater,
-            (None, None) => Ordering::Equal,
-        })
+        .then_with(|| left.location.cmp(&right.location))
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
