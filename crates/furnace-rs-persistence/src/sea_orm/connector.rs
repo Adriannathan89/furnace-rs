@@ -36,7 +36,6 @@ impl SeaOrmPostgres {
         &mut self.options
     }
 
-    #[allow(dead_code)] // Used by DatabaseCauldron in the next implementation task.
     /// Parses source-aware database settings without opening a connection.
     pub(crate) fn from_config(config: &Config) -> PersistenceResult<Self> {
         let config = SeaOrmConfig::parse(config).map_err(|source| {

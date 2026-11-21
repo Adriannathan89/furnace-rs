@@ -493,7 +493,7 @@ pub(crate) fn analyze_parts_with_memo(
         left.identifier()
             .cmp(right.identifier())
             .then_with(|| left.output_type_name().cmp(right.output_type_name()))
-            .then_with(|| location_order(left.location(), right.location()))
+            .then_with(|| left.location().cmp(&right.location()))
     });
 
     let mut decisions = Vec::with_capacity(descriptors.len());
@@ -694,12 +694,4 @@ fn conflicting_default_diagnostic(descriptor: &AutoConfigurationDescriptor) -> D
     .with_subject(descriptor.output_type_name())
     .with_location(descriptor.location())
     .with_suggestion("remove one conflicting official auto-configuration")
-}
-
-/// Orders source locations by path, line, and column for deterministic analysis.
-fn location_order(left: crate::SourceLocation, right: crate::SourceLocation) -> std::cmp::Ordering {
-    left.file
-        .cmp(right.file)
-        .then_with(|| left.line.cmp(&right.line))
-        .then_with(|| left.column.cmp(&right.column))
 }

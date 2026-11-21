@@ -1,10 +1,8 @@
 //! Schema-versioned records for machine-readable FURNACE CLI output.
 
-use std::path::Path;
-
 use serde::Serialize;
 
-use crate::{diagnostic::CliError, output::path::normalize_path};
+use crate::diagnostic::CliError;
 
 /// The first supported machine-readable CLI schema version.
 pub const SCHEMA_VERSION: u32 = 2;
@@ -396,24 +394,12 @@ impl CliDiagnostic {
         self
     }
 
-    /// Converts a CLI error while normalizing any source path for public output.
-    pub(crate) fn from_error(error: &CliError, package_root: Option<&Path>) -> Self {
+    /// Converts a CLI error to a public diagnostic.
+    pub(crate) fn from_error(error: &CliError) -> Self {
         let mut diagnostic = Self::error(error.code(), error.title(), error.message());
 
         if let Some(subject) = error.subject() {
             diagnostic = diagnostic.with_subject(subject);
-        }
-
-        if let Some(location) = error.location() {
-            let file = package_root.map_or_else(
-                || location.path().to_string_lossy().replace('\\', "/"),
-                |root| normalize_path(root, location.path()),
-            );
-            diagnostic = diagnostic.with_location(SourceLocation::new(
-                file,
-                location.line(),
-                location.column(),
-            ));
         }
 
         for suggestion in error.suggestions() {
@@ -444,26 +430,23 @@ impl CliDiagnostic {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use crate::diagnostic::{CliError, FURNACE201};
 
     use super::{CliDiagnostic, SourceLocation};
 
     #[test]
-    fn error_conversion_is_redacted_and_normalizes_its_location() {
+    fn error_conversion_is_redacted() {
         let error = CliError::new(FURNACE201, "Cargo metadata failed", "safe message")
             .with_subject("manifest")
-            .with_location("/workspace/app/src/main.rs", 4, 2)
             .with_suggestion("repair Cargo.toml")
             .with_source(std::io::Error::other("/registry/secret"));
 
-        let diagnostic = CliDiagnostic::from_error(&error, Some(Path::new("/workspace/app")));
+        let diagnostic = CliDiagnostic::from_error(&error);
         let json = serde_json::to_string(&diagnostic).expect("diagnostic should serialize");
 
         assert_eq!(
             json,
-            "{\"severity\":\"error\",\"code\":\"FURNACE201\",\"title\":\"Cargo metadata failed\",\"message\":\"safe message\",\"subject\":\"manifest\",\"location\":{\"file\":\"src/main.rs\",\"line\":4,\"column\":2},\"suggestions\":[\"repair Cargo.toml\"]}"
+            "{\"severity\":\"error\",\"code\":\"FURNACE201\",\"title\":\"Cargo metadata failed\",\"message\":\"safe message\",\"subject\":\"manifest\",\"location\":null,\"suggestions\":[\"repair Cargo.toml\"]}"
         );
         assert!(!json.contains("/registry/secret"));
     }

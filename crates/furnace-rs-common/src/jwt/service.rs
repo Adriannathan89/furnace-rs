@@ -155,17 +155,6 @@ impl JwtService {
         self.verify_with_time(token, validation, unix_now)
     }
 
-    #[cfg(test)]
-    #[allow(dead_code)]
-    pub(crate) fn verify_at<C: DeserializeOwned>(
-        &self,
-        token: &str,
-        validation: JwtValidation,
-        now: u64,
-    ) -> JwtResult<VerifiedJwt<C>> {
-        self.verify_with_time(token, validation, || Ok(now))
-    }
-
     /// Performs token verification with an injected clock for deterministic validation.
     fn verify_with_time<C: DeserializeOwned>(
         &self,

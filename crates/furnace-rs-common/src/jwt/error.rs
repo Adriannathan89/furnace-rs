@@ -71,7 +71,6 @@ impl JwtError {
         self.kind
     }
 
-    #[allow(dead_code)]
     /// Retains a JWT library error without exposing its text through the public message.
     pub(crate) fn with_source<E>(kind: JwtErrorKind, source: E) -> Self
     where

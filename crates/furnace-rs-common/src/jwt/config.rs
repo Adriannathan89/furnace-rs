@@ -12,7 +12,6 @@ use super::{JwtAlgorithm, JwtError, JwtErrorKind, JwtResult};
 
 const DEFAULT_MAX_TOKEN_BYTES: usize = 8_192;
 
-#[allow(dead_code)]
 pub(crate) enum PassportKeyMode {
     SimpleHmac {
         secret: Arc<[u8]>,
@@ -23,7 +22,6 @@ pub(crate) enum PassportKeyMode {
     },
 }
 
-#[allow(dead_code)]
 pub(crate) struct ConfiguredKey {
     pub(crate) algorithm: JwtAlgorithm,
     pub(crate) secret: Option<Arc<[u8]>>,
@@ -31,7 +29,6 @@ pub(crate) struct ConfiguredKey {
     pub(crate) public_key: Option<KeyMaterial>,
 }
 
-#[allow(dead_code)]
 pub(crate) enum KeyMaterial {
     Inline(Arc<[u8]>),
     File(PathBuf),
@@ -138,7 +135,6 @@ impl PassportConfig {
         }
     }
 
-    #[allow(dead_code)]
     /// Returns the parsed key mode for the service's signing and verification setup.
     pub(crate) fn key_mode(&self) -> &PassportKeyMode {
         &self.mode

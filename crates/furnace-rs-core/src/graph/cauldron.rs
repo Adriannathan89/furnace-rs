@@ -193,15 +193,6 @@ impl CauldronGraph {
         })
     }
 
-    #[allow(dead_code)]
-    /// Checks whether the selected root can reach a module by authored imports.
-    pub(crate) fn is_reachable(&self, module: TypeId) -> bool {
-        self.cauldrons
-            .iter()
-            .any(|candidate| candidate.type_id() == module)
-    }
-
-    #[allow(dead_code)]
     /// Replaces ownership records after provider selection has been validated.
     pub(crate) fn set_provider_ownership(&mut self, ownership: Vec<ProviderOwnership>) {
         self.provider_ownership = ownership;
@@ -359,7 +350,7 @@ impl BuildState<'_> {
         matches.sort_by(|left, right| {
             left.type_name()
                 .cmp(right.type_name())
-                .then_with(|| location_order(left.location(), right.location()))
+                .then_with(|| left.location().cmp(&right.location()))
         });
 
         match matches.as_slice() {
@@ -491,14 +482,6 @@ impl BuildState<'_> {
             .copied()
             .find(|descriptor| descriptor.type_id() == type_id)
     }
-}
-
-/// Orders declarations by file and authored line and column.
-fn location_order(left: SourceLocation, right: SourceLocation) -> std::cmp::Ordering {
-    left.file
-        .cmp(right.file)
-        .then_with(|| left.line.cmp(&right.line))
-        .then_with(|| left.column.cmp(&right.column))
 }
 
 /// Creates a uniform rooted-registration diagnostic with the offending declaration location.

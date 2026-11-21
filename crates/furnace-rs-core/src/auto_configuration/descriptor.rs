@@ -524,22 +524,5 @@ fn requirement_order(
 ) -> std::cmp::Ordering {
     left.provider_type_name()
         .cmp(right.provider_type_name())
-        .then_with(|| location_order(left.location(), right.location()))
-}
-
-/// Compares optional source locations while keeping unknown locations first.
-fn location_order(
-    left: Option<SourceLocation>,
-    right: Option<SourceLocation>,
-) -> std::cmp::Ordering {
-    match (left, right) {
-        (Some(left), Some(right)) => left
-            .file
-            .cmp(right.file)
-            .then_with(|| left.line.cmp(&right.line))
-            .then_with(|| left.column.cmp(&right.column)),
-        (None, Some(_)) => std::cmp::Ordering::Less,
-        (Some(_), None) => std::cmp::Ordering::Greater,
-        (None, None) => std::cmp::Ordering::Equal,
-    }
+        .then_with(|| left.location().cmp(&right.location()))
 }

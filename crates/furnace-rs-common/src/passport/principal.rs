@@ -85,7 +85,6 @@ where
 pub struct Authenticated<P>(Arc<P>);
 
 impl<P> Authenticated<P> {
-    #[allow(dead_code)]
     /// Wraps the principal shared by a successful guard for request extraction.
     pub(crate) const fn new(principal: Arc<P>) -> Self {
         Self(principal)
@@ -122,7 +121,6 @@ impl<P> fmt::Debug for Authenticated<P> {
 pub struct VerifiedToken<C>(Arc<VerifiedJwt<C>>);
 
 impl<C> VerifiedToken<C> {
-    #[allow(dead_code)]
     /// Wraps a verified token for extraction from a successfully guarded request.
     pub(crate) const fn new(verified: Arc<VerifiedJwt<C>>) -> Self {
         Self(verified)

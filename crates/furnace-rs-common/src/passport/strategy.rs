@@ -662,7 +662,7 @@ fn strategy_order(
         .cmp(right.name())
         .then_with(|| left.provider_type_name().cmp(right.provider_type_name()))
         .then_with(|| left.namespace().cmp(&right.namespace()))
-        .then_with(|| location_order(left.location(), right.location()))
+        .then_with(|| left.location().cmp(&right.location()))
 }
 
 /// Orders guard metadata by policy, declaration, namespace, and source location.
@@ -671,7 +671,7 @@ fn guard_order(left: &&GuardDescriptor, right: &&GuardDescriptor) -> Ordering {
         .cmp(right.policy_name())
         .then_with(|| left.handler().cmp(right.handler()))
         .then_with(|| left.namespace().cmp(&right.namespace()))
-        .then_with(|| location_order(left.location(), right.location()))
+        .then_with(|| left.location().cmp(&right.location()))
 }
 
 /// Validates unique strategy names and their corresponding managed providers.
@@ -982,12 +982,4 @@ fn strategy_error(
             .with_location(location)
             .with_suggestion(suggestion),
     )
-}
-
-/// Orders source locations by file, line, and column for stable catalog output.
-fn location_order(left: SourceLocation, right: SourceLocation) -> Ordering {
-    left.file
-        .cmp(right.file)
-        .then_with(|| left.line.cmp(&right.line))
-        .then_with(|| left.column.cmp(&right.column))
 }

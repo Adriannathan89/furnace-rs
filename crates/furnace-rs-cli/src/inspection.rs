@@ -145,7 +145,7 @@ pub(crate) fn inspection_failure_outcome(kind: InspectionKind, error: &CliError)
         Envelope::failure(
             Some(inspection_command_name(kind).into()),
             None,
-            vec![CliDiagnostic::from_error(error, None)],
+            vec![CliDiagnostic::from_error(error)],
         ),
         HumanOutput::stderr(format!("{error}\n")),
     )

@@ -1,7 +1,5 @@
 //! Deterministic validation of provider descriptors and dependency edges.
 
-#![allow(dead_code)]
-
 use std::any::TypeId;
 use std::cmp::Ordering;
 
@@ -212,7 +210,7 @@ fn descriptor_order(left: &ProviderDescriptor, right: &ProviderDescriptor) -> Or
     left.type_name()
         .cmp(right.type_name())
         .then_with(|| left.kind().cmp(&right.kind()))
-        .then_with(|| location_order(left.location(), right.location()))
+        .then_with(|| left.location().cmp(&right.location()))
 }
 
 /// Distinguishes a repeated copy of one binding from two competing bindings.
@@ -240,14 +238,6 @@ fn provider_state_order(state: ProviderState) -> u8 {
         ProviderState::AutoConfigured => 2,
         ProviderState::Planned => 3,
     }
-}
-
-/// Compares source coordinates lexically for stable diagnostic ordering.
-fn location_order(left: SourceLocation, right: SourceLocation) -> Ordering {
-    left.file
-        .cmp(right.file)
-        .then_with(|| left.line.cmp(&right.line))
-        .then_with(|| left.column.cmp(&right.column))
 }
 
 struct PendingDiagnostic {
@@ -335,12 +325,7 @@ impl PendingDiagnostic {
             .as_str()
             .cmp(right.diagnostic.code().as_str())
             .then_with(|| left.subject.cmp(right.subject))
-            .then_with(|| match (left.location, right.location) {
-                (Some(left), Some(right)) => location_order(left, right),
-                (None, Some(_)) => Ordering::Less,
-                (Some(_), None) => Ordering::Greater,
-                (None, None) => Ordering::Equal,
-            })
+            .then_with(|| left.location.cmp(&right.location))
     }
 }
 

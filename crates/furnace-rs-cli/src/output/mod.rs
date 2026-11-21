@@ -93,7 +93,7 @@ fn renderer_failure_outcome(command: Option<&str>) -> Outcome {
         Envelope::failure(
             command.map(str::to_owned),
             None,
-            vec![model::CliDiagnostic::from_error(&error, None)],
+            vec![model::CliDiagnostic::from_error(&error)],
         ),
         HumanOutput::stderr(format!("{error}\n")),
     )

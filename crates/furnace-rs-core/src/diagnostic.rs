@@ -65,7 +65,7 @@ pub const FURNACE020: DiagnosticCode = DiagnosticCode::new("FURNACE020");
 pub const FURNACE030: DiagnosticCode = DiagnosticCode::new("FURNACE030");
 
 /// The source position associated with a diagnostic.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct SourceLocation {
     /// The source file path.
     pub file: &'static str,
