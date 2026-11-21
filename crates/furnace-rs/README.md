@@ -148,11 +148,11 @@ changing a re-export or feature, run at least one no-default-features consumer
 and the full workspace feature gate.
 
 See the [root workspace guide](../../README.md#workspace-crates),
-[architecture reference](../../docs/ARCHITECTURE.md), and
+[architecture reference](../../docs/guides/ARCHITECTURE.md), and
 [contribution guide](../../CONTRIBUTING.md).
 
-The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Registration uses only `#[cauldron(...)]`; bare `#[cauldron]` registers an empty cauldron.
+The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/guides/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Registration uses only `#[cauldron(...)]`; bare `#[cauldron]` registers an empty cauldron.
 
-See the [gRPC guide](../../docs/grpc.md) and [standalone crate](../furnace-rs-grpc/README.md).
+See the [gRPC guide](../../docs/guides/grpc.md) and [standalone crate](../furnace-rs-grpc/README.md).
 
-[WebSocket transport](../../docs/socket.md) covers managed gateways, owned sockets, rooms, Redis, and replay.
+[WebSocket transport](../../docs/guides/socket.md) covers managed gateways, owned sockets, rooms, Redis, and replay.

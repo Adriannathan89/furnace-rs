@@ -35,5 +35,5 @@ join hook only permits `lobby`. `/raw` and `/owned` remain public in this exampl
 
 For WSS, enable `tls` and configure the certificate/private-key paths shown in
 `furnace.toml`. A terminating proxy can instead forward upgrades to the ordinary
-backend listener. See the [full transport guide](../../docs/socket.md) for Origin
+backend listener. See the [full transport guide](../../docs/guides/socket.md) for Origin
 policy, message envelopes, delivery limits, outage behavior, and DI sending APIs.

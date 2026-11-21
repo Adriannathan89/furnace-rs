@@ -250,7 +250,7 @@ fn release_workflows_enforce_linux_full_and_cli_platform_split() {
 
 #[test]
 fn cli_documentation_lists_the_exact_surface() {
-    let documentation = fs::read_to_string(workspace_root().join("docs/CLI.md")).unwrap();
+    let documentation = fs::read_to_string(workspace_root().join("docs/guides/CLI.md")).unwrap();
     for command in [
         "furnace new <name>",
         "furnace run",

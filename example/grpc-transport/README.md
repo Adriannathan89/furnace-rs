@@ -146,5 +146,5 @@ the demo CA; omitting that setting adds configured CAs to the default WebPKI roo
 Hostname and chain verification remain enabled. Generated certificate material
 is ignored by Git.
 
-See [the transport guide](../../docs/grpc.md) for configuration, manual composition,
+See [the transport guide](../../docs/guides/grpc.md) for configuration, manual composition,
 client deadlines, native cancellation, authenticated stream lifetime, and CLI inspection.

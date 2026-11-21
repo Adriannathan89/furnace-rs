@@ -8,7 +8,7 @@ CRUD, typed filters, explicit ASC/DESC ordering, page-number pagination, and
 named native relation loaders. Pagination requires an explicit order and
 fetches the requested size without lookahead or counts. The helper feature
 selects no driver; combine it with `sea-orm-postgres` for the native connector.
-See the [storage guide](../../docs/storage.md) for the API, optional connection
+See the [storage guide](../../docs/guides/storage.md) for the API, optional connection
 selection, model formats, errors, and application-owned transaction behavior.
 
 For PostgreSQL, depend explicitly on:
@@ -30,7 +30,7 @@ classifies failures while public formatting redacts connection details. FURNACE
 does not map connector failures automatically to HTTP responses. For query
 errors, enable the separate `sea-orm` feature on `furnace-rs` to propagate native
 `DbErr` through `HttpResult` with `?` as redacted 500 responses. See the
-[persistence design](../../docs/furnace-rs-persistence.md) for the connector model.
+[persistence design](../../docs/guides/furnace-rs-persistence.md) for the connector model.
 For entity-bound `StorageError` values, enable `furnace-rs`'s separate
 `sea-orm-storage` feature to use `?` for a redacted 500 default. Controllers can
 still use `.map_err(...)` per operation to map selected storage kinds to other
@@ -47,4 +47,4 @@ Tracing outside connection establishment and configured statement logging on
 the returned database connection keep their existing behavior. Applications
 should keep credentials out of their own diagnostic messages and log events.
 
-The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Registration uses only `#[cauldron(...)]`; bare `#[cauldron]` registers an empty cauldron.
+The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/guides/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Registration uses only `#[cauldron(...)]`; bare `#[cauldron]` registers an empty cauldron.

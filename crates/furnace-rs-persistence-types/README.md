@@ -12,4 +12,4 @@ Applications normally use these types through
 integration depends on this crate to support `?` in handlers without linking
 the PostgreSQL connector's provider registrations.
 
-See the [storage guide](../../docs/storage.md) for usage and error mapping.
+See the [storage guide](../../docs/guides/storage.md) for usage and error mapping.

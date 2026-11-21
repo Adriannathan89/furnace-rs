@@ -22,7 +22,7 @@ facade disables those defaults and maps its own features explicitly.
 | `transport-runtime` | Shared selection, lifecycle coordinator, inspection, and task supervision. | Tokio and neutral runtime dependencies; no Tonic/Prost. |
 | `passport` | Shared Passport contracts and derives. | JWT and shared metadata; no Axum. |
 | `logger` | Timestamped console application logging. | Chrono dependency. |
-| `password-hasher` | `hash_password` and `validate_password` for Argon2 password hashing; see the [guide](../../docs/password-hasher.md). | Argon2 dependency; no HTTP requirement. |
+| `password-hasher` | `hash_password` and `validate_password` for Argon2 password hashing; see the [guide](../../docs/guides/password-hasher.md). | Argon2 dependency; no HTTP requirement. |
 | `jwt` | `JwtService`, claims, validation profiles, algorithms, keyrings, and JWT auto-configuration. | No Axum or database dependency. |
 | `cookies` | Strict cookie extraction and checked response-cookie composition. | Implies `http` and enables the cookie/Passport macro support. |
 | `sea-orm` | `From<sea_orm::DbErr> for HttpError`, enabling `?` in HTTP handlers. | Implies `http`; adds SeaORM without a database driver. |
@@ -131,8 +131,8 @@ The `furnace-rs-persistence` PostgreSQL acceptance suite is ignored by default a
 requires PostgreSQL 16 through `FURNACE_TEST_DATABASE_URL`. Route and macro consumer behavior may also
 require the fixtures under `crates/furnace-rs/tests/ui`.
 
-See the [architecture reference](../../docs/ARCHITECTURE.md), the
-[CLI contract](../../docs/CLI.md), and the
+See the [architecture reference](../../docs/guides/ARCHITECTURE.md), the
+[CLI contract](../../docs/guides/CLI.md), and the
 [Passport example](../../example/protected-route/README.md) before changing a
 public integration contract.
 
@@ -141,11 +141,11 @@ one guard; `#[seal(skip)]` on an endpoint bypasses that guard's authentication
 and policy checks. Protection applies per HTTP method, including when public
 and protected methods share a path.
 
-The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Registration uses only `#[cauldron(...)]`; bare `#[cauldron]` registers an empty cauldron.
+The `2.0.0` declarative DI contract, including database/logger imports, is documented in the [migration guide](../../docs/guides/declarative-di.md) and [compile-time example](../../example/compile-time-di/). Registration uses only `#[cauldron(...)]`; bare `#[cauldron]` registers an empty cauldron.
 
 The standalone [`furnace-rs-grpc`](../furnace-rs-grpc/README.md) crate owns all
 native gRPC APIs and dependencies. Common supplies shared Passport contracts,
 transport selection, lifecycle coordination, supervised tasks, neutral runtime
 errors, and static inspection. `ApplicationRuntimeError` is shared;
 `HttpRuntimeError` remains its compatibility alias. See the
-[gRPC guide](../../docs/grpc.md) for automatic selection and manual composition.
+[gRPC guide](../../docs/guides/grpc.md) for automatic selection and manual composition.

@@ -313,7 +313,7 @@ inspection includes socket metadata without constructing providers, opening
 listeners, loading TLS identities, or contacting Redis. Dynamic room membership
 is runtime state, not static inspection output.
 
-See [the runnable example](../example/socket-transport/README.md).
+See [the runnable example](../../example/socket-transport/README.md).
 Run `cargo test -p furnace-rs-socket --all-features` for protocol, Passport, TLS,
 rooms, and Redis tests. Redis tests start isolated `redis-server` processes and
 require that executable; they do not silently skip unavailable infrastructure.

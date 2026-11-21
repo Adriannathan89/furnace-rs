@@ -1,7 +1,7 @@
 # Password hasher
 
 The password hasher lives in
-[`furnace-rs-common/src/password_hasher/mod.rs`](../crates/furnace-rs-common/src/password_hasher/mod.rs).
+[`furnace-rs-common/src/password_hasher/mod.rs`](../../crates/furnace-rs-common/src/password_hasher/mod.rs).
 It uses Argon2 defaults, currently Argon2id version 19, to create and verify
 password hashes.
 
