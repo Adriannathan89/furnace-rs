@@ -1,0 +1,5 @@
+error: an endpoint can declare `#[cache]` only once
+  --> tests/ui-extra/duplicate_cache.rs:15:5
+   |
+15 |     #[cache(ttl = 20)]
+   |     ^^^^^^^^^^^^^^^^^^

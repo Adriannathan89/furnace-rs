@@ -14,6 +14,7 @@ registration and a marked `root` for compile-time dependency checking.
 | [posts-crud](posts-crud/) | PostgreSQL and SeaORM CRUD with a controller calling its repository directly | 3001 |
 | [post-crud-with-service](post-crud-with-service/) | The same CRUD routes with an optional `PostService` layer | 3001 |
 | [protected-route](protected-route/) | TPRS, validated login, Passport JWT guard, and logger | 3002 |
+| [cache-rate-limit](cache-rate-limit/) | Redis-backed `#[cache]` and `#[rate_limit]` endpoint attributes with an in-memory fallback | 3006 |
 | [user-accounts](user-accounts/) | Registration, Argon2 password hashing, login without account enumeration, JWT guard, and in-process tests | 3005 |
 
 New to FURNACE? Follow the [learning path](../docs/tutorial/README.md), which

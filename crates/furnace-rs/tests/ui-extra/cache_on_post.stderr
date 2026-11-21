@@ -1,0 +1,5 @@
+error: `#[cache]` is only valid on `#[get]` endpoints
+  --> tests/ui-extra/cache_on_post.rs:14:5
+   |
+14 |     #[cache(ttl = 10)]
+   |     ^

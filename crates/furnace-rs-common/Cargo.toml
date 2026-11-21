@@ -39,6 +39,7 @@ jwt = [
     "dep:serde_json",
     "furnace-rs-common-macros?/passport",
 ]
+extra = ["http", "dep:furnace-rs-common-macros", "furnace-rs-common-macros/extra"]
 cookies = ["http", "dep:cookie", "axum-extra/cookie", "furnace-rs-common-macros?/cookies"]
 logger = ["dep:chrono"]
 password-hasher = ["dep:argon2"]

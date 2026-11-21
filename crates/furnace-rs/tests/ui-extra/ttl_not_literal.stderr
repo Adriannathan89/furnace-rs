@@ -1,0 +1,5 @@
+error: expected a positive integer literal
+  --> tests/ui-extra/ttl_not_literal.rs:14:19
+   |
+14 |     #[cache(ttl = SECS)]
+   |                   ^^^^

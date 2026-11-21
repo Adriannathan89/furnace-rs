@@ -9,8 +9,25 @@ license.workspace = true
 readme = "README.md"
 description = "Extension boundary for optional furnace-rs framework capabilities"
 
+[features]
+default = ["cache", "rate-limit"]
+cache = []
+rate-limit = []
+
 [dependencies]
 furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0" }
+furnace-rs-common = { path = "../furnace-rs-common", version = "=2.0.0", features = ["http", "extra"] }
+redis = { version = "0.32", default-features = false, features = ["tokio-rustls-comp", "tls-rustls-webpki-roots", "script", "connection-manager"] }
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
+serde_json.workspace = true
+sha2 = "0.10"
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+tower.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

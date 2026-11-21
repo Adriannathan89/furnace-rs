@@ -1,0 +1,5 @@
+error: missing `per`
+  --> tests/ui-extra/rate_limit_missing_per.rs:14:5
+   |
+14 |     #[rate_limit(limit = 5)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^

@@ -488,6 +488,19 @@ pub struct ValidatedRouteIter<'a> {
 }
 
 impl<'a> ValidatedRouteIter<'a> {
+    /// Returns whether the last selected endpoint is behind a Passport guard.
+    #[doc(hidden)]
+    pub const fn is_guarded(&self) -> bool {
+        #[cfg(feature = "jwt")]
+        {
+            self.guard_occurrence.is_some()
+        }
+        #[cfg(not(feature = "jwt"))]
+        {
+            false
+        }
+    }
+
     /// Returns the next selected Axum path when its metadata matches.
     #[allow(clippy::result_large_err)]
     #[doc(hidden)]

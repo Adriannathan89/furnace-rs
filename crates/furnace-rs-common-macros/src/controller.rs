@@ -3,6 +3,7 @@ use proc_macro2::TokenStream;
 use syn::{Error, Item};
 
 mod endpoints;
+mod extras;
 mod managed;
 
 /// Dispatches `#[controller]` input to the managed-struct or endpoint-impl expander.
