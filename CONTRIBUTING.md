@@ -16,16 +16,16 @@ and compatibility requirements that may not be obvious from one source file.
 Start with:
 
 - [`README.md`](README.md) for the public API, supported features, and usage;
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for crate boundaries and
+- [`docs/guides/ARCHITECTURE.md`](docs/guides/ARCHITECTURE.md) for crate boundaries and
   framework design;
-- [`docs/furnace-rs-persistence.md`](docs/furnace-rs-persistence.md) and
-  [`docs/CLI.md`](docs/CLI.md) for current persistence and CLI guidance;
+- [`docs/guides/furnace-rs-persistence.md`](docs/guides/furnace-rs-persistence.md) and
+  [`docs/guides/CLI.md`](docs/guides/CLI.md) for current persistence and CLI guidance;
 - the relevant files under [`docs/`](docs/) for examples, release decisions,
   historical context, and acceptance requirements;
 
 When documentation disagrees with current code or configuration, mention it in
 the pull request instead of silently relying on an assumption. Use
-the current source, `README.md`, `docs/ARCHITECTURE.md`, and CI configuration to
+the current source, `README.md`, `docs/guides/ARCHITECTURE.md`, and CI configuration to
 confirm present behavior.
 
 ## Clone the repository
@@ -79,7 +79,7 @@ furnace-rs is a Rust 2024 workspace with a minimum supported Rust version of
   traits, and `SCREAMING_SNAKE_CASE` for constants;
 - do not introduce unsafe code;
 - document public APIs;
-- preserve the dependency layering described in `docs/ARCHITECTURE.md`;
+- preserve the dependency layering described in `docs/guides/ARCHITECTURE.md`;
 - add focused tests in the crate that owns the behavior;
 - use `trybuild` fixtures, including matching `.stderr` files, for procedural
   macro acceptance and diagnostic tests;

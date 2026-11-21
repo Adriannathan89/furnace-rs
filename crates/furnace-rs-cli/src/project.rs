@@ -20,7 +20,6 @@ pub(crate) struct ResolvedPackage {
     target_directory: PathBuf,
     workspace_root: PathBuf,
     package_root: PathBuf,
-    manifest_path: PathBuf,
     package_id: cargo_metadata::PackageId,
     package_name: String,
 }
@@ -187,8 +186,9 @@ impl CargoProject {
 
     /// Copies stable package identity and resolved paths from Cargo metadata.
     fn resolved_package(&self, package: &Package) -> ResolvedPackage {
-        let manifest_path = package.manifest_path.as_std_path().to_path_buf();
-        let package_root = manifest_path
+        let package_root = package
+            .manifest_path
+            .as_std_path()
             .parent()
             .expect("Cargo manifests always have a parent directory")
             .to_path_buf();
@@ -198,7 +198,6 @@ impl CargoProject {
             target_directory: self.metadata.target_directory.as_std_path().to_path_buf(),
             workspace_root: self.metadata.workspace_root.as_std_path().to_path_buf(),
             package_root,
-            manifest_path,
             package_id: package.id.clone(),
             package_name: package.name.clone(),
         }
@@ -285,11 +284,6 @@ impl ResolvedPackage {
         &self.package_root
     }
 
-    /// Returns the selected package manifest path.
-    pub(crate) fn manifest_path(&self) -> &Path {
-        &self.manifest_path
-    }
-
     /// Returns Cargo’s exact identity for the selected package.
     pub(crate) fn package_id(&self) -> &cargo_metadata::PackageId {
         &self.package_id
@@ -333,7 +327,6 @@ impl ResolvedApplication {
                 target_directory: PathBuf::from("/tmp/furnace-dev-state/target"),
                 workspace_root: PathBuf::from("/tmp/furnace-dev-state"),
                 package_root: PathBuf::from("/tmp/furnace-dev-state"),
-                manifest_path: PathBuf::from("/tmp/furnace-dev-state/Cargo.toml"),
                 package_id: serde_json::from_value(serde_json::Value::String(format!(
                     "furnace-dev-state {binary_name}"
                 )))

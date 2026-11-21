@@ -1,7 +1,5 @@
 //! Cached Passport JWT signing and verification keys.
 
-#![allow(dead_code)]
-
 use std::collections::BTreeMap;
 
 use jsonwebtoken::{DecodingKey, EncodingKey};

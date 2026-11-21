@@ -4,9 +4,7 @@
 //! run; selected appliers contribute provider values and infrastructure hooks
 //! only after graph preflight succeeds.
 
-#[allow(dead_code)]
 mod analysis;
-#[allow(dead_code)]
 mod descriptor;
 mod report;
 
@@ -26,7 +24,6 @@ pub use report::{
 
 inventory::collect!(AutoConfigurationDescriptor);
 
-#[allow(dead_code)]
 /// Collects the compiled-in integration descriptors in stable report order.
 pub(crate) fn descriptors() -> Vec<&'static AutoConfigurationDescriptor> {
     let mut descriptors: Vec<_> = inventory::iter::<AutoConfigurationDescriptor>
@@ -37,7 +34,6 @@ pub(crate) fn descriptors() -> Vec<&'static AutoConfigurationDescriptor> {
     descriptors
 }
 
-#[allow(dead_code)]
 /// Orders descriptors by identifier, output type, and source location.
 fn descriptor_order(
     left: &&'static AutoConfigurationDescriptor,
@@ -46,14 +42,5 @@ fn descriptor_order(
     left.identifier()
         .cmp(right.identifier())
         .then_with(|| left.output_type_name().cmp(right.output_type_name()))
-        .then_with(|| location_order(left.location(), right.location()))
-}
-
-#[allow(dead_code)]
-/// Breaks descriptor-order ties with a stable source location comparison.
-fn location_order(left: crate::SourceLocation, right: crate::SourceLocation) -> Ordering {
-    left.file
-        .cmp(right.file)
-        .then_with(|| left.line.cmp(&right.line))
-        .then_with(|| left.column.cmp(&right.column))
+        .then_with(|| left.location().cmp(&right.location()))
 }

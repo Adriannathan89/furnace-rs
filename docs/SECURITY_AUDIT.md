@@ -19,7 +19,7 @@ The [all-crate report](../benchmark/ALL_CRATES_SECURITY_AUDIT.md) records the pe
 coverage, source inventory, threat boundaries, dependency scan and limitations.
 The release candidate retains Rust edition 2024, MSRV 1.94 and SeaORM minimum
 2.0.0; public APIs change from the MADS 0.x family as described in the
-[migration guide](importance/furnace-rs-migration.md).
+[migration guide](guides/furnace-rs-migration.md).
 
 ## Findings included in 1.0.0
 

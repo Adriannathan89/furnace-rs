@@ -1,10 +1,6 @@
 //! Stable CLI diagnostic codes, structured details, and source-aware errors.
 
-use std::{
-    error::Error,
-    fmt,
-    path::{Path, PathBuf},
-};
+use std::{error::Error, fmt};
 
 use crate::command::ParseError;
 
@@ -16,45 +12,13 @@ pub(crate) const FURNACE202: &str = "FURNACE202";
 
 pub(crate) const FURNACE204: &str = "FURNACE204";
 
-pub(crate) const FURNACE211: &str = "FURNACE211";
-
-pub(crate) const FURNACE212: &str = "FURNACE212";
-
-pub(crate) const FURNACE213: &str = "FURNACE213";
-
 pub(crate) const FURNACE220: &str = "FURNACE220";
 
 pub(crate) const FURNACE230: &str = "FURNACE230";
 
-/// A source location attached to a CLI-owned diagnostic before output rendering.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct ErrorLocation {
-    path: PathBuf,
-    line: u32,
-    column: u32,
-}
-
-impl ErrorLocation {
-    /// Returns the compiler-provided path before package-relative normalization.
-    pub(crate) fn path(&self) -> &Path {
-        &self.path
-    }
-
-    /// Returns the one-based source line.
-    pub(crate) const fn line(&self) -> u32 {
-        self.line
-    }
-
-    /// Returns the one-based source column.
-    pub(crate) const fn column(&self) -> u32 {
-        self.column
-    }
-}
-
 #[derive(Default)]
 struct CliErrorDetails {
     subject: Option<String>,
-    location: Option<ErrorLocation>,
     suggestions: Vec<String>,
 }
 
@@ -88,22 +52,6 @@ impl CliError {
     /// Appends one remediation suggestion in output order.
     pub(crate) fn with_suggestion(mut self, suggestion: impl Into<String>) -> Self {
         self.details.suggestions.push(suggestion.into());
-
-        self
-    }
-
-    /// Attaches a one-based source location for structured rendering.
-    pub(crate) fn with_location(
-        mut self,
-        path: impl Into<PathBuf>,
-        line: u32,
-        column: u32,
-    ) -> Self {
-        self.details.location = Some(ErrorLocation {
-            path: path.into(),
-            line,
-            column,
-        });
 
         self
     }
@@ -144,11 +92,6 @@ impl CliError {
     /// Returns the related subject when one is available.
     pub(crate) fn subject(&self) -> Option<&str> {
         self.details.subject.as_deref()
-    }
-
-    /// Returns the source location when one is available.
-    pub(crate) fn location(&self) -> Option<&ErrorLocation> {
-        self.details.location.as_ref()
     }
 
     /// Returns the ordered remediation suggestions.
@@ -201,7 +144,6 @@ impl fmt::Debug for CliError {
             .field("title", &self.title)
             .field("message", &message)
             .field("subject", &self.details.subject)
-            .field("location", &self.details.location)
             .field("suggestions", &self.details.suggestions)
             .field("source", &source)
             .finish()

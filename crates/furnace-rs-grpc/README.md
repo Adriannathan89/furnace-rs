@@ -62,6 +62,6 @@ and credentials, Passport admission, TLS verification, health/reflection, and
 shared runtime behavior. Facade feature combinations and macro compile-fail
 contracts are exercised by `cargo test -p furnace-rs --all-features`.
 
-See the [transport guide](../../docs/grpc.md) for configuration and user-facing
+See the [transport guide](../../docs/guides/grpc.md) for configuration and user-facing
 examples, and the [independent example](../../example/grpc-transport/) for
 server, client, mixed HTTP/gRPC, and TLS runs.

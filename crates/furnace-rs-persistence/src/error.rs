@@ -30,7 +30,7 @@ pub struct PersistenceError {
     source: Option<Box<dyn std::error::Error + Send + Sync>>,
 }
 
-#[allow(dead_code)]
+#[cfg_attr(not(feature = "sea-orm-postgres"), allow(dead_code))]
 impl PersistenceError {
     /// Creates a persistence failure category and operation without retaining a cause.
     pub(crate) const fn new(kind: PersistenceErrorKind, operation: &'static str) -> Self {

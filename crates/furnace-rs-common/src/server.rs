@@ -25,9 +25,9 @@ use crate::http_scope::HttpApplicationScope;
 #[cfg(test)]
 use crate::route::RouteDescriptor;
 #[cfg(test)]
-use crate::server_config::{
-    HttpRuntimeMode, SERVER_AUTO_CONFIGURATION_ID, ServerBinding, load_standard_config_from,
-};
+use crate::runtime::load_standard_config;
+#[cfg(test)]
+use crate::server_config::{HttpRuntimeMode, SERVER_AUTO_CONFIGURATION_ID, ServerBinding};
 use crate::{build_router, configure_router};
 
 mod body;
@@ -120,7 +120,7 @@ impl PreparedStandardRun {
 async fn prepare_standard_run<M: ModuleContract>(
     root: &Path,
 ) -> Result<PreparedStandardRun, HttpRuntimeError> {
-    let config = load_standard_config_from(root).map_err(HttpRuntimeError::Bootstrap)?;
+    let config = load_standard_config(root).map_err(HttpRuntimeError::Bootstrap)?;
     let mut builder = Furnace::builder_with_config(config);
     builder.root::<M>().map_err(HttpRuntimeError::Bootstrap)?;
     let server_input_registered = builder

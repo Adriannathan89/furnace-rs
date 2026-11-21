@@ -125,8 +125,9 @@ impl SocketGatewayHub {
             .lock()
             .expect("socket hub poisoned")
             .connections
-            .iter()
-            .filter(|((path, _), _)| path == &self.path)
+            // Keys sort by path first, so this gateway's connections are contiguous.
+            .range((self.path.clone(), ConnectionId(String::new()))..)
+            .take_while(|((path, _), _)| path == &self.path)
             .map(|(_, sender)| sender.clone())
             .collect::<Vec<_>>();
 

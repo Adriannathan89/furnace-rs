@@ -1,6 +1,6 @@
 //! Deterministic construction planning for validated provider graphs.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 use crate::ProviderDescriptor;
 
@@ -13,20 +13,19 @@ pub(crate) fn create(
     graph: &ApplicationGraph,
     descriptors: &[&'static ProviderDescriptor],
 ) -> ConstructionPlan {
+    let index = graph.index_by_type();
+    let mut by_type = HashMap::new();
+
+    for &descriptor in descriptors {
+        by_type.entry(descriptor.type_id()).or_insert(descriptor);
+    }
+
     let mut remaining_dependencies = vec![0_usize; graph.providers.len()];
     let mut consumers = vec![Vec::new(); graph.providers.len()];
 
     for edge in &graph.dependencies {
-        let provider = graph
-            .providers
-            .iter()
-            .position(|node| node.type_id == edge.provider_type_id)
-            .expect("dependency edges reference graph providers");
-        let dependency = graph
-            .providers
-            .iter()
-            .position(|node| node.type_id == edge.dependency_type_id)
-            .expect("dependency edges reference graph dependencies");
+        let provider = index[&edge.provider_type_id];
+        let dependency = index[&edge.dependency_type_id];
 
         if graph.providers[provider].state == ProviderState::Planned
             && graph.providers[dependency].state == ProviderState::Planned
@@ -53,11 +52,7 @@ pub(crate) fn create(
 
     while let Some(ready_node) = ready.pop_first() {
         let provider = &graph.providers[ready_node.index];
-        let descriptor = descriptors
-            .iter()
-            .copied()
-            .find(|descriptor| descriptor.type_id() == provider.type_id)
-            .expect("planned graph providers have descriptors");
+        let descriptor = by_type[&provider.type_id];
         steps.push(ConstructionStep {
             type_id: provider.type_id,
             type_name: provider.type_name,

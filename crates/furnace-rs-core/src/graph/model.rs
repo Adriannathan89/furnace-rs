@@ -48,7 +48,6 @@ pub enum ProviderState {
     Planned,
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Copy)]
 pub(crate) struct SatisfiedProvider {
     pub(crate) type_id: TypeId,
@@ -56,7 +55,6 @@ pub(crate) struct SatisfiedProvider {
     pub(crate) state: ProviderState,
 }
 
-#[allow(dead_code)]
 impl SatisfiedProvider {
     /// Records a value supplied directly by the builder.
     pub(crate) fn provided<T>() -> Self
@@ -137,10 +135,8 @@ impl ProviderNode {
 
 /// A resolved dependency from one provider to a required type.
 pub struct DependencyEdge {
-    #[allow(dead_code)]
     pub(crate) provider_type_id: TypeId,
     pub(crate) provider_type_name: &'static str,
-    #[allow(dead_code)]
     pub(crate) dependency_type_id: TypeId,
     pub(crate) dependency_type_name: &'static str,
 }
@@ -164,6 +160,15 @@ pub struct ApplicationGraph {
 }
 
 impl ApplicationGraph {
+    /// Maps each provider's type to its position in `providers` for constant-time lookups.
+    pub(crate) fn index_by_type(&self) -> std::collections::HashMap<TypeId, usize> {
+        self.providers
+            .iter()
+            .enumerate()
+            .map(|(index, provider)| (provider.type_id, index))
+            .collect()
+    }
+
     /// Returns providers in deterministic graph order.
     pub fn providers(&self) -> &[ProviderNode] {
         &self.providers
@@ -189,12 +194,10 @@ impl ApplicationGraph {
 
 /// One statically declared provider in construction order.
 pub struct ConstructionStep {
-    #[allow(dead_code)]
     pub(crate) type_id: TypeId,
     pub(crate) type_name: &'static str,
     pub(crate) origin: ProviderOrigin,
     pub(crate) location: SourceLocation,
-    #[allow(dead_code)]
     pub(crate) descriptor: &'static ProviderDescriptor,
 }
 

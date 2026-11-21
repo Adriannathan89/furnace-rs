@@ -71,12 +71,6 @@ pub(crate) fn enable_automatic_server(builder: &mut FurnaceBuilder) -> bool {
     builder.__auto_configuration_input(SERVER_AUTO_CONFIGURATION_ID, HttpRuntimeMode::Automatic)
 }
 
-#[allow(dead_code)]
-/// Loads `.env`, `furnace.toml`, and the conventional `FURNACE_` environment overrides.
-pub(crate) fn load_standard_config_from(root: &Path) -> Result<Config> {
-    load_standard_config_from_with_environment(root, EnvSource::new("FURNACE_"))
-}
-
 /// Loads conventional configuration sources with an explicitly supplied environment source.
 pub(crate) fn load_standard_config_from_with_environment(
     root: &Path,

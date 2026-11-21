@@ -43,7 +43,6 @@ impl JwtAlgorithm {
         }
     }
 
-    #[allow(dead_code)]
     /// Converts this allowlisted algorithm to the JWT library's algorithm enum.
     pub(super) const fn as_jsonwebtoken(self) -> jsonwebtoken::Algorithm {
         match self {
@@ -55,22 +54,6 @@ impl JwtAlgorithm {
             Self::Rs512 => jsonwebtoken::Algorithm::RS512,
             Self::Es256 => jsonwebtoken::Algorithm::ES256,
             Self::Es384 => jsonwebtoken::Algorithm::ES384,
-        }
-    }
-
-    #[allow(dead_code)]
-    /// Converts a JWT library algorithm only when FURNACE supports it.
-    pub(super) const fn from_jsonwebtoken(algorithm: jsonwebtoken::Algorithm) -> Option<Self> {
-        match algorithm {
-            jsonwebtoken::Algorithm::HS256 => Some(Self::Hs256),
-            jsonwebtoken::Algorithm::HS384 => Some(Self::Hs384),
-            jsonwebtoken::Algorithm::HS512 => Some(Self::Hs512),
-            jsonwebtoken::Algorithm::RS256 => Some(Self::Rs256),
-            jsonwebtoken::Algorithm::RS384 => Some(Self::Rs384),
-            jsonwebtoken::Algorithm::RS512 => Some(Self::Rs512),
-            jsonwebtoken::Algorithm::ES256 => Some(Self::Es256),
-            jsonwebtoken::Algorithm::ES384 => Some(Self::Es384),
-            _ => None,
         }
     }
 }

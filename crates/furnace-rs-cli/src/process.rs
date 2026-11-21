@@ -15,21 +15,18 @@ use crate::{
     diagnostic::{CliError, FURNACE202},
 };
 
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum StopOutcome {
     Graceful,
     Forced,
 }
 
-#[allow(dead_code)]
 pub(crate) struct ApplicationProcess {
     child: tokio::process::Child,
     control_directory: tempfile::TempDir,
     shutdown_path: PathBuf,
 }
 
-#[allow(dead_code)]
 /// Starts a development child with an isolated shutdown-control directory.
 pub(crate) async fn spawn_dev_application(
     built: &BuiltApplication,
@@ -118,7 +115,6 @@ async fn spawn_dev_child(command: &mut Command) -> std::io::Result<tokio::proces
     }
 }
 
-#[allow(dead_code)]
 impl ApplicationProcess {
     /// Checks child exit without blocking the development loop.
     pub(crate) fn try_wait(&mut self) -> Result<Option<ExitStatus>, CliError> {

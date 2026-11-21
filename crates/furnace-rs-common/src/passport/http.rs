@@ -148,14 +148,14 @@ where
 impl PassportGuardState {
     /// Authenticates the request, checks the selected policy, and installs typed extensions.
     async fn authorize(&self, request: &mut Request) -> PassportResult<()> {
-        let (headers, method, uri, remote_addr) = request_metadata(request);
+        let remote_addr = peer_address(request);
         let authentication = authenticate_request(
             &self.application,
             self.guard.source(),
             self.adapter,
-            headers,
-            method,
-            uri,
+            request.headers(),
+            request.method(),
+            request.uri(),
             remote_addr,
         )
         .await?;
@@ -523,14 +523,14 @@ where
 {
     /// Runs strategy authentication, native policy checks, and typed extension installation.
     async fn authorize(&self, request: &mut Request) -> PassportResult<()> {
-        let (headers, method, uri, remote_addr) = request_metadata(request);
+        let remote_addr = peer_address(request);
         let authentication = authenticate_request(
             &self.application,
             self.source,
             self.adapter,
-            headers,
-            method,
-            uri,
+            request.headers(),
+            request.method(),
+            request.uri(),
             remote_addr,
         )
         .await?;
@@ -590,9 +590,9 @@ async fn authenticate_request(
     application: &furnace_rs_core::ApplicationContext,
     source: TokenSource,
     adapter: PassportStrategyAdapter,
-    headers: axum::http::HeaderMap,
-    method: axum::http::Method,
-    uri: axum::http::Uri,
+    headers: &axum::http::HeaderMap,
+    method: &axum::http::Method,
+    uri: &axum::http::Uri,
     remote_addr: Option<std::net::SocketAddr>,
 ) -> PassportResult<ErasedAuthentication> {
     match source {
@@ -600,16 +600,16 @@ async fn authenticate_request(
             super::authentication::authenticate_bearer(
                 application,
                 adapter,
-                &headers,
-                &method,
-                &uri,
+                headers,
+                method,
+                uri,
                 remote_addr,
             )
             .await
         }
         #[cfg(feature = "cookies")]
         TokenSource::Cookie(name) => {
-            let jar = CookieJar::from_headers(&headers).map_err(|_| PassportError::reject())?;
+            let jar = CookieJar::from_headers(headers).map_err(|_| PassportError::reject())?;
 
             if jar.occurrences(name) != 1 {
                 return Err(PassportError::reject());
@@ -619,38 +619,20 @@ async fn authenticate_request(
                 .get(name)
                 .map(|cookie| cookie.value().to_owned())
                 .ok_or_else(PassportError::reject)?;
-            let context = PassportContext::with_cookie_token(
-                &headers,
-                &method,
-                &uri,
-                remote_addr,
-                &jar,
-                name,
-            );
+            let context =
+                PassportContext::with_cookie_token(headers, method, uri, remote_addr, &jar, name);
 
             adapter(application, &context, &token).await
         }
     }
 }
 
-/// Copies request metadata and optional peer address for asynchronous authentication.
-fn request_metadata(
-    request: &Request,
-) -> (
-    axum::http::HeaderMap,
-    axum::http::Method,
-    axum::http::Uri,
-    Option<std::net::SocketAddr>,
-) {
-    (
-        request.headers().clone(),
-        request.method().clone(),
-        request.uri().clone(),
-        request
-            .extensions()
-            .get::<ConnectInfo<std::net::SocketAddr>>()
-            .map(|address| address.0),
-    )
+/// Reads the peer address that Axum's connect-info layer attached, if any.
+fn peer_address(request: &Request) -> Option<std::net::SocketAddr> {
+    request
+        .extensions()
+        .get::<ConnectInfo<std::net::SocketAddr>>()
+        .map(|address| address.0)
 }
 
 /// Applies the configured all/any predicate to a native role or permission clause.

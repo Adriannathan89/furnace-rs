@@ -90,7 +90,6 @@ impl<'a> PassportContext<'a> {
     /// code receives it. Cookie-authenticated contexts are constructed
     /// separately so their selected token remains hidden from the parsed-cookie
     /// view as well.
-    #[allow(dead_code)]
     pub(crate) fn new(
         headers: &'a HeaderMap,
         method: &'a Method,
@@ -115,7 +114,6 @@ impl<'a> PassportContext<'a> {
     /// view, and credential-bearing headers are removed in the same way as
     /// [`Self::new`].
     #[cfg(feature = "cookies")]
-    #[allow(dead_code)]
     pub(crate) fn with_cookie_token(
         headers: &'a HeaderMap,
         method: &'a Method,

@@ -93,7 +93,6 @@ impl CorsPlan {
         })
     }
 
-    #[allow(dead_code)]
     /// Builds the Tower HTTP layer represented by the validated configuration.
     pub(crate) fn layer(&self) -> CorsLayer {
         let mut layer = CorsLayer::new()

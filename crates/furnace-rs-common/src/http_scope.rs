@@ -84,6 +84,7 @@ pub(crate) struct ScopedController {
     seal: Option<ControllerSeal>,
     descriptor: &'static ControllerEndpointDescriptor,
     selected_routes: Vec<RouteIdentity>,
+    #[cfg_attr(not(feature = "jwt"), allow(dead_code))]
     context_cauldron: Option<TypeId>,
 }
 
@@ -140,12 +141,6 @@ impl ScopedController {
     /// Reports whether this controller contributes at least one selected route.
     fn has_routes(&self) -> bool {
         !self.selected_routes.is_empty()
-    }
-
-    #[allow(dead_code)]
-    /// Returns the managed module that owns this controller's Passport context.
-    pub(crate) const fn context_cauldron(&self) -> Option<TypeId> {
-        self.context_cauldron
     }
 }
 
@@ -249,9 +244,6 @@ impl HttpApplicationScope {
                     if let Some(entry) = definition.entries().first() {
                         let seal = ControllerSeal {
                             guard: entry.descriptor(),
-                            location: entry.location(),
-                            policy_type_id: entry.guard_type_id(),
-                            policy_type_name: entry.guard_type_name(),
                         };
 
                         for occurrence in controller.selected_routes.iter().filter(|identity| {
@@ -318,7 +310,6 @@ impl HttpApplicationScope {
     ///
     /// Unlike complete-catalog runtime selection, missing rooted analysis deliberately
     /// produces an empty scope so inspection cannot expose unrelated linked metadata.
-    #[allow(dead_code)] // Used by the private inspection path added in the next task.
     pub(crate) fn for_rooted_inspection(cauldron_graph: Option<&CauldronGraph>) -> Result<Self> {
         let controllers = match cauldron_graph {
             Some(graph) => Self::rooted_controllers(graph)?,
@@ -339,7 +330,6 @@ impl HttpApplicationScope {
     }
 
     /// Iterates selected static route metadata without constructing controllers.
-    #[allow(dead_code)] // Used by the private inspection path added in the next task.
     pub(crate) fn route_records(
         &self,
     ) -> impl Iterator<Item = (&ScopedController, &RouteDescriptor)> {
@@ -413,10 +403,6 @@ impl HttpApplicationScope {
 /// Static policy metadata belongs to an occurrence in its controller's context.
 #[cfg(feature = "jwt")]
 #[derive(Clone, Copy)]
-#[allow(dead_code)] // Fields are consumed by endpoint middleware/inspection in the following tasks.
 pub(crate) struct ControllerSeal {
     pub(crate) guard: &'static GuardDescriptor,
-    pub(crate) location: furnace_rs_core::SourceLocation,
-    pub(crate) policy_type_id: TypeId,
-    pub(crate) policy_type_name: &'static str,
 }

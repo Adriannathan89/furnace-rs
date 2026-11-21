@@ -7,25 +7,20 @@
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
-#[allow(dead_code)]
 mod cargo;
 mod command;
 mod dev;
-#[allow(dead_code)]
 mod dev_state;
-#[allow(dead_code)]
 mod diagnostic;
 mod inspection;
 /// Versioned finite-command output records and serializers.
 pub mod output;
 mod private_temp_dir;
 mod process;
-#[allow(dead_code)]
 mod project;
 mod render;
 /// Project-name validation and bundled minimal-project templates.
 pub mod scaffold;
-#[allow(dead_code)]
 mod watch;
 
 use std::{ffi::OsString, io, path::PathBuf, process::ExitCode};
@@ -157,7 +152,7 @@ fn run_new_command(
             ),
         ),
         Err(error) => {
-            let diagnostic = output::model::CliDiagnostic::from_error(&error, None);
+            let diagnostic = output::model::CliDiagnostic::from_error(&error);
             let outcome = output::Outcome::new(
                 output::model::Envelope::failure(Some("new".to_owned()), None, vec![diagnostic]),
                 output::HumanOutput::stderr(format!("{error}\n")),
@@ -241,7 +236,7 @@ fn render_parse_error(failure: &ParseFailure) -> Result<(), CliError> {
     };
     let outcome = output::Outcome::syntax_failure(
         command,
-        output::model::CliDiagnostic::from_error(&diagnostic, None),
+        output::model::CliDiagnostic::from_error(&diagnostic),
         human_stderr,
     );
 

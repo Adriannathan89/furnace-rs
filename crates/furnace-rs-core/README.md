@@ -9,7 +9,7 @@ Application authors normally reach this API through the
 framework-neutral integration or when a contribution changes graph,
 configuration, provider, or lifecycle behavior.
 
-Version 2.0.0 supports [declarative DI and root compile-time checks](../../docs/declarative-di.md) exclusively through the cauldron attribute. Bare `#[cauldron]` registers an empty cauldron.
+Version 2.0.0 supports [declarative DI and root compile-time checks](../../docs/guides/declarative-di.md) exclusively through the cauldron attribute. Bare `#[cauldron]` registers an empty cauldron.
 
 ## What this crate owns
 
@@ -158,4 +158,4 @@ are exercised through the trybuild fixtures in
 [`CONTRIBUTING.md`](../../CONTRIBUTING.md) after focused tests pass.
 
 See the [workspace architecture](../../README.md#workspace-crates) and
-[architecture reference](../../docs/ARCHITECTURE.md) for cross-crate rules.
+[architecture reference](../../docs/guides/ARCHITECTURE.md) for cross-crate rules.

@@ -422,23 +422,6 @@ fn diagnostic_order(left: &Diagnostic, right: &Diagnostic) -> std::cmp::Ordering
         .then_with(|| left.title().cmp(right.title()))
         .then_with(|| left.message().cmp(right.message()))
         .then_with(|| left.subject().cmp(&right.subject()))
-        .then_with(|| location_order(left.location(), right.location()))
+        .then_with(|| left.location().cmp(&right.location()))
         .then_with(|| left.suggestions().cmp(right.suggestions()))
-}
-
-/// Orders optional source coordinates with missing locations before authored ones.
-fn location_order(
-    left: Option<SourceLocation>,
-    right: Option<SourceLocation>,
-) -> std::cmp::Ordering {
-    match (left, right) {
-        (Some(left), Some(right)) => left
-            .file
-            .cmp(right.file)
-            .then_with(|| left.line.cmp(&right.line))
-            .then_with(|| left.column.cmp(&right.column)),
-        (Some(_), None) => std::cmp::Ordering::Greater,
-        (None, Some(_)) => std::cmp::Ordering::Less,
-        (None, None) => std::cmp::Ordering::Equal,
-    }
 }

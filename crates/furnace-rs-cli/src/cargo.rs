@@ -325,6 +325,7 @@ fn library_path_variable() -> &'static OsStr {
 }
 
 /// Selects the requested executable from a stream of Cargo JSON messages.
+#[cfg(test)]
 fn collect_artifact(
     target: &ResolvedApplication,
     messages: impl IntoIterator<Item = Result<Message, serde_json::Error>>,
@@ -597,7 +598,7 @@ mod tests {
         serde_json::json!({
             "reason": "compiler-artifact",
             "package_id": selected.package().package_id().to_string(),
-            "manifest_path": selected.package().manifest_path(),
+            "manifest_path": selected.package().package_root().join("Cargo.toml"),
             "target": {
                 "kind": ["bin"],
                 "crate_types": ["bin"],

@@ -244,7 +244,7 @@ multiple seals fail preconstruction. Only protected occurrences contribute
 JWT/strategy requirements or receive Passport bindings.
 Each endpoint binding retains its controller, method, canonical path, handler,
 and owning cauldron context. The Passport layer wraps each protected method router before methods are merged, preserving native extractor behavior and local strategy visibility.
-See [the breaking migration guide](importance/furnace-rs-migration.md).
+See [the breaking migration guide](furnace-rs-migration.md).
 
 ## gRPC and shared runtime in 2.0.0
 

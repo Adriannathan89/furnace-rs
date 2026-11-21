@@ -1,7 +1,7 @@
 //! Explicit application construction and lifecycle ownership.
 
 use std::any::TypeId;
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 
 use crate::auto_configuration::{
     self, AutoConfigurationApplyContext, AutoConfigurationDescriptor, AutoConfigurationInputs,
@@ -340,16 +340,23 @@ impl FurnaceBuilder {
             &self.required_supplies,
             &[],
         );
+        let node_ids: HashSet<_> = initial
+            .graph()
+            .providers
+            .iter()
+            .map(|node| node.type_id)
+            .collect();
+        let required_dependencies: HashSet<_> = initial
+            .graph()
+            .providers
+            .iter()
+            .flat_map(|node| node.declared_dependencies)
+            .map(crate::DependencyDescriptor::type_id)
+            .collect();
         let selected_providers = providers
             .iter()
             .copied()
-            .filter(|descriptor| {
-                initial
-                    .graph()
-                    .providers
-                    .iter()
-                    .any(|node| node.type_id == descriptor.type_id())
-            })
+            .filter(|descriptor| node_ids.contains(&descriptor.type_id()))
             .collect::<Vec<_>>();
         let automatic = auto_configuration::descriptors()
             .into_iter()
@@ -358,13 +365,8 @@ impl FurnaceBuilder {
 
                 !self.required_supplies.contains(&output)
                     && (descriptor.focused_requirements()
-                        || initial.graph().providers.iter().any(|node| {
-                            node.type_id == output
-                                || node
-                                    .declared_dependencies
-                                    .iter()
-                                    .any(|dependency| dependency.type_id() == output)
-                        }))
+                        || node_ids.contains(&output)
+                        || required_dependencies.contains(&output))
             })
             .collect::<Vec<_>>();
         let automatic = auto_configuration::analyze_parts_with_memo(
