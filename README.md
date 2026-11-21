@@ -199,7 +199,7 @@ application
     │   ├── furnace-rs-common
     │   └── furnace-rs-grpc-macros
     └── furnace-rs-extra (optional)
-        └── furnace-rs-core
+        └── furnace-rs-common
 
 application (opt-in persistence)
 └── furnace-rs-persistence
@@ -227,7 +227,7 @@ furnace-rs-cli
 | `furnace-rs-common-macros` | Procedural macros for routes, controllers, validation, and Passport. | [crates/furnace-rs-common-macros/README.md](crates/furnace-rs-common-macros/README.md) |
 | `furnace-rs-cli` | Cargo-native execution, inspection, development loop, and scaffolding. | [crates/furnace-rs-cli/README.md](crates/furnace-rs-cli/README.md) |
 | `furnace-rs-testing` | Focused service and in-process controller fixtures with scripted SeaORM mocks. | [crates/furnace-rs-testing/README.md](crates/furnace-rs-testing/README.md) |
-| `furnace-rs-extra` | Reserved boundary for future optional integrations. | [crates/furnace-rs-extra/README.md](crates/furnace-rs-extra/README.md) |
+| `furnace-rs-extra` | Optional Redis-backed `#[cache]` and `#[rate_limit]` endpoint attributes. | [crates/furnace-rs-extra/README.md](crates/furnace-rs-extra/README.md) |
 
 The approach is type-driven and metadata-driven: macros emit static
 descriptors, core analyzes a selected module graph before construction, and
@@ -264,7 +264,7 @@ including `use furnace_rs::prelude::*;`, as in the runnable examples.
 | `sea-orm` | Enables `DbErr` conversion into `HttpError` for `?` in `HttpResult` handlers; implies `http`, with no database driver or connection provider |
 | `runtime-tokio` | Tokio entry-point support for `#[furnace_rs::main]` |
 | `common` | Convenience feature enabling `http` and `logger` |
-| `extra` | Reserved integration boundary |
+| `extra` | Redis-backed `#[cache]` and `#[rate_limit]` endpoint attributes; implies `http` (see [the guide](docs/guides/extra.md)) |
 
 Use `default-features = false` to select integrations explicitly. Persistence
 and focused testing are separate dependencies. See the

@@ -96,7 +96,7 @@ The main workspace responsibilities are:
 - `crates/furnace-rs-common-macros`: shared route-related procedural macros;
 - `crates/furnace-rs`: stable public facade;
 - `crates/furnace-rs-cli`: command-line interface;
-- `crates/furnace-rs-extra`: reserved extension boundary.
+- `crates/furnace-rs-extra`: optional Redis-backed endpoint caching and rate limiting.
 
 ## Validate the change
 

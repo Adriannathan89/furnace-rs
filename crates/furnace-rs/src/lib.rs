@@ -355,7 +355,7 @@ pub use furnace_rs_extra as extra;
 /// Collects application-facing furnace-rs imports.
 pub mod prelude {
     #[cfg(feature = "extra")]
-    pub use furnace_rs_extra::{cache, rate_limit};
+    pub use furnace_rs_extra::{Backend, MemoryBackend, RedisExtra, cache, rate_limit};
 
     #[cfg(feature = "password-hasher")]
     pub use furnace_rs_common::{

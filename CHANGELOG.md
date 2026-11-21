@@ -6,6 +6,14 @@ migration are consolidated into the first 1.0.0 release.
 
 ## [Unreleased]
 
+### Added
+
+- `furnace-rs-extra` now provides `#[cache(ttl = N)]` and
+  `#[rate_limit(limit = N, per = S)]` endpoint attributes backed by Redis,
+  enabled through the facade `extra` feature and registered with
+  `builder.provide(RedisExtra::new(url)?)`. See
+  [docs/guides/extra.md](docs/guides/extra.md).
+
 ### Security
 
 - Update affected committed lockfiles to patched `ctutils` 0.4.4,

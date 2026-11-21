@@ -2,7 +2,7 @@
 #![allow(missing_docs)]
 #![cfg(feature = "extra")]
 
-use furnace_rs::extra::{MemoryBackend, RedisExtra};
+use furnace_rs::prelude::{MemoryBackend, RedisExtra};
 use std::sync::atomic::{AtomicUsize, Ordering::SeqCst};
 
 static CACHED_CALLS: AtomicUsize = AtomicUsize::new(0);
@@ -38,11 +38,26 @@ async fn attributes_apply_cache_and_rate_limit() -> furnace_rs_testing::TestResu
         .provide(RedisExtra::with_backend(MemoryBackend::default()))
         .controller::<ExtraController>()
         .run(|client| async move {
-            client.get("/x/c").send().await.unwrap().assert_text("cached");
-            client.get("/x/c").send().await.unwrap().assert_text("cached");
+            client
+                .get("/x/c")
+                .send()
+                .await
+                .unwrap()
+                .assert_text("cached");
+            client
+                .get("/x/c")
+                .send()
+                .await
+                .unwrap()
+                .assert_text("cached");
             assert_eq!(CACHED_CALLS.load(SeqCst), 1);
 
-            client.get("/x/r").send().await.unwrap().assert_text("limited");
+            client
+                .get("/x/r")
+                .send()
+                .await
+                .unwrap()
+                .assert_text("limited");
             client
                 .get("/x/r")
                 .send()
@@ -59,6 +74,8 @@ async fn missing_service_fails_router_build() {
         .controller::<ExtraController>()
         .run(|_| async {})
         .await;
-    let error = result.expect_err("router build must fail without RedisExtra").to_string();
+    let error = result
+        .expect_err("router build must fail without RedisExtra")
+        .to_string();
     assert!(error.contains("RedisExtra"), "unexpected error: {error}");
 }
