@@ -1,4 +1,5 @@
 //! Expand one inherent endpoint implementation into typed routing metadata.
+use super::extras;
 use crate::endpoint::{self, HandlerAdapter, HttpVerb};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -138,6 +139,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                 .last()
                 .is_none_or(|segment| segment.ident != "seal")
         });
+        let extras = extras::take_extras(&mut method.attrs)?;
         let verbs = method
             .attrs
             .iter()
@@ -166,6 +168,13 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
         }
 
         if verbs.is_empty() {
+            if !extras.is_empty() {
+                return Err(Error::new(
+                    method.sig.ident.span(),
+                    "`#[cache]` and `#[rate_limit]` require an HTTP endpoint",
+                ));
+            }
+
             if seal_skipped {
                 return Err(Error::new(
                     method.sig.ident.span(),
@@ -219,6 +228,16 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
 
         endpoint::validate_body_extractor_order(&sig.inputs, &common)?;
         let (index, verb) = verbs[0];
+
+        if let Some((_, span)) = extras.cache
+            && verb != "get"
+        {
+            return Err(Error::new(
+                span,
+                "`#[cache]` is only valid on `#[get]` endpoints",
+            ));
+        }
+
         let attr = method.attrs.remove(index);
         let path = match &attr.meta {
             Meta::Path(_) => LitStr::new("/", attr.span()),
@@ -275,6 +294,8 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
         } else {
             call
         };
+        let route = quote!(concat!(module_path!(), "::", stringify!(#controller), "::", #handler));
+        let guard_layer = extras::layer_tokens(&extras, &common, &route)?;
         registrations.push(
             HandlerAdapter {
                 verb,
@@ -282,7 +303,7 @@ pub(super) fn expand(arguments: TokenStream, mut item: ItemImpl) -> syn::Result<
                 argument_types: &types,
                 conditional_attributes: &conditional,
                 invocation,
-                guard_layer: TokenStream::new(),
+                guard_layer,
             }
             .tokens(&common),
         );

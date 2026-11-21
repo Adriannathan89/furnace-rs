@@ -84,6 +84,26 @@ pub fn seal(arguments: TokenStream, item: TokenStream) -> TokenStream {
     verb::outside_contract("seal(skip)", arguments.into(), item.into()).into()
 }
 
+/// Caches a GET endpoint's successful responses in Redis for `ttl` seconds.
+///
+/// Use `#[cache(ttl = 60)]` under `#[get]` inside an inherent `#[controller]`
+/// implementation. The application must provide `RedisExtra`.
+#[cfg(feature = "extra")]
+#[proc_macro_attribute]
+pub fn cache(arguments: TokenStream, item: TokenStream) -> TokenStream {
+    verb::outside_contract("cache", arguments.into(), item.into()).into()
+}
+
+/// Limits an endpoint to `limit` requests per `per` seconds for each client.
+///
+/// Use `#[rate_limit(limit = 30, per = 60)]` on any endpoint inside an inherent
+/// `#[controller]` implementation. The application must provide `RedisExtra`.
+#[cfg(feature = "extra")]
+#[proc_macro_attribute]
+pub fn rate_limit(arguments: TokenStream, item: TokenStream) -> TokenStream {
+    verb::outside_contract("rate_limit", arguments.into(), item.into()).into()
+}
+
 /// Marks a GET endpoint inside an inherent `#[controller]` implementation.
 ///
 /// Use a bare attribute for the base route or one string path such as

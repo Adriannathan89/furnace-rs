@@ -50,6 +50,32 @@ pub(crate) fn common_path() -> syn::Result<Path> {
     ))
 }
 
+/// Resolves the `furnace-rs-extra` path visible to the macro consumer.
+pub(crate) fn extra_path() -> syn::Result<Path> {
+    if let Ok(found) = crate_name("furnace-rs-extra") {
+        return Ok(match found {
+            FoundCrate::Itself => parse_quote!(crate),
+            FoundCrate::Name(name) => {
+                let ident = syn::Ident::new(&name.replace('-', "_"), Span::call_site());
+                parse_quote!(::#ident)
+            }
+        });
+    }
+
+    if let Ok(found) = crate_name("furnace-rs") {
+        let FoundCrate::Name(name) = found else {
+            return Ok(parse_quote!(::furnace_rs::extra));
+        };
+        let ident = syn::Ident::new(&name.replace('-', "_"), Span::call_site());
+        return Ok(parse_quote!(::#ident::extra));
+    }
+
+    Err(Error::new(
+        Span::call_site(),
+        "`#[cache]` and `#[rate_limit]` require a dependency on `furnace-rs-extra` or `furnace_rs` with the `extra` feature",
+    ))
+}
+
 /// Converts Cargo's crate-resolution result to a direct or facade common path.
 fn found_path(found: FoundCrate, facade: bool) -> syn::Result<Path> {
     match (found, facade) {

@@ -57,6 +57,13 @@ extern crate self as furnace_rs_common;
 #[cfg(feature = "http")]
 pub use furnace_rs_common_macros::Input;
 
+/// Endpoint attributes for Redis-backed response caching and rate limiting.
+///
+/// They take effect inside a `#[controller]` implementation once the
+/// application provides `furnace_rs_extra::RedisExtra`.
+#[cfg(feature = "extra")]
+pub use furnace_rs_common_macros::{cache, rate_limit};
+
 /// Re-exports transport-independent input validation contracts.
 #[cfg(feature = "http")]
 pub use validation::{

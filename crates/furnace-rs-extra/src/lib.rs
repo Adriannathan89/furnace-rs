@@ -23,5 +23,8 @@ pub use caching::{CacheState, cache_middleware};
 pub use limiting::{RateLimitState, rate_limit_middleware};
 pub use service::{RedisExtra, RedisExtraError};
 
+/// Endpoint attributes `#[cache(ttl = N)]` and `#[rate_limit(limit = N, per = S)]`.
+pub use furnace_rs_common::{cache, rate_limit};
+
 /// Exposes the framework-neutral core boundary to extensions.
 pub use furnace_rs_core as core;

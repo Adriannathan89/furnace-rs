@@ -1,0 +1,5 @@
+error: `#[cache]` must be used on a method inside an inherent `#[controller]` implementation
+ --> tests/ui-extra/cache_outside_controller.rs:3:9
+  |
+3 | #[cache(ttl = 10)]
+  |         ^^^
