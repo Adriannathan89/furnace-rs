@@ -19,6 +19,7 @@ furnace-rs-core = { path = "../furnace-rs-core", version = "=2.0.0" }
 furnace-rs-common = { path = "../furnace-rs-common", version = "=2.0.0", features = ["http"] }
 redis = { version = "0.32", default-features = false, features = ["tokio-rustls-comp", "tls-rustls-webpki-roots", "script", "connection-manager"] }
 rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
+serde_json.workspace = true
 sha2 = "0.10"
 tokio.workspace = true
 tracing.workspace = true

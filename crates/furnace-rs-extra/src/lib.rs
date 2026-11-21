@@ -11,12 +11,16 @@ mod backend;
 #[cfg(feature = "cache")]
 mod caching;
 mod identity;
+#[cfg(feature = "rate-limit")]
+mod limiting;
 mod redis_backend;
 mod service;
 
 pub use backend::{Backend, BackendError, BackendFuture, MemoryBackend, WindowHit};
 #[cfg(feature = "cache")]
 pub use caching::{CacheState, cache_middleware};
+#[cfg(feature = "rate-limit")]
+pub use limiting::{RateLimitState, rate_limit_middleware};
 pub use service::{RedisExtra, RedisExtraError};
 
 /// Exposes the framework-neutral core boundary to extensions.
