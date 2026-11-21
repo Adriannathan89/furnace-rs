@@ -9,10 +9,11 @@
 
 mod backend;
 mod identity;
+mod redis_backend;
 mod service;
 
 pub use backend::{Backend, BackendError, BackendFuture, MemoryBackend, WindowHit};
-pub use service::RedisExtra;
+pub use service::{RedisExtra, RedisExtraError};
 
 /// Exposes the framework-neutral core boundary to extensions.
 pub use furnace_rs_core as core;
