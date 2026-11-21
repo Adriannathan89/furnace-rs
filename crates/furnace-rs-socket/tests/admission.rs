@@ -214,3 +214,30 @@ async fn conflicting_repeated_and_encoded_credentials_never_fall_back() {
     assert!(tokio_tungstenite::connect_async(r).await.is_err());
     server.stop().await;
 }
+#[tokio::test]
+async fn authorization_header_uses_the_strict_shared_bearer_grammar() {
+    let server = support::Server::configured::<App>(&[("passport.secret", SECRET)]).await;
+    let token = token();
+    // HTTP and gRPC reject these; the upgrade must not normalize them into a
+    // valid credential.
+    for authorization in [
+        format!("Bearer \t{token}"),
+        format!("Bearer {token}\t.x"),
+        format!("Bearer\t{token}"),
+    ] {
+        let mut r = format!("ws://{}/private", server.address)
+            .into_client_request()
+            .unwrap();
+        r.headers_mut().insert(
+            "authorization",
+            HeaderValue::from_str(&authorization).unwrap(),
+        );
+        let failure = tokio_tungstenite::connect_async(r).await.unwrap_err();
+        assert!(
+            matches!(&failure, tokio_tungstenite::tungstenite::Error::Http(response)
+                if response.status() == 401),
+            "{authorization:?} was not rejected as unauthorized"
+        );
+    }
+    server.stop().await;
+}
